@@ -3,4 +3,4 @@ dist
 *.local
 .DS_Store
 projekte/
-ux-review/screens/
+ux-review/

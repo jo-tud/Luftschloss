@@ -9,8 +9,26 @@ import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, Lof
 import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
+import { deleteLabel, deleteSelection } from './actions'
 
 export function Properties() {
+  const sel = useStore((s) => s.selection)
+  const label = sel ? deleteLabel(sel) : null
+  return (
+    <>
+      {sel && label && (
+        <div className="props-actions">
+          <button className="danger" onClick={() => deleteSelection(sel)} title={`${label} (Entf) – rückgängig mit ↶`}>
+            🗑 {label}
+          </button>
+        </div>
+      )}
+      <PropertiesBody />
+    </>
+  )
+}
+
+function PropertiesBody() {
   const sel = useStore((s) => s.selection)
   const p = useStore((s) => s.project)
   const d = useDerived()
@@ -76,6 +94,7 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
   const select = useStore((s) => s.select)
   const d = useDerived()
   const P = a.params
+  const roomHeight = useStore((s) => s.project.room.height)
   const info = d.resolved.beds.get(a.id)
   const clearance = d.analysis.clearances.find((c) => c.assemblyId === a.id)
   const setP = (patch: Partial<LoftBedParams>, key?: string) =>
@@ -105,9 +124,14 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
             </div>
           </div>
         )}
+        {info && (info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && (
+          <p className="hint">
+            Mit Leiter braucht das Bett {fmtCm(info.standLength, 0)} × {fmtCm(info.standWidth, 0)} Stellfläche.
+          </p>
+        )}
         <Sel<BedType> label="Bauart" value={P.type} options={(Object.keys(BED_TYPE_LABEL) as BedType[]).map((t) => [t, BED_TYPE_LABEL[t]])} onChange={(v) => setP({ type: v })} />
         {P.type === 'eck' && <Sel label="Wandseitiges Ende" value={P.wallEnd} options={[['links', 'links'], ['rechts', 'rechts']]} onChange={(v) => setP({ wallEnd: v })} />}
-        <Num label="Liegehöhe (Oberkante Rost)" value={P.deckHeight} onChange={(v) => setP({ deckHeight: v })} min={300} />
+        <Num label="Liegehöhe (Oberkante Rost)" value={P.deckHeight} onChange={(v) => setP({ deckHeight: v })} min={300} max={roomHeight - P.mattressThickness - 200} />
         <div className="pair">
           <Num label="Matratze Länge" value={P.mattressLength} onChange={(v) => setP({ mattressLength: v })} min={1000} />
           <Num label="Breite" value={P.mattressWidth} onChange={(v) => setP({ mattressWidth: v })} min={600} />
@@ -121,10 +145,7 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
         )}
       </Section>
       <Section title="Lage im Raum">
-        <div className="pair">
-          <Num label="x" value={P.x} onChange={(v) => setP({ x: v })} />
-          <Num label="y" value={P.y} onChange={(v) => setP({ y: v })} />
-        </div>
+        {info && <BedPlacement a={a} fp={info.footprint} shift={(dx, dy) => setP({ x: Math.round(P.x + dx), y: Math.round(P.y + dy) }, `lage:${a.id}`)} />}
         <Sel label="Drehung" value={String(P.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setP({ rotation: Number(v) as 0 })} />
         <Check label="Gespiegelt (links ↔ rechts)" value={P.mirror} onChange={(v) => setP({ mirror: v })} />
         <Sel label="An Sockelleiste" value={P.wallFit} options={[['ausklinken', 'Pfosten ausklinken'], ['abruecken', 'Bett abrücken']]} onChange={(v) => setP({ wallFit: v })} title="Wie das Bett an Wänden mit Sockelleiste anschließt" />
@@ -443,7 +464,6 @@ function setJoint(d: Project, key: string, typeId: string) {
 function WallObjectProps({ id }: { id: string }) {
   const p = useStore((s) => s.project)
   const update = useStore((s) => s.update)
-  const select = useStore((s) => s.select)
   const d = useDerived()
   const o = p.wallObjects.find((x) => x.id === id)
   if (!o) return null
@@ -519,9 +539,6 @@ function WallObjectProps({ id }: { id: string }) {
           </>
         )}
         {o.kind === 'steckdose' && <Num label="Höhe über Boden" value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'steckdose' && (x.bottom = v)))} />}
-        <button className="danger" onClick={() => (update((dd) => void (dd.wallObjects = dd.wallObjects.filter((x) => x.id !== id))), select(null))}>
-          Entfernen
-        </button>
       </Section>
     </div>
   )
@@ -530,7 +547,6 @@ function WallObjectProps({ id }: { id: string }) {
 function FurnitureProps({ id }: { id: string }) {
   const p = useStore((s) => s.project)
   const update = useStore((s) => s.update)
-  const select = useStore((s) => s.select)
   const f = p.furniture.find((x) => x.id === id)
   if (!f) return null
   const setF = (fn: (x: Furniture) => void) => update((dd) => fn(dd.furniture.find((y) => y.id === id)!))
@@ -557,12 +573,65 @@ function FurnitureProps({ id }: { id: string }) {
           </div>
         )}
         <Sel label="Drehung" value={String(f.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setF((x) => void (x.rotation = Number(v) as 0))} />
-        <button className="danger" onClick={() => (update((dd) => void (dd.furniture = dd.furniture.filter((x) => x.id !== id))), select(null))}>
-          Entfernen
-        </button>
       </Section>
     </div>
   )
 }
 
 export { jointKey }
+
+/** Lage über Wandabstände, Schubknöpfe und „In Ecke schieben“ statt roher Koordinaten */
+function BedPlacement({ a, fp, shift }: { a: Assembly; fp: { x: number; y: number }[]; shift: (dx: number, dy: number) => void }) {
+  const room = useStore((s) => s.project.room)
+  const [step, setStep] = useState(100)
+  const minX = Math.min(...fp.map((q) => q.x))
+  const maxX = Math.max(...fp.map((q) => q.x))
+  const minY = Math.min(...fp.map((q) => q.y))
+  const maxY = Math.max(...fp.map((q) => q.y))
+  void a
+  const corner = (c: 'AD' | 'AB' | 'CB' | 'CD') => {
+    const dx = c === 'AB' || c === 'CB' ? -minX : room.length - maxX
+    const dy = c.startsWith('A') ? -minY : room.width - maxY
+    shift(dx, dy)
+  }
+  return (
+    <>
+      <div className="pair">
+        <Num label="Abstand zu Wand A" value={Math.round(minY)} onChange={(v) => shift(0, v - minY)} />
+        <Num label="zu Wand C" value={Math.round(room.width - maxY)} onChange={(v) => shift(0, room.width - maxY - v)} />
+      </div>
+      <div className="pair">
+        <Num label="Abstand zu Wand B" value={Math.round(minX)} onChange={(v) => shift(v - minX, 0)} />
+        <Num label="zu Wand D" value={Math.round(room.length - maxX)} onChange={(v) => shift(room.length - maxX - v, 0)} />
+      </div>
+      <div className="nudge" role="group" aria-label="Bett schieben">
+        <span className="hint">Schieben</span>
+        <button onClick={() => shift(0, -step)} title={`Richtung Wand A um ${step / 10} cm`}>
+          ↑ A
+        </button>
+        <button onClick={() => shift(0, step)} title={`Richtung Wand C um ${step / 10} cm`}>
+          ↓ C
+        </button>
+        <button onClick={() => shift(-step, 0)} title={`Richtung Wand B um ${step / 10} cm`}>
+          ← B
+        </button>
+        <button onClick={() => shift(step, 0)} title={`Richtung Wand D um ${step / 10} cm`}>
+          → D
+        </button>
+        <select value={step} onChange={(e) => setStep(Number(e.target.value))} aria-label="Schrittweite">
+          <option value={10}>1 cm</option>
+          <option value={100}>10 cm</option>
+          <option value={500}>50 cm</option>
+        </select>
+      </div>
+      <div className="corners">
+        In Ecke schieben:
+        {(['AD', 'AB', 'CB', 'CD'] as const).map((c) => (
+          <button key={c} onClick={() => corner(c)} title={`Bett in die Ecke Wand ${c[0]}/${c[1]} schieben`}>
+            {c[0]}/{c[1]}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}

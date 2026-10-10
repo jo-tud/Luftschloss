@@ -1,10 +1,11 @@
-import { defaultBedParams, emptyProject, testProject } from '../model/defaults'
+import { defaultBedParams } from '../model/defaults'
 import { uid } from '../model/geometry'
 import { BED_TYPE_LABEL, bedOuterSize } from '../model/loftbed'
 import type { BedType, CeilingMaterial, LoftBedParams, CorniceProfile, FloorMaterial, Furniture, FurnitureKind, Project, WallId, WallMaterial, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
-import { migrate, useStore } from '../state/store'
+import { useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
+import { ProjectActions } from './Project'
 
 const WALL_MAT: [WallMaterial, string][] = [
   ['beton', 'Beton'],
@@ -16,6 +17,19 @@ const WALL_MAT: [WallMaterial, string][] = [
   ['holzstaender', 'Holzständer/Fachwerk'],
   ['leichtbau', 'Leichtbau/Altbau-Innenwand (nicht tragend)'],
 ]
+
+/** Listeneintrag per Klick, Enter oder Leertaste auslösen (Tastaturbedienung) */
+const activate = (fn: () => void) => ({
+  role: 'button',
+  tabIndex: 0,
+  onClick: fn,
+  onKeyDown: (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      fn()
+    }
+  },
+})
 
 export function Sidebar() {
   const tab = useStore((s) => s.sidebar)
@@ -62,9 +76,9 @@ function RoomTab() {
   return (
     <>
       <Section title="Maße">
-        <Num label="Länge (Wand A/C)" value={r.length} onChange={(v) => setRoom((d) => void (d.room.length = v))} min={1000} />
-        <Num label="Breite (Wand B/D)" value={r.width} onChange={(v) => setRoom((d) => void (d.room.width = v))} min={1000} />
-        <Num label="Raumhöhe" value={r.height} onChange={(v) => setRoom((d) => void (d.room.height = v), 'room.height')} min={1800} estimated={est(p, 'room.height')} />
+        <Num label="Länge (Wand A/C)" value={r.length} onChange={(v) => setRoom((d) => void (d.room.length = v))} min={1000} max={20000} />
+        <Num label="Breite (Wand B/D)" value={r.width} onChange={(v) => setRoom((d) => void (d.room.width = v))} min={1000} max={20000} />
+        <Num label="Raumhöhe" value={r.height} onChange={(v) => setRoom((d) => void (d.room.height = v), 'room.height')} min={1800} max={6000} estimated={est(p, 'room.height')} />
         <Num label="Wanddicke (Fensterwand)" value={r.wallThickness} onChange={(v) => setRoom((d) => void (d.room.wallThickness = v))} min={80} />
       </Section>
       <Section title="Stuckleiste">
@@ -165,56 +179,37 @@ function MouseProfile() {
   )
 }
 
-function ProjectActions() {
-  const p = useStore((s) => s.project)
-  const replace = useStore((s) => s.replaceProject)
-  const exportJson = () => {
-    const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `${p.name.replace(/\s+/g, '-').toLowerCase()}.hochbett.json`
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-  const importJson = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.json,application/json'
-    input.onchange = async () => {
-      const file = input.files?.[0]
-      if (!file) return
-      try {
-        const data = JSON.parse(await file.text()) as Project
-        if (data.version !== 1 || !data.room) throw new Error('kein Luftschloss-Projekt')
-        replace(migrate(data))
-      } catch (err) {
-        alert(`Datei konnte nicht gelesen werden: ${(err as Error).message}`)
-      }
-    }
-    input.click()
-  }
-  return (
-    <div className="stack">
-      <label className="field">
-        <span>Name</span>
-        <input value={p.name} onChange={(e) => useStore.getState().update((d) => void (d.name = e.target.value), 'name')} />
-      </label>
-      <button onClick={exportJson}>Projekt exportieren (.json)</button>
-      <button onClick={importJson}>Projekt importieren…</button>
-      <button onClick={() => confirm('Testzimmer neu laden? Der aktuelle Stand lässt sich mit Rückgängig wiederholen.') && replace(testProject())}>Testzimmer laden</button>
-      <button onClick={() => confirm('Leeres Zimmer beginnen?') && replace(emptyProject())}>Leeres Zimmer</button>
-    </div>
-  )
-}
-
 function FixturesTab() {
   const p = useStore((s) => s.project)
   const update = useStore((s) => s.update)
   const select = useStore((s) => s.select)
   const sel = useStore((s) => s.selection)
+  // Neues Objekt an die erste freie Wandstelle setzen und die Ansicht hinfahren
   const addObj = (o: WallObject) => {
+    const clash: Record<WallObject['kind'], WallObject['kind'][]> = {
+      fenster: ['fenster', 'tuer'],
+      tuer: ['fenster', 'tuer', 'heizkoerper'],
+      heizkoerper: ['tuer', 'heizkoerper'],
+      steckdose: ['tuer', 'steckdose'],
+    }
+    const margin = 150
+    for (const w of WALL_IDS) {
+      const len = w === 'A' || w === 'C' ? p.room.length : p.room.width
+      const busy = p.wallObjects.filter((x) => x.wall === w && clash[o.kind].includes(x.kind)).map((x) => [x.offset - margin, x.offset + x.width + margin] as const)
+      busy.sort((a1, b1) => a1[0] - b1[0])
+      let at = margin
+      for (const [b0, b1] of busy) {
+        if (at + o.width <= b0) break
+        at = Math.max(at, b1)
+      }
+      if (at + o.width <= len - margin) {
+        o = { ...o, wall: w, offset: Math.round(at) }
+        break
+      }
+    }
     update((d) => void d.wallObjects.push(o))
     select({ kind: 'wallObject', id: o.id })
+    setTimeout(() => useStore.getState().focus(o.id), 50)
   }
   const wall: WallId = 'A'
   return (
@@ -222,7 +217,7 @@ function FixturesTab() {
       <Section title="Fenster, Türen, Heizkörper">
         <ul className="list">
           {p.wallObjects.map((o) => (
-            <li key={o.id} className={sel?.id === o.id ? 'on' : ''} onClick={() => select({ kind: 'wallObject', id: o.id })}>
+            <li key={o.id} className={sel?.id === o.id ? 'on' : ''} {...activate(() => (select({ kind: 'wallObject', id: o.id }), useStore.getState().focus(o.id)))}>
               <span>{o.kind === 'fenster' ? '🪟' : o.kind === 'tuer' ? '🚪' : o.kind === 'heizkoerper' ? '♨' : '🔌'}</span>
               {o.name} <small>Wand {o.wall}</small>
               {p.estimated.includes(`wallObjects.${o.id}`) && <em className="est-tag">geschätzt</em>}
@@ -302,7 +297,7 @@ function BedTab() {
       <Section title="Hochbetten im Projekt">
         <ul className="list">
           {p.assemblies.map((a) => (
-            <li key={a.id} className={sel?.id === a.id ? 'on' : ''} onClick={() => select({ kind: 'assembly', id: a.id })}>
+            <li key={a.id} className={sel?.id === a.id ? 'on' : ''} {...activate(() => (select({ kind: 'assembly', id: a.id }), useStore.getState().focus(a.id)))}>
               🛏 {a.name} <small>{BED_TYPE_LABEL[a.params.type]}</small>
             </li>
           ))}
@@ -317,10 +312,10 @@ function BedTab() {
               <div>
                 <b>{t.label}</b>
                 <p>{t.hint}</p>
-                <div className="corners">
-                  in Ecke:
+                <div className="corners" role="group" aria-label={`${t.label} neu einsetzen`}>
+                  + neu in Ecke:
                   {(['AD', 'AB', 'CB', 'CD'] as Corner[]).map((c) => (
-                    <button key={c} onClick={() => insert(t, c)} title={`Ecke Wand ${c[0]}/${c[1]}`}>
+                    <button key={c} onClick={() => insert(t, c)} title={`Neues Bett „${t.label}“ in die Ecke Wand ${c[0]}/${c[1]} einsetzen`} aria-label={`${t.label} in Ecke ${c[0]}/${c[1]} einsetzen`}>
                       {c[0]}/{c[1]}
                     </button>
                   ))}
@@ -329,7 +324,7 @@ function BedTab() {
             </div>
           ))}
         </div>
-        <p className="hint">Alle Vorlagen bleiben voll anpassbar: Bett auswählen und rechts Maße, Bauart, Hölzer, Geländer und Leiter ändern. Einzelne Teile lassen sich herauslösen.</p>
+        <p className="hint">Setzt ein zusätzliches Bett ein. Ein vorhandenes Bett verschiebst du über „Lage im Raum“ (Bett auswählen). Alle Vorlagen bleiben voll anpassbar: Bett auswählen und rechts Maße, Bauart, Hölzer, Geländer und Leiter ändern. Einzelne Teile lassen sich herauslösen.</p>
       </Section>
     </>
   )
@@ -406,7 +401,7 @@ function FurnitureTab() {
       <Section title="Möbel und Personen">
         <ul className="list">
           {p.furniture.map((f) => (
-            <li key={f.id} className={sel?.id === f.id ? 'on' : ''} onClick={() => select({ kind: 'furniture', id: f.id })}>
+            <li key={f.id} className={sel?.id === f.id ? 'on' : ''} {...activate(() => (select({ kind: 'furniture', id: f.id }), useStore.getState().focus(f.id)))}>
               {f.kind.startsWith('person') ? '🧍' : '▭'} {f.name}
             </li>
           ))}

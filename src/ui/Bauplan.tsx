@@ -59,14 +59,24 @@ function PlanView({ view, members, origin, ex, ey, numbers, labelNos, title }: {
   const placed = new Set<number>()
   // Etikett dort, wo das Teil groß zu sehen ist
   const area = (poly: [number, number][]) => Math.abs(poly.reduce((s, q, i) => s + q[0] * poly[(i + 1) % poly.length][1] - poly[(i + 1) % poly.length][0] * q[1], 0)) / 2
+  const spots: [number, number][] = []
   for (const s of [...shapes].sort((a, b) => area(b.poly) - area(a.poly))) {
     const no = numbers.get(s.m.id)
     if (no === undefined || placed.has(no) || !labelNos.has(no)) continue
     placed.add(no)
+    // Nummern nicht übereinander setzen: ausweichen, sonst mit Führungslinie daneben
+    const R = 70
+    const free = (x: number, y: number) => spots.every((q) => Math.hypot(q[0] - x, q[1] - y) > 2 * R + 10)
+    const tries: [number, number][] = [[0, 0], [0, -2.3 * R], [0, 2.3 * R], [2.3 * R, 0], [-2.3 * R, 0], [2 * R, -2 * R], [-2 * R, -2 * R], [2 * R, 2 * R], [-2 * R, 2 * R], [0, -4.6 * R], [0, 4.6 * R]]
+    const off = tries.find(([dx, dy]) => free(s.cx + dx, s.cy + dy)) ?? [0, 0]
+    const lx = s.cx + off[0]
+    const ly = s.cy + off[1]
+    spots.push([lx, ly])
     labels.push(
       <g key={`l${no}`}>
-        <circle cx={s.cx} cy={s.cy} r={55} className="pl-bubble" />
-        <text x={s.cx} y={s.cy} className="pl-no">
+        {(off[0] || off[1]) && <line x1={s.cx} y1={s.cy} x2={lx} y2={ly} className="pl-leader" />}
+        <circle cx={lx} cy={ly} r={R} className="pl-bubble" />
+        <text x={lx} y={ly} className="pl-no">
           {no}
         </text>
       </g>,
@@ -322,7 +332,8 @@ export function BauplanDialog() {
                       <tr>
                         <th>Außenmaß</th>
                         <td>
-                          {fmtCm(info.outerLength, 0)} × {fmtCm(info.outerWidth, 0)}, Liegefläche {fmtCm(info.deckTop, 0)} hoch
+                          Gestell {fmtCm(info.outerLength, 0)} × {fmtCm(info.outerWidth, 0)}
+                          {(info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && ` · mit Leiter ${fmtCm(info.standLength, 0)} × ${fmtCm(info.standWidth, 0)}`}, Liegefläche {fmtCm(info.deckTop, 0)} hoch
                         </td>
                       </tr>
                     )}
@@ -344,7 +355,7 @@ export function BauplanDialog() {
                       <tr>
                         <th>Statik</th>
                         <td>
-                          höchste Ausnutzung {Math.round(statics.maxUtil * 100)} %, Gestell {statics.swayClass} ({Math.max(statics.sway.x, statics.sway.y).toFixed(1)} mm)
+                          höchste Ausnutzung {Math.round(statics.maxUtil * 100)} %, Gestell {statics.swayClass} ({Math.max(statics.sway.x, statics.sway.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm)
                         </td>
                       </tr>
                     )}

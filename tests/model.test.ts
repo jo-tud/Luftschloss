@@ -166,3 +166,18 @@ describe('Bauplan und Montage', () => {
     expect(steps[0].title).toBe('Pfosten stellen')
   })
 })
+
+describe('CSV-Einkaufsliste', () => {
+  it('eine Zeile pro Artikel, Dezimalkomma, Stück statt Packung bei Einzelteilen, Summe', async () => {
+    const { bomCsv, computeBom } = await import('../src/analysis/bom')
+    const p = testProject()
+    const bom = computeBom(p, resolveProject(p))
+    const csv = bomCsv(bom)
+    const lines = csv.split('\r\n')
+    expect(lines[0]).toContain('Einzelpreis EUR')
+    expect(lines.at(-1)).toMatch(/^"Summe"/)
+    expect(csv).not.toMatch(/"\d+\.\d\d"/)
+    const bolt = lines.find((l) => l.includes('Schlossschraube'))
+    if (bolt) expect(bolt).toContain('"Stück"')
+  })
+})

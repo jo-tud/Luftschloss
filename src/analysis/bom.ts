@@ -1,5 +1,5 @@
 import { HARDWARE, PRICE_STAND, catalogItem, type HardwareItem, type SheetItem, type TimberItem } from '../model/catalog'
-import { memberLength } from '../model/geometry'
+import { fmtCm, fmtM, memberLength } from '../model/geometry'
 import { jointType } from '../model/joints'
 import type { Resolved } from '../model/resolve'
 import type { Panel, Project } from '../model/types'
@@ -245,3 +245,31 @@ export function parsePriceAnswer(text: string): { id: string; price: number; url
   }
   return out
 }
+
+/** Einkaufsliste als CSV für deutsches Excel/LibreOffice: eine Zeile pro Artikel und Länge, Dezimalkomma, Summe */
+export function bomCsv(bom: Bom, overrides: Record<string, unknown> = {}): string {
+  const money = (x: number) => x.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false })
+  const est = (id: string, e?: boolean) => (overrides[id] ? 'recherchiert' : e ? 'geschätzt' : '')
+  const rows: string[][] = [['Gruppe', 'Artikel', 'Menge', 'Einheit', 'Länge/Format', 'Einzelpreis EUR', 'Summe EUR', 'Preis']]
+  for (const t of bom.timber) {
+    const counts = new Map<number, number>()
+    for (const b of t.bars) counts.set(b.stock, (counts.get(b.stock) ?? 0) + 1)
+    const totalLen = t.bars.reduce((x, b) => x + b.stock, 0) || 1
+    for (const [len, n] of [...counts].sort((a, b) => b[0] - a[0])) {
+      const each = (t.price * len) / totalLen
+      rows.push(['Holz', t.item.name, String(n), 'Stange', fmtM(len), money(each), money(each * n), est(t.item.id, t.item.priceEstimated)])
+    }
+  }
+  for (const sh of bom.sheets) {
+    const each = sh.price / Math.max(1, sh.count)
+    rows.push(['Platte', sh.item.name, String(sh.count), 'Stück', `${fmtCm(sh.format.l, 0)} × ${fmtCm(sh.format.w, 0)}`, money(each), money(sh.price), est(`${sh.item.id}@${sh.format.l}x${sh.format.w}`, sh.item.priceEstimated)])
+  }
+  for (const h of bom.hardware) {
+    if (h.item.perMeter) rows.push(['Beschlag', h.item.name, (h.qty / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }), 'm', '', money(h.price / Math.max(0.001, h.qty / 1000)), money(h.price), est(h.item.id, h.item.priceEstimated)])
+    else if (h.item.pack > 1) rows.push(['Beschlag', h.item.name, String(h.packs), `Packung à ${h.item.pack} Stück`, `${h.qty} Stück benötigt`, money(h.price / Math.max(1, h.packs)), money(h.price), est(h.item.id, h.item.priceEstimated)])
+    else rows.push(['Beschlag', h.item.name, String(h.qty), 'Stück', '', money(h.price / Math.max(1, h.qty)), money(h.price), est(h.item.id, h.item.priceEstimated)])
+  }
+  rows.push(['Summe', '', '', '', '', '', money(bom.total), bom.priceStand])
+  return rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(';')).join('\r\n')
+}
+

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { parsePriceAnswer, pricePrompt, type Bom } from '../analysis/bom'
+import { bomCsv, parsePriceAnswer, pricePrompt, type Bom } from '../analysis/bom'
 import { loadApiKey, runPriceAgent, storeApiKey, type PriceAgentProgress } from '../analysis/priceAgent'
 import { fmtCm, fmtM } from '../model/geometry'
 import { useDerived, useStore } from '../state/store'
@@ -82,7 +82,7 @@ export function MaterialDialog() {
             Summe <b>{eur(bom.total)}</b> · {bom.priceStand}
             {bom.estimatedShare > 0.05 && ` · ${Math.round(bom.estimatedShare * 100)} % davon geschätzt`}
           </span>
-          <button onClick={() => downloadCsv(bom)}>CSV exportieren</button>
+          <button onClick={() => downloadCsv(bom, p.settings.priceOverrides)}>Einkaufsliste als CSV</button>
           <button onClick={() => window.print()}>Drucken</button>
         </footer>
       </div>
@@ -197,20 +197,13 @@ export function CutPlan({ bom }: { bom: Bom }) {
   )
 }
 
-function downloadCsv(bom: Bom) {
-  const rows = [['Gruppe', 'Artikel', 'Menge', 'Einheit', 'Preis EUR']]
-  for (const t of bom.timber) for (const b of t.bars) rows.push(['Holz', t.item.name, '1', `Stange ${b.stock} mm`, ''])
-  for (const t of bom.timber) rows.push(['Holz Summe', t.item.name, String(t.bars.length), 'Stangen', t.price.toFixed(2)])
-  for (const s of bom.sheets) rows.push(['Platte', s.item.name, String(s.count), `${s.format.l}×${s.format.w} mm`, s.price.toFixed(2)])
-  for (const h of bom.hardware) rows.push(['Beschlag', h.item.name, String(h.packs), h.item.perMeter ? 'm' : 'Packung', h.price.toFixed(2)])
-  const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(';')).join('\n')
+function downloadCsv(bom: Bom, overrides: Record<string, unknown>) {
   const a = document.createElement('a')
-  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }))
-  a.download = 'luftschloss-material.csv'
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + bomCsv(bom, overrides)], { type: 'text/csv;charset=utf-8' }))
+  a.download = 'luftschloss-einkaufsliste.csv'
   a.click()
   URL.revokeObjectURL(a.href)
 }
-
 /** Recherche direkt aus der App mit eigenem Claude-API-Schlüssel */
 function PriceAgent({ prompt, onAnswer }: { prompt: string; onAnswer: (text: string) => void }) {
   const [key, setKey] = useState(loadApiKey)

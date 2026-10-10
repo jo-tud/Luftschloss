@@ -1,36 +1,69 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
-/** Zahleneingabe in cm (intern mm). Übernimmt beim Verlassen oder Enter. */
+/** Zahl deutsch anzeigen (Dezimalkomma, ohne Tausenderpunkt) */
+export const fmtNum = (x: number, digits = 1) => x.toLocaleString('de-DE', { maximumFractionDigits: digits, useGrouping: false })
+
+/** Liest „412,5“, „412.5“ und „1.234,5“; gibt NaN für alles andere */
+export function parseNum(text: string): number {
+  let t = text.trim().replace(/\s/g, '')
+  if (t.includes(',') && t.includes('.')) t = t.replace(/\./g, '')
+  t = t.replace(',', '.')
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN
+  return Number(t)
+}
+
+/**
+ * Zahleneingabe in cm (intern mm). Nimmt Komma und Punkt an, übernimmt beim Verlassen oder Enter.
+ * Werte außerhalb der Grenzen werden nicht still korrigiert, sondern am Feld erklärt.
+ */
 export function Num({ label, value, onChange, unit = 'cm', step, min, max, title, estimated }: { label: string; value: number; onChange: (mm: number) => void; unit?: 'cm' | 'mm' | '°' | ''; step?: number; min?: number; max?: number; title?: string; estimated?: boolean }) {
   const factor = unit === 'cm' ? 10 : 1
   const shown = Math.round((value / factor) * 10) / 10
-  const [text, setText] = useState(String(shown))
-  useEffect(() => setText(String(shown)), [shown])
+  const [text, setText] = useState(fmtNum(shown))
+  const [error, setError] = useState('')
+  useEffect(() => {
+    setText(fmtNum(shown))
+    setError('')
+  }, [shown])
+  const show = (mm: number) => `${fmtNum(mm / factor)}${unit ? ` ${unit}` : ''}`
+  // Grundplausibilität, wenn das Feld nichts Genaueres vorgibt: höchstens 50 m
+  const hi = max ?? (unit === 'cm' || unit === 'mm' ? 50000 : undefined)
   const commit = () => {
-    const n = Number(text.replace(',', '.'))
-    if (!Number.isFinite(n)) return setText(String(shown))
-    let mm = Math.round(n * factor)
-    if (min !== undefined) mm = Math.max(min, mm)
-    if (max !== undefined) mm = Math.min(max, mm)
+    const n = parseNum(text)
+    if (!Number.isFinite(n)) return setError(`Bitte eine Zahl eingeben, z. B. ${fmtNum(shown || 412.5)}`)
+    const mm = Math.round(n * factor)
+    if (min !== undefined && mm < min) return setError(`Nicht übernommen: mindestens ${show(min)}`)
+    if (hi !== undefined && mm > hi) return setError(`Nicht übernommen: höchstens ${show(hi)}`)
+    setError('')
     if (mm !== value) onChange(mm)
-    else setText(String(shown))
+    else setText(fmtNum(shown))
   }
   return (
-    <label className={`field${estimated ? ' est' : ''}`} title={estimated ? 'Geschätzt – bitte nachmessen' : title}>
-      <span>{label}</span>
+    <label className={`field${estimated ? ' est' : ''}${error ? ' invalid' : ''}`} title={estimated ? 'Geschätzt – bitte nachmessen' : title}>
+      <span>
+        {label}
+        {estimated && <small className="est-tag"> geschätzt</small>}
+      </span>
       <span className="num">
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           value={text}
-          step={step ?? (unit === 'cm' ? 0.5 : 1)}
+          aria-invalid={!!error}
+          data-step={step}
           onChange={(e) => setText(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === 'Enter') commit()
+            if (e.key === 'Escape') {
+              setText(fmtNum(shown))
+              setError('')
+            }
           }}
         />
         {unit && <em>{unit}</em>}
       </span>
+      {error && <small className="field-error">{error}</small>}
     </label>
   )
 }
