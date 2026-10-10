@@ -7,6 +7,7 @@ import { bedOuterSize } from '../model/loftbed'
 import type { Member, Project, Vec3 } from '../model/types'
 import { derive, groupOf, isFreePart, selectionFor, useStore } from '../state/store'
 import { groupParts } from '../model/groups'
+import { setSectionCaps } from './sectionCaps'
 import { applyCam, camDir, camDistance, cloneCam, easeInOut, fromT, goalFor, isOrtho, lerpCam, ORTHO_FOV, T, type CamState } from './camera'
 import type { PickData } from './Scene'
 import { tk } from '../i18n'
@@ -30,6 +31,7 @@ export const mainCam: { state: CamState | null } = { state: null }
 
 export function Controller() {
   const { camera, gl, scene, size } = useThree()
+  const capFrame = useRef(0)
   const cam = useRef<CamState | null>(null)
   const anim = useRef<{ from: CamState; to: CamState; t0: number; dur: number } | null>(null)
   const drag = useRef<DragState | null>(null)
@@ -114,14 +116,23 @@ export function Controller() {
       clipPlane.constant = st.planCut / 1000
       gl.clippingPlanes = [clipPlane]
     } else if (st.sectionBox && !isOrtho(cam.current)) {
+      // Schnittflächen füllen; regelmäßig nachziehen, damit auch neu erzeugte Materialien sie bekommen
+      if (capFrame.current++ % 20 === 0) setSectionCaps(scene, true)
       const b = st.sectionBox
-      boxPlanes[0].set(new THREE.Vector3(1, 0, 0), -b.x0 / 1000)
-      boxPlanes[1].set(new THREE.Vector3(-1, 0, 0), b.x1 / 1000)
-      boxPlanes[2].set(new THREE.Vector3(0, 0, -1), -b.y0 / 1000)
-      boxPlanes[3].set(new THREE.Vector3(0, 0, 1), b.y1 / 1000)
-      boxPlanes[4].set(new THREE.Vector3(0, -1, 0), b.z1 / 1000)
+      // 3 mm nach außen: liegt eine Ebene genau auf einer Wandfläche (Anfangszustand = Raummaße),
+      // entscheidet sonst die Rechengenauigkeit je Pixel, und die Wand wirkt gegrisselt
+      const e = 3
+      boxPlanes[0].set(new THREE.Vector3(1, 0, 0), -(b.x0 - e) / 1000)
+      boxPlanes[1].set(new THREE.Vector3(-1, 0, 0), (b.x1 + e) / 1000)
+      boxPlanes[2].set(new THREE.Vector3(0, 0, -1), -(b.y0 - e) / 1000)
+      boxPlanes[3].set(new THREE.Vector3(0, 0, 1), (b.y1 + e) / 1000)
+      boxPlanes[4].set(new THREE.Vector3(0, -1, 0), (b.z1 + e) / 1000)
       gl.clippingPlanes = boxPlanes
     } else gl.clippingPlanes = []
+    if (!(st.sectionBox && !isOrtho(cam.current)) && capFrame.current) {
+      capFrame.current = 0
+      setSectionCaps(scene, false)
+    }
   })
 
   useEffect(() => {
