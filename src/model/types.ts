@@ -1,5 +1,5 @@
 // Alle Längen in ganzzahligen Millimetern. Koordinaten: Ursprung in der Raumecke zwischen
-// Wand A und Wand D, x entlang Wand A, y in den Raum hinein, z nach oben.
+// Wand A und Wand B, x entlang Wand A, y in den Raum hinein, z nach oben.
 
 export type Mm = number
 

@@ -126,42 +126,49 @@ export function computeBom(p: Project, r: Resolved): Bom {
     if (!item || item.kind !== 'platte') continue
     sheetPanels.set(item.id, [...(sheetPanels.get(item.id) ?? []), pa])
   }
+  // je Material und Format eine Zeile: Platten verschiedener Größe brauchen ggf. verschiedene Formate
+  const byFormat = new Map<string, { item: SheetItem; fmt: SheetItem['formats'][number]; count: number; notes: Set<string> }>()
   for (const [id, list] of sheetPanels) {
     const item = catalogItem(id) as SheetItem
-    let count = 0
-    let fmt = item.formats[0]
-    let note = ''
     for (const pa of list) {
       const { a, b } = panelSize(pa)
+      let fmt = item.formats[0]
+      let n = 0
+      let note = ''
       if (item.group === 'diele') {
         // Dielen laufen entlang der längeren Seite; Reihen = Breite / Deckbreite
         const run = Math.max(a, b)
         const rows = Math.ceil(Math.min(a, b) / item.formats[0].w)
         const lens = item.formats.map((f) => f.l)
         const packed = packBars(Array.from({ length: rows }, () => ({ length: run, label: pa.name ?? '' })), lens)
-        count += packed.bars.length + packed.oversize.length * Math.ceil(run / Math.max(...lens))
+        n = packed.bars.length + packed.oversize.length * Math.ceil(run / Math.max(...lens))
         fmt = item.formats.find((f) => f.l === Math.max(...packed.bars.map((x) => x.stock), lens[0])) ?? item.formats[0]
         note = t('{rows} Reihen à {len} cm', { rows, len: (run / 10).toFixed(0) })
       } else if (item.group === 'rollrost' || item.group === 'lattenrost') {
         fmt = item.formats.find((f) => f.w >= Math.min(a, b) - 30) ?? item.formats[item.formats.length - 1]
-        count += 1
+        n = 1
         note = t('Fertigteil passend zur Matratze')
       } else if (item.group === 'netz') {
-        count += Math.ceil((a * b) / 1e6)
+        n = Math.ceil((a * b) / 1e6)
         fmt = { l: 1000, w: 1000, price: item.formats[0].price / ((item.formats[0].l * item.formats[0].w) / 1e6) }
         note = t('Meterware nach Maß (m²)')
       } else {
-        const best = item.formats
-          .map((f) => ({ f, n: sheetsNeeded(a, b, f.l, f.w) }))
-          .sort((x, y) => x.n * x.f.price - y.n * y.f.price)[0]
+        const best = item.formats.map((f) => ({ f, n: sheetsNeeded(a, b, f.l, f.w) })).sort((x, y) => x.n * x.f.price - y.n * y.f.price)[0]
         fmt = best.f
-        count += best.n
+        n = best.n
         note = best.n > 1 ? t('Stoß über einem Querträger') : ''
         cuts += 2
       }
+      const key = `${id}@${fmt.l}x${fmt.w}`
+      const line = byFormat.get(key) ?? { item, fmt, count: 0, notes: new Set<string>() }
+      line.count += n
+      if (note) line.notes.add(note)
+      byFormat.set(key, line)
     }
-    const unit = priceOf(p, `${id}@${fmt.l}x${fmt.w}`, fmt.price)
-    sheets.push({ item, count, format: fmt, note, price: count * unit })
+  }
+  for (const [key, l] of byFormat) {
+    const unit = priceOf(p, key, l.fmt.price)
+    sheets.push({ item: l.item, count: l.count, format: l.fmt, note: [...l.notes].join(', '), price: l.count * unit })
   }
 
   for (const j of r.joints) {
@@ -191,7 +198,7 @@ export function computeBom(p: Project, r: Resolved): Bom {
   const total = timber.reduce((s, x) => s + x.price, 0) + sheets.reduce((s, x) => s + x.price, 0) + hardware.reduce((s, x) => s + x.price, 0)
   const estimated =
     timber.filter((x) => x.item.priceEstimated && !p.settings.priceOverrides[x.item.id]).reduce((s, x) => s + x.price, 0) +
-    sheets.filter((x) => x.item.priceEstimated).reduce((s, x) => s + x.price, 0) +
+    sheets.filter((x) => x.item.priceEstimated && !p.settings.priceOverrides[`${x.item.id}@${x.format.l}x${x.format.w}`]).reduce((s, x) => s + x.price, 0) +
     hardware.filter((x) => x.item.priceEstimated && !p.settings.priceOverrides[x.item.id]).reduce((s, x) => s + x.price, 0)
   return { timber, sheets, hardware, cuts, total, estimatedShare: total ? estimated / total : 0, priceStand: PRICE_STAND }
 }
