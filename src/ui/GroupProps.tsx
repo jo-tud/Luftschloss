@@ -1,8 +1,11 @@
 import { t, tr } from '../i18n'
 import { createGroup, detectDeck, groupParts, ungroup } from '../model/groups'
 import type { BedGroup } from '../model/types'
+import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
 import { Num, Section } from './fields'
+import { deleteSelection } from './actions'
+import { FindingsHint, ObjectHeader } from './ObjectHeader'
 
 /** Mehrere freie Teile ausgewählt (Shift-Klick) */
 export function MultiProps() {
@@ -38,28 +41,42 @@ export function GroupProps({ id, nested }: { id: string; nested?: boolean }) {
   if (!g) return null
   const parts = groupParts(p, id)
   return (
-    <Section title={`🛏 ${tr(g.name)}`} right={<small>{t('eigene Konstruktion')}</small>} open={!nested}>
+    <>
+      {!nested && (
+        <>
+          <ObjectHeader
+            icon="🛏"
+            title={tr(g.name)}
+            sub={t('eigene Konstruktion · {n} Teile', { n: parts.length })}
+            actions={[
+              { icon: '⌖', label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(parts[0]) },
+              {
+                icon: '▦',
+                label: t('Zusammenfassung lösen'),
+                more: true,
+                onClick: () => {
+                  let ids: string[] = []
+                  update((dd) => void (ids = ungroup(dd, id)))
+                  useStore.getState().select(null)
+                  if (ids.length > 1) useStore.setState({ multi: ids, selection: { kind: 'member', id: ids[0] } })
+                },
+              },
+              { icon: '🗑', label: t('Bett löschen'), danger: true, more: true, onClick: () => deleteSelection({ kind: 'group', id }) },
+            ]}
+          />
+          <FindingsHint ids={[id, ...parts]} prefix={`${id}:`} />
+        </>
+      )}
+    <Section title={nested ? `🛏 ${tr(g.name)}` : t('Name')} id={nested ? 'teil-eigenbett' : 'eigenbett'} right={nested ? <small>{t('eigene Konstruktion')}</small> : undefined}>
       <label className="field">
         <span>{t('Name')}</span>
         <input value={tr(g.name)} onChange={(e) => update((dd) => void (dd.groups.find((x) => x.id === id)!.name = e.target.value), `name-${id}`)} />
       </label>
-      <p className="kv">{t('{n} Teile', { n: parts.length })}</p>
-      <div className="stack">
-        <button onClick={() => useStore.getState().focus(parts[0])}>{t('Heranholen')}</button>
-        <button
-          onClick={() => {
-            let ids: string[] = []
-            update((dd) => void (ids = ungroup(dd, id)))
-            useStore.getState().select(null)
-            if (ids.length > 1) useStore.setState({ multi: ids, selection: { kind: 'member', id: ids[0] } })
-          }}
-          title={t('Die Teile werden wieder einzelne freie Teile')}
-        >
-          {t('Zusammenfassung lösen')}
-        </button>
-      </div>
+    </Section>
+    <Section title={t('Liegefläche')} id={nested ? 'teil-eigenbett-deck' : 'eigenbett-deck'} summary={g.deck ? `${fmtCm(g.deck.length, 0)} × ${fmtCm(g.deck.width, 0)}` : t('fehlt')}>
       <DeckProps g={g} />
     </Section>
+    </>
   )
 }
 
@@ -79,7 +96,6 @@ function DeckProps({ g }: { g: BedGroup }) {
     }, `deck-${g.id}-${Object.keys(patch)[0]}`)
   return (
     <>
-      <h4>{t('Liegefläche')}</h4>
       {!D && (
         <>
           <p className="hint">{t('Noch keine Liegefläche: ohne sie fehlen die Lasten für die Statik und die Prüfungen für Kopfraum und Absturzsicherung.')}</p>

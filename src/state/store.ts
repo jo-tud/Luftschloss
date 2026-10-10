@@ -46,6 +46,8 @@ interface State {
   selection: Selection | null
   /** Mehrfachauswahl freier Teile (Shift-Klick), mindestens zwei, sonst leer */
   multi: string[]
+  /** Reiter der rechten Seitenleiste */
+  rightTab: 'props' | 'checks'
   hover: string | null
   view: ViewMode
   /** Erhöht sich bei jedem Wunsch, die Kamera neu auszurichten (auch bei gleicher Ansicht) */
@@ -164,6 +166,7 @@ export const useStore = create<State>((set, get) => ({
   coalesce: null,
   selection: null,
   multi: [],
+  rightTab: 'props',
   hover: null,
   view: { kind: '3d' },
   viewNonce: 0,
@@ -249,7 +252,8 @@ export const useStore = create<State>((set, get) => ({
     set({ project: next, past: [...past, project], future: future.slice(1), coalesce: null })
     persist(next)
   },
-  select: (selection) => set({ selection, multi: [] }),
+  // eine neue Auswahl zeigt ihre Eigenschaften (die Prüfliste schaltet danach selbst zurück)
+  select: (selection) => set({ selection, multi: [], ...(selection ? { rightTab: 'props' as const } : {}) }),
   toggleMulti: (id) => {
     const { selection, multi, project } = get()
     const free = (x: string) => isFreePart(project, x)

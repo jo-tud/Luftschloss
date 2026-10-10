@@ -95,11 +95,46 @@ export function Check({ label, value, onChange, title }: { label: string; value:
   )
 }
 
-export function Section({ title, children, open = true, right }: { title: string; children: ReactNode; open?: boolean; right?: ReactNode }) {
+const SECTION_KEY = 'luftschloss.sections'
+let sectionState: Record<string, boolean> | null = null
+function sectionsOpen(): Record<string, boolean> {
+  if (!sectionState) {
+    try {
+      sectionState = JSON.parse(localStorage.getItem(SECTION_KEY) ?? '{}') as Record<string, boolean>
+    } catch {
+      sectionState = {}
+    }
+  }
+  return sectionState
+}
+
+/**
+ * Aufklappbarer Abschnitt. Mit id merkt er sich, ob er offen ist (je Abschnittsart, nicht je Objekt);
+ * zugeklappt zeigt summary die wichtigsten Werte in der Kopfzeile.
+ */
+export function Section({ title, children, open = true, right, id, summary }: { title: string; children: ReactNode; open?: boolean; right?: ReactNode; id?: string; summary?: ReactNode }) {
+  const [isOpen, setOpen] = useState(() => (id && id in sectionsOpen() ? sectionsOpen()[id] : open))
   return (
-    <details className="section" open={open}>
+    <details
+      className="section"
+      open={isOpen}
+      onToggle={(e) => {
+        const now = (e.currentTarget as HTMLDetailsElement).open
+        if (now === isOpen) return
+        setOpen(now)
+        if (id) {
+          sectionsOpen()[id] = now
+          try {
+            localStorage.setItem(SECTION_KEY, JSON.stringify(sectionsOpen()))
+          } catch {
+            /* ohne Speicher: nur für diese Sitzung */
+          }
+        }
+      }}
+    >
       <summary>
-        <span>{title}</span>
+        <span className="section-title">{title}</span>
+        {summary !== undefined && !isOpen && <span className="section-sum">{summary}</span>}
         {right}
       </summary>
       <div className="section-body">{children}</div>

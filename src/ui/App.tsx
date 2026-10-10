@@ -5,7 +5,7 @@ import { fmtCm } from '../model/geometry'
 import { groupOf, useStore } from '../state/store'
 import { JointDetailDialog } from '../views/JointDetail'
 import { Viewport } from '../views/Viewport'
-import { Checks } from './Checks'
+import { Checks, CountBadges, useCheckCounts } from './Checks'
 import { Num } from './fields'
 import { MaterialDialog } from './Material'
 import { Properties } from './Properties'
@@ -23,11 +23,11 @@ export function App() {
   useDialogFocus()
   const leftOpen = useStore((s) => s.leftOpen)
   const rightOpen = useStore((s) => s.rightOpen)
+  const rightTab = useStore((s) => s.rightTab)
   const [panels, setPanels] = usePanelSizes()
   const style = {
     '--left-w': `${panels.left}px`,
     '--right-w': `${panels.right}px`,
-    ...(panels.checks ? { '--checks-h': `${panels.checks}px` } : {}),
   } as React.CSSProperties
   return (
     <div className={`app${leftOpen ? ' left-open' : ''}${rightOpen ? ' right-open' : ''}`} style={style}>
@@ -39,22 +39,14 @@ export function App() {
         <StatusBar />
       </main>
       <aside className="right">
-        <div className="right-top">
-          <Properties />
-        </div>
-        <Checks />
-        <Splitter
-          dir="h"
-          style={{ bottom: panels.checks ? panels.checks - 4 : 'calc(38% - 4px)' }}
-          title={t('Ziehen: Prüfliste höher oder niedriger · Doppelklick: zurücksetzen')}
-          onDrag={(_dx, dy, start) => {
-            const h = (start.checks ?? 260) - dy
-            const max = window.innerHeight - 46 - 160
-            setPanels({ checks: Math.round(Math.max(120, Math.min(max, h))) })
-          }}
-          onReset={() => setPanels({ checks: null })}
-          panels={panels}
-        />
+        <RightTabs />
+        {rightTab === 'props' ? (
+          <div className="right-top">
+            <Properties />
+          </div>
+        ) : (
+          <Checks />
+        )}
       </aside>
       <Splitter
         dir="v"
@@ -86,13 +78,27 @@ export function App() {
   )
 }
 
+/** Reiter der rechten Seitenleiste: Eigenschaften der Auswahl bzw. Prüfliste mit Zählern */
+function RightTabs() {
+  const tab = useStore((s) => s.rightTab)
+  const c = useCheckCounts()
+  return (
+    <div className="tabs right-tabs" role="tablist">
+      <button role="tab" aria-selected={tab === 'props'} className={tab === 'props' ? 'on' : ''} onClick={() => useStore.setState({ rightTab: 'props' })}>
+        {t('Eigenschaften')}
+      </button>
+      <button role="tab" aria-selected={tab === 'checks'} className={tab === 'checks' ? 'on' : ''} onClick={() => useStore.setState({ rightTab: 'checks' })}>
+        {t('Prüfung')} <CountBadges c={c} />
+      </button>
+    </div>
+  )
+}
+
 interface PanelSizes {
   left: number
   right: number
-  /** Höhe der Prüfliste in px, null = automatisch */
-  checks: number | null
 }
-const PANEL_DEFAULT: PanelSizes = { left: 290, right: 340, checks: null }
+const PANEL_DEFAULT: PanelSizes = { left: 290, right: 340 }
 const PANEL_KEY = 'luftschloss.panels'
 
 /** Seitenleiste zwischen 220 und 640 px, die Mitte behält mindestens 420 px */
@@ -151,9 +157,7 @@ function Splitter({
       onPointerDown={(e) => {
         e.preventDefault()
         ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-        // Prüfliste ohne feste Höhe: aktuelle Höhe als Startwert messen
-        const checks = panels.checks ?? (document.querySelector('.checks') as HTMLElement | null)?.offsetHeight ?? null
-        drag.current = { x: e.clientX, y: e.clientY, start: { ...panels, checks } }
+        drag.current = { x: e.clientX, y: e.clientY, start: { ...panels } }
         setActive(true)
       }}
       onPointerMove={(e) => {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { t, tr } from '../i18n'
+import { t, tk, tr } from '../i18n'
 import { MemberStatics } from './Statics'
 import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber, type TimberGroup } from '../model/catalog'
 import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
@@ -13,22 +13,58 @@ import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
 import { deleteLabel, deleteSelection } from './actions'
+import { FindingsHint, ObjectHeader, type HeaderAction } from './ObjectHeader'
 
 export function Properties() {
-  const sel = useStore((s) => s.selection)
+  return <PropertiesBody />
+}
+
+/** Entfernen der aktuellen Auswahl als Aktion für die Kopfzeile */
+function deleteAction(): HeaderAction[] {
+  const sel = useStore.getState().selection
   const label = sel ? deleteLabel(sel) : null
-  return (
-    <>
-      {sel && label && (
-        <div className="props-actions">
-          <button className="danger" onClick={() => deleteSelection(sel)} title={t('{label} (Entf) – rückgängig mit ↶', { label: tr(label) })}>
-            🗑 {tr(label)}
-          </button>
-        </div>
-      )}
-      <PropertiesBody />
-    </>
-  )
+  return sel && label ? [{ icon: '🗑', label: `${tr(label)} (Entf)`, danger: true, onClick: () => deleteSelection(sel) }] : []
+}
+
+const focusAction = (id: string): HeaderAction => ({ icon: '⌖', label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(id) })
+
+const DECK_SHORT: Record<DeckType, string> = {
+  latten: tk('Latten'),
+  rollrost: tk('Rollrost'),
+  lattenrost: tk('Lattenrost'),
+  platte: tk('Platte'),
+  dielen: tk('Dielen'),
+  netz: tk('Netz'),
+}
+const GUARD_SHORT: Record<GuardType, string> = {
+  bretter: tk('Bretter'),
+  staebe: tk('Rundstäbe'),
+  platte: tk('Vollfläche'),
+  netz: tk('Netz'),
+  seil: tk('Seile'),
+  keins: tk('keins'),
+}
+const LADDER_SHORT: Record<LadderType, string> = {
+  stufen: tk('Stufenleiter'),
+  senkrecht: tk('Sprossenleiter senkrecht'),
+  schraeg: tk('Sprossenleiter schräg'),
+  treppe: tk('Treppe'),
+  keine: tk('keine'), // i18n-ok
+}
+
+const WALL_OBJECT_ICON: Record<string, string> = { fenster: '🪟', tuer: '🚪', heizkoerper: '♨', steckdose: '🔌' }
+
+type BedSection = 'masse' | 'lage' | 'hoelzer' | 'liegeflaeche' | 'gelaender' | 'leiter'
+
+/** Welcher Bett-Abschnitt gehört zu einem angeklickten Teil? */
+function bedSectionFor(m?: Member, pa?: { kind: string; vertical?: unknown; partKey?: string }): BedSection {
+  const key = m?.partKey ?? pa?.partKey ?? ''
+  if (key.startsWith('leiter')) return 'leiter'
+  if (pa) return pa.kind === 'matratze' ? 'masse' : pa.vertical ? 'gelaender' : 'liegeflaeche'
+  if (m?.role === 'holm' || m?.role === 'stab') return 'gelaender'
+  if (m?.role === 'leiste') return 'liegeflaeche'
+  if (m?.role === 'sprosse' || m?.role === 'stufe') return 'leiter'
+  return 'hoelzer'
 }
 
 function PropertiesBody() {
@@ -43,9 +79,17 @@ function PropertiesBody() {
         <p>
           <b>{t('Nichts ausgewählt.')}</b>
         </p>
-        <p>{t('Klicke ein Bauteil, Fenster oder Möbel an. Doppelklick fliegt zu dieser Stelle heran, jeder weitere geht näher.')}</p>
-        <p>{t('Links unter „Bett“ setzt du eine Vorlage ein, unter „Raum“ trägst du Maße, Stuck und Sockelleiste ein.')}</p>
-        <p>{t('Ganzes Bett auswählen: links unter „Bett“ auf das Bett klicken – oder ein Teil anklicken und Esc drücken.')}</p>
+        <ul className="tips">
+          <li>
+            <span aria-hidden>👆</span> {t('Bauteil, Fenster oder Möbel anklicken – Doppelklick holt es heran.')}
+          </li>
+          <li>
+            <span aria-hidden>🛏</span> {t('Ganzes Bett: links unter „Bett“ anklicken oder ein Teil wählen und Esc drücken.')}
+          </li>
+          <li>
+            <span aria-hidden>⇧</span> {t('Shift-Klick oder Shift + Ziehen wählt mehrere freie Teile.')}
+          </li>
+        </ul>
       </div>
     )
   if (sel.kind === 'assembly') {
@@ -69,22 +113,22 @@ function PropertiesBody() {
       <div className="props">
         {parent && (
           <nav className="crumbs" aria-label={t('Auswahl')}>
+            <span aria-hidden>↑</span>
             <button className="link" onClick={() => useStore.getState().select(parent.sel)} title={t('Ganzes Bett auswählen (Esc)')}>
-              🛏 {tr(parent.name)}
+              {t('Teil von {name}', { name: `🛏 ${tr(parent.name)}` })}
             </button>
-            <span>›</span>
-            <b>{tr(m?.name ?? pa?.name ?? '') || t('Bauteil')}</b>
           </nav>
         )}
+        {pa && !m && <ObjectHeader icon="▭" title={pa.name ? tr(pa.name) : t('Fläche')} sub={parent ? tr(parent.name) : t('frei')} actions={[focusAction(pa.id), ...deleteAction()]} />}
         {m && <MemberProps m={m} free={!m.assemblyId} />}
         {pa && !m && (
-          <Section title={pa.name ? tr(pa.name) : t('Fläche')}>
+          <Section title={t('Fläche')} id="flaeche">
             <p className="kv">
               {t('Material')}: <b>{tr((pa.catalogId && catalogItem(pa.catalogId)?.name) || '–')}</b>
             </p>
           </Section>
         )}
-        {a && <BedProps a={a} nested />}
+        {a && <BedProps a={a} only={bedSectionFor(m, pa)} />}
         {g && <GroupProps id={g.id} nested />}
         {!a && !g && m && <p className="hint">{t('Shift-Klick oder Shift + Ziehen (Rahmen) wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.')}</p>}
       </div>
@@ -95,7 +139,8 @@ function PropertiesBody() {
   if (sel.kind === 'rosette') {
     return (
       <div className="props">
-        <Section title={t('Deckenrosette & Lampe')}>
+        <ObjectHeader icon="💡" title={t('Deckenrosette & Lampe')} actions={[focusAction(sel.id)]} />
+        <Section title={t('Hinweis')} id="rosette">
           <p>{t('Maße unter „Raum → Deckenrosette & Lampe“. In der Draufsicht oder 3D lässt sich die Rosette verschieben.')}</p>
         </Section>
       </div>
@@ -167,7 +212,8 @@ const LEFT_RIGHT = (): ['links' | 'rechts', string][] => [
   ['rechts', sideLabel('rechts')], // i18n-ok
 ]
 
-function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
+/** Einstellungen eines Betts; only zeigt nur einen Abschnitt (beim angeklickten Einzelteil) */
+function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
   const update = useStore((s) => s.update)
   const select = useStore((s) => s.select)
   const d = useDerived()
@@ -185,10 +231,58 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
       Object.assign(x.params, patch)
     }, key)
   const shift = d.resolved.shifts.find((s) => s.assemblyId === a.id)
+  const show = (k: BedSection) => !only || only === k
+  // im Einzelteil eigener Merkzustand und standardmäßig offen
+  const sid = (k: BedSection) => (only ? `teil-bett-${k}` : `bett-${k}`)
+  const sopen = (k: BedSection) => !!only || k === 'masse'
+  const timberShort = (id: string) => {
+    const x = TIMBER.find((y) => y.id === id)
+    return x ? (x.round ? `Ø ${x.b}` : `${x.b}×${x.h}`) : id
+  }
+  const guardSideCount = SIDES.filter((x) => P.guardSides[x]).length
   return (
-    <div className={nested ? '' : 'props'}>
-      <Section title={`🛏 ${tr(a.name)}`} right={<small>{tr(BED_TYPE_LABEL[P.type])}</small>}>
-        {info && clearance && (
+    <div className={only ? '' : 'props'}>
+      {!only && (
+        <>
+          <ObjectHeader
+            icon="🛏"
+            title={tr(a.name)}
+            sub={tr(BED_TYPE_LABEL[P.type])}
+            actions={[
+              focusAction(a.id),
+              {
+                icon: '⧉',
+                label: t('Duplizieren'),
+                onClick: () => {
+                  const id = uid('bett')
+                  update((dd) => void dd.assemblies.push({ ...JSON.parse(JSON.stringify(a)), id, name: t('{name} (Kopie)', { name: tr(a.name) }), params: { ...a.params, x: a.params.x - 300, y: a.params.y + 300 } }))
+                  select({ kind: 'assembly', id })
+                },
+              },
+              ...(a.detached.length > 0
+                ? [{ icon: '↺', label: t('Herausgelöste Teile wieder erzeugen ({n})', { n: a.detached.length }), more: true, onClick: () => update((dd) => void (dd.assemblies.find((y) => y.id === a.id)!.detached = [])) }]
+                : []),
+              {
+                icon: '▦',
+                label: t('In Einzelteile auflösen'),
+                more: true,
+                onClick: () => {
+                  // Baugruppe in freie Bauteile umwandeln
+                  const r = d.resolved
+                  const members = r.members.filter((m) => m.assemblyId === a.id).map((m) => ({ ...m, id: uid('balken'), assemblyId: undefined, partKey: undefined, notches: m.notches }))
+                  const panels = r.panels.filter((x) => x.assemblyId === a.id).map((x) => ({ ...x, id: uid('flaeche'), assemblyId: undefined, partKey: undefined }))
+                  update((dd) => {
+                    dd.assemblies = dd.assemblies.filter((y) => y.id !== a.id)
+                    dd.members.push(...members)
+                    dd.panels.push(...panels)
+                  })
+                  select(null)
+                },
+              },
+              ...deleteAction().map((x) => ({ ...x, more: true })),
+            ]}
+          />
+          {info && clearance && (
           <div className="summary">
             <div>
               <b>{fmtM(info.underside)}</b>
@@ -200,17 +294,22 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
             </div>
             <div>
               <b>
-                {fmtCm(info.outerLength, 0)} × {fmtCm(info.outerWidth, 0)}
+                {t('{l} × {w} cm', { l: Math.round(info.outerLength / 10), w: Math.round(info.outerWidth / 10) })}
               </b>
               <span>{t('Außenmaß')}</span>
             </div>
           </div>
         )}
-        {info && (info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && (
-          <p className="hint">
-            {t('Mit Leiter braucht das Bett {l} × {w} Stellfläche.', { l: fmtCm(info.standLength, 0), w: fmtCm(info.standWidth, 0) })}
-          </p>
-        )}
+          {info && (info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && (
+            <p className="hint pad">
+              {t('Mit Leiter braucht das Bett {l} × {w} Stellfläche.', { l: fmtCm(info.standLength, 0), w: fmtCm(info.standWidth, 0) })}
+            </p>
+          )}
+          <FindingsHint ids={[a.id]} prefix={`${a.id}:`} />
+        </>
+      )}
+      {show('masse') && (
+      <Section title={t('Maße & Matratze')} id={sid('masse')} open={sopen('masse')} summary={`${fmtCm(P.deckHeight, 0)} · ${fmtCm(P.mattressLength, 0)} × ${fmtCm(P.mattressWidth, 0)}${(P.mattressCount ?? 1) > 1 ? ` × ${P.mattressCount}` : ''}`}>
         <Sel<BedType> label={t('Bauart')} value={P.type} options={(Object.keys(BED_TYPE_LABEL) as BedType[]).map((b) => [b, tr(BED_TYPE_LABEL[b])])} onChange={(v) => setP({ type: v })} />
         {P.type === 'eck' && <Sel label={t('Wandseitiges Ende')} value={P.wallEnd} options={LEFT_RIGHT()} onChange={(v) => setP({ wallEnd: v })} />}
         <Num label={t('Liegehöhe (Oberkante Rost)')} value={P.deckHeight} onChange={(v) => setP({ deckHeight: v })} min={300} max={roomHeight - P.mattressThickness - 200} />
@@ -250,7 +349,9 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           </>
         )}
       </Section>
-      <Section title={t('Lage im Raum')}>
+      )}
+      {show('lage') && (
+      <Section title={t('Lage im Raum')} id={sid('lage')} open={sopen('lage')} summary={`${P.rotation}°${P.mirror ? ` · ${t('gespiegelt')}` : ''}`}>
         {info && <BedPlacement fp={info.footprint} shift={(dx, dy) => setP({ x: Math.round(P.x + dx), y: Math.round(P.y + dy) }, `lage:${a.id}`)} />}
         <Sel label={t('Drehung')} value={String(P.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setP({ rotation: Number(v) as 0 })} />
         <Check label={t('Gespiegelt (links ↔ rechts)')} value={P.mirror} onChange={(v) => setP({ mirror: v })} />
@@ -267,7 +368,9 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
         {shift && <p className="hint">{t('Automatisch {d} von der Wand abgerückt.', { d: fmtCm(Math.hypot(shift.dx, shift.dy)) })}</p>}
         {P.type === 'deckenhoch' && <Num label={t('Luft zur Decke (Stellfuß)')} value={P.ceilingGap} unit="mm" onChange={(v) => setP({ ceilingGap: v })} />}
       </Section>
-      <Section title={t('Hölzer')}>
+      )}
+      {show('hoelzer') && (
+      <Section title={t('Hölzer')} id={sid('hoelzer')} open={sopen('hoelzer')} summary={`${timberShort(P.postCatalogId)} · ${timberShort(P.railCatalogId)}${P.braces ? ` · ${t('Kopfbänder')}` : ''}`}>
         <Sel label={t('Pfosten')} value={P.postCatalogId} options={catalogOptions((t) => !t.round && t.b === t.h && t.b >= 54)} onChange={(v) => setP({ postCatalogId: v })} />
         <Sel label={t('Zargen / Riegel')} value={P.railCatalogId} options={catalogOptions((t) => !t.round && t.h >= 94)} onChange={(v) => setP({ railCatalogId: v })} />
         {hasJoists ? (
@@ -319,7 +422,9 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           />
         )}
       </Section>
-      <Section title={t('Liegefläche')}>
+      )}
+      {show('liegeflaeche') && (
+      <Section title={t('Liegefläche')} id={sid('liegeflaeche')} open={sopen('liegeflaeche')} summary={tr(DECK_SHORT[P.deck])}>
         <Sel<DeckType>
           label={t('Art')}
           value={P.deck}
@@ -348,7 +453,14 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           </>
         )}
       </Section>
-      <Section title={t('Absturzsicherung')}>
+      )}
+      {show('gelaender') && (
+      <Section
+        title={t('Absturzsicherung')}
+        id={sid('gelaender')}
+        open={sopen('gelaender')}
+        summary={P.guard === 'keins' ? t('keins') : `${tr(GUARD_SHORT[P.guard])} · ${t('{n} Seiten', { n: guardSideCount })} · ${fmtCm(P.guardHeight, 0)}`}
+      >
         <Sel<GuardType>
           label={t('Geländer')}
           value={P.guard}
@@ -377,7 +489,9 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           </>
         )}
       </Section>
-      <Section title={t('Leiter / Treppe')}>
+      )}
+      {show('leiter') && (
+      <Section title={t('Leiter / Treppe')} id={sid('leiter')} open={sopen('leiter')} summary={P.ladder === 'keine' ? t('keine') : `${tr(LADDER_SHORT[P.ladder])} · ${sideLabel(P.ladderSide)}`}>
         <Sel<LadderType>
           label={t('Art')}
           value={P.ladder}
@@ -402,40 +516,6 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           </>
         )}
       </Section>
-      {!nested && (
-        <Section title={t('Aktionen')} open={false}>
-          <div className="stack">
-            <button
-              onClick={() => {
-                const id = uid('bett')
-                update((dd) => void dd.assemblies.push({ ...JSON.parse(JSON.stringify(a)), id, name: t('{name} (Kopie)', { name: tr(a.name) }), params: { ...a.params, x: a.params.x - 300, y: a.params.y + 300 } }))
-                select({ kind: 'assembly', id })
-              }}
-            >
-              {t('Duplizieren')}
-            </button>
-            {a.detached.length > 0 && <button onClick={() => update((dd) => void (dd.assemblies.find((y) => y.id === a.id)!.detached = []))}>{t('Herausgelöste Teile wieder erzeugen ({n})', { n: a.detached.length })}</button>}
-            <button
-              onClick={() => {
-                // Baugruppe in freie Bauteile umwandeln
-                const r = d.resolved
-                const members = r.members.filter((m) => m.assemblyId === a.id).map((m) => ({ ...m, id: uid('balken'), assemblyId: undefined, partKey: undefined, notches: m.notches }))
-                const panels = r.panels.filter((x) => x.assemblyId === a.id).map((x) => ({ ...x, id: uid('flaeche'), assemblyId: undefined, partKey: undefined }))
-                update((dd) => {
-                  dd.assemblies = dd.assemblies.filter((y) => y.id !== a.id)
-                  dd.members.push(...members)
-                  dd.panels.push(...panels)
-                })
-                select(null)
-              }}
-            >
-              {t('In Einzelteile auflösen')}
-            </button>
-            <button className="danger" onClick={() => (update((dd) => void (dd.assemblies = dd.assemblies.filter((y) => y.id !== a.id))), select(null))}>
-              {t('Bett löschen')}
-            </button>
-          </div>
-        </Section>
       )}
     </div>
   )
@@ -454,9 +534,33 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
       const x = dd.members.find((y) => y.id === m.id)
       if (x) fn(x)
     })
+  const util = useStore((s) => s.statics?.members.get(m.id)?.util)
+  const detach = () => {
+    const [asmId, key] = m.id.split(':')
+    const copy = { ...m, id: uid('balken'), assemblyId: undefined, partKey: undefined, notches: undefined, name: t('{name} (gelöst)', { name: m.name ? tr(m.name) : t('Bauteil') }) }
+    update((dd) => {
+      const a = dd.assemblies.find((x) => x.id === asmId)
+      if (a && !a.detached.includes(key)) a.detached.push(key)
+      dd.members.push(copy)
+    })
+    select({ kind: 'member', id: copy.id })
+  }
   return (
     <>
-      <Section title={`▬ ${m.name ? tr(m.name) : t('Bauteil')}`} right={<small>{free ? t('frei') : t('aus Vorlage')}</small>}>
+      <ObjectHeader
+        icon="▬"
+        title={m.name ? tr(m.name) : t('Bauteil')}
+        sub={`${item?.name ? tr(item.name) : m.catalogId} · ${fmtCm(L)}`}
+        actions={[
+          focusAction(m.id),
+          ...(free
+            ? [{ icon: '⟲', label: t('Hochkant/flach drehen (R)'), onClick: () => setM((x) => void ([x.b, x.h] = [x.h, x.b])) }]
+            : [{ icon: '✂', label: t('Aus Vorlage lösen und frei bearbeiten'), more: true, onClick: detach }]),
+          ...deleteAction().map((x) => ({ ...x, more: !free })),
+        ]}
+      />
+      <FindingsHint ids={[m.id]} />
+      <Section title={t('Bauteil')} id="teil" summary={free ? t('frei') : t('aus Vorlage')}>
         <p className="kv">
           {item?.name ? tr(item.name) : m.catalogId}
           <br />
@@ -505,37 +609,15 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
               }
             />
             <ArrayTool m={m} />
-            <div className="stack">
-              <button onClick={() => setM((x) => void ([x.b, x.h] = [x.h, x.b]))} title={t('Querschnitt um 90° drehen (R)')}>
-                {t('Hochkant/flach drehen')}
-              </button>
-              <button className="danger" onClick={() => (update((dd) => void (dd.members = dd.members.filter((x) => x.id !== m.id))), select(null))}>
-                {t('Löschen')}
-              </button>
-            </div>
           </>
         ) : (
-          <button
-            onClick={() => {
-              const [asmId, key] = m.id.split(':')
-              const copy = { ...m, id: uid('balken'), assemblyId: undefined, partKey: undefined, notches: undefined, name: t('{name} (gelöst)', { name: m.name ? tr(m.name) : t('Bauteil') }) }
-              update((dd) => {
-                const a = dd.assemblies.find((x) => x.id === asmId)
-                if (a && !a.detached.includes(key)) a.detached.push(key)
-                dd.members.push(copy)
-              })
-              select({ kind: 'member', id: copy.id })
-            }}
-            title={t('Dieses Teil wird nicht mehr von der Vorlage erzeugt und lässt sich frei bearbeiten')}
-          >
-            {t('Aus Vorlage lösen und frei bearbeiten')}
-          </button>
+          <p className="hint">{t('Maße kommen aus den Bett-Einstellungen. Über ⋯ lässt sich das Teil aus der Vorlage lösen und frei bearbeiten.')}</p>
         )}
       </Section>
-      <Section title={t('Statik')}>
+      <Section title={t('Statik')} id="teil-statik" open={false} summary={util !== undefined ? `${Math.round(util * 100)} %` : '–'}>
         <MemberStatics m={m} />
       </Section>
-      <Section title={t('Verbindungen ({n})', { n: joints.length })}>
+      <Section title={t('Verbindungen')} id="teil-verbindungen" open={false} summary={String(joints.length)}>
         {joints.length === 0 && <p className="hint">{t('Keine Berührung mit anderen Teilen.')}</p>}
         {joints.map((j) => {
           const other = byId.get(j.a === m.id ? j.b : j.a)
@@ -625,7 +707,9 @@ function WallObjectProps({ id }: { id: string }) {
   const estimated = p.estimated.includes(`wallObjects.${id}`)
   return (
     <div className="props">
-      <Section title={tr(o.name)} right={estimated ? <em className="est-tag">{t('geschätzt')}</em> : undefined}>
+      <ObjectHeader icon={WALL_OBJECT_ICON[o.kind] ?? '▢'} title={tr(o.name)} sub={t('Wand {w}', { w: o.wall })} actions={[focusAction(o.id), ...deleteAction()]} />
+      <FindingsHint ids={[o.id]} prefix={`${o.id}:`} />
+      <Section title={t('Maße und Lage')} id="wandobjekt" right={estimated ? <em className="est-tag">{t('geschätzt')}</em> : undefined}>
         <label className="field">
           <span>{t('Name')}</span>
           <input value={o.name} onChange={(e) => setO((x) => void (x.name = e.target.value), `name-${id}`)} />
@@ -727,7 +811,9 @@ function FurnitureProps({ id }: { id: string }) {
   const person = f.kind.startsWith('person')
   return (
     <div className="props">
-      <Section title={tr(f.name)}>
+      <ObjectHeader icon={person ? '🧍' : '▣'} title={tr(f.name)} actions={[focusAction(f.id), ...deleteAction()]} />
+      <FindingsHint ids={[f.id]} />
+      <Section title={t('Maße und Lage')} id="moebel">
         <label className="field">
           <span>{t('Name')}</span>
           <input value={f.name} onChange={(e) => update((dd) => void (dd.furniture.find((y) => y.id === id)!.name = e.target.value), `name-${id}`)} />
