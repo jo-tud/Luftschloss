@@ -1,6 +1,8 @@
+import { analyze } from '../analysis/checks'
 import { defaultBedParams } from './defaults'
+import { resolveProject } from './resolve'
 import { bedOuterSize } from './loftbed'
-import type { BedType, LoftBedParams, Room } from './types'
+import type { BedType, LoftBedParams, Project, Room } from './types'
 
 /** Ecke des Raums, in die ein neues Bett gestellt wird (Wand A bzw. C, Ende an Wand D bzw. B) */
 export type Corner = 'AD' | 'AB' | 'CB' | 'CD'
@@ -35,4 +37,28 @@ export function placeBed(room: Room, type: BedType, patch: Partial<LoftBedParams
 /** Wände, an denen das Bett in dieser Ecke steht: Rückwand und Querwand */
 export function cornerWalls(corner: Corner): { back: 'A' | 'C'; end: 'B' | 'D' } {
   return { back: corner[0] as 'A' | 'C', end: corner[1] as 'B' | 'D' }
+}
+
+/**
+ * Günstigste Ecke für ein neues Bett: so wenig Fehler wie möglich, kein verbautes Fenster und keine
+ * verstellte Tür (wiegt fast so schwer), dann möglichst wenige übrige Warnungen – wie im Assistenten.
+ */
+export function bestCorner(p: Project, type: BedType, patch: Partial<LoftBedParams>): Corner {
+  let best: { c: Corner; score: number } | undefined
+  for (const c of CORNERS) {
+    const params = placeBed(p.room, type, patch, c)
+    const q: Project = { ...p, assemblies: [...p.assemblies, { id: 'probe-neu', kind: 'hochbett', name: '', params, detached: [] }] }
+    let score: number
+    try {
+      const f = analyze(q, resolveProject(q)).findings.filter((x) => x.targets.includes('probe-neu') || x.targets.some((t) => t.startsWith('probe-neu:')) || x.severity !== 'hinweis')
+      const errors = f.filter((x) => x.severity === 'fehler').length
+      const warnings = f.filter((x) => x.severity === 'warnung')
+      const opening = warnings.filter((x) => x.category === 'Fenster & Tür').length // i18n-ok
+      score = errors * 1000 + opening * 300 + (warnings.length - opening) * 40
+    } catch {
+      score = Infinity
+    }
+    if (!best || score < best.score) best = { c, score }
+  }
+  return best?.c ?? 'AD'
 }

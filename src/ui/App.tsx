@@ -32,9 +32,9 @@ export function App() {
   return (
     <div className={`app${leftOpen ? ' left-open' : ''}${rightOpen ? ' right-open' : ''}`} style={style}>
       <Toolbar />
-      <ExampleBanner />
       <Sidebar />
       <main className="center">
+        <ExampleBanner />
         <Viewport />
         <StatusBar />
       </main>

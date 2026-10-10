@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import type { WallId } from '../model/types'
 import { useDerived, useStore, type PersonPreset, type ViewMode } from '../state/store'
+import { Camera, Eye, House, Ico, Scissors } from '../ui/icons'
 import { applyCam, goalFor, PERSON_LABEL, T } from './camera'
 import { Controller, mainCam } from './Controller'
 import { SceneContent } from './Scene'
@@ -128,7 +129,7 @@ function ViewSwitcher() {
       </button>
       <details className="dropdown person-menu" ref={personRef}>
         <summary className={view.kind === 'person' ? 'on' : ''} title={t('Ich-Perspektive: den Raum aus Augenhöhe erleben (4)')}>
-          👁 {t('Ich')} ▾
+          <Ico i={Eye} /> {t('Ich')} ▾
         </summary>
         <div className="menu">
           {presets.map((p) => (
@@ -149,13 +150,15 @@ function ViewSwitcher() {
         {t('Abwicklung')}
       </button>
       <button className={view.kind === 'foto' ? 'on' : ''} onClick={() => setView({ kind: 'foto' })} title={t('Das geplante Bett in ein Foto des Zimmers einblenden (6)')}>
-        📷 {t('Foto')}
+        <Ico i={Camera} /> {t('Foto')}
       </button>
       <button onClick={() => setView({ kind: '3d' })} title={t('Ansicht zurücksetzen (0)')} aria-label={t('Ansicht zurücksetzen')}>
-        ⌂<span className="lbl"> {t('Zurück')}</span>
+        <Ico i={House} />
+        <span className="lbl">{t('Ganzer Raum')}</span>
       </button>
       <SectionToggle />
-      <span className="view-name">{viewLabel(view)}</span>
+      {/* nur nötig, wo die Ansicht nicht schon als gedrückter Knopf zu sehen ist */}
+      {view.kind === 'person' && <span className="view-name">{viewLabel(view)}</span>}
     </div>
   )
 }
@@ -168,7 +171,7 @@ function SectionToggle() {
   if (view.kind !== '3d' && view.kind !== 'person') return null
   return (
     <button className={box ? 'on' : ''} onClick={() => set({ sectionBox: box ? null : { x0: 0, x1: room.length, y0: 0, y1: room.width, z1: room.height } })} title={t('Schnittbox: Raum in 3D zuschneiden')}>
-      ✂ {t('Schnitt')}
+      <Ico i={Scissors} /> {t('Schnitt')}
     </button>
   )
 }

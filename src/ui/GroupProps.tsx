@@ -5,6 +5,7 @@ import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
 import { Num, Section } from './fields'
 import { deleteSelection } from './actions'
+import { Crosshair, Ico, Trash2, Ungroup } from './icons'
 import { FindingsHint, ObjectHeader } from './ObjectHeader'
 
 /** Mehrere freie Teile ausgewählt (Shift-Klick) */
@@ -49,9 +50,9 @@ export function GroupProps({ id, nested }: { id: string; nested?: boolean }) {
             title={tr(g.name)}
             sub={t('eigene Konstruktion · {n} Teile', { n: parts.length })}
             actions={[
-              { icon: '⌖', label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(parts[0]) },
+              { icon: <Ico i={Crosshair} />, label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(parts[0]) },
               {
-                icon: '▦',
+                icon: <Ico i={Ungroup} />,
                 label: t('Zusammenfassung lösen'),
                 more: true,
                 onClick: () => {
@@ -61,7 +62,7 @@ export function GroupProps({ id, nested }: { id: string; nested?: boolean }) {
                   if (ids.length > 1) useStore.setState({ multi: ids, selection: { kind: 'member', id: ids[0] } })
                 },
               },
-              { icon: '🗑', label: t('Bett löschen'), danger: true, more: true, onClick: () => deleteSelection({ kind: 'group', id }) },
+              { icon: <Ico i={Trash2} />, label: t('Bett löschen'), danger: true, more: true, onClick: () => deleteSelection({ kind: 'group', id }) },
             ]}
           />
           <FindingsHint ids={[id, ...parts]} prefix={`${id}:`} />

@@ -410,18 +410,6 @@ kbd {
   font-size: 12px;
   line-height: 1.35;
 }
-.template .corners {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--muted);
-}
-.template .corners button {
-  padding: 2px 6px;
-  font-size: 12px;
-}
 .ticon {
   flex: none;
 }
@@ -1771,22 +1759,32 @@ table.compare td {
     display: inline-flex;
   }
 }
+/* Einstieg im Beispielzimmer: schmale Leiste über der Ansicht, verdeckt nichts */
 .example-banner {
-  position: fixed;
-  left: 50%;
-  bottom: 56px;
-  transform: translateX(-50%);
-  z-index: 30;
+  flex: none;
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
-  max-width: calc(100vw - 32px);
-  padding: 10px 14px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 6px 8px 6px 14px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.example-banner .example-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.example-banner button.primary {
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+.example-banner .close {
+  border-color: transparent;
+  background: transparent;
+  padding: 4px 8px;
 }
 .field.compact {
   grid-template-columns: auto minmax(0, 260px);
@@ -2269,7 +2267,7 @@ button.wide {
   }
 }
 /* mittlere Breiten: Werkzeug-Beschriftungen weglassen, Symbole bleiben (Titel als Tooltip) */
-@media (max-width: 1460px) {
+@media (max-width: 1360px) {
   .toolbar .lbl {
     display: none;
   }
@@ -2328,4 +2326,30 @@ button.wide {
 /* Kennzahlen des Betts direkt unter der Kopfzeile */
 .props > .summary {
   margin: 10px 12px 2px;
+}
+
+/* Symbole (Lucide): auf die Textlinie setzen */
+.ico {
+  flex: none;
+  vertical-align: -3px;
+}
+.toolbar .lbl,
+.view-switcher .lbl {
+  margin-left: 5px;
+}
+.obj-menu button .ico {
+  margin-right: 6px;
+}
+.lang-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+.template .insert {
+  margin-top: 4px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }

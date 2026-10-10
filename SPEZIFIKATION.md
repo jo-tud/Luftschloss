@@ -66,7 +66,7 @@ Luftschloss ist ein Planungswerkzeug im Desktop-Browser. Heimwerker passen damit
 0. **Planungsassistent (optional)** – Raum und Decke, Wände, Fenster/Türen/Heizkörper, wer oben schläft, Nutzung darunter, Befestigung an der Wand → bis zu drei geprüfte, gewichtete Vorschläge. Aufruf über das Projektmenü, das Banner im Beispielzimmer, den leeren Bett-Reiter und Raum → Projekt. ✅
 1. **Raum** – Maße, Stuck, Sockelleiste, Rosette und Lampe, Wand-, Boden- und Deckenart. ✅
 2. **Ausstattung** – Fenster (Flügel, Laibung, Nische, Fensterbank), Tür, Heizkörper, Steckdosen. ✅
-3. **Bett** – Vorlage in eine Raumecke einsetzen oder Balken und Pfosten frei zeichnen. ✅
+3. **Bett** – Vorlage einsetzen (die App wählt die günstigste Raumecke: keine Fehler, kein verbautes Fenster, keine verstellte Tür; Ecke danach unter „Lage im Raum“ änderbar) oder Balken und Pfosten frei zeichnen. ✅
 4. **Anpassen** – Parameter rechts, Ziehen in der Ansicht. ✅
 5. **Prüfen** – laufende Prüfliste mit Fokus auf das betroffene Teil. ✅
 6. **Material** – Einkaufsliste, Zuschnittplan, Kosten, Preis-Prompt, CSV und Druck. ✅
@@ -192,6 +192,7 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 - Rückgängig und Wiederholen (200 Schritte; Ziehen zählt als ein Schritt). Tastenkürzel: 1–6, 0, V, B, P, R, F, Entf/Rücktaste, Esc, ?, Strg/Cmd+Z, Strg+Y/Strg+Shift+Z. ✅
 - Griffe an den Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Spiegeln. ✅
 - Seitenleisten in der Breite veränderbar (Rand ziehen, Doppelklick setzt zurück). ✅
+- Einheitlicher Symbolsatz (Lucide, ins Bundle übernommen) in Werkzeugleiste, Ansichtsleiste und Kopfzeilen; Werkzeugleiste ab 1361 px beschriftet. Beispielzimmer-Hinweis als schmale, schließbare Leiste über der Ansicht. Ausgewählte Teile behalten Holzfarbe und Maserung und werden mit Tönung und Umriss markiert. ✅
 - **Rechte Seitenleiste:** Reiter „Eigenschaften“ und „Prüfung“ (mit Zählern). Die Eigenschaften beginnen mit einer Kopfzeile des gewählten Objekts (Heranholen, Duplizieren, seltene Aktionen im ⋯-Menü, Löschen) und einem Hinweis auf Befunde dazu. Die Abschnitte sind zuklappbar, zeigen zugeklappt ihre wichtigsten Werte und merken sich ihren Zustand. Ein angeklicktes Einzelteil zeigt nur den passenden Bett-Abschnitt (z. B. Absturzsicherung beim Geländerbrett). In der Prüfung sind Hinweise zusammengeklappt, Fehler und Warnungen stehen oben. ✅
 - Ein angeklicktes Bauteil zeigt oben den Pfad „Bett › Bauteil“; ein Klick auf das Bett oder `Esc` wählt das ganze Bett. ✅
 - **Eigenes Bett aus freien Teilen:** Shift-Klick bzw. Shift + Ziehen (Rahmen) wählt mehrere freie Teile (gemeinsam verschieben oder entfernen), „Als Bett zusammenfassen“ macht daraus ein Bett mit Namen. Es steht in der Bettliste, wird als Ganzes ausgewählt und verschoben (Pfad und `Esc` wie bei Vorlagen) und lässt sich wieder auflösen. „Freie Teile (n)“ in der Bettliste wählt alle freien Teile. ✅

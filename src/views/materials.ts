@@ -60,7 +60,8 @@ export function woodMaterial(kind: WoodKind, color: string, opts: { emissive?: s
     transparent: (opts.opacity ?? 1) < 1,
     opacity: opts.opacity ?? 1,
     emissive: opts.emissive ?? '#000000',
-    emissiveIntensity: opts.emissive ? 0.25 : 0,
+    // Auswahl: warme Tönung, Holz und Maserung bleiben sichtbar
+    emissiveIntensity: opts.emissive ? 0.38 : 0,
   })
   m.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
