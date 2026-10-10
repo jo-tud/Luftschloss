@@ -1,5 +1,6 @@
 import { locale, t, tk, tr } from '../i18n'
-import { placeBed, type Corner } from '../model/placement'
+import { bestCorner, placeBed, type Corner } from '../model/placement'
+import { Ico, Plus } from './icons'
 import { openWizard } from './Project'
 import { uid } from '../model/geometry'
 import { BED_TYPE_LABEL } from '../model/loftbed'
@@ -404,24 +405,14 @@ function BedTab() {
               <div>
                 <b>{tr(pr.label)}</b>
                 <p>{tr(pr.hint)}</p>
-                <div className="corners" role="group" aria-label={t('{name} neu einsetzen', { name: tr(pr.label) })}>
-                  {t('+ neu in Ecke:')}
-                  {(['AD', 'AB', 'CB', 'CD'] as Corner[]).map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => insert(pr, c)}
-                      title={t('Neues Bett „{name}“ in die Ecke Wand {a}/{b} einsetzen', { name: tr(pr.label), a: c[0], b: c[1] })}
-                      aria-label={t('{name} in Ecke {a}/{b} einsetzen', { name: tr(pr.label), a: c[0], b: c[1] })}
-                    >
-                      {c[0]}/{c[1]}
-                    </button>
-                  ))}
-                </div>
+                <button className="insert" onClick={() => insert(pr, bestCorner(p, pr.type, pr.patch))} title={t('„{name}“ in die günstigste Ecke des Raums einsetzen – die Ecke lässt sich danach unter „Lage im Raum“ ändern', { name: tr(pr.label) })}>
+                  <Ico i={Plus} /> {t('Einsetzen')}
+                </button>
               </div>
             </div>
           ))}
         </div>
-        <p className="hint">{t('Setzt ein zusätzliches Bett ein. Ein vorhandenes Bett verschiebst du über „Lage im Raum“ (Bett auswählen). Alle Vorlagen bleiben voll anpassbar: Bett auswählen und rechts Maße, Bauart, Hölzer, Geländer und Leiter ändern. Einzelne Teile lassen sich herauslösen.')}</p>
+        <p className="hint">{t('„Einsetzen“ stellt ein zusätzliches Bett in die günstigste Ecke. Ecke, Maße, Bauart, Hölzer, Geländer und Leiter änderst du danach rechts in den Eigenschaften.')}</p>
       </Section>
     </>
   )

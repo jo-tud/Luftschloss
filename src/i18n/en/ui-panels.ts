@@ -290,11 +290,6 @@ const en: Record<string, string> = {
   'Hochbetten im Projekt': 'Loft beds in project',
   'Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.': 'No bed yet – insert a template below or draw freely with the beam tool.',
   'Vorlage einsetzen': 'Insert template',
-  '{name} neu einsetzen': 'Insert new {name}',
-  '+ neu in Ecke:': '+ new in corner:',
-  'Neues Bett „{name}“ in die Ecke Wand {a}/{b} einsetzen': 'Insert new bed “{name}” in the corner of walls {a}/{b}',
-  '{name} in Ecke {a}/{b} einsetzen': 'Insert {name} in corner {a}/{b}',
-  'Setzt ein zusätzliches Bett ein. Ein vorhandenes Bett verschiebst du über „Lage im Raum“ (Bett auswählen). Alle Vorlagen bleiben voll anpassbar: Bett auswählen und rechts Maße, Bauart, Hölzer, Geländer und Leiter ändern. Einzelne Teile lassen sich herauslösen.': 'Inserts an additional bed. To move an existing bed, use “Position in room” (select the bed). All templates remain fully adjustable: select the bed and change dimensions, design, timbers, guard rail and ladder on the right. Individual parts can be detached.',
   'Schreibtisch': 'Desk',
   'Stuhl': 'Chair',
   'Sofa': 'Sofa',
@@ -365,5 +360,9 @@ const en: Record<string, string> = {
   "Maße und Lage": "Size and position",
   "{l} × {w} cm": "{l} × {w} cm",
   "Teil von {name}": "Part of {name}",
+  "„{name}“ in die günstigste Ecke des Raums einsetzen – die Ecke lässt sich danach unter „Lage im Raum“ ändern": "Insert “{name}” into the best corner of the room – change the corner afterwards under “Position in room”",
+  "Einsetzen": "Insert",
+  "„Einsetzen“ stellt ein zusätzliches Bett in die günstigste Ecke. Ecke, Maße, Bauart, Hölzer, Geländer und Leiter änderst du danach rechts in den Eigenschaften.": "“Insert” places an additional bed in the best corner. Change corner, size, type, timber, guard and ladder afterwards in the properties on the right.",
+  "Ganzer Raum": "Whole room",
 }
 export default en

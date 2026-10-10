@@ -4,6 +4,7 @@ import en from '../i18n/en'
 import { emptyProject, testProject } from '../model/defaults'
 import type { Project } from '../model/types'
 import { migrate, useStore } from '../state/store'
+import { Compass, Ico } from './icons'
 
 export function exportProject(p: Project) {
   const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' })
@@ -126,7 +127,7 @@ export function ExampleBanner() {
   if (seen || !isExampleName(name)) return null
   return (
     <div className="example-banner" role="status">
-      <span>
+      <span className="example-text">
         <b>{t('Beispielzimmer')}</b> – {t('zum Ausprobieren. Maße und Bett lassen sich direkt anpassen.')}
       </span>
       <button
@@ -136,9 +137,11 @@ export function ExampleBanner() {
           openWizard()
         }}
       >
-        🧭 {t('Eigenes Zimmer planen')}
+        <Ico i={Compass} /> {t('Eigenes Zimmer planen')}
       </button>
-      <button onClick={dismiss}>{t('Beispiel ansehen')}</button>
+      <button className="close" onClick={dismiss} title={t('Beispiel ansehen')} aria-label={t('Beispiel ansehen')}>
+        ✕
+      </button>
     </div>
   )
 }

@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { t, tr } from '../i18n'
 import { useDerived, useStore } from '../state/store'
 import { staticsFindings } from './Statics'
+import { Ellipsis, Ico } from './icons'
 
 export interface HeaderAction {
-  icon?: string
+  icon?: ReactNode
   label: string
   onClick: () => void
   danger?: boolean
@@ -45,7 +46,7 @@ export function ObjectHeader({ icon, title, sub, actions }: { icon: string; titl
         {more.length > 0 && (
           <>
             <button className="icon" onClick={() => setMenu(!menu)} aria-expanded={menu} title={t('Weitere Aktionen')} aria-label={t('Weitere Aktionen')}>
-              ⋯
+              <Ico i={Ellipsis} />
             </button>
             {menu && (
               <div className="obj-menu" role="menu">

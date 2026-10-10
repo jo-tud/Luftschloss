@@ -72,7 +72,8 @@ export function obbTransform(o: OBB, roundAxis = false): { position: THREE.Vecto
 
 export function Box({ o, color, pick, opacity = 1, edges = false, round = false, cast = true, highlight, wood, plaster }: { o: OBB; color: string; pick?: PickData; opacity?: number; edges?: boolean; round?: boolean; cast?: boolean; highlight?: string; wood?: WoodKind; plaster?: boolean }) {
   const t = useMemo(() => obbTransform(o, round), [o, round])
-  const shared = wood && !round ? woodMaterial(wood, highlight ?? color, { emissive: highlight, opacity }) : plaster ? plasterMaterial(color, { opacity }) : undefined
+  // Auswahl: Holz behält Farbe und Maserung, dazu Tönung und Umriss; dünne Rundstäbe ganz einfärben
+  const shared = wood && !round ? woodMaterial(wood, color, { emissive: highlight, opacity }) : plaster ? plasterMaterial(color, { opacity }) : undefined
   return (
     <mesh position={t.position} quaternion={t.quaternion} userData={pick ? { pick } : {}} castShadow={cast} receiveShadow={opacity >= 0.5} material={shared}>
       {round ? <cylinderGeometry args={[t.size[0] / 2, t.size[0] / 2, t.size[1], 20]} /> : <boxGeometry args={t.size} />}
@@ -80,17 +81,17 @@ export function Box({ o, color, pick, opacity = 1, edges = false, round = false,
           je nach Sortierreihenfolge gegeneinander und gegen den Blick nach draußen */}
       {!shared && (
         <meshStandardMaterial
-          color={highlight ?? color}
+          color={round && highlight ? highlight : color}
           transparent={opacity < 1}
           opacity={opacity}
           depthWrite={opacity >= 0.5}
           visible={opacity > 0}
           roughness={0.8}
           emissive={highlight ? highlight : '#000000'}
-          emissiveIntensity={highlight ? 0.25 : 0}
+          emissiveIntensity={highlight ? 0.38 : 0}
         />
       )}
-      {edges && !round && <Edges color={wood ? '#7a5a3a' : '#6b5136'} threshold={20} transparent opacity={wood ? 0.35 : 1} />}
+      {(edges || highlight) && !round && <Edges color={highlight ?? (wood ? '#7a5a3a' : '#6b5136')} threshold={20} transparent opacity={highlight ? 1 : wood ? 0.35 : 1} />}
     </mesh>
   )
 }
@@ -146,7 +147,7 @@ export function MemberMeshes({ members, mini, joints }: { members: Member[]; min
               />
             ))}
             {prisms.map((pr, i) => (
-              <PrismMesh key={`p${i}`} m={m} prism={pr} color={highlight ?? color} highlight={highlight} pick={{ kind: 'member', id: m.id }} />
+              <PrismMesh key={`p${i}`} m={m} prism={pr} color={color} highlight={highlight} pick={{ kind: 'member', id: m.id }} />
             ))}
           </BuildAnimated>
         )
@@ -170,7 +171,7 @@ export function PrismMesh({ m, prism, color, highlight, pick }: { m: Member; pri
   useDispose(geo)
   return (
     <mesh position={frame.position} quaternion={frame.quaternion} geometry={geo} material={woodMaterial(woodKindFor(m.catalogId), color, { emissive: highlight })} userData={pick ? { pick } : {}} castShadow receiveShadow>
-      <Edges color="#7a5a3a" threshold={20} transparent opacity={0.35} />
+      <Edges color={highlight ?? '#7a5a3a'} threshold={20} transparent opacity={highlight ? 1 : 0.35} />
     </mesh>
   )
 }
@@ -391,8 +392,8 @@ function FlatPanel({ pa, highlight }: { pa: Panel; highlight?: string }) {
   const color = pa.kind === 'platte' ? (pa.catalogId?.startsWith('osb') ? '#cfa565' : COLORS.woodLight) : pa.kind === 'dielen' ? COLORS.woodLight : '#d9c29a'
   return (
     <mesh geometry={geom} userData={{ pick: { kind: 'panel', id: pa.id } }} castShadow receiveShadow>
-      <primitive object={woodMaterial(woodKindFor(pa.catalogId ?? (pa.kind === 'dielen' ? 'nf' : 'leimholz')), highlight ?? color, { emissive: highlight })} attach="material" />
-      <Edges color="#8a6a43" threshold={20} />
+      <primitive object={woodMaterial(woodKindFor(pa.catalogId ?? (pa.kind === 'dielen' ? 'nf' : 'leimholz')), color, { emissive: highlight })} attach="material" />
+      <Edges color={highlight ?? '#8a6a43'} threshold={20} />
     </mesh>
   )
 }

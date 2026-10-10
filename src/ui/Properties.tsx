@@ -13,6 +13,7 @@ import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
 import { deleteLabel, deleteSelection } from './actions'
+import { Copy, Crosshair, Ico, RotateCcw, RotateCw, Scissors, Trash2, Ungroup } from './icons'
 import { FindingsHint, ObjectHeader, type HeaderAction } from './ObjectHeader'
 
 export function Properties() {
@@ -23,10 +24,10 @@ export function Properties() {
 function deleteAction(): HeaderAction[] {
   const sel = useStore.getState().selection
   const label = sel ? deleteLabel(sel) : null
-  return sel && label ? [{ icon: '🗑', label: `${tr(label)} (Entf)`, danger: true, onClick: () => deleteSelection(sel) }] : []
+  return sel && label ? [{ icon: <Ico i={Trash2} />, label: `${tr(label)} (Entf)`, danger: true, onClick: () => deleteSelection(sel) }] : []
 }
 
-const focusAction = (id: string): HeaderAction => ({ icon: '⌖', label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(id) })
+const focusAction = (id: string): HeaderAction => ({ icon: <Ico i={Crosshair} />, label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(id) })
 
 const DECK_SHORT: Record<DeckType, string> = {
   latten: tk('Latten'),
@@ -251,7 +252,7 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
             actions={[
               focusAction(a.id),
               {
-                icon: '⧉',
+                icon: <Ico i={Copy} />,
                 label: t('Duplizieren'),
                 onClick: () => {
                   const id = uid('bett')
@@ -260,10 +261,10 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
                 },
               },
               ...(a.detached.length > 0
-                ? [{ icon: '↺', label: t('Herausgelöste Teile wieder erzeugen ({n})', { n: a.detached.length }), more: true, onClick: () => update((dd) => void (dd.assemblies.find((y) => y.id === a.id)!.detached = [])) }]
+                ? [{ icon: <Ico i={RotateCcw} />, label: t('Herausgelöste Teile wieder erzeugen ({n})', { n: a.detached.length }), more: true, onClick: () => update((dd) => void (dd.assemblies.find((y) => y.id === a.id)!.detached = [])) }]
                 : []),
               {
-                icon: '▦',
+                icon: <Ico i={Ungroup} />,
                 label: t('In Einzelteile auflösen'),
                 more: true,
                 onClick: () => {
@@ -554,8 +555,8 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
         actions={[
           focusAction(m.id),
           ...(free
-            ? [{ icon: '⟲', label: t('Hochkant/flach drehen (R)'), onClick: () => setM((x) => void ([x.b, x.h] = [x.h, x.b])) }]
-            : [{ icon: '✂', label: t('Aus Vorlage lösen und frei bearbeiten'), more: true, onClick: detach }]),
+            ? [{ icon: <Ico i={RotateCw} />, label: t('Hochkant/flach drehen (R)'), onClick: () => setM((x) => void ([x.b, x.h] = [x.h, x.b])) }]
+            : [{ icon: <Ico i={Scissors} />, label: t('Aus Vorlage lösen und frei bearbeiten'), more: true, onClick: detach }]),
           ...deleteAction().map((x) => ({ ...x, more: !free })),
         ]}
       />

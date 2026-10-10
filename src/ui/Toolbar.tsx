@@ -3,6 +3,7 @@ import { useDerived, useStore, type Layers } from '../state/store'
 import { useCheckCounts } from './Checks'
 import { eur } from './fields'
 import { ProjectMenu } from './Project'
+import { CircleHelp, DraftingCompass, Ellipsis, Globe, Ico, Info, Layers as LayersIcon, Menu, MousePointer2, Play, ReceiptEuro, RectangleHorizontal, RectangleVertical, Redo2, Scale, TabletSmartphone, Undo2 } from './icons'
 
 const LAYER_LABEL: Record<keyof Layers, string> = {
   joints: tk('Verbindungen'),
@@ -21,7 +22,7 @@ export function Toolbar() {
   return (
     <header className="toolbar">
       <button className="narrow-only" onClick={() => s.set({ leftOpen: !s.leftOpen, rightOpen: false })} title={t('Raum, Ausstattung, Vorlagen')} aria-label={t('Seitenleiste: Raum, Ausstattung, Vorlagen')}>
-        ☰
+        <Ico i={Menu} />
       </button>
       <div className="brand" title={t('Luftschloss – Hochbettplaner')}>
         <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden>
@@ -35,26 +36,32 @@ export function Toolbar() {
       <ProjectMenu />
       <div className="group">
         <button className="undo" onClick={s.undo} disabled={!s.past.length} title={t('Rückgängig (Strg+Z)')} aria-label={t('Rückgängig')}>
-          ↶
+          <Ico i={Undo2} />
         </button>
         <button className="redo" onClick={s.redo} disabled={!s.future.length} title={t('Wiederholen (Strg+Y)')} aria-label={t('Wiederholen')}>
-          ↷
+          <Ico i={Redo2} />
         </button>
       </div>
       <div className="group">
         <button className={s.tool === 'select' ? 'on' : ''} onClick={() => s.set({ tool: 'select' })} title={t('Auswählen und verschieben (V)')}>
-          ➤<span className="lbl"> {t('Auswahl')}</span>
+          <Ico i={MousePointer2} />
+          <span className="lbl">{t('Auswahl')}</span>
         </button>
         <button className={s.tool === 'balken' ? 'on' : ''} onClick={() => s.set({ tool: 'balken' })} title={t('Balken zeichnen: zwei Klicks, Shift = gerade, Strg = weiterzeichnen (B)')}>
-          ▬<span className="lbl"> {t('Balken')}</span>
+          <Ico i={RectangleHorizontal} />
+          <span className="lbl">{t('Balken')}</span>
         </button>
         <button className={s.tool === 'pfosten' ? 'on' : ''} onClick={() => s.set({ tool: 'pfosten' })} title={t('Pfosten setzen: ein Klick (P)')}>
-          ▮<span className="lbl"> {t('Pfosten')}</span>
+          <Ico i={RectangleVertical} />
+          <span className="lbl">{t('Pfosten')}</span>
         </button>
       </div>
       <div className="group wide-only">
         <details className="dropdown">
-          <summary title={t('Ebenen ein-/ausblenden, Tageslicht')}>{t('Ebenen')} ▾</summary>
+          <summary title={t('Ebenen ein-/ausblenden, Tageslicht')}>
+            <Ico i={LayersIcon} />
+            <span className="lbl lbl-xl">{t('Ebenen')}</span> ▾
+          </summary>
           <div className="menu">
             <SunControl />
             {(Object.keys(LAYER_LABEL) as (keyof Layers)[]).map((k) => (
@@ -76,28 +83,40 @@ export function Toolbar() {
               : t('Statik: höchste Ausnutzung {u} % – {state}', { u: Math.round(util * 100), state: util > 1 ? t('überlastet') : util > 0.6 ? t('gut, aber nicht viel Reserve') : t('reichlich Reserve') })
           }
         >
-          ⚖<span className="lbl"> {t('Statik')}</span>
+          <Ico i={Scale} />
+          <span className="lbl">{t('Statik')}</span>
           {util !== undefined && <span className="val">{util > 9.99 ? ` ${t('überlastet')}` : ` ${Math.round(util * 100)} %`}</span>}
         </button>
       </div>
       <div className="group wide-only">
         <button className={s.build ? 'on' : ''} onClick={() => s.set({ build: s.build ? null : { step: 0, start: performance.now(), auto: true } })} title={t('Aufbau Schritt für Schritt als Animation')}>
-          ▶<span className="lbl"> {t('Aufbau')}</span>
+          <Ico i={Play} />
+          <span className="lbl lbl-xl">{t('Aufbau')}</span>
         </button>
         <button onClick={() => s.set({ showPlan: true })} title={t('Bauplan mit Ansichten, Teileliste, Verbindungen und Montage – druckbar')}>
-          📐<span className="lbl"> {t('Bauplan')}</span>
+          <Ico i={DraftingCompass} />
+          <span className="lbl">{t('Bauplan')}</span>
         </button>
       </div>
       <div className="spacer" />
       <button className="cost" onClick={() => s.set({ showMaterial: true })} title={t('Stückliste, Zuschnitt und Kosten')}>
-        🧾<span className="lbl"> {t('Material')} ·</span> {eur(d.bom.total)}
+        <Ico i={ReceiptEuro} />
+        <span className="lbl lbl-xl">{t('Material')} ·</span> {eur(d.bom.total)}
       </button>
       <details className="dropdown more-menu narrow-more">
-        <summary title={t('Weitere Funktionen')} aria-label={t('Weitere Funktionen')}>⋯</summary>
+        <summary title={t('Weitere Funktionen')} aria-label={t('Weitere Funktionen')}>
+          <Ico i={Ellipsis} />
+        </summary>
         <div className="menu" onClick={(e) => (e.currentTarget.parentElement as HTMLDetailsElement).removeAttribute('open')}>
-          <button onClick={() => s.set({ build: s.build ? null : { step: 0, start: performance.now(), auto: true } })}>▶ {t('Aufbau-Animation')}</button>
-          <button onClick={() => s.set({ showPlan: true })}>📐 {t('Bauplan')}</button>
-          <button onClick={() => s.set({ showShare: true })}>📱 {t('Auf dem Tablet öffnen')}</button>
+          <button onClick={() => s.set({ build: s.build ? null : { step: 0, start: performance.now(), auto: true } })}>
+            <Ico i={Play} /> {t('Aufbau-Animation')}
+          </button>
+          <button onClick={() => s.set({ showPlan: true })}>
+            <Ico i={DraftingCompass} /> {t('Bauplan')}
+          </button>
+          <button onClick={() => s.set({ showShare: true })}>
+            <Ico i={TabletSmartphone} /> {t('Auf dem Tablet öffnen')}
+          </button>
           <SunControl />
           <div className="menu-lang" onClick={(e) => e.stopPropagation()}>
             <LangSelect />
@@ -112,7 +131,8 @@ export function Toolbar() {
         </div>
       </details>
       <button className={`sync wide-only ${s.server ? s.server.status : ''}`} onClick={() => s.set({ showShare: true })} title={s.server ? t('Abgleich im WLAN: {status}', { status: tr(s.server.status) }) : t('Auf dem Tablet öffnen')}>
-        📱<span className="lbl lbl-xl"> {t('Tablet')}</span>
+        <Ico i={TabletSmartphone} />
+        <span className="lbl lbl-xl">{t('Tablet')}</span>
       </button>
       <button
         className={`narrow-only info-btn${counts.fehler ? ' has-err' : counts.warnung ? ' has-warn' : ''}`}
@@ -120,13 +140,14 @@ export function Toolbar() {
         title={t('Eigenschaften und Prüfung')}
         aria-label={t('Eigenschaften und Prüfung: {e} Fehler, {w} Warnungen', { e: counts.fehler, w: counts.warnung })}
       >
-        ⓘ{counts.fehler > 0 ? <span className="b fehler">⛔ {counts.fehler}</span> : counts.warnung > 0 ? <span className="b warnung">⚠ {counts.warnung}</span> : null}
+        <Ico i={Info} />
+        {counts.fehler > 0 ? <span className="b fehler">⛔ {counts.fehler}</span> : counts.warnung > 0 ? <span className="b warnung">⚠ {counts.warnung}</span> : null}
       </button>
       <span className="wide-only">
         <LangSelect />
       </span>
       <button onClick={() => s.set({ showHelp: true })} title={t('Bedienung und Tastenkürzel (?)')} aria-label={t('Hilfe')}>
-        ?
+        <Ico i={CircleHelp} />
       </button>
     </header>
   )
@@ -156,6 +177,8 @@ function LangSelect() {
   const lang = useStore((s) => s.lang)
   const setLangSetting = useStore((s) => s.setLangSetting)
   return (
+    <label className="lang-wrap">
+      <Ico i={Globe} size={15} />
     <select
       className="lang-select"
       value={setting}
@@ -164,9 +187,10 @@ function LangSelect() {
       aria-label={LANG_TITLE}
     >
       {/* kurz halten, die Werkzeugleiste ist voll; die Sprachwahl bleibt zweisprachig */}
-      <option value="auto">🌐 Auto{/* i18n-ok */}</option>
-      <option value="en">🌐 EN</option>
-      <option value="de">🌐 DE</option>
+      <option value="auto">Auto{/* i18n-ok */}</option>
+      <option value="en">EN</option>
+      <option value="de">DE</option>
     </select>
+    </label>
   )
 }
