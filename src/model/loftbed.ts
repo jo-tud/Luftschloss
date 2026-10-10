@@ -384,8 +384,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     // Querträger liegen auf den Trägern, jeweils auch an beiden Enden
     const spacing = P.deck === 'lattenrost' ? 1000 : Math.max(200, Math.min(P.joistSpacing, deckSheet?.maxSpan ?? P.joistSpacing))
     const along = carriersLR ? Wo : Lo
-    const a0 = p + joist.b / 2
-    const a1 = along - p - joist.b / 2
+    // 5 mm Luft zu den Pfosten: Querträger liegen nur auf den Trägern und werden nicht mit den
+    // Pfosten verbolzt (sonst ziehen die schlanken Hölzer Rahmenkräfte an)
+    const a0 = p + 5 + joist.b / 2
+    const a1 = along - p - 5 - joist.b / 2
     const n = Math.max(2, Math.ceil((a1 - a0) / spacing) + 1)
     for (let i = 0; i < n; i++) {
       const a = a0 + ((a1 - a0) * i) / (n - 1)
