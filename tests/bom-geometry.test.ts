@@ -45,7 +45,7 @@ describe('Teileliste und Geometrie', () => {
     const p = testProject()
     const free = analyzeWindows(p, resolveProject(p))
     const win = p.wallObjects.find((o) => o.kind === 'fenster')!
-    p.furniture.push({ id: 'person-test', kind: 'person', name: 'Person', x: 3000, y: 100, z: 0, sx: 400, sy: 300, sz: 1750, rotation: 0 } as Project['furniture'][number])
+    p.furniture.push({ id: 'person-test', kind: 'person-stehend', name: 'Person', x: 3000, y: 100, z: 0, sx: 400, sy: 300, sz: 1750, rotation: 0 } as Project['furniture'][number])
     const withPerson = analyzeWindows(p, resolveProject(p))
     expect(withPerson.filter((w) => w.windowId === win.id)).toEqual(free.filter((w) => w.windowId === win.id))
   })
