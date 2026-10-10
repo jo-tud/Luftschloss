@@ -42,6 +42,8 @@ export function ServerSync() {
     const ctrl = new AbortController()
     const timeout = setTimeout(() => ctrl.abort(), 2500)
     const start = async () => {
+      // Statisch gehostete Online-Version (GitHub Pages) hat keinen Abgleich-Server
+      if (location.hostname.endsWith('github.io')) return
       try {
         const info = await fetch('/api/info', { signal: ctrl.signal }).then((r) => (r.ok ? r.json() : null))
         clearTimeout(timeout)
@@ -156,6 +158,19 @@ export function ShareDialog() {
             </>
           ) : (
             <>
+              {location.protocol === 'https:' && (
+                <>
+                  <p>Diese Online-Version direkt auf dem Tablet öffnen – QR-Code scannen, dann im Browser „Zum Home-Bildschirm“ wählen, damit Luftschloss wie eine App startet und auch offline läuft.</p>
+                  <div className="qr-list">
+                    <div className="qr">
+                      <div dangerouslySetInnerHTML={{ __html: renderSVG(location.origin + location.pathname, { border: 1 }) }} />
+                      <small>{location.origin + location.pathname}</small>
+                    </div>
+                  </div>
+                  <p className="hint">Jedes Gerät speichert sein eigenes Projekt. Zum Übertragen im Projektmenü „Als Datei speichern“ und auf dem anderen Gerät „Öffnen…“.</p>
+                  <h3>Laptop und Tablet gleichzeitig am selben Projekt</h3>
+                </>
+              )}
               <p>Diese Seite läuft ohne Abgleich-Server. So geht es auf dem Tablet:</p>
               <ol>
                 <li>

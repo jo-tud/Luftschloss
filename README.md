@@ -1,108 +1,104 @@
-# Luftschloss – Hochbettplaner
+# Luftschloss 🏰 – plane dein Hochbett im echten Zimmer
 
-Ein Hochbett ins echte Zimmer planen, im Browser am Desktop:
+**Du willst ein Hochbett selbst bauen?** Luftschloss zeigt dir vorher in 3D, ob es passt: ob die Fenster noch aufgehen, ob man darunter stehen kann, wo der Stuck im Weg ist. Am Ende bekommst du eine Einkaufsliste in echten Baumarkt-Längen und einen Bauplan zum Ausdrucken.
 
-- Raum mit Stuck, Fensternischen, Heizkörpern und Sockelleisten eintragen
-- Bett aus einer Vorlage einsetzen oder Balken frei zeichnen
-- in Draufsicht, Seitenansicht, 3D und Ich-Perspektive prüfen
-- eine Einkaufsliste bekommen, die es im Baumarkt wirklich gibt
+Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf deinem Gerät.
 
-> **Status:** Prototyp, erstes UX-Review umgesetzt ([Bericht](docs/ux-review/bericht-2026-10-10.md)). Spezifikation und Ausbaustufen stehen in [SPEZIFIKATION.md](SPEZIFIKATION.md), die Recherchen in [docs/recherche](docs/recherche/).
+<p align="center">
+  <img src="docs/screenshots/3d.jpg" alt="Hochbett im 3D-Zimmer mit Kopfraum- und Freiraum-Maßen" width="860">
+</p>
 
-## Starten
+## Sofort ausprobieren
 
-Voraussetzung: Node.js 22 (oder neuer) und npm.
+**👉 [Luftschloss im Browser öffnen](https://jo-tud.github.io/Luftschloss/)** – keine Installation nötig.
+
+- Läuft in jedem aktuellen Browser auf Laptop, PC und Tablet (Chrome, Edge, Firefox, Safari).
+- **Als App aufs Tablet oder Handy:** Link öffnen und im Browsermenü „Zum Home-Bildschirm“ (iPad/iPhone) bzw. „App installieren“ (Android, Chrome) wählen. Danach startet Luftschloss wie eine App und funktioniert auch offline.
+- Beim ersten Start ist ein **Beispielzimmer** geladen: einfach herumklicken, das Bett auswählen und verschieben, Maße ändern. Mit „Eigenes Zimmer anlegen“ beginnst du mit deinem Raum.
+
+## Was du damit machen kannst
+
+| | |
+|---|---|
+| ![Seitenansicht mit Fenster](docs/screenshots/seitenansicht-fenster.jpg) | ![Draufsicht](docs/screenshots/draufsicht.jpg) |
+| **Dein Zimmer, wie es wirklich ist:** Fenster mit Flügeln und Fensterbank, Heizkörper, Tür, Steckdosen, Stuck, Deckenrosette mit Lampe, Sockelleisten. | **Bett einsetzen und anpassen:** Vorlage wählen, in die Ecke schieben, Abstand zu jeder Wand eintippen. Alles bleibt jederzeit änderbar. |
+| ![Statik](docs/screenshots/statik.jpg) | ![Ich-Perspektive](docs/screenshots/ich-perspektive.jpg) |
+| **Hält das?** Eine vereinfachte Statik rechnet das ganze Gestell durch: Ausnutzung jedes Balkens, Wackeln, Belastung beim Toben. | **Wie fühlt es sich an?** In der Ich-Perspektive stehst du an der Tür, sitzt unter dem Bett oder liegst auf der Matratze. |
+| ![Bauplan](docs/screenshots/bauplan.jpg) | ![Material](docs/screenshots/material.jpg) |
+| **Bauplan zum Ausdrucken:** Ansichten mit Maßen, Teileliste mit Nummern, Skizzen der Verbindungen, Montageschritte. | **Einkaufsliste:** Holz in Hornbach-Handelslängen, Zuschnittplan, Schrauben und Winkel, Richtpreise, Export als CSV. |
+
+**Außerdem:**
+
+- **Viele Bauarten:** freistehend, an der Wand, Eckbett, deckenhoch verspannt, Wand zu Wand, Halbhoch, Etagenbett, Galerie, Netz-Hochebene – und zwei Kinder nebeneinander auf zwei Matratzen.
+- **Prüfliste mit Erklärungen:** Fensterflügel, die anstoßen, zu wenig Kopfraum, Lücken im Geländer, falsche Dübel in Leichtbauwänden … Alles sind Empfehlungen, die du bewusst „zur Kenntnis nehmen“ kannst.
+- **Dein Hochbett im Foto deines Zimmers:** Foto laden, ein paar Ecken antippen – das geplante Bett erscheint perspektivisch richtig im Foto.
+- **Aufbau-Animation:** Die Teile fliegen in der Reihenfolge ein, in der du sie später zusammenbaust.
+- **Aktuelle Preise:** Recherche-Prompt für einen KI-Chat kopieren oder mit eigenem Claude-API-Schlüssel direkt recherchieren lassen.
+
+## Auf dem Tablet
+
+<img src="docs/screenshots/tablet.jpg" alt="Luftschloss auf dem iPad" width="280" align="right">
+
+Mit Finger oder Stift: antippen wählt aus, ein ausgewähltes Teil ziehst du mit einem Finger, mit zwei Fingern zoomst und verschiebst du. ☰ öffnet Raum und Vorlagen, ⓘ die Eigenschaften und die Prüfliste.
+
+**Laptop und Tablet gleichzeitig am selben Projekt**, z. B. in der Werkstatt: Luftschloss auf dem Laptop mit `npm run lan` starten (siehe unten), oben auf **📱 Tablet** klicken und den QR-Code scannen. Änderungen gleichen sich alle paar Sekunden ab. Ohne gemeinsames WLAN klappt das mit [Tailscale](https://tailscale.com).
+
+<br clear="right">
+
+## Auf dem eigenen Rechner starten
+
+Du brauchst nur [Node.js](https://nodejs.org) (Version 22 oder neuer). Dann:
 
 ```sh
 git clone https://github.com/jo-tud/Luftschloss.git
 cd Luftschloss
 npm install
-npm run dev        # öffnet http://localhost:5173
+npm run dev
 ```
 
-Weitere Befehle:
+Luftschloss öffnet sich unter <http://localhost:5173>.
 
-```sh
-npm test           # Tests (Vitest)
-npm run build      # Typprüfung + Produktions-Build nach dist/
-npm run preview    # Build ansehen: http://localhost:4173
-```
+| Befehl | Wofür |
+|---|---|
+| `npm run dev` | Entwickeln mit automatischem Neuladen |
+| `npm run lan` | Bauen und im WLAN freigeben – fürs Tablet, mit Projekt-Abgleich (gespeichert im Ordner `projekte/`) |
+| `npm test` | Tests (Vitest) |
+| `npm run build` | Typprüfung und Produktions-Build nach `dist/` |
 
-### Auf dem Tablet (WLAN oder Tailscale)
-
-```sh
-npm run lan        # baut und startet im Netzwerk, z. B. http://192.168.1.20:4173
-```
-
-Im Laptop-Browser oben auf **📱 Tablet** klicken und den QR-Code mit dem Tablet scannen. Laptop und Tablet arbeiten dann am **selben Projekt**; Änderungen gleichen sich alle paar Sekunden ab. Gespeichert wird im Ordner `projekte/`.
-
-- Bedienung mit Finger und Stift: antippen wählt aus, ein ausgewähltes Teil lässt sich ziehen. Mit einem Finger dreht bzw. verschiebt man die Ansicht, mit zwei Fingern zoomt (Pinch), verschiebt und dreht man. Doppeltipp zentriert. Die Seitenleisten klappen über ☰ und ⓘ auf.
-- **Ohne gemeinsames WLAN, z. B. auf der Baustelle:** [Tailscale](https://tailscale.com) auf Laptop und Tablet installieren und `http://<Tailscale-IP des Laptops>:4173` öffnen. Mit `tailscale serve --bg 4173` gibt es eine HTTPS-Adresse. Darüber lässt sich Luftschloss auf dem Tablet als App installieren („Zum Home-Bildschirm“), und es läuft dann auch offline.
-- Die Freigabe hat keine Anmeldung. Deshalb nur im eigenen Netz bzw. Tailnet nutzen und nicht ins Internet stellen.
-
-Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck, Rosette, Hochbett vor dem linken Fenster). Gelb markierte Felder sind geschätzt und sollten nachgemessen werden. Der Stand wird automatisch im Browser gespeichert (✓ neben dem Projektnamen). Über das **Projektmenü** oben links lässt er sich als Datei speichern, öffnen oder durch ein neues Zimmer bzw. das Beispielzimmer ersetzen.
-
-## Was der Prototyp kann
-
-- **Raum:**
-  - Maße, Wand- und Deckenart
-  - **Stuckleiste** (Profil, je Wand abweichend)
-  - **Deckenrosette mit Lampe**
-  - **Sockel- bzw. Parkettleiste**
-- **Fenster:** Laibungstiefe, Nische bis zum Boden, Flügel (Dreh, Kipp, fest), Fensterbank.
-- **Weitere Ausstattung:** Tür, Heizkörper mit Konvektionsraum, Steckdosen, Möbel und Personen als Platzhalter.
-- **Bauarten als Vorlagen:** freistehend, Wandbalken, Eckbett (auch abgehängt), deckenhoch verspannt, Wand zu Wand, abgehängt, Halbhoch, **Etagenbett**, **Galerie mit Mittelstütze**, **Netz-Hochebene**.
-  - Alle Parameter sind jederzeit änderbar.
-  - Einzelteile lassen sich aus der Vorlage lösen, die ganze Baugruppe lässt sich auflösen.
-- **Liegefläche:** lose Latten, Rollrost, Lattenrost, Platte, Dielen oder begehbares Netz.
-- **Geländer:** Bretter, Rundstäbe, Vollfläche, Netz oder Seil.
-- **Leitern:** Stufenleiter, senkrecht, schräg oder Treppe.
-- **Wandanschluss:** Pfosten an Sockelleiste und Stuck **automatisch ausklinken**, oder das Bett **abrücken**.
-- **Verbindungen:** werden automatisch erkannt (Eckstoß, T-Stoß, Auflage …). Den Typ wählt man je Verbindung: Schlossschraube, Winkel, Balkenschuh, Überblattung, Zapfen, Gratnut, Rundstab in Bohrung …
-- **Ansichten aus einer Kamera:** animierte Übergänge zwischen Draufsicht, Seitenansicht (Wand A–D), 3D und Ich-Perspektive (an der Tür, unter dem Bett, auf der Matratze, liegend). Dazu:
-  - Puppenhaus-Modus
-  - Schnitthöhe in der Draufsicht
-  - Übersichtskarte
-  - zwei Live-Nebenansichten
-- **Prüfung:**
-  - Wie weit gehen die Fensterflügel noch auf (Schwenkbogen grün/rot), ist der Kippspalt frei?
-  - Kollisionen, auch mit Stuck, Sockelleiste, Fensterbank, Heizkörper und Lampe
-  - Lichte Höhe unter dem Bett und Kopfraum über der Matratze
-  - Sicherheitsempfehlungen nach DIN EN 747
-  - Stabilität, Material
-  - Alles ist eine Empfehlung und lässt sich **quittieren**.
-- **Foto-Abgleich:** ein Foto des Zimmers laden, 4–8 Raumecken und Fensterkanten antippen – das geplante Bett erscheint perspektivisch richtig im Foto. Fenster- und Türmaße werden dabei mitgeschätzt und lassen sich übernehmen. Das Foto verlässt den Browser nicht.
-- **Material:**
-  - Einkaufsliste in Hornbach-Handelslängen mit Richtpreisen
-  - Zuschnittplan
-  - Beschläge aus den Verbindungen
-  - **Recherche-Prompt** für aktuelle Preise; die Antwort fügt man ein und übernimmt die Preise
-  - oder **direkt recherchieren lassen** mit eigenem Claude-API-Schlüssel (Websuche, ein paar Minuten)
-  - CSV und Druck
+Die Freigabe im WLAN hat keine Anmeldung – nur im eigenen Netz bzw. Tailnet nutzen.
 
 ## Bedienung in Kürze
 
-| Aktion | Maus / Taste |
+| Aktion | Maus / Tastatur |
 |---|---|
-| Ansicht wechseln | Leiste oben links oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive, `5` Abwicklung, `6` Foto, `Esc` schließt Dialoge |
-| Drehen | Ziehen auf leerer Fläche (3D) oder rechte Maustaste – auch aus der Draufsicht heraus |
-| Verschieben | Ziehen auf leerer Fläche (2D), mittlere Maustaste |
-| Zoom | Mausrad, zum Zeiger hin |
-| Auswählen / Fokus | Klick / Doppelklick |
-| Bett verschieben | anklicken, dann ziehen (hält an Wänden an); in der Seitenansicht hoch/runter = Liegehöhe; genau über „Lage im Raum“ (Abstand zu jeder Wand, Schieben, In Ecke schieben) |
-| Zeichnen | `B` Balken (zwei Klicks, `Shift` gerade, `Strg` weiterzeichnen), `P` Pfosten, `Esc` abbrechen |
-| Ich-Perspektive | Ziehen = umsehen, `W` `A` `S` `D` gehen, `Q`/`E` runter/hoch |
-| Bearbeiten | `Strg+Z` / `Strg+Y`, `Entf`, `R` Querschnitt drehen |
+| Ansicht wechseln | Leiste oben im Bild oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive, `5` Abwicklung, `6` Foto |
+| Drehen, verschieben, zoomen | Ziehen auf leerer Fläche, rechte bzw. mittlere Maustaste, Mausrad |
+| Bett verschieben | anklicken, dann ziehen (hält an Wänden an) – oder genau unter „Lage im Raum“ |
+| Zeichnen | `B` Balken, `P` Pfosten, `Esc` abbrechen |
+| Rückgängig / Wiederholen | `Strg+Z` / `Strg+Y` |
+| Löschen | `Entf` oder 🗑 oben in den Eigenschaften |
+| Hilfe | `?` |
 
-## Aufbau
+## Mitmachen
+
+Luftschloss ist mit React, TypeScript und three.js gebaut. Ideen, Fehlerberichte und Pull Requests sind willkommen.
 
 ```
-src/model      Datenmodell, Katalog, Geometrie, Raum, Hochbett-Generator, Auflöser
-src/analysis   Prüfungen, Fenster-/Türschwenk, Stückliste, Zuschnitt, Preis-Prompt
-src/state      Zustand, Undo/Redo, Speichern, abgeleitete Daten
-src/views      three.js-Szene, Kamera mit Übergängen, Zeigersteuerung, Ansichten
-src/ui         Oberfläche (Werkzeugleiste, Seitenleiste, Eigenschaften, Prüfung, Material)
-tests          Vitest-Tests für Modell und Analysen
+src/model      Datenmodell, Holz-Katalog, Geometrie, Raum, Hochbett-Generator
+src/analysis   Prüfungen, Statik, Stückliste, Zuschnitt, Foto-Abgleich, Preis-Agent
+src/state      Zustand, Rückgängig, Speichern
+src/views      3D-Szene, Kamera, Ansichten
+src/ui         Oberfläche
+tests          Vitest-Tests
+docs           Recherchen, UX-Review, Screenshots
 ```
 
-Hinweis: Luftschloss ersetzt keine Tragwerksplanung. Die Prüfungen sind Empfehlungen auf Basis von Normen-Richtwerten, Herstellerangaben und Heimwerker-Erfahrung.
+Mehr Hintergrund: [Spezifikation und Ausbaustufen](SPEZIFIKATION.md), [Recherchen](docs/recherche/) zu Holzsortiment, Statik, Verbindungen und Heimwerker-Praxis, [UX-Review](docs/ux-review/bericht-2026-10-10.md).
+
+## Wichtig
+
+Luftschloss ersetzt keine Tragwerksplanung. Die Prüfungen sind Empfehlungen auf Basis von Normen-Richtwerten (z. B. DIN EN 747), Herstellerangaben und Heimwerker-Erfahrung. Gelb markierte Maße sind geschätzt – vor dem Zuschnitt nachmessen.
+
+## Lizenz
+
+[MIT](LICENSE) – frei nutzbar, auch zum Verändern und Weitergeben.

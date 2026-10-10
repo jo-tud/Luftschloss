@@ -257,6 +257,7 @@ const PRESETS: Preset[] = [
   { key: 'eck-decke', label: 'Eckbett, Ecke abgehängt', hint: 'Zwei Wandbalken, die freie Ecke hängt an einer Gewindestange von der Decke. Nur bei sehr tragfähiger Decke.', type: 'eck', patch: { frameStyle: 'aufgelegt', cornerSupport: 'decke' } },
   { key: 'deckenhoch', label: 'Deckenhoch verspannt', hint: 'Pfosten bis zur Decke verspannt, sehr steif. Stuck und Deckenart beachten.', type: 'deckenhoch', patch: {} },
   { key: 'nische', label: 'Hochebene Wand zu Wand', hint: 'Wandbalken an beiden Enden, Querträger aufgelegt – für Nischen bis ca. 2,5 m.', type: 'nische', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'zwei', label: 'Zwei Kinder oben', hint: 'Freistehend, zwei Matratzen 90 × 200 nebeneinander. Mittelträger unter der Fuge, Kopfbänder.', type: 'freistehend', patch: { mattressCount: 2, mattressWidth: 900, railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
   { key: 'halbhoch', label: 'Halbhoch, 1,20 m', hint: 'Für jüngere Kinder: niedrig, darunter Spielecke oder Kiste. Geländer und Leiter wie beim Hochbett.', type: 'freistehend', patch: { deckHeight: 1200, braces: false } },
   { key: 'etage', label: 'Etagenbett', hint: 'Zwei Betten übereinander zwischen vier Pfosten. Unten 0,30 m, oben so hoch, dass man unten aufrecht sitzt.', type: 'freistehend', patch: { lowerBed: true, deckHeight: 1550, braces: false } },
   { key: 'galerie', label: 'Galerie mit Mittelstütze', hint: 'Lange Hochebene (2,80 × 1,40 m) zum Spielen oder für zwei Matratzen. Eine Stütze in der Mitte jeder Längsseite.', type: 'wandseitig', patch: { mattressLength: 2800, mattressWidth: 1400, midPosts: 1, frameStyle: 'aufgelegt', railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
@@ -308,7 +309,7 @@ function BedTab() {
         <div className="templates">
           {PRESETS.map((t) => (
             <div key={t.key} className="template">
-              <TemplateIcon type={t.type} aufgelegt={t.patch.frameStyle === 'aufgelegt'} hang={t.patch.cornerSupport === 'decke' || t.type === 'abgehaengt'} lower={t.patch.lowerBed} net={t.patch.deck === 'netz'} mid={!!t.patch.midPosts} low={t.patch.deckHeight === 1200} />
+              <TemplateIcon type={t.type} aufgelegt={t.patch.frameStyle === 'aufgelegt'} hang={t.patch.cornerSupport === 'decke' || t.type === 'abgehaengt'} lower={t.patch.lowerBed} net={t.patch.deck === 'netz'} two={(t.patch.mattressCount ?? 1) > 1} mid={!!t.patch.midPosts} low={t.patch.deckHeight === 1200} />
               <div>
                 <b>{t.label}</b>
                 <p>{t.hint}</p>
@@ -330,7 +331,7 @@ function BedTab() {
   )
 }
 
-function TemplateIcon({ type, aufgelegt, hang, lower, net, mid, low }: { type: BedType; aufgelegt?: boolean; hang?: boolean; lower?: boolean; net?: boolean; mid?: boolean; low?: boolean }) {
+function TemplateIcon({ type, aufgelegt, hang, lower, net, mid, low, two }: { type: BedType; aufgelegt?: boolean; hang?: boolean; lower?: boolean; net?: boolean; mid?: boolean; low?: boolean; two?: boolean }) {
   const post = (x: number, h = 44) => <rect x={x} y={52 - h} width={5} height={h} fill="#b07a3b" />
   if (low)
     return (
@@ -365,6 +366,7 @@ function TemplateIcon({ type, aufgelegt, hang, lower, net, mid, low }: { type: B
         <>
           <rect x="3" y="20" width="58" height="6" fill="#d9a566" />
           <rect x="8" y="15" width="48" height="5" fill="#eef" stroke="#99a" strokeWidth="0.5" />
+          {two && <rect x="31.5" y="14" width="1" height="7" fill="#99a" />}
         </>
       )}
       {type === 'freistehend' && <path d="M11 32 L18 26 M52 32 L45 26" stroke="#b07a3b" strokeWidth="2" />}

@@ -16,3 +16,4 @@
 - `main` ist der Hauptbranch; neue Features jeweils als eigener PR, nach grünem CI selbst mergen.
 - Testprojekt (`testProject()`) nicht an Fotos oder Schätzungen anpassen: Maße werden direkt in der App korrigiert – das ist zugleich der Usability-Test.
 - Für später vorgemerkt: **visuelle Qualität** als letzter Schritt (SPEZIFIKATION.md, Kapitel 13).
+- Online-Version: GitHub Pages über `.github/workflows/pages.yml` (Push auf `main`), Adresse https://jo-tud.github.io/Luftschloss/. Keine Laufzeit-Downloads von fremden CDNs (Offline-PWA).

@@ -238,6 +238,10 @@ export interface LoftBedParams {
   mirror: boolean
   mattressLength: Mm
   mattressWidth: Mm
+  /** Anzahl Matratzen auf der Liegefläche (z. B. zwei Kinder oben) */
+  mattressCount: number
+  /** Mehrere Matratzen nebeneinander (Liegefläche breiter) oder hintereinander (länger) */
+  mattressLayout: 'nebeneinander' | 'hintereinander'
   mattressThickness: Mm
   /** Spiel zwischen Matratze und Geländer bzw. Pfosten je Seite */
   mattressGap: Mm

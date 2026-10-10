@@ -64,11 +64,28 @@ export function wallSides(p: LoftBedParams): Side[] {
   }
 }
 
+/** Anzahl Matratzen und ob sie nebeneinander liegen */
+export function mattressSetup(p: LoftBedParams): { n: number; side: boolean } {
+  return { n: Math.max(1, Math.min(3, Math.round(p.mattressCount ?? 1))), side: (p.mattressLayout ?? 'nebeneinander') === 'nebeneinander' }
+}
+
+/** Matratzen im lokalen System (x längs, y quer), ab der Innenkante der Pfosten */
+export function mattressRects(p: LoftBedParams, postB: Mm): { x0: Mm; y0: Mm; x1: Mm; y1: Mm }[] {
+  const { n, side } = mattressSetup(p)
+  const g = p.mattressGap
+  return Array.from({ length: n }, (_, i) => {
+    const x0 = postB + g + (side ? 0 : i * (p.mattressLength + g))
+    const y0 = postB + g + (side ? i * (p.mattressWidth + g) : 0)
+    return { x0, y0, x1: x0 + p.mattressLength, y1: y0 + p.mattressWidth }
+  })
+}
+
 export function bedOuterSize(p: LoftBedParams): { length: Mm; width: Mm } {
+  const { n, side } = mattressSetup(p)
   const post = timber(p.postCatalogId)
   return {
-    length: p.mattressLength + 2 * p.mattressGap + 2 * post.b,
-    width: p.mattressWidth + 2 * p.mattressGap + 2 * post.b,
+    length: (side ? 1 : n) * p.mattressLength + ((side ? 1 : n) + 1) * p.mattressGap + 2 * post.b,
+    width: (side ? n : 1) * p.mattressWidth + ((side ? n : 1) + 1) * p.mattressGap + 2 * post.b,
   }
 }
 
@@ -238,7 +255,15 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const zc = railBottom + rh / 2
 
   // Breite Liegeflächen mit Latten brauchen einen Mittelträger, der auf den Querzargen liegt
-  const wideSlats = P.deck === 'latten' && !carriersLR && Wo - 2 * rb > 1250
+  // Fugen zwischen mehreren Matratzen (nebeneinander: längs laufend bei y, hintereinander: quer bei x)
+  const { n: nMat, side: matSide } = mattressSetup(P)
+  const mats = mattressRects(P, p)
+  const seamYs = matSide ? mats.slice(1).map((m) => m.y0 - P.mattressGap / 2) : []
+  const seamXs = matSide ? [] : mats.slice(1).map((m) => m.x0 - P.mattressGap / 2)
+  // Mittelträger längs: unter Matratzenfugen (Latten, Roste) bzw. bei breiter Lattung in der Mitte
+  const rost = P.deck === 'rollrost' || P.deck === 'lattenrost'
+  const midYs = carriersLR || !(P.deck === 'latten' || rost) ? [] : seamYs.length ? seamYs : P.deck === 'latten' && Wo - 2 * rb > 1250 ? [Wo / 2] : []
+  const wideSlats = midYs.length > 0
   const keepRail = (s: Side) => !aufgelegt || isWall(s) || carrierSides.includes(s) || ((s === 'links' || s === 'rechts') && wideSlats)
   for (const s of ['hinten', 'vorne'] as Side[]) {
     if (!keepRail(s)) continue
@@ -314,17 +339,19 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       if (blocked(x)) continue
       add(`unten-latte-${i}`, 'leiste', lowerSlat.id, v(x, 5, lowerRailTop + tl / 2), v(x, Wo - 5, lowerRailTop + tl / 2), w, tl, { name: `Untere Latte ${i + 1}` })
     }
-    if (Wo - 2 * rb > 1250) {
-      add('unten-mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, Wo / 2, lowerRailTop - joist.h / 2), v(Lo - rb, Wo / 2, lowerRailTop - joist.h / 2), joist.b, joist.h, { name: 'Unterer Mittelträger' })
+    const lowerMids = seamYs.length ? seamYs : Wo - 2 * rb > 1250 ? [Wo / 2] : []
+    for (const [k, my] of lowerMids.entries()) {
+      add(k ? `unten-mitteltraeger-${k + 1}` : 'unten-mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, my, lowerRailTop - joist.h / 2), v(Lo - rb, my, lowerRailTop - joist.h / 2), joist.b, joist.h, { name: 'Unterer Mittelträger' })
     }
-    const mx = p + P.mattressGap
-    addPanel('matratze-unten', {
-      kind: 'matratze',
-      name: `Untere Matratze ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
-      outline: rect(mx, mx, mx + P.mattressLength, mx + P.mattressWidth).map((q) => to2(q.x, q.y)),
-      z: lowerRailTop + tl,
-      thickness: P.mattressThickness,
-    })
+    mats.forEach((m, i) =>
+      addPanel(i ? `matratze-unten-${i + 1}` : 'matratze-unten', {
+        kind: 'matratze',
+        name: `Untere Matratze${nMat > 1 ? ` ${i + 1}` : ''} ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
+        outline: rect(m.x0, m.y0, m.x1, m.y1).map((q) => to2(q.x, q.y)),
+        z: lowerRailTop + tl,
+        thickness: P.mattressThickness,
+      }),
+    )
   }
 
   // Abhängung: Gewindestangen von den freien Ecken zur Decke, durch die vordere Zarge gebolzt
@@ -362,12 +389,15 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     joistCount = 1
   }
   if (aufgelegt) joistCount = 0
-  for (let i = 1; i <= joistCount; i++) {
-    const x = x0 + ((x1 - x0) * i) / (joistCount + 1)
+  let joistXs = Array.from({ length: joistCount }, (_, i) => x0 + ((x1 - x0) * (i + 1)) / (joistCount + 1))
+  // Roste hintereinander: an jeder Fuge ein Querträger
+  if (!aufgelegt && rost && seamXs.length) joistXs = P.deck === 'lattenrost' ? [...seamXs, ...mats.map((m) => (m.x0 + m.x1) / 2)] : seamXs
+  joistXs.forEach((x, k) => {
+    const i = k + 1
     add(`quertraeger-${i}`, 'quertraeger', P.joistCatalogId, v(x, rb, railTop - joist.h / 2), v(x, Wo - rb, railTop - joist.h / 2), joist.b, joist.h, {
       name: `Querträger ${i}`,
     })
-  }
+  })
 
   // Kopfbänder unter den Zargen, je Pfosten in beiden Richtungen
   if (P.braces && (P.type === 'freistehend' || P.type === 'deckenhoch' || P.type === 'wandseitig' || P.type === 'eck')) {
@@ -409,9 +439,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       slatXs.push(x)
       add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, railTop + t / 2), v(x, Wo - 5, railTop + t / 2), w, t, { name: `Latte ${i + 1}` })
     }
-    if (wideSlats) {
-      add('mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, Wo / 2, railTop - joist.h / 2), v(Lo - rb, Wo / 2, railTop - joist.h / 2), joist.b, joist.h, { name: 'Mittelträger' })
-    }
+    addMidCarriers()
   } else if (netDeck) {
     addPanel('liegeflaeche', {
       kind: 'netz',
@@ -444,25 +472,42 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       direction: P.rotation,
     })
   } else {
-    addPanel('liegeflaeche', {
-      kind: P.deck === 'rollrost' ? 'rollrost' : 'lattenrost',
-      name: P.deck === 'rollrost' ? 'Rollrost' : 'Lattenrost',
-      outline: rect(p, p, Lo - p, Wo - p).map((q) => to2(q.x, q.y)),
-      z: railTop,
-      thickness: t,
-      catalogId: P.deckCatalogId,
-      direction: P.rotation,
+    // ein Rost je Matratze, Stoß über Mittel- bzw. Querträger
+    const xs = [p, ...seamXs, Lo - p]
+    const ys = [p, ...seamYs, Wo - p]
+    mats.forEach((_, i) => {
+      const [ax0, ax1] = matSide ? [p, Lo - p] : [xs[i], xs[i + 1]]
+      const [ay0, ay1] = matSide ? [ys[i], ys[i + 1]] : [p, Wo - p]
+      addPanel(i ? `liegeflaeche-${i + 1}` : 'liegeflaeche', {
+        kind: P.deck === 'rollrost' ? 'rollrost' : 'lattenrost',
+        name: `${P.deck === 'rollrost' ? 'Rollrost' : 'Lattenrost'}${nMat > 1 ? ` ${i + 1}` : ''}`,
+        outline: rect(ax0, ay0, ax1, ay1).map((q) => to2(q.x, q.y)),
+        z: railTop,
+        thickness: t,
+        catalogId: P.deckCatalogId,
+        direction: P.rotation,
+      })
     })
+    addMidCarriers()
   }
-  const mx0 = p + P.mattressGap
-  const my0 = p + P.mattressGap
-  if (!netDeck) addPanel('matratze', {
-    kind: 'matratze',
-    name: `Matratze ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
-    outline: rect(mx0, my0, mx0 + P.mattressLength, my0 + P.mattressWidth).map((q) => to2(q.x, q.y)),
-    z: H,
-    thickness: P.mattressThickness,
-  })
+  if (!netDeck)
+    mats.forEach((m, i) =>
+      addPanel(i ? `matratze-${i + 1}` : 'matratze', {
+        kind: 'matratze',
+        name: `Matratze${nMat > 1 ? ` ${i + 1}` : ''} ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
+        outline: rect(m.x0, m.y0, m.x1, m.y1).map((q) => to2(q.x, q.y)),
+        z: H,
+        thickness: P.mattressThickness,
+      }),
+    )
+
+  function addMidCarriers() {
+    midYs.forEach((y, i) =>
+      add(i ? `mitteltraeger-${i + 1}` : 'mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, y, railTop - joist.h / 2), v(Lo - rb, y, railTop - joist.h / 2), joist.b, joist.h, {
+        name: midYs.length > 1 ? `Mittelträger ${i + 1}` : 'Mittelträger',
+      }),
+    )
+  }
 
   // --- Leiter (vor dem Geländer, weil die Öffnung von ihr abhängt) -----------------------
   let ladderFootprint: { x: Mm; y: Mm }[] | undefined
