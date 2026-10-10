@@ -87,6 +87,8 @@ interface State {
   /** Aufbau-Animation: aktueller Schritt und Startzeit (performance.now) */
   build: { step: number; start: number; auto: boolean } | null
   showPlan: boolean
+  /** Planungsassistent geöffnet */
+  showWizard: boolean
   showShare: boolean
   /** Abgleich-Server im WLAN (npm run lan), sonst null */
   server: { ips: string[]; port: number; status: 'verbunden' | 'getrennt'; lastSync: number } | null
@@ -201,6 +203,7 @@ export const useStore = create<State>((set, get) => ({
   wobble: false,
   build: null,
   showPlan: false,
+  showWizard: false,
   showShare: false,
   server: null,
   toast: null,

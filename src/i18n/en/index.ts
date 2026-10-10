@@ -8,6 +8,7 @@ import plan from './plan'
 import uiApp from './ui-app'
 import uiPanels from './ui-panels'
 import views from './views'
+import wizard from './wizard'
 
-const en: Record<string, string> = { ...model, ...analysis, ...views, ...plan, ...uiApp, ...uiPanels }
+const en: Record<string, string> = { ...model, ...analysis, ...views, ...plan, ...uiApp, ...uiPanels, ...wizard }
 export default en

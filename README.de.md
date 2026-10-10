@@ -16,7 +16,8 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 
 - Läuft in jedem aktuellen Browser auf Laptop, PC und Tablet (Chrome, Edge, Firefox, Safari).
 - **Als App aufs Tablet oder Handy:** Link öffnen und im Browsermenü „Zum Home-Bildschirm“ (iPad/iPhone) bzw. „App installieren“ (Android, Chrome) wählen. Danach startet Luftschloss wie eine App und funktioniert auch offline.
-- Beim ersten Start ist ein **Beispielzimmer** geladen: einfach herumklicken, das Bett auswählen und verschieben, Maße ändern. Mit „Eigenes Zimmer anlegen“ beginnst du mit deinem Raum.
+- Beim ersten Start ist ein **Beispielzimmer** geladen: einfach herumklicken, das Bett auswählen und verschieben, Maße ändern.
+- **Neu dabei? Der Planungsassistent 🧭 hilft.** Sechs kurze Fragen – Raumgröße, Wände, Fenster und Türen, wer oben schläft, was darunter soll, ob in die Wand geschraubt werden darf – und du bekommst geprüfte Vorschläge für dein Zimmer. Einen übernehmen und weiter anpassen.
 
 ## Was du damit machen kannst
 

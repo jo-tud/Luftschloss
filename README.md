@@ -16,7 +16,8 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 
 - Works in any current browser on laptop, desktop and tablet (Chrome, Edge, Firefox, Safari).
 - **Install it as an app on your tablet or phone:** open the link and choose "Add to Home Screen" (iPad/iPhone) or "Install app" (Android, Chrome) in the browser menu. Luftschloss then starts like a regular app and also works offline.
-- On first launch a **sample room** is loaded: just click around, select the bed, drag it, change dimensions. When you are ready, start a new project with your own room.
+- On first launch a **sample room** is loaded: just click around, select the bed, drag it, change dimensions.
+- **New to this? Use the planning assistant 🧭.** Six short questions – room size, walls, windows and doors, who sleeps on top, what goes underneath, whether you may screw into the walls – and you get checked suggestions for your room. Pick one and keep adjusting.
 - **English or German:** Luftschloss picks the language of your browser automatically (German browsers get German, everyone else English). Switch any time with 🌐 in the toolbar.
 
 ## What you can do with it

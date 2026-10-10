@@ -276,23 +276,15 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Werkstattskizzen je Verbindungsart, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
 | M6b Tablet | Finger/Stift (antippen = auswählen, ausgewählt ziehen = verschieben, Pinch-Zoom, zwei Finger verschieben/drehen, Doppeltipp = Fokus), Seitenleisten als Schubladen unter 1280 px, große Bedienflächen bei Fingerbedienung, `npm run lan` mit Projekt-Abgleich über /api/projekt und QR-Code, Tailscale-Anleitung, PWA (installierbar, offline über HTTPS/localhost) | ✅ |
 | M7 Erweiterungen | Vorlagen Halbhoch, **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). Offen: auf Regal, Raum als Polygon, Dachschräge, Plattenzuschnitt 2D. | ◐ |
+| M9 Sprachen & Einstieg | Englisch als Standard, Deutsch umschaltbar (automatisch nach Browsersprache), alle Texte über `t()` mit Test auf fehlende Übersetzungen; **Planungsassistent** für Einsteiger (Raum, Wände, Öffnungen, Schläfer, Nutzung darunter, Befestigung → geprüfte, gewichtete Vorschläge) | ✅ |
 | M8 Visuelle Qualität | Erster Durchgang: prozedurale Holzmaserung (Faser, Jahresringe, Hirnholz, OSB-Späne), Dielenboden, Putz, weiches Fensterlicht ohne Download, Außenansicht durch die Fenster (Stencil-Maske), Schlossschrauben als Modelle, Doppelklick-Heranfliegen, Qualitätsstufen. Zweiter Durchgang: Winkel und Balkenschuhe, Stuckprofil und Rosette, Sonnenlicht nach Uhrzeit. Offen siehe Kapitel 13 | ✅ |
 
 ---
 
 ## 11. Offene Punkte
 
-1. **Testzimmer nachmessen.** Geschätzt sind:
-   - Raumhöhe (3,50 m)
-   - Fensterlage und -maße
-   - Laibungstiefe (28 cm)
-   - Brüstung (85 cm)
-   - Stuck (20 cm Höhe, 28 cm Ausladung)
-   - Rosette und Lampe
-   - Heizkörper
-   - Tür
-   - Sockelleiste (6 × 1,8 cm)
-2. **Wandbaustoff und Deckenart** im Testzimmer: Nur die Fensterwand A ist gemauert; B, C und D sind als Leichtbau eingetragen. Die Decke ist als nicht tragfähig eingetragen, also keine Abhängung.
+1. ~~Testzimmer nachmessen~~ Entfällt: Das Beispielzimmer ist öffentlich und ohne „geschätzt“-Markierungen; das eigene Zimmer wird in der App bzw. mit dem Planungsassistenten angepasst.
+2. **Wandbaustoff und Deckenart** im Beispielzimmer: Fensterwand A gemauert, B–D Leichtbau, Holzbalkendecke (nicht für Abhängung).
 3. **DIN EN 747:2024:** Werte gegen den Normtext prüfen, sobald er vorliegt.
 4. ~~Soll der **Preis-Agent** später direkt in der App laufen?~~ Beides: Prompt zum Kopieren und optional direkt mit eigenem API-Schlüssel (M7).
 
