@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import type { WallId } from '../model/types'
 import { useDerived, useStore, type PersonPreset, type ViewMode } from '../state/store'
 import { Camera, Eye, House, Ico, Scissors } from '../ui/icons'
-import { applyCam, goalFor, PERSON_LABEL, T } from './camera'
+import { applyCam, goalFor, PERSON_ICON, PERSON_LABEL, T } from './camera'
 import { Controller, mainCam } from './Controller'
 import { SceneContent } from './Scene'
 import { PhotoView } from './PhotoView'
@@ -128,8 +128,13 @@ function ViewSwitcher() {
         3D
       </button>
       <details className="dropdown person-menu" ref={personRef}>
-        <summary className={view.kind === 'person' ? 'on' : ''} title={t('Ich-Perspektive: den Raum aus Augenhöhe erleben (4)')}>
-          <Ico i={Eye} /> {t('Ich')} ▾
+        <summary
+          className={view.kind === 'person' ? 'on' : ''}
+          title={view.kind === 'person' ? `${t('Ich-Perspektive: den Raum aus Augenhöhe erleben (4)')}\n${viewLabel(view)}` : t('Ich-Perspektive: den Raum aus Augenhöhe erleben (4)')}
+        >
+          <Ico i={Eye} /> {t('Ich')}
+          {/* gewählter Standpunkt als Symbol – ein eigener Text bräche die Leiste um */}
+          {view.kind === 'person' && <span aria-hidden> {PERSON_ICON[view.preset]}</span>} ▾
         </summary>
         <div className="menu">
           {presets.map((p) => (
@@ -141,7 +146,7 @@ function ViewSwitcher() {
                 personRef.current?.removeAttribute('open')
               }}
             >
-              {p === 'tuer' ? '🚪' : p === 'unter' ? '🪑' : p === 'matratze' ? '🛏' : '😴'} {tr(PERSON_LABEL[p])}
+              {PERSON_ICON[p]} {tr(PERSON_LABEL[p])}
             </button>
           ))}
         </div>
@@ -157,8 +162,6 @@ function ViewSwitcher() {
         <span className="lbl">{t('Ganzer Raum')}</span>
       </button>
       <SectionToggle />
-      {/* nur nötig, wo die Ansicht nicht schon als gedrückter Knopf zu sehen ist */}
-      {view.kind === 'person' && <span className="view-name">{viewLabel(view)}</span>}
     </div>
   )
 }
