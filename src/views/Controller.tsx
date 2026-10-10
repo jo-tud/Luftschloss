@@ -124,6 +124,7 @@ export function Controller() {
 
   useEffect(() => {
     const el = gl.domElement
+    el.style.touchAction = 'none'
     const ndc = (e: { clientX: number; clientY: number }) => {
       const r = el.getBoundingClientRect()
       return new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
@@ -161,12 +162,32 @@ export function Controller() {
       return new THREE.Plane(new THREE.Vector3(0, 1, 0), -pt.y)
     }
 
+    // Finger auf dem Bildschirm (für Zwei-Finger-Gesten) und Doppeltipp
+    const touches = new Map<number, { x: number; y: number }>()
+    let gesture: { d0: number; mx: number; my: number; a0: number; cam0: CamState } | null = null
+    let lastTap = { t: 0, x: 0, y: 0 }
+    const startGesture = () => {
+      const [a, b] = [...touches.values()]
+      const c = cam.current!
+      gesture = { d0: Math.hypot(b.x - a.x, b.y - a.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, a0: Math.atan2(b.y - a.y, b.x - a.x), cam0: cloneCam(c) }
+      // laufendes Ziehen eines Objekts abschließen, Navigation abbrechen
+      if (drag.current?.kind !== 'object') drag.current = null
+    }
+
     const onPointerDown = (e: PointerEvent) => {
       el.setPointerCapture(e.pointerId)
       const st = useStore.getState()
       const c = cam.current
       if (!c) return
       anim.current = null
+      if (e.pointerType === 'touch') {
+        touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (touches.size === 2) {
+          startGesture()
+          return
+        }
+        if (touches.size > 2) return
+      }
       const base: DragState = { kind: 'nav-pan', startX: e.clientX, startY: e.clientY, moved: false, cam0: cloneCam(c) }
       const person = st.view.kind === 'person'
       const cad = st.mouseProfile === 'cad'
@@ -215,7 +236,13 @@ export function Controller() {
       }
       if (hit) {
         const sel = selectionFor(st.project, hit.data.id)
+        // Finger: erst antippen = auswählen, Ziehen verschiebt nur, was schon ausgewählt ist
+        const already = !!st.selection && !!sel && st.selection.kind === sel.kind && st.selection.id === sel.id
         st.select(sel)
+        if (e.pointerType === 'touch' && !already) {
+          drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) ? 'nav-pan' : 'nav-orbit', pick: hit.data }
+          return
+        }
         const plane = viewPlaneThrough(hit.point)
         const mover = makeMover(st.project, hit.data, st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45))
         if (mover) {
@@ -230,6 +257,29 @@ export function Controller() {
       const st = useStore.getState()
       const c = cam.current
       if (!c) return
+      if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+        touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+        if (gesture && touches.size >= 2) {
+          const [a, b] = [...touches.values()]
+          const d = Math.hypot(b.x - a.x, b.y - a.y)
+          const mx = (a.x + b.x) / 2
+          const my = (a.y + b.y) / 2
+          const g = gesture
+          if (st.view.kind === 'person') {
+            c.fov = THREE.MathUtils.clamp((g.cam0.fov * g.d0) / Math.max(1, d), 35, 110)
+            return
+          }
+          // Pinch = Zoom, zwei Finger verschieben = Pan, Drehen = Ansicht drehen (3D)
+          c.viewH = THREE.MathUtils.clamp((g.cam0.viewH * g.d0) / Math.max(1, d), 0.3, 40)
+          const wpp = c.viewH / el.clientHeight
+          const dir = camDir(c)
+          const right = new THREE.Vector3().crossVectors(dir, (camera as THREE.PerspectiveCamera).up).normalize()
+          const up = new THREE.Vector3().crossVectors(right, dir).normalize()
+          c.target.copy(g.cam0.target).addScaledVector(right, -(mx - g.mx) * wpp).addScaledVector(up, (my - g.my) * wpp)
+          if (!isOrtho(c)) c.yaw = g.cam0.yaw - THREE.MathUtils.radToDeg(Math.atan2(b.y - a.y, b.x - a.x) - g.a0)
+          return
+        }
+      }
       const dr = drag.current
       if (!dr) {
         hoverAndCursor(e)
@@ -276,10 +326,25 @@ export function Controller() {
 
     const onPointerUp = (e: PointerEvent) => {
       el.releasePointerCapture(e.pointerId)
+      const st = useStore.getState()
+      if (e.pointerType === 'touch') {
+        touches.delete(e.pointerId)
+        if (gesture) {
+          if (touches.size < 2) gesture = null
+          drag.current = null
+          st.endCoalesce()
+          return
+        }
+      }
       const dr = drag.current
       drag.current = null
-      const st = useStore.getState()
-      if (dr && !dr.moved && dr.kind !== 'object' && e.button === 0 && st.tool === 'select') st.select(null)
+      if (dr && !dr.moved && dr.kind !== 'object' && !dr.pick && e.button === 0 && st.tool === 'select') st.select(null)
+      // Doppeltipp = auf das Teil zentrieren
+      if (e.pointerType === 'touch' && dr && !dr.moved) {
+        const now = performance.now()
+        if (now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) onDblClick(e)
+        lastTap = { t: now, x: e.clientX, y: e.clientY }
+      }
       st.endCoalesce()
     }
 
@@ -398,6 +463,7 @@ export function Controller() {
     el.addEventListener('pointerdown', onPointerDown)
     el.addEventListener('pointermove', onPointerMove)
     el.addEventListener('pointerup', onPointerUp)
+    el.addEventListener('pointercancel', onPointerUp)
     el.addEventListener('wheel', onWheel, { passive: false })
     el.addEventListener('dblclick', onDblClick)
     el.addEventListener('contextmenu', noMenu)
@@ -407,6 +473,7 @@ export function Controller() {
       el.removeEventListener('pointerdown', onPointerDown)
       el.removeEventListener('pointermove', onPointerMove)
       el.removeEventListener('pointerup', onPointerUp)
+      el.removeEventListener('pointercancel', onPointerUp)
       el.removeEventListener('wheel', onWheel)
       el.removeEventListener('dblclick', onDblClick)
       el.removeEventListener('contextmenu', noMenu)

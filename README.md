@@ -28,6 +28,18 @@ npm run build      # Typprüfung + Produktions-Build nach dist/
 npm run preview    # Build ansehen: http://localhost:4173
 ```
 
+### Auf dem Tablet (WLAN oder Tailscale)
+
+```sh
+npm run lan        # baut und startet im Netzwerk, z. B. http://192.168.1.20:4173
+```
+
+Im Laptop-Browser oben auf **📱 Tablet** klicken und den QR-Code mit dem Tablet scannen. Laptop und Tablet arbeiten dann am **selben Projekt**; Änderungen gleichen sich alle paar Sekunden ab. Gespeichert wird im Ordner `projekte/`.
+
+- Bedienung mit Finger und Stift: antippen wählt aus, ein ausgewähltes Teil lässt sich ziehen. Mit einem Finger dreht bzw. verschiebt man die Ansicht, mit zwei Fingern zoomt (Pinch), verschiebt und dreht man. Doppeltipp zentriert. Die Seitenleisten klappen über ☰ und ⓘ auf.
+- **Ohne gemeinsames WLAN, z. B. auf der Baustelle:** [Tailscale](https://tailscale.com) auf Laptop und Tablet installieren und `http://<Tailscale-IP des Laptops>:4173` öffnen. Mit `tailscale serve --bg 4173` gibt es eine HTTPS-Adresse. Darüber lässt sich Luftschloss auf dem Tablet als App installieren („Zum Home-Bildschirm“), und es läuft dann auch offline.
+- Die Freigabe hat keine Anmeldung. Deshalb nur im eigenen Netz bzw. Tailnet nutzen und nicht ins Internet stellen.
+
 Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck, Rosette, Hochbett vor dem linken Fenster). Gelb markierte Felder sind geschätzt und sollten nachgemessen werden. Der Stand wird automatisch im Browser gespeichert. Unter *Raum → Projekt* lässt er sich exportieren, importieren oder auf das Testzimmer bzw. ein leeres Zimmer zurücksetzen.
 
 ## Was der Prototyp kann

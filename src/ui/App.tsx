@@ -10,12 +10,15 @@ import { Properties } from './Properties'
 import { Sidebar } from './Sidebar'
 import { StaticsRunner } from './Statics'
 import { BauplanDialog } from './Bauplan'
+import { ServerSync, ShareDialog, Toast } from './Sync'
 import { Toolbar } from './Toolbar'
 
 export function App() {
   useShortcuts()
+  const leftOpen = useStore((s) => s.leftOpen)
+  const rightOpen = useStore((s) => s.rightOpen)
   return (
-    <div className="app">
+    <div className={`app${leftOpen ? ' left-open' : ''}${rightOpen ? ' right-open' : ''}`}>
       <Toolbar />
       <Sidebar />
       <main className="center">
@@ -29,6 +32,10 @@ export function App() {
         <Checks />
       </aside>
       <StaticsRunner />
+      <ServerSync />
+      <ShareDialog />
+      <Toast />
+      <div className="drawer-scrim" onClick={() => useStore.setState({ leftOpen: false, rightOpen: false })} />
       <MaterialDialog />
       <JointDetailDialog />
       <BauplanDialog />
