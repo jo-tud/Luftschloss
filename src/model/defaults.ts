@@ -58,8 +58,8 @@ export function testRoom(): Room {
       D: { material: 'leichtbau' },
     },
     floor: 'holzdielen',
-    // Decke im Testzimmer nicht für Abhängungen geeignet
-    ceiling: 'schwach',
+    // Altbau: vermutlich Holzbalkendecke, nicht besonders tragfähig (Abhängung nur in einen Balken)
+    ceiling: 'holzbalken',
     cornice: { enabled: true, height: 200, projection: 280, shape: 'kehle' },
     corniceOverrides: {},
     skirting: { enabled: true, height: 60, depth: 18 },
@@ -197,6 +197,7 @@ export function testProject(): Project {
     },
     estimated: [
       'room.height',
+      'room.ceiling',
       'room.cornice',
       'room.rosettes',
       'room.skirting',

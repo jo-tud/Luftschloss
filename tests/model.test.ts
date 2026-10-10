@@ -143,9 +143,12 @@ describe('Wandbalken-Bauweise', () => {
     const g = generateLoftBed(a, 3500)
     expect(g.members.filter((m) => m.catalogId === 'gewindestange-m10')).toHaveLength(1)
     expect(g.members.some((m) => m.partKey === 'pfosten-FL' && m.start.z === 0)).toBe(false)
+    // Testzimmer: Holzbalkendecke → Abhängung nur in einen Balken (Warnung)
     const p = { ...testProject(), assemblies: [a] }
-    const findings = analyze(p, resolveProject(p)).findings
-    expect(findings.some((f) => f.id.startsWith('decke-haengen'))).toBe(true)
+    expect(analyze(p, resolveProject(p)).findings.some((f) => f.id.startsWith('decke-balken'))).toBe(true)
+    // nicht tragfähige Decke → Fehler
+    const weak = { ...p, room: { ...p.room, ceiling: 'schwach' as const } }
+    expect(analyze(weak, resolveProject(weak)).findings.some((f) => f.id.startsWith('decke-haengen'))).toBe(true)
   })
 })
 

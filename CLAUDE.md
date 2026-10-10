@@ -13,3 +13,6 @@
 - Bei jeder Ausbaustufe an ein **Wow-Feature** denken (SPEZIFIKATION.md, Kapitel 12) und Ideen dort ergänzen.
 - Tablet-Bedienung (Finger/Stift) mitdenken: Zeigerereignisse statt Mausereignisse, ausreichend große Bedienflächen.
 - PRs dürfen nach grünem CI selbst gemergt werden.
+- `main` ist der Hauptbranch; neue Features jeweils als eigener PR, nach grünem CI selbst mergen.
+- Testprojekt (`testProject()`) nicht an Fotos oder Schätzungen anpassen: Maße werden direkt in der App korrigiert – das ist zugleich der Usability-Test.
+- Für später vorgemerkt: **visuelle Qualität** als letzter Schritt (SPEZIFIKATION.md, Kapitel 13).
