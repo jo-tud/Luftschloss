@@ -301,7 +301,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 
 Gesammelt und laufend ergänzt:
 
-1. **Dein Hochbett im Foto deines Zimmers.** Ein Foto vom Zimmer laden und ein paar Raumecken anklicken. Die App errechnet daraus Standort und Brennweite der Kamera und blendet das geplante Bett perspektivisch richtig ins Foto ein.
-2. **Aufbau-Animation.** Die Teile fliegen in Montagereihenfolge an ihren Platz, so wie man sie später aufbaut. Jeder Schritt kann einzeln angesehen werden.
+1. **Dein Hochbett im Foto deines Zimmers.** Ein Foto vom Zimmer laden und ein paar Raumecken anklicken. Die App errechnet daraus Standort und Brennweite der Kamera und blendet das geplante Bett perspektivisch richtig ins Foto ein. ✅ umgesetzt (Ansicht **📷 Foto**, Taste `6`): Kamera per Levenberg-Marquardt aus 4–8 Punkten; auf Wunsch werden Lage und Größe der angeklickten Fenster und Türen mitgeschätzt und zum Übernehmen vorgeschlagen. Das Foto bleibt im Browser (IndexedDB).
+2. **Aufbau-Animation.** Die Teile fliegen in Montagereihenfolge an ihren Platz, so wie man sie später aufbaut. Jeder Schritt kann einzeln angesehen werden. ✅ umgesetzt
 3. **Wackel-Vorschau.** Die Statik zeigt nicht nur Zahlen: Ein Gestell ohne Aussteifung wackelt sichtbar, mit Kopfbändern steht es still.
 4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.

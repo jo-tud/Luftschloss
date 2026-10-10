@@ -13,6 +13,7 @@ export type ViewMode =
   | { kind: '3d' }
   | { kind: 'person'; preset: PersonPreset }
   | { kind: 'unfold' }
+  | { kind: 'foto' }
 
 export type PersonPreset = 'tuer' | 'unter' | 'matratze' | 'liegen'
 

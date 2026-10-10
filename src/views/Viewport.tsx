@@ -6,6 +6,7 @@ import { useDerived, useStore, type PersonPreset, type ViewMode } from '../state
 import { applyCam, goalFor, PERSON_LABEL, T } from './camera'
 import { Controller, mainCam } from './Controller'
 import { SceneContent } from './Scene'
+import { PhotoView } from './PhotoView'
 import { UnfoldView } from './Unfold'
 import { StaticsPanel } from '../ui/Statics'
 import { BuildPlayer } from '../ui/BuildPlayer'
@@ -22,6 +23,8 @@ export function viewLabel(v: ViewMode): string {
       return PERSON_LABEL[v.preset]
     case 'unfold':
       return 'Abwicklung'
+    case 'foto':
+      return 'Foto-Abgleich'
   }
 }
 
@@ -75,13 +78,14 @@ export function Viewport() {
   if (view.kind === 'elev') lastWall.current = view.wall
   const minis = miniViews(view, lastWall.current)
   return (
-    <div className={`viewport${view.kind === 'unfold' ? ' unfold-on' : ''}`}>
+    <div className={`viewport${view.kind === 'unfold' || view.kind === 'foto' ? ' unfold-on' : ''}`}>
       <Canvas shadows camera={{ fov: 40, near: 0.05, far: 200, position: [3, 3, 3] }} gl={{ antialias: true, preserveDrawingBuffer: true }} dpr={[1, 2]}>
         <MainScene />
       </Canvas>
       {view.kind === 'unfold' && <UnfoldView />}
+      {view.kind === 'foto' && <PhotoView />}
       <ViewSwitcher />
-      {view.kind !== 'unfold' && <MiniMap />}
+      {view.kind !== 'unfold' && view.kind !== 'foto' && <MiniMap />}
       <SectionBoxPanel />
       <StaticsPanel />
       <BuildPlayer />
@@ -128,6 +132,9 @@ function ViewSwitcher() {
       </span>
       <button className={view.kind === 'unfold' ? 'on' : ''} onClick={() => setView({ kind: 'unfold' })} title="Raum aufgeklappt: Wände von innen, Fenster und Heizkörper direkt ziehen (5)">
         Abwicklung
+      </button>
+      <button className={view.kind === 'foto' ? 'on' : ''} onClick={() => setView({ kind: 'foto' })} title="Das geplante Bett in ein Foto des Zimmers einblenden (6)">
+        📷 Foto
       </button>
       <button onClick={() => setView({ kind: '3d' })} title="Ansicht zurücksetzen (0)">
         ⌂

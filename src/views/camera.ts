@@ -107,6 +107,8 @@ export function goalFor(view: ViewMode, p: Project, d: Derived, aspect: number):
       const viewH = Math.max(W, L / aspect) * 1.12
       return { target: center, yaw: 0, pitch: -89.9, viewH, fov: ORTHO_FOV }
     }
+    case 'foto':
+      return goalFor({ kind: '3d' }, p, d, aspect)
   }
 }
 
