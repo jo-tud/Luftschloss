@@ -307,13 +307,14 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
   if (rail) {
     const asm = r.beds.get(rail.assemblyId ?? '')
     const mid = v((rail.start.x + rail.end.x) / 2, (rail.start.y + rail.end.y) / 2, rail.start.z)
-    let dir = v(0, 1, 0)
+    // senkrecht zum Handlauf nach außen drücken (nicht schräg aus der Bettmitte – sonst bekäme ein
+    // seitlich liegendes Geländerfeld eine Querkomponente, die die Stirnbretter quer biegt)
+    const ax = memberAxes(rail)[0]
+    let dir = v(-ax.y, ax.x, 0)
     if (asm) {
       const cx = asm.footprint.reduce((s2, q) => s2 + q.x, 0) / 4
       const cy = asm.footprint.reduce((s2, q) => s2 + q.y, 0) / 4
-      const d = v(mid.x - cx, mid.y - cy, 0)
-      const l = Math.hypot(d.x, d.y) || 1
-      dir = v(d.x / l, d.y / l, 0)
+      if ((mid.x - cx) * dir.x + (mid.y - cy) * dir.y < 0) dir = v(-dir.x, -dir.y, 0)
     }
     addLoad(GU, nodeAt(rail.id, memberLength(rail) / 2), [dir.x * LOADS.guard, dir.y * LOADS.guard, 0, 0, 0, 0])
   }

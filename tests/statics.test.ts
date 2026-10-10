@@ -74,3 +74,15 @@ describe('Statik Beispielzimmer', () => {
     expect(withB.sway.x).toBeLessThan(without.sway.x)
   })
 })
+
+describe('Statik: Geländer und aufgelegte Querträger', () => {
+  it('Gegen das Geländer drücken biegt keine Stirnbretter quer; aufgelegte End-Querträger hängen nicht an den Pfosten', () => {
+    const p = testProject()
+    Object.assign(p.assemblies[0].params, { deck: 'dielen', deckCatalogId: 'nf-kiefer-27', frameStyle: 'aufgelegt', braces: true })
+    const r = resolveProject(p)
+    const s = computeStatics(p, r)
+    for (const [id, c] of s.members) if (id.includes(':brett-')) expect(c.util).toBeLessThan(0.6)
+    // keine Querträger-Pfosten-Verbindung
+    expect(r.joints.some((j) => j.key.includes('quertraeger') && j.key.includes('pfosten'))).toBe(false)
+  })
+})
