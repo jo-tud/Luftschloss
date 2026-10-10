@@ -1,16 +1,17 @@
-import { Edges, Html, Line } from '@react-three/drei'
+import { Edges, Environment, Html, Lightformer, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
-import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
+import { fmtCm, fmtM, memberAxes, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { cornice, doorGeom, furnitureBox, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { buildSteps } from '../analysis/assembly'
 import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
+import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
 
 const COLORS = {
   wall: '#ece7df',
@@ -58,13 +59,14 @@ function obbTransform(o: OBB, roundAxis = false): { position: THREE.Vector3; qua
   return { position: T(o.center.x, o.center.y, o.center.z), quaternion: q, size: size.map((s) => s / 1000) as [number, number, number] }
 }
 
-function Box({ o, color, pick, opacity = 1, edges = false, round = false, cast = true, highlight }: { o: OBB; color: string; pick?: PickData; opacity?: number; edges?: boolean; round?: boolean; cast?: boolean; highlight?: string }) {
+function Box({ o, color, pick, opacity = 1, edges = false, round = false, cast = true, highlight, wood, plaster }: { o: OBB; color: string; pick?: PickData; opacity?: number; edges?: boolean; round?: boolean; cast?: boolean; highlight?: string; wood?: WoodKind; plaster?: boolean }) {
   const t = useMemo(() => obbTransform(o, round), [o, round])
+  const shared = wood && !round ? woodMaterial(wood, highlight ?? color, { emissive: highlight, opacity }) : plaster ? plasterMaterial(color, { opacity }) : undefined
   return (
-    <mesh position={t.position} quaternion={t.quaternion} userData={pick ? { pick } : {}} castShadow={cast} receiveShadow>
+    <mesh position={t.position} quaternion={t.quaternion} userData={pick ? { pick } : {}} castShadow={cast} receiveShadow material={shared}>
       {round ? <cylinderGeometry args={[t.size[0] / 2, t.size[0] / 2, t.size[1], 20]} /> : <boxGeometry args={t.size} />}
-      <meshStandardMaterial color={highlight ?? color} transparent={opacity < 1} opacity={opacity} roughness={0.8} emissive={highlight ? highlight : '#000000'} emissiveIntensity={highlight ? 0.25 : 0} />
-      {edges && !round && <Edges color="#6b5136" threshold={20} />}
+      {!shared && <meshStandardMaterial color={highlight ?? color} transparent={opacity < 1} opacity={opacity} roughness={0.8} emissive={highlight ? highlight : '#000000'} emissiveIntensity={highlight ? 0.25 : 0} />}
+      {edges && !round && <Edges color={wood ? '#7a5a3a' : '#6b5136'} threshold={20} transparent opacity={wood ? 0.35 : 1} />}
     </mesh>
   )
 }
@@ -102,7 +104,17 @@ export function MemberMeshes({ members, mini }: { members: Member[]; mini?: bool
         return (
           <BuildAnimated key={m.id} id={m.id} enabled={!mini}>
             {boxes.map((o, i) => (
-              <Box key={i} o={o} color={color} pick={{ kind: 'member', id: m.id }} edges={!m.round} round={m.round} highlight={highlight} opacity={!mini && staticsMode ? 0.85 : 1} />
+              <Box
+                key={i}
+                o={o}
+                color={color}
+                pick={{ kind: 'member', id: m.id }}
+                edges={!m.round}
+                round={m.round}
+                highlight={highlight}
+                opacity={!mini && staticsMode ? 0.85 : 1}
+                wood={catalogItem(m.catalogId)?.kind === 'beschlag' ? undefined : woodKindFor(m.catalogId)}
+              />
             ))}
           </BuildAnimated>
         )
@@ -232,7 +244,7 @@ export function PanelMeshes({ panels, mini }: { panels: Panel[]; mini?: boolean 
         let el: ReactElement
         if (pa.vertical) {
           const o = panelOBB(pa)
-          el = pa.kind === 'netz' ? <NetPanel o={o} id={pa.id} /> : <Box o={o} color={COLORS.woodLight} pick={{ kind: 'panel', id: pa.id }} edges highlight={highlight} />
+          el = pa.kind === 'netz' ? <NetPanel o={o} id={pa.id} /> : <Box o={o} color={COLORS.woodLight} pick={{ kind: 'panel', id: pa.id }} edges highlight={highlight} wood={woodKindFor(pa.catalogId ?? 'leimholz')} />
         } else if (pa.kind === 'matratze') el = <Mattress pa={pa} />
         else if (pa.kind === 'netz') el = <FlatNet pa={pa} />
         else el = <FlatPanel pa={pa} highlight={highlight} />
@@ -311,7 +323,7 @@ function FlatPanel({ pa, highlight }: { pa: Panel; highlight?: string }) {
   const color = pa.kind === 'platte' ? (pa.catalogId?.startsWith('osb') ? '#cfa565' : COLORS.woodLight) : pa.kind === 'dielen' ? COLORS.woodLight : '#d9c29a'
   return (
     <mesh geometry={geom} userData={{ pick: { kind: 'panel', id: pa.id } }} castShadow receiveShadow>
-      <meshStandardMaterial color={highlight ?? color} roughness={0.85} />
+      <primitive object={woodMaterial(woodKindFor(pa.catalogId ?? (pa.kind === 'dielen' ? 'nf' : 'leimholz')), highlight ?? color, { emissive: highlight })} attach="material" />
       <Edges color="#8a6a43" threshold={20} />
     </mesh>
   )
@@ -437,7 +449,7 @@ export function RoomMeshes({ p, mini, showCeiling }: { p: Project; mini?: boolea
     <group>
       <mesh position={T(r.length / 2, r.width / 2, -1)} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[r.length / 1000, r.width / 1000]} />
-        <meshStandardMaterial color={COLORS.floor} roughness={0.9} />
+        {p.room.floor === 'holzdielen' ? <primitive object={floorMaterial(COLORS.floor)} attach="material" /> : <meshStandardMaterial color="#d8d2c6" roughness={0.9} />}
       </mesh>
       {showCeiling && (
         <mesh position={T(r.length / 2, r.width / 2, r.height)} rotation={[Math.PI / 2, 0, 0]}>
@@ -448,7 +460,7 @@ export function RoomMeshes({ p, mini, showCeiling }: { p: Project; mini?: boolea
       {WALL_IDS.map((id) => (
         <group key={id} ref={(g) => void (wallRefs.current[id] = g ?? undefined)}>
           {walls[id].map((o, i) => (
-            <Box key={i} o={o} color={COLORS.wall} cast={false} />
+            <Box key={i} o={o} color={COLORS.wall} cast={false} plaster />
           ))}
           {cornices[id] && (
             <mesh geometry={cornices[id]!}>
@@ -582,6 +594,7 @@ function WindowMesh({ p, w }: { p: Project; w: WindowObj }) {
   const sashes = windowSashes(p.room, w)
   return (
     <group>
+      <OutsideView p={p} w={w} />
       {parts.map((o, i) => (
         <Box key={i} o={o} color={COLORS.frame} pick={{ kind: 'wallObject', id: w.id }} cast={false} />
       ))}
@@ -598,7 +611,7 @@ function WindowMesh({ p, w }: { p: Project; w: WindowObj }) {
         const [sash, handle] = sashBoxes(g, angle, 0)
         return (
           <group key={i}>
-            <Box o={sash} color={COLORS.glass} opacity={0.45} pick={{ kind: 'wallObject', id: w.id }} cast={false} />
+            <Box o={sash} color={COLORS.glass} opacity={0.2} pick={{ kind: 'wallObject', id: w.id }} cast={false} />
             <Box o={{ ...sash, half: [sash.half[0], sash.half[1] + 2, sash.half[2]] }} color={COLORS.frame} opacity={0.0} edges cast={false} />
             <Box o={handle} color="#d9d9d9" cast={false} />
           </group>
@@ -812,10 +825,13 @@ export function FootprintShadows({ d }: { d: Derived }) {
 }
 
 export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Derived; mini?: boolean; showCeiling: boolean }) {
+  const quality = useStore((s) => s.quality)
+  const rich = !mini && quality !== 'einfach'
   return (
     <>
-      <ambientLight intensity={0.55} />
-      <hemisphereLight args={['#fffaf0', '#b9a58a', 0.55]} />
+      <ambientLight intensity={mini ? 0.55 : 0.32} />
+      <hemisphereLight args={['#fffaf0', '#b9a58a', mini ? 0.55 : 0.4]} />
+      {rich && <RoomLight p={p} />}
       <directionalLight
         position={T(p.room.length * 0.2, -p.room.width * 0.3, p.room.height * 2.2)}
         intensity={1.25}
@@ -834,9 +850,250 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
       {!mini && <SwingArcs p={p} d={d} />}
       {!mini && <ClearanceMarks p={p} d={d} />}
       {!mini && <JointMarkers d={d} />}
+      {rich && <BoltHardware d={d} />}
       {!mini && <FootprintShadows d={d} />}
       {!mini && <MemberHandles p={p} />}
       {!mini && <StaticsShapes />}
     </>
+  )
+}
+
+/**
+ * Weiches Raumlicht ohne Download: eine kleine, lokal erzeugte Umgebung mit hellen Flächen an den
+ * Fenstern (kühles Tageslicht) und an der Lampe (warm). Sorgt für Glanzlichter und weiche Übergänge.
+ */
+function RoomLight({ p }: { p: Project }) {
+  const r = p.room
+  const windows = p.wallObjects.filter((o): o is WindowObj => o.kind === 'fenster')
+  return (
+    <Environment resolution={64} frames={1} environmentIntensity={0.55}>
+      <color attach="background" args={['#3a3631']} />
+      {windows.map((w) => {
+        const f = wallFrame(r, w.wall)
+        const s = w.offset + w.width / 2
+        const c = T(f.start.x + f.u.x * s - f.n.x * 400, f.start.y + f.u.y * s - f.n.y * 400, w.sillHeight + w.height / 2)
+        const target = T(r.length / 2, r.width / 2, w.sillHeight + w.height / 2)
+        return <Lightformer key={w.id} form="rect" intensity={3.2} color="#eaf3ff" position={c} scale={[w.width / 1000, w.height / 1000, 1]} target={target} />
+      })}
+      <Lightformer form="circle" intensity={1.4} color="#ffe2b8" position={T(r.length / 2, r.width / 2, r.height - 200)} scale={[0.6, 0.6, 1]} rotation={[Math.PI / 2, 0, 0]} />
+      <Lightformer form="rect" intensity={0.5} color="#f3ede4" position={T(r.length / 2, r.width / 2, r.height + 300)} scale={[r.length / 1000, r.width / 1000, 1]} rotation={[Math.PI / 2, 0, 0]} />
+    </Environment>
+  )
+}
+
+/**
+ * Blick nach draußen: eine prozedural gezeichnete Kulisse (Himmel, Bäume, Altbaufassade gegenüber)
+ * 2,5 m vor dem Fenster. Sie liegt hinter der Wand und ist nur durchs Fenster zu sehen.
+ */
+function OutsideView({ p, w }: { p: Project; w: WindowObj }) {
+  const f = wallFrame(p.room, w.wall)
+  const { position, quaternion } = useMemo(() => {
+    const s = w.offset + w.width / 2
+    const zc = w.sillHeight + w.height / 2 + 300
+    const out = 2600 + w.revealDepth
+    const pos = T(f.start.x + f.u.x * s - f.n.x * out, f.start.y + f.u.y * s - f.n.y * out, zc)
+    const o = new THREE.Object3D()
+    o.position.copy(pos)
+    o.lookAt(T(f.start.x + f.u.x * s, f.start.y + f.u.y * s, zc))
+    return { position: pos, quaternion: o.quaternion.clone() }
+  }, [f.start.x, f.start.y, f.u.x, f.u.y, f.n.x, f.n.y, w.offset, w.width, w.sillHeight, w.height, w.revealDepth])
+  const tex = outsideTexture(w.id)
+  // Maske in der Fensteröffnung: die Kulisse erscheint nur dort (Stencil), nie über der Wand hinaus
+  const mask = useMemo(() => {
+    const s = w.offset + w.width / 2
+    const d = -w.revealDepth - 40
+    const zc = w.sillHeight + w.height / 2
+    const pos = T(f.start.x + f.u.x * s + f.n.x * d, f.start.y + f.u.y * s + f.n.y * d, zc)
+    const o = new THREE.Object3D()
+    o.position.copy(pos)
+    o.lookAt(T(f.start.x + f.u.x * s + f.n.x * 1000, f.start.y + f.u.y * s + f.n.y * 1000, zc))
+    return { position: pos, quaternion: o.quaternion.clone() }
+  }, [f.start.x, f.start.y, f.u.x, f.u.y, f.n.x, f.n.y, w.offset, w.width, w.sillHeight, w.height, w.revealDepth])
+  return (
+    <>
+      <mesh position={mask.position} quaternion={mask.quaternion} raycast={() => null} renderOrder={10} material={STENCIL_MASK}>
+        <planeGeometry args={[w.width / 1000, w.height / 1000]} />
+      </mesh>
+      <mesh position={position} quaternion={quaternion} raycast={() => null} renderOrder={11}>
+        <planeGeometry args={[9, 5]} />
+        <meshBasicMaterial map={tex} toneMapped={false} stencilWrite stencilRef={1} stencilFunc={THREE.EqualStencilFunc} stencilZPass={THREE.KeepStencilOp} />
+      </mesh>
+    </>
+  )
+}
+
+const STENCIL_MASK = new THREE.MeshBasicMaterial({
+  colorWrite: false,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  stencilWrite: true,
+  stencilRef: 1,
+  stencilFunc: THREE.AlwaysStencilFunc,
+  stencilZPass: THREE.ReplaceStencilOp,
+})
+
+const outsideCache = new Map<string, THREE.CanvasTexture>()
+function outsideTexture(seedKey: string): THREE.CanvasTexture {
+  const hit = outsideCache.get(seedKey)
+  if (hit) return hit
+  let seed = [...seedKey].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7)
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296)
+  const W = 1024
+  const H = 576
+  const c = document.createElement('canvas')
+  c.width = W
+  c.height = H
+  const g = c.getContext('2d')!
+  // Himmel
+  const sky = g.createLinearGradient(0, 0, 0, H * 0.7)
+  sky.addColorStop(0, '#8fbbe6')
+  sky.addColorStop(1, '#e4eef6')
+  g.fillStyle = sky
+  g.fillRect(0, 0, W, H)
+  // Wolken
+  g.fillStyle = 'rgba(255,255,255,0.75)'
+  for (let i = 0; i < 6; i++) {
+    const x = rnd() * W
+    const y = 30 + rnd() * 120
+    for (let k = 0; k < 5; k++) {
+      g.beginPath()
+      g.ellipse(x + k * 28 - 60, y + Math.sin(k) * 8, 40 + rnd() * 30, 16 + rnd() * 10, 0, 0, Math.PI * 2)
+      g.fill()
+    }
+  }
+  // Altbaufassade gegenüber
+  const top = H * (0.22 + rnd() * 0.08)
+  const facade = ['#e6d7bb', '#dcc9a6', '#e9e0cf', '#d8c2a3'][Math.floor(rnd() * 4)]
+  g.fillStyle = facade
+  g.fillRect(0, top, W, H - top)
+  g.fillStyle = '#9b6b4f'
+  g.fillRect(0, top - 18, W, 18)
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 9; col++) {
+      const x = 30 + col * 115 + (row % 2) * 0
+      const y = top + 40 + row * 120
+      if (y + 80 > H) continue
+      g.fillStyle = '#f5f1e8'
+      g.fillRect(x - 6, y - 6, 52, 92)
+      g.fillStyle = rnd() > 0.3 ? '#55606b' : '#7a8794'
+      g.fillRect(x, y, 40, 80)
+      g.fillStyle = '#f5f1e8'
+      g.fillRect(x + 18, y, 4, 80)
+      g.fillRect(x, y + 30, 40, 3)
+    }
+  }
+  // Bäume davor
+  const greens = ['#4f7a3e', '#5f8c47', '#6f9a52', '#46703a', '#7da65c']
+  for (let t = 0; t < 4; t++) {
+    const cx = (t + 0.3 + rnd() * 0.4) * (W / 4)
+    const baseY = H * (0.92 + rnd() * 0.06)
+    const h = H * (0.45 + rnd() * 0.25)
+    g.fillStyle = '#5a4634'
+    g.fillRect(cx - 7, baseY - h * 0.45, 14, h * 0.45)
+    for (let k = 0; k < 26; k++) {
+      g.fillStyle = greens[Math.floor(rnd() * greens.length)]
+      g.globalAlpha = 0.85
+      g.beginPath()
+      g.arc(cx + (rnd() - 0.5) * h * 0.55, baseY - h * 0.55 + (rnd() - 0.5) * h * 0.5, 22 + rnd() * 34, 0, Math.PI * 2)
+      g.fill()
+    }
+    g.globalAlpha = 1
+  }
+  // Hecke unten
+  g.fillStyle = '#3f6332'
+  g.fillRect(0, H * 0.94, W, H * 0.06)
+  const tex = new THREE.CanvasTexture(c)
+  tex.colorSpace = THREE.SRGBColorSpace
+  outsideCache.set(seedKey, tex)
+  return tex
+}
+
+const BOLT_TYPES = new Set(['schlossschraube', 'bettschraube'])
+const metal = new THREE.MeshStandardMaterial({ color: '#d9dcdf', metalness: 0.55, roughness: 0.42 })
+const headGeo = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+const washerGeo = new THREE.CylinderGeometry(1, 1, 1, 20)
+const nutGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+
+/**
+ * Schlossschrauben (DIN 603) sichtbar machen: flacher Rundkopf außen, Scheibe und Sechskantmutter
+ * innen, zwei je Verbindung. Gleiche Teile als InstancedMesh – wenige Draw Calls.
+ */
+function BoltHardware({ d }: { d: Derived }) {
+  const meshes = useMemo(() => {
+    const byId = new Map(d.resolved.members.map((m) => [m.id, m]))
+    const heads: THREE.Matrix4[] = []
+    const washers: THREE.Matrix4[] = []
+    const nuts: THREE.Matrix4[] = []
+    const up = new THREE.Vector3(0, 1, 0)
+    const put = (list: THREE.Matrix4[], at: { x: number; y: number; z: number }, dir: THREE.Vector3, scale: [number, number, number]) => {
+      const q = new THREE.Quaternion().setFromUnitVectors(up, dir)
+      list.push(new THREE.Matrix4().compose(T(at.x, at.y, at.z), q, new THREE.Vector3(...scale)))
+    }
+    for (const j of d.resolved.joints) {
+      if (!BOLT_TYPES.has(j.typeId)) continue
+      const A = byId.get(j.a)
+      const B = byId.get(j.b)
+      if (!A || !B || A.round || B.round) continue
+      const aA = memberAxes(A)[0]
+      const aB = memberAxes(B)[0]
+      let ax = { x: aA.y * aB.z - aA.z * aB.y, y: aA.z * aB.x - aA.x * aB.z, z: aA.x * aB.y - aA.y * aB.x }
+      let len = Math.hypot(ax.x, ax.y, ax.z)
+      if (len < 0.3) continue
+      ax = { x: ax.x / len, y: ax.y / len, z: ax.z / len }
+      // Durchgang durch beide Hölzer entlang der Bolzenachse
+      let lo = Infinity
+      let hi = -Infinity
+      for (const m of [A, B]) {
+        for (const o of memberBoxes(m)) {
+          const c = o.center.x * ax.x + o.center.y * ax.y + o.center.z * ax.z
+          const e = o.axes.reduce((s2, a, i) => s2 + Math.abs(a.x * ax.x + a.y * ax.y + a.z * ax.z) * o.half[i], 0)
+          lo = Math.min(lo, c - e)
+          hi = Math.max(hi, c + e)
+        }
+      }
+      const p0 = j.pos.x * ax.x + j.pos.y * ax.y + j.pos.z * ax.z
+      // Kopf nach außen: weg von der Bettmitte
+      const bed = A.assemblyId ? d.resolved.beds.get(A.assemblyId) : undefined
+      let sign = 1
+      if (bed) {
+        const cx = bed.footprint.reduce((s2, q) => s2 + q.x, 0) / bed.footprint.length
+        const cy = bed.footprint.reduce((s2, q) => s2 + q.y, 0) / bed.footprint.length
+        const toC = (cx - j.pos.x) * ax.x + (cy - j.pos.y) * ax.y
+        sign = toC > 0 ? -1 : 1
+      }
+      const tHead = (sign > 0 ? hi : lo) - p0
+      const tNut = (sign > 0 ? lo : hi) - p0
+      // zwei Bolzen quer zur Achse versetzt, entlang des waagrechten Stabs bzw. der Höhe
+      const horiz = Math.abs(aA.z) < 0.5 ? aA : aB
+      let off = { x: ax.y * horiz.z - ax.z * horiz.y, y: ax.z * horiz.x - ax.x * horiz.z, z: ax.x * horiz.y - ax.y * horiz.x }
+      len = Math.hypot(off.x, off.y, off.z) || 1
+      off = { x: off.x / len, y: off.y / len, z: off.z / len }
+      const spread = Math.min(A.h, B.h, A.b, B.b) * 0.28
+      const outDir = new THREE.Vector3(ax.x * sign, ax.z * sign, -ax.y * sign)
+      const inDir = outDir.clone().negate()
+      for (const k of [-1, 1]) {
+        const base = { x: j.pos.x + off.x * spread * k, y: j.pos.y + off.y * spread * k, z: j.pos.z + off.z * spread * k }
+        const at = (t: number) => ({ x: base.x + ax.x * t, y: base.y + ax.y * t, z: base.z + ax.z * t })
+        put(heads, at(tHead), outDir, [0.0125, 0.006, 0.0125])
+        put(washers, at(tNut + sign * -1), inDir, [0.0105, 0.002, 0.0105])
+        put(nuts, at(tNut - sign * 6), inDir, [0.0095, 0.008, 0.0095])
+      }
+    }
+    const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[]) => {
+      if (!list.length) return null
+      const im = new THREE.InstancedMesh(geo, metal, list.length)
+      list.forEach((m, i) => im.setMatrixAt(i, m))
+      im.castShadow = true
+      im.raycast = () => {}
+      return im
+    }
+    return [make(headGeo, heads), make(washerGeo, washers), make(nutGeo, nuts)].filter(Boolean) as THREE.InstancedMesh[]
+  }, [d])
+  return (
+    <group>
+      {meshes.map((m, i) => (
+        <primitive key={i} object={m} />
+      ))}
+    </group>
   )
 }

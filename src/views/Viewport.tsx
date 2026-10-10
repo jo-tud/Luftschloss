@@ -73,13 +73,14 @@ function miniViews(main: ViewMode, lastWall: WallId): ViewMode[] {
 
 export function Viewport() {
   const view = useStore((s) => s.view)
+  const quality = useStore((s) => s.quality)
   const setView = useStore((s) => s.setView)
   const lastWall = useRef<WallId>('A')
   if (view.kind === 'elev') lastWall.current = view.wall
   const minis = miniViews(view, lastWall.current)
   return (
     <div className={`viewport${view.kind === 'unfold' || view.kind === 'foto' ? ' unfold-on' : ''}`}>
-      <Canvas shadows camera={{ fov: 40, near: 0.05, far: 200, position: [3, 3, 3] }} gl={{ antialias: true, preserveDrawingBuffer: true }} dpr={[1, 2]}>
+      <Canvas shadows="percentage" camera={{ fov: 40, near: 0.05, far: 200, position: [3, 3, 3] }} gl={{ antialias: true, preserveDrawingBuffer: true, stencil: true }} dpr={quality === 'einfach' ? 1 : quality === 'normal' ? [1, 1.5] : [1, 2]}>
         <MainScene />
       </Canvas>
       {view.kind === 'unfold' && <UnfoldView />}
@@ -92,7 +93,7 @@ export function Viewport() {
       <div className="minis">
         {minis.map((v) => (
           <button key={v.kind} className="mini" onClick={() => setView(v)} title={`${viewLabel(v)} groß anzeigen`}>
-            <Canvas frameloop="demand" camera={{ fov: 40, near: 0.05, far: 300 }} dpr={1}>
+            <Canvas frameloop="demand" camera={{ fov: 40, near: 0.05, far: 300 }} dpr={1} gl={{ stencil: true }}>
               <MiniScene view={v} />
             </Canvas>
             <span>{viewLabel(v)}</span>

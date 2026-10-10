@@ -33,6 +33,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 - **Prüfliste mit Erklärungen:** Fensterflügel, die anstoßen, zu wenig Kopfraum, Lücken im Geländer, falsche Dübel in Leichtbauwänden … Alles sind Empfehlungen, die du bewusst „zur Kenntnis nehmen“ kannst.
 - **Dein Hochbett im Foto deines Zimmers:** Foto laden, ein paar Ecken antippen – das geplante Bett erscheint perspektivisch richtig im Foto.
 - **Aufbau-Animation:** Die Teile fliegen in der Reihenfolge ein, in der du sie später zusammenbaust.
+- **Echt aussehendes Holz:** Maserung, Jahresringe an den Stirnseiten, sichtbare Schlossschrauben, Dielenboden – und durchs Fenster der Blick nach draußen. Doppelklick fliegt zu jeder Stelle heran.
 - **Aktuelle Preise:** Recherche-Prompt für einen KI-Chat kopieren oder mit eigenem Claude-API-Schlüssel direkt recherchieren lassen.
 
 ## Auf dem Tablet

@@ -148,12 +148,36 @@ function RoomTab() {
         <Check label="Mietwohnung – möglichst wenig bohren" value={p.settings.rentalMode} onChange={(v) => update((d) => void (d.settings.rentalMode = v))} />
         <Sel label="Lastannahme Statik" value={p.settings.loadProfile} options={[['bett', 'Bett (1,0 kN/m²)'], ['hochebene', 'Hochebene/Spielfläche (2,0 kN/m²)']]} onChange={(v) => update((d) => void (d.settings.loadProfile = v))} />
         <MouseProfile />
+        <QualitySetting />
         <Sel label="Verbindungen bevorzugt" value={p.settings.jointPreference} options={[['einfach', 'möglichst einfach (Winkel)'], ['zerlegbar', 'zerlegbar (Schlossschrauben)'], ['wenig-metall', 'wenig Metall (Holzverbindungen)']]} onChange={(v) => update((d) => void ((d.settings.jointPreference = v), (d.joints = [])))} />
       </Section>
       <Section title="Projekt" open={false}>
         <ProjectActions />
       </Section>
     </>
+  )
+}
+
+function QualitySetting() {
+  const q = useStore((s) => s.quality)
+  return (
+    <Sel
+      label="Darstellung"
+      value={q}
+      options={[
+        ['hoch', 'Hoch (scharf, für Desktop)'],
+        ['normal', 'Normal'],
+        ['einfach', 'Einfach (schnell, ältere Geräte)'],
+      ]}
+      onChange={(v) => {
+        useStore.setState({ quality: v })
+        try {
+          localStorage.setItem('luftschloss.qualitaet', v)
+        } catch {
+          // nur Komfort
+        }
+      }}
+    />
   )
 }
 
