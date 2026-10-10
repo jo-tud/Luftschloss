@@ -1,3 +1,4 @@
+import { t, tr } from '../i18n'
 import { memberBoxes, obbOverlap, panelOBB, type OBB } from '../model/geometry'
 import { doorGeom, doorLeafBox, roomObstacles, sashBoxes, tiltBox, windowSashes, type SashGeom } from '../model/room'
 import type { Resolved } from '../model/resolve'
@@ -7,16 +8,18 @@ export interface Blocker {
   id: string
   label: string
   boxes: OBB[]
+  /** Art des Raumhindernisses (z. B. 'laibung'); fehlt bei Bauteilen und Flächen */
+  kind?: string
 }
 
 /** Alles, woran ein Flügel oder Türblatt anstoßen kann */
 export function blockers(p: Project, r: Resolved): Blocker[] {
   const out: Blocker[] = []
-  for (const m of r.members) out.push({ id: m.id, label: m.name ?? 'Bauteil', boxes: memberBoxes(m) })
-  for (const pa of r.panels) out.push({ id: pa.id, label: pa.name ?? 'Fläche', boxes: [panelOBB(pa)] })
+  for (const m of r.members) out.push({ id: m.id, label: m.name ? tr(m.name) : t('Bauteil'), boxes: memberBoxes(m) })
+  for (const pa of r.panels) out.push({ id: pa.id, label: pa.name ? tr(pa.name) : t('Fläche'), boxes: [panelOBB(pa)] })
   for (const o of roomObstacles(p)) {
     if (o.kind === 'sockelleiste' || o.kind === 'steckdose' || o.kind === 'konvektion') continue
-    out.push({ id: o.ownerId, label: o.label, boxes: [o.box] })
+    out.push({ id: o.ownerId, label: tr(o.label), boxes: [o.box], kind: o.kind })
   }
   return out
 }
@@ -41,7 +44,7 @@ function firstHit(boxes: OBB[], list: Blocker[], ignore: (b: Blocker) => boolean
 }
 
 export function sweepSash(g: SashGeom, list: Blocker[], limit = 180): SwingResult {
-  const ignore = (b: Blocker) => b.id === g.windowId && !b.label.includes('Laibung')
+  const ignore = (b: Blocker) => b.id === g.windowId && b.kind !== 'laibung'
   let max = limit
   let blockedBy: Blocker | undefined
   for (let deg = 2; deg <= limit; deg += 1) {

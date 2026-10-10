@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { renderSVG } from 'uqr'
+import { t, tr } from '../i18n'
 import { migrate, useStore } from '../state/store'
 import type { Project } from '../model/types'
 
@@ -97,7 +98,7 @@ export function ServerSync() {
           applying = false
           lastSent = remote.savedAt
           localStorage.setItem(SAVED_KEY, String(remote.savedAt))
-          useStore.setState((st) => ({ server: st.server && { ...st.server, status: 'verbunden', lastSync: remote.savedAt }, toast: 'Vom anderen Gerät aktualisiert' }))
+          useStore.setState((st) => ({ server: st.server && { ...st.server, status: 'verbunden', lastSync: remote.savedAt }, toast: t('Vom anderen Gerät aktualisiert') }))
           setTimeout(() => useStore.setState({ toast: null }), 2500)
         } else if (s.server.status !== 'verbunden') useStore.setState({ server: { ...s.server, status: 'verbunden' } })
       } catch {
@@ -126,8 +127,8 @@ export function ShareDialog() {
     <div className="modal-bg" onClick={() => set({ showShare: false })}>
       <div className="modal share" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h2>Auf dem Tablet öffnen</h2>
-          <button className="close" onClick={() => set({ showShare: false })}>
+          <h2>{t('Auf dem Tablet öffnen')}</h2>
+          <button className="close" onClick={() => set({ showShare: false })} aria-label={t('Schließen')}>
             ✕
           </button>
         </header>
@@ -135,7 +136,7 @@ export function ShareDialog() {
           {server ? (
             <>
               <p>
-                Tablet ins selbe WLAN, QR-Code scannen. Laptop und Tablet arbeiten dann am <b>selben Projekt</b> – Änderungen gleichen sich alle paar Sekunden ab.
+                {t('Tablet ins selbe WLAN, QR-Code scannen. Laptop und Tablet arbeiten dann am')} <b>{t('selben Projekt')}</b> – {t('Änderungen gleichen sich alle paar Sekunden ab.')}
               </p>
               <div className="qr-list">
                 {urls.map((u) => (
@@ -144,15 +145,16 @@ export function ShareDialog() {
                     <button className="link" onClick={() => navigator.clipboard?.writeText(u).then(() => setCopied(u))}>
                       {u}
                     </button>
-                    {copied === u && <small className="ok">kopiert</small>}
+                    {copied === u && <small className="ok">{t('kopiert')}</small>}
                   </div>
                 ))}
               </div>
-              <p className="hint">Abgleich: {server.status}.</p>
+              <p className="hint">{t('Abgleich: {status}.', { status: tr(server.status) })}</p>
               <details>
-                <summary>Unterwegs ohne gemeinsames WLAN? (für Fortgeschrittene)</summary>
+                <summary>{t('Unterwegs ohne gemeinsames WLAN? (für Fortgeschrittene)')}</summary>
                 <p className="hint">
-                  Mit der App Tailscale auf Laptop und Tablet entsteht ein privates Netz. Dann die Tailscale-Adresse des Laptops mit Port {server.port} öffnen. Mit <code>tailscale serve --bg {server.port}</code> gibt es eine HTTPS-Adresse, über die sich Luftschloss auf dem Tablet installieren lässt und offline läuft.
+                  {t('Mit der App Tailscale auf Laptop und Tablet entsteht ein privates Netz. Dann die Tailscale-Adresse des Laptops mit Port {port} öffnen. Mit', { port: server.port })} <code>{`tailscale serve --bg ${server.port}`}</code>{' '}
+                  {t('gibt es eine HTTPS-Adresse, über die sich Luftschloss auf dem Tablet installieren lässt und offline läuft.')}
                 </p>
               </details>
             </>
@@ -160,28 +162,28 @@ export function ShareDialog() {
             <>
               {location.protocol === 'https:' && (
                 <>
-                  <p>Diese Online-Version direkt auf dem Tablet öffnen – QR-Code scannen, dann im Browser „Zum Home-Bildschirm“ wählen, damit Luftschloss wie eine App startet und auch offline läuft.</p>
+                  <p>{t('Diese Online-Version direkt auf dem Tablet öffnen – QR-Code scannen, dann im Browser „Zum Home-Bildschirm“ wählen, damit Luftschloss wie eine App startet und auch offline läuft.')}</p>
                   <div className="qr-list">
                     <div className="qr">
                       <div dangerouslySetInnerHTML={{ __html: renderSVG(location.origin + location.pathname, { border: 1 }) }} />
                       <small>{location.origin + location.pathname}</small>
                     </div>
                   </div>
-                  <p className="hint">Jedes Gerät speichert sein eigenes Projekt. Zum Übertragen im Projektmenü „Als Datei speichern“ und auf dem anderen Gerät „Öffnen…“.</p>
-                  <h3>Laptop und Tablet gleichzeitig am selben Projekt</h3>
+                  <p className="hint">{t('Jedes Gerät speichert sein eigenes Projekt. Zum Übertragen im Projektmenü „Als Datei speichern“ und auf dem anderen Gerät „Öffnen…“.')}</p>
+                  <h3>{t('Laptop und Tablet gleichzeitig am selben Projekt')}</h3>
                 </>
               )}
-              <p>Diese Seite läuft ohne Abgleich-Server. So geht es auf dem Tablet:</p>
+              <p>{t('Diese Seite läuft ohne Abgleich-Server. So geht es auf dem Tablet:')}</p>
               <ol>
                 <li>
-                  Auf dem Laptop im Projektordner <code>npm run lan</code> starten.
+                  {t('Auf dem Laptop im Projektordner')} <code>{'npm run lan'}</code> {t('starten.')}
                 </li>
-                <li>Diese Seite über die angezeigte Netzwerk-Adresse öffnen – dann erscheint hier ein QR-Code für das Tablet.</li>
+                <li>{t('Diese Seite über die angezeigte Netzwerk-Adresse öffnen – dann erscheint hier ein QR-Code für das Tablet.')}</li>
                 <li>
-                  Alternativ: Im Projektmenü oben links „Als Datei speichern“ und die Datei auf dem Tablet mit „Öffnen…“ laden.
+                  {t('Alternativ: Im Projektmenü oben links „Als Datei speichern“ und die Datei auf dem Tablet mit „Öffnen…“ laden.')}
                 </li>
               </ol>
-              <p className="hint">Mit Tailscale klappt das auch ohne gemeinsames WLAN, z. B. auf der Baustelle.</p>
+              <p className="hint">{t('Mit Tailscale klappt das auch ohne gemeinsames WLAN, z. B. auf der Baustelle.')}</p>
             </>
           )}
         </div>
@@ -193,5 +195,5 @@ export function ShareDialog() {
 export function Toast() {
   const toast = useStore((s) => s.toast)
   if (!toast) return null
-  return <div className="toast">{toast}</div>
+  return <div className="toast">{tr(toast)}</div>
 }

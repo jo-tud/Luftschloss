@@ -8,6 +8,7 @@ import type { Member, Project, Vec3 } from '../model/types'
 import { derive, selectionFor, useStore } from '../state/store'
 import { applyCam, camDir, camDistance, cloneCam, easeInOut, fromT, goalFor, isOrtho, lerpCam, ORTHO_FOV, T, type CamState } from './camera'
 import type { PickData } from './Scene'
+import { t } from '../i18n'
 
 interface DragState {
   kind: 'nav-orbit' | 'nav-pan' | 'nav-look' | 'object'
@@ -565,7 +566,7 @@ function makeBeam(a: Vec3, b: Vec3, catalogId: string): Member {
   return {
     id: uid('balken'),
     role: vertical ? 'pfosten' : 'zarge',
-    name: vertical ? 'Pfosten' : 'Balken',
+    name: vertical ? t('Pfosten') : t('Balken'),
     start: { x: a.x, y: a.y, z: a.z - dz },
     end: { x: b.x, y: b.y, z: b.z - dz },
     catalogId,
@@ -581,7 +582,7 @@ function makePost(pt: Vec3, catalogId: string, height: number): Member {
   return {
     id: uid('pfosten'),
     role: 'pfosten',
-    name: 'Pfosten',
+    name: t('Pfosten'),
     start: { x: pt.x, y: pt.y, z: 0 },
     end: { x: pt.x, y: pt.y, z: height },
     catalogId,

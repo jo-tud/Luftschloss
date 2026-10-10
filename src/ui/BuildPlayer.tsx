@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { t, tr } from '../i18n'
 import { buildSteps } from '../analysis/assembly'
 import { useDerived, useStore } from '../state/store'
 
@@ -26,25 +27,25 @@ export function BuildPlayer() {
     <div className="build-player">
       <div className="bp-head">
         <b>
-          Aufbau · Schritt {build.step + 1}/{steps.length}: {st?.title}
+          {t('Aufbau · Schritt {n}/{total}: {title}', { n: build.step + 1, total: steps.length, title: tr(st?.title ?? '') })}
         </b>
         <button className="link" onClick={() => set({ build: null })}>
-          beenden
+          {t('beenden')}
         </button>
       </div>
-      <p>{st?.text}</p>
-      {st?.tools.length ? <p className="hint">Werkzeug: {st.tools.join(', ')}</p> : null}
+      <p>{tr(st?.text ?? '')}</p>
+      {st?.tools.length ? <p className="hint">{t('Werkzeug: {tools}', { tools: st.tools.map((x) => tr(x)).join(', ') })}</p> : null}
       <div className="row">
-        <button onClick={() => go(build.step - 1)} disabled={build.step === 0} title="Schritt zurück">
+        <button onClick={() => go(build.step - 1)} disabled={build.step === 0} title={t('Schritt zurück')}>
           ◀
         </button>
-        <button onClick={() => set({ build: { ...build, start: performance.now(), auto: !build.auto } })}>{build.auto ? '⏸ Pause' : '▶ Abspielen'}</button>
-        <button onClick={() => go(build.step + 1)} disabled={build.step >= steps.length - 1} title="Nächster Schritt">
+        <button onClick={() => set({ build: { ...build, start: performance.now(), auto: !build.auto } })}>{build.auto ? `⏸ ${t('Pause')}` : `▶ ${t('Abspielen')}`}</button>
+        <button onClick={() => go(build.step + 1)} disabled={build.step >= steps.length - 1} title={t('Nächster Schritt')}>
           ▶
         </button>
         <div className="bp-dots">
           {steps.map((s, i) => (
-            <span key={i} className={i === build.step ? 'on' : i < build.step ? 'done' : ''} onClick={() => go(i)} title={s.title} />
+            <span key={i} className={i === build.step ? 'on' : i < build.step ? 'done' : ''} onClick={() => go(i)} title={tr(s.title)} />
           ))}
         </div>
       </div>

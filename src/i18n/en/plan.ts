@@ -1,3 +1,229 @@
+/** Bauplan, Material/Zuschnitt, Preis-Agent, Verbindungsskizzen, Stückliste, Montageschritte */
 const en: Record<string, string> = {
+  // Holzverbindungen je Teil (assembly.ts)
+  'Blatt': 'Lap',
+  'Zapfen bzw. Zapfenloch': 'Tenon or mortise',
+  'Schwalbenschwanz': 'Dovetail',
+  'Gratnut bzw. Grat': 'Sliding dovetail housing or tongue',
+  'Einlassung': 'Housing',
+  'Bohrung bzw. Stab': 'Hole or rod',
+  'Auflagerleiste': 'Support batten',
+
+  // Montageschritte
+  'Wandbalken anbringen': 'Fit wall ledgers',
+  'Wandbalken waagrecht ausrichten (Wasserwaage), anzeichnen, bohren und mit Schwerlastdübeln oder Betonschrauben ca. alle 40 cm befestigen.':
+    'Level the wall ledgers (spirit level), mark, drill and fix with heavy-duty anchors or concrete screws roughly every 40 cm.',
+  'Pfosten stellen': 'Stand the posts',
+  'Ausklinkungen (Sockelleiste, Stuck) vorher sägen. Pfosten lotrecht stellen und provisorisch abstützen.':
+    'Saw the notches (skirting board, cornice) first. Stand the posts plumb and brace them temporarily.',
+  'Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.':
+    'Stand floor-to-ceiling posts first, then tension them against the ceiling with the adjustable foot – do not tilt them, do not touch the cornice.',
+  'Abhängung montieren': 'Fit the suspension',
+  'Gewindestangen in tragfähige Decke (Balken!) verankern, unten mit Unterlegscheibe und Mutter.':
+    'Anchor the threaded rods in a load-bearing ceiling (joists!), with washer and nut at the bottom.',
+  'Zargen bzw. Träger anschrauben': 'Bolt on side rails or beams',
+  'Längszargen und Querzargen auf Höhe anzeichnen, mit Schraubzwingen fixieren, rechtwinklig ausrichten (Diagonalen messen) und verschrauben.':
+    'Mark the height of the long and end rails, hold them with clamps, square them up (measure the diagonals) and screw them.',
+  'Aussteifung': 'Bracing',
+  'Kopfbänder 45° zuschneiden und verschrauben – erst danach steht das Gestell steif.': 'Cut the knee braces at 45° and screw them on – only then is the frame rigid.',
+  'Kippsicherung': 'Anti-tip fixing',
+  '{n} Pfosten mit Winkel und Rahmendübel an der Wand befestigen.': 'Fix {n} posts to the wall with angle brackets and frame anchors.',
+  'Bohrmaschine': 'Drill',
+  'Steinbohrer 10 mm': '10 mm masonry bit',
+  'Querträger': 'Cross beams',
+  'Querträger einsetzen bzw. auflegen und befestigen.': 'Insert or lay the cross beams and fix them.',
+  'Liegefläche': 'Sleeping deck',
+  'Latten bzw. Platte auflegen, ausrichten und gegen Verrutschen sichern. Filzstreifen gegen Quietschen.':
+    'Lay the slats or board, align them and secure against slipping. Felt strips prevent squeaking.',
+  'Geländer': 'Guard rail',
+  'Geländerpfosten, Handläufe und Füllung montieren. Lücken höchstens 7,5 cm.': 'Fit guard rail posts, handrails and infill. Gaps no more than 7.5 cm.',
+  'Leiter bzw. Treppe': 'Ladder or stairs',
+  'Leiter vormontieren (Sprossen/Stufen einleimen), einhängen bzw. anschrauben, gegen Verrutschen sichern.':
+    'Pre-assemble the ladder (glue in rungs/steps), hook or screw it on and secure against slipping.',
+  'Restliche Teile': 'Remaining parts',
+  'Übrige Teile nach Plan montieren.': 'Assemble the remaining parts according to the plan.',
+  'Matratze': 'Mattress',
+  'Matratze einlegen, Schrauben nach einigen Wochen nachziehen.': 'Put in the mattress; retighten the screws after a few weeks.',
+  'Bauteil': 'Part',
+
+  // Stückliste (bom.ts)
+  '{rows} Reihen à {len} cm': '{rows} rows of {len} cm',
+  'Fertigteil passend zur Matratze': 'Ready-made to fit the mattress',
+  'Meterware nach Maß (m²)': 'Cut to size from the roll (m²)',
+  'Stoß über einem Querträger': 'Joint over a cross beam',
+  'Liegefläche verschrauben': 'Screw down sleeping deck',
+  'Richtpreise Hornbach, Stand 2025/26': 'Hornbach guide prices, as of 2025/26',
+
+  // Recherche-Prompt
+  '{id} | {name}, Länge {len} mm | {n} Stück | Preis je laufender Meter': '{id} | {name}, length {len} mm | {n} pcs | price per running metre',
+  '{id} | {name}, Format {l}×{w} mm | {n} Stück | Preis je Stück': '{id} | {name}, size {l}×{w} mm | {n} pcs | price per piece',
+  '{id} | {name} | {n} m | Preis je Meter': '{id} | {name} | {n} m | price per metre',
+  '{id} | {name} | {n} Packung(en) | Preis je Packung': '{id} | {name} | {n} pack(s) | price per pack',
+  'Du bist mein Einkaufsassistent für ein Hochbett-Projekt („{name}“). Recherchiere bitte mit Websuche die aktuellen Preise bei HORNBACH Deutschland für die folgenden Artikel.':
+    'You are my shopping assistant for a loft bed project ("{name}"). Please use web search to find the current prices at HORNBACH Germany for the following items. Please answer in English.',
+  'Markt: {market}.': 'Store: {market}.',
+  'Wenn es einen Artikel nicht genau gibt, nimm den nächstpassenden aus dem Hornbach-Sortiment und nenne ihn. Wenn Hornbach nicht abrufbar ist, nimm OBI, Bauhaus oder toom und vermerke das.':
+    'If an item is not available exactly, take the closest match from the Hornbach range and name it. If Hornbach cannot be reached, use OBI, Bauhaus or toom and say so.',
+  'Artikel (ID | Beschreibung | Menge | gewünschte Preiseinheit):': 'Items (ID | description | quantity | requested price unit):',
+  'Antworte am Ende mit genau einem Codeblock im Format (Semikolon-getrennt, eine Zeile pro Artikel, Dezimalkomma oder -punkt):':
+    'At the end, reply with exactly one code block in this format (semicolon-separated, one line per item, decimal point or comma):',
+  'Die Spalte "id" muss exakt die ID aus der Liste sein. "preis_eur" ist der Preis in der gewünschten Einheit.':
+    'The "id" column must be exactly the ID from the list. "preis_eur" is the price in euros in the requested unit.',
+
+  // CSV
+  'recherchiert': 'researched',
+  'geschätzt': 'estimated',
+  'Gruppe': 'Group',
+  'Artikel': 'Item',
+  'Menge': 'Quantity',
+  'Einheit': 'Unit',
+  'Länge/Format': 'Length/size',
+  'Einzelpreis EUR': 'Unit price EUR',
+  'Summe EUR': 'Total EUR',
+  'Preis': 'Price',
+  'Holz': 'Timber',
+  'Stange': 'length',
+  'Platte': 'Board',
+  'Stück': 'pcs',
+  'Beschlag': 'Hardware',
+  'Packung à {n} Stück': 'pack of {n}',
+  '{n} Stück benötigt': '{n} pcs needed',
+  'Summe': 'Total',
+
+  // Preis-Agent
+  'Keine Antwort erhalten.': 'No response received.',
+  'Die Anfrage wurde abgelehnt. Bitte den Prompt kopieren und in einem Chat verwenden.': 'The request was declined. Please copy the prompt and use it in a chat.',
+
+  // Verbindungsskizzen (JointSketch.tsx)
+  '2 × M10 durch das durchlaufende Holz ins Hirnholz, Mutter in einer Querbohrung Ø 25 mm, 70 mm vom Ende. Bolzen zweier Stöße am selben Pfosten in der Höhe versetzen.':
+    '2 × M10 through the continuous timber into the end grain, nut in a Ø 25 mm cross hole, 70 mm from the end. Stagger the bolts of two joints on the same post in height.',
+  '2 × M10 durchgebolzt, Ø 11 mm vorbohren, Randabstand ≥ 40 mm, Bolzenabstand ≥ 50 mm.': '2 × M10 through-bolted, pre-drill Ø 11 mm, edge distance ≥ 40 mm, bolt spacing ≥ 50 mm.',
+  'Bettschraube M8 durch das durchlaufende Holz, Zylindermutter in Querbohrung Ø 10 mm, 70 mm vom Ende. Bohrschablone verwenden.':
+    'M8 bed bolt through the continuous timber, barrel nut in a Ø 10 mm cross hole, 70 mm from the end. Use a drilling jig.',
+  '3 Schrauben 8 × 160 durch das durchlaufende Holz ins Hirnholz, Ø 5 mm vorbohren.': '3 screws 8 × 160 through the continuous timber into the end grain, pre-drill Ø 5 mm.',
+  '2 Schrauben 8 × 160 durch das aufliegende Holz, Ø 5 mm vorbohren.': '2 screws 8 × 160 through the resting timber, pre-drill Ø 5 mm.',
+  'Stumpf auflegen, 2 Schrauben 8 × 160 von oben.': 'Butt it on top, 2 screws 8 × 160 from above.',
+  'Lose auflegen, Filz- oder Gummistreifen dazwischen, ggf. 1 Schraube gegen Verrutschen.': 'Lay loosely with felt or rubber strips in between; 1 screw against slipping if needed.',
+  '2 Winkel 90 mm mit Sicke in die Innenecken, je Winkel 10 Schrauben 5 × 50.': '2 angle brackets 90 mm with stiffening rib in the inside corners, 10 screws 5 × 50 per bracket.',
+  'Balkenschuh passend zum Querschnitt, alle Löcher mit 5 × 50 verschrauben (Vollausnagelung).': 'Joist hanger to match the cross-section, screw all holes with 5 × 50 (full fixing).',
+  'Beide Hölzer auf halbe Dicke ausnehmen: Blatttiefe {blatt} mm. Leimen und 2 Schrauben 6 × 80 diagonal.':
+    'Cut both timbers to half thickness: lap depth {blatt} mm. Glue and 2 screws 6 × 80 placed diagonally.',
+  'Schwalbenschwanzblatt {dicke} mm dick, {tiefe} mm lang, Hals {schmal} mm, Ende {breit} mm (Neigung 1:6). 2 Holznägel Ø 10.':
+    'Dovetail half-lap {dicke} mm thick, {tiefe} mm long, neck {schmal} mm, end {breit} mm (slope 1:6). 2 wooden pegs Ø 10.',
+  'Zapfen {dicke} × {hoehe} mm, {laenge} mm lang (durchgehend). Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.':
+    'Tenon {dicke} × {hoehe} mm, {laenge} mm long (through). Chisel a mortise of the same size, wooden peg Ø 16 mm.',
+  'Zapfen {dicke} × {hoehe} mm, {laenge} mm lang. Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.':
+    'Tenon {dicke} × {hoehe} mm, {laenge} mm long. Chisel a mortise of the same size, wooden peg Ø 16 mm.',
+  'Gratnut {tiefe} mm tief, Flanken 1:6, Stufe von der Seite einschieben, leimen + 2 Schrauben 5 × 50.':
+    'Sliding dovetail housing {tiefe} mm deep, flanks 1:6; slide the step in from the side, glue + 2 screws 5 × 50.',
+  'Einlassung {tiefe} mm tief über die ganze Anlagefläche, 2 Schrauben 8 × 160.': 'Housing {tiefe} mm deep across the whole contact face, 2 screws 8 × 160.',
+  '2 Holzdübel Ø 10 × 80 mm, je 40 mm tief, mit Dübelspitzen anzeichnen, leimen.': '2 wooden dowels Ø 10 × 80 mm, 40 mm deep each; mark with dowel centres, glue.',
+  'Bohrung Ø {durchmesser} mm, {tiefe} mm tief (2/3 der Holzdicke), leimen.': 'Hole Ø {durchmesser} mm, {tiefe} mm deep (2/3 of the timber thickness), glue.',
+  'Leiste 40 × 60 mm unter das Ende an das durchlaufende Holz, 3 Schrauben 5 × 50, darauf auflegen.':
+    'Batten 40 × 60 mm on the continuous timber below the end, 3 screws 5 × 50; rest the part on it.',
+  'Gewindestange M10 mit großen Unterlegscheiben und Muttern beiderseits des Holzes, Kontermutter.': 'M10 threaded rod with large washers and nuts on both sides of the timber, lock nut.',
+  'Kopfband 45°, je Ende 2 Schrauben 8 × 160.': 'Knee brace 45°, 2 screws 8 × 160 at each end.',
+  'Seil durch Bohrung bzw. Augschraube, mit Achtknoten sichern.': 'Rope through a hole or eye bolt, secured with a figure-eight knot.',
+
+  // Material & Kosten (Material.tsx)
+  'Keine Zeilen im Format id;preis;… gefunden.': 'No lines in the format id;price;… found.',
+  '{n} Preise übernommen (Stand {date}).': '{n} prices applied (as of {date}).',
+  'Material & Kosten': 'Materials & costs',
+  'Einkaufsliste': 'Shopping list',
+  'Zuschnitt': 'Cutting plan',
+  'Preise recherchieren': 'Research prices',
+  'Hornbach bietet keine offene Schnittstelle. Der einfachste Weg: Diesen Recherche-Prompt in einen KI-Chat mit Websuche kopieren (z. B. Claude), die Antwort hier einfügen – die gefundenen Preise ersetzen dann die Richtpreise.':
+    'Hornbach has no open API. The easiest way: copy this research prompt into an AI chat with web search (e.g. Claude) and paste the answer here – the prices found then replace the guide prices.',
+  'Markt (optional)': 'Store (optional)',
+  'z. B. Hornbach Leipzig': 'e.g. Hornbach Leipzig',
+  '{n} Preise gefunden – bitte kurz prüfen und übernehmen.': '{n} prices found – please check briefly and apply.',
+  'Oder per Chat': 'Or via chat',
+  'Prompt kopiert.': 'Prompt copied.',
+  'Prompt kopieren': 'Copy prompt',
+  'Antwort einfügen': 'Paste answer',
+  'id;preis_eur;einheit;produktname;url\nkvh-80x80;6,49;m;Konsta KVH 80×80;https://…': 'id;preis_eur;einheit;produktname;url\nkvh-80x80;6.49;m;Konsta KVH 80×80;https://…',
+  'Preise übernehmen': 'Apply prices',
+  'Recherchierte Preise verwerfen ({n})': 'Discard researched prices ({n})',
+  '{n} % davon geschätzt': '{n} % of it estimated',
+  'Einkaufsliste als CSV': 'Shopping list as CSV',
+  'Drucken': 'Print',
+  'recherchiert {date}': 'researched {date}',
+  'Teile': 'Parts',
+  'unsortiert': 'unsorted',
+  '{n} Überlänge': '{n} over length',
+  '{n} Teile': '{n} parts',
+  'Platten, Dielen, Roste, Netze': 'Boards, floorboards, slatted bases, nets',
+  'Beschläge und Befestigung': 'Hardware and fixings',
+  '{packs} Pck. ({n} Stk.)': '{packs} packs ({n} pcs)',
+  '{n} Stk.': '{n} pcs',
+  'Je Handelslänge eine Stange; Sägeschnitt 3 mm. {n} Schnitte – der Baumarkt-Zuschnitt kostet ab ca. 0,10–0,50 € je Schnitt.':
+    'One bar per stock length; saw kerf 3 mm. {n} cuts – cutting at the DIY store costs from about €0.10–0.50 per cut.',
+  '{len} · Rest {rest}': '{len} · offcut {rest}',
+  '{label}: {len} – länger als jede Handelslänge': '{label}: {len} – longer than any stock length',
+  'luftschloss-einkaufsliste.csv': 'luftschloss-shopping-list.csv',
+  '{n} Suchen · {k} Tsd. Tokens · {model}': '{n} searches · {k}k tokens · {model}',
+  'Abgebrochen.': 'Cancelled.',
+  'Der API-Schlüssel wurde abgelehnt.': 'The API key was rejected.',
+  'Keine Verbindung zur Anthropic-API – Netzwerk, Proxy oder Werbeblocker prüfen.': 'No connection to the Anthropic API – check network, proxy or ad blocker.',
+  'Zu viele Anfragen – in einer Minute nochmal versuchen.': 'Too many requests – try again in a minute.',
+  'Direkt recherchieren lassen': 'Let Claude research directly',
+  'mit eigenem Claude-API-Schlüssel, dauert einige Minuten': 'with your own Claude API key, takes a few minutes',
+  'Direkt recherchieren': 'Research directly',
+  'Claude sucht im Netz nach den aktuellen Preisen und füllt die Antwort unten aus. Dafür braucht es einen eigenen API-Schlüssel von console.anthropic.com; die Kosten (meist einige Cent bis wenige Euro je Recherche) laufen über dieses Konto. Der Schlüssel geht nur vom Browser direkt an Anthropic.':
+    'Claude searches the web for current prices and fills in the answer below. This needs your own API key from console.anthropic.com; the costs (usually a few cents to a few euros per search) are charged to that account. The key goes only from your browser directly to Anthropic.',
+  'API-Schlüssel': 'API key',
+  'In diesem Browser merken': 'Remember in this browser',
+  'Abbrechen': 'Cancel',
+  'Recherche starten': 'Start research',
+  'Sucht … {n} Suchen, {m} Seiten': 'Searching … {n} searches, {m} pages',
+  'Zuletzt: „{q}“': 'Latest: "{q}"',
+  '{n} Quellen': '{n} sources',
+
+  // Bauplan (Bauplan.tsx)
+  '{len} gesamt': '{len} overall',
+  '{len} Liegefläche': '{len} sleeping deck',
+  'Bauplan': 'Build plan',
+  'Drucken / PDF': 'Print / PDF',
+  'Bauart': 'Type',
+  'aufgelegt': 'beams on top',
+  '{len} dick': '{len} thick',
+  'nebeneinander': 'side by side',
+  'hintereinander': 'end to end',
+  'Außenmaß': 'Outer dimensions',
+  'Gestell {l} × {w}': 'Frame {l} × {w}',
+  'mit Leiter {l} × {w}': 'with ladder {l} × {w}',
+  'Liegefläche {h} hoch': 'sleeping deck {h} high',
+  'Freiraum': 'Clearance',
+  '{below} darunter, {above} über der Matratze': '{below} below, {above} above the mattress',
+  'Material': 'Material',
+  'ca. {sum}': 'approx. {sum}',
+  'Statik': 'Structure',
+  'höchste Ausnutzung {n} %, Gestell {sway} ({mm} mm)': 'highest utilisation {n} %, frame {sway} ({mm} mm)',
+  'steif': 'rigid',
+  'spürbar': 'noticeable sway',
+  'wackelt': 'wobbly',
+  'Längstes Teil {len} ({name}) passt nicht durch die Tür (Diagonale {door}). Im Zimmer zuschneiden oder teilen.':
+    'Longest part {len} ({name}) does not fit through the door (diagonal {door}). Cut it in the room or split it.',
+  '3D-Ansicht': '3D view',
+  'Ansicht von vorne': 'Front view',
+  'Ansicht von der Seite': 'Side view',
+  'Draufsicht': 'Top view',
+  'Teileliste': 'Parts list',
+  'Nr.': 'No.',
+  'Anz.': 'Qty',
+  'Teil': 'Part',
+  'Querschnitt': 'Cross-section',
+  'Länge': 'Length',
+  'Bearbeitung': 'Machining',
+  '{reason}: {len} lang, {depth} tief ausklinken': '{reason}: notch {len} long, {depth} deep',
+  'Verbindungen': 'Joints',
+  'Werkzeug:': 'Tools:',
+  'Alle Verbindungstypen: {n}. Typ je Verbindung in der App änderbar (Teil anklicken → Verbindungen).':
+    'All joint types: {n}. The type of each joint can be changed in the app (click a part → Joints).',
+  'Montage': 'Assembly',
+  'Teile {list}': 'parts {list}',
+  'Offene Punkte aus der Prüfung': 'Open issues from the check',
+  'Erstellt mit Luftschloss. Planungshilfe ohne Gewähr – ersetzt keine Tragwerksplanung. Maße vor dem Zuschnitt am Bau prüfen.':
+    'Created with Luftschloss. Planning aid without warranty – does not replace structural engineering. Check dimensions on site before cutting.',
 }
 export default en

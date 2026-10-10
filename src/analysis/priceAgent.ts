@@ -1,4 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk'
+import { t } from '../i18n'
 
 /**
  * Preis-Agent mit eigenem API-Schlüssel (BYOK): Claude recherchiert per Websuche die aktuellen
@@ -68,8 +69,8 @@ export async function runPriceAgent(apiKey: string, prompt: string, onProgress: 
     if (final.stop_reason !== 'pause_turn') break
     messages.push({ role: 'assistant', content: final.content })
   }
-  if (!final) throw new Error('Keine Antwort erhalten.')
-  if (final.stop_reason === 'refusal') throw new Error('Die Anfrage wurde abgelehnt. Bitte den Prompt kopieren und in einem Chat verwenden.')
+  if (!final) throw new Error(t('Keine Antwort erhalten.'))
+  if (final.stop_reason === 'refusal') throw new Error(t('Die Anfrage wurde abgelehnt. Bitte den Prompt kopieren und in einem Chat verwenden.'))
   const text = final.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('')
   return { text, sources: progress.sources, usage, servedBy: final.model }
 }

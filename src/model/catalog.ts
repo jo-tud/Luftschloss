@@ -2,6 +2,8 @@
 // Quellen und Erhebungsweise: docs/recherche/hornbach-sortiment.md. Preise sind Richtpreise
 // (Stand 2025/26, aus Suchmaschinen-Snapshots); "geschätzt" markiert abgeleitete Werte.
 
+import { t, tk } from '../i18n'
+
 export type StrengthClass = 'C16' | 'C24' | 'GL24h'
 
 export interface Strength {
@@ -94,7 +96,9 @@ function kvh(b: number, h: number, pricePerM: number, estimated = false, source?
     id: `kvh-${b}x${h}`,
     kind: 'stab',
     group: 'kvh',
-    name: `KVH Fichte C24 ${b}×${h} mm, gehobelt`,
+    get name() {
+      return t('KVH Fichte C24 {b}×{h} mm, gehobelt', { b, h })
+    },
     wood: 'Fichte',
     strength: 'C24',
     sorted: true,
@@ -113,7 +117,9 @@ function bsh(b: number, h: number, lengths: number[], pricePerM: number, estimat
     id: `bsh-${b}x${h}`,
     kind: 'stab',
     group: 'bsh',
-    name: `Brettschichtholz Fichte GL24h ${b}×${h} mm`,
+    get name() {
+      return t('Brettschichtholz Fichte GL24h {b}×{h} mm', { b, h })
+    },
     wood: 'Fichte',
     strength: 'GL24h',
     sorted: true,
@@ -131,7 +137,9 @@ function planed(b: number, h: number, lengths: number[], pricePerM: number, esti
     id: `geh-${b}x${h}`,
     kind: 'stab',
     group: 'gehobelt',
-    name: `Kantholz Fichte gehobelt ${b}×${h} mm`,
+    get name() {
+      return t('Kantholz Fichte gehobelt {b}×{h} mm', { b, h })
+    },
     wood: 'Fichte',
     strength: 'C16',
     sorted: false,
@@ -149,11 +157,13 @@ function rough(b: number, h: number, lengths: number[], pricePerM: number): Timb
     id: `kant-${b}x${h}`,
     kind: 'stab',
     group: 'kantholz',
-    name: `Kantholz Fichte sägerau ${b}×${h} mm`,
+    get name() {
+      return t('Kantholz Fichte sägerau {b}×{h} mm', { b, h })
+    },
     wood: 'Fichte',
     strength: 'C16',
     sorted: false,
-    surface: 'sägerau',
+    surface: 'sägerau', // i18n-ok
     b,
     h,
     lengths,
@@ -162,7 +172,7 @@ function rough(b: number, h: number, lengths: number[], pricePerM: number): Timb
 }
 
 export const TIMBER: TimberItem[] = [
-  kvh(60, 80, 4.46, false, `${HB}/p/konsta-konstruktionsvollholz-3000-x-80-x-60-mm-fichte-nsi-nicht-sichtbarer-einbau/5958901/`),
+  kvh(60, 80, 4.46, false, `${HB}/p/konsta-konstruktionsvollholz-3000-x-80-x-60-mm-fichte-nsi-nicht-sichtbarer-einbau/5958901/`), // i18n-ok
   kvh(60, 100, 5.58),
   kvh(60, 120, 6.7, true),
   kvh(60, 140, 7.8, true),
@@ -201,7 +211,7 @@ export const TIMBER: TimberItem[] = [
     id: 'brett-38x140',
     kind: 'stab',
     group: 'gehobelt',
-    name: 'Universalbrett Kiefer gehobelt 38×140 mm',
+    name: tk('Universalbrett Kiefer gehobelt 38×140 mm'),
     wood: 'Kiefer',
     strength: 'C16',
     sorted: false,
@@ -216,7 +226,7 @@ export const TIMBER: TimberItem[] = [
     id: 'leimholz-fi-18x200',
     kind: 'stab',
     group: 'leiste',
-    name: 'Leimholz Fichte B/C 18×200 mm (Brett)',
+    name: tk('Leimholz Fichte B/C 18×200 mm (Brett)'),
     wood: 'Fichte',
     strength: 'C16',
     sorted: false,
@@ -231,11 +241,11 @@ export const TIMBER: TimberItem[] = [
     id: 'latte-24x48',
     kind: 'stab',
     group: 'latte',
-    name: 'Latte Fichte sägerau 24×48 mm',
+    name: tk('Latte Fichte sägerau 24×48 mm'),
     wood: 'Fichte',
     strength: 'C16',
     sorted: false,
-    surface: 'sägerau',
+    surface: 'sägerau', // i18n-ok
     b: 24,
     h: 48,
     lengths: [2000, 2500, 3000, 4000],
@@ -245,11 +255,11 @@ export const TIMBER: TimberItem[] = [
     id: 'latte-s10-40x60',
     kind: 'stab',
     group: 'latte',
-    name: 'Latte S10 Fichte sägerau 40×60 mm',
+    name: tk('Latte S10 Fichte sägerau 40×60 mm'),
     wood: 'Fichte',
     strength: 'C24',
     sorted: true,
-    surface: 'sägerau',
+    surface: 'sägerau', // i18n-ok
     b: 40,
     h: 60,
     lengths: [2500, 4000, 5000],
@@ -260,7 +270,7 @@ export const TIMBER: TimberItem[] = [
     id: 'leiste-20x40',
     kind: 'stab',
     group: 'leiste',
-    name: 'Rechteckleiste Kiefer/Fichte 20×40 mm, astfrei',
+    name: tk('Rechteckleiste Kiefer/Fichte 20×40 mm, astfrei'),
     wood: 'Fichte/Kiefer',
     strength: 'C16',
     sorted: false,
@@ -275,7 +285,7 @@ export const TIMBER: TimberItem[] = [
     id: 'leiste-20x60',
     kind: 'stab',
     group: 'leiste',
-    name: 'Rechteckleiste Kiefer/Fichte 20×60 mm, astfrei',
+    name: tk('Rechteckleiste Kiefer/Fichte 20×60 mm, astfrei'),
     wood: 'Fichte/Kiefer',
     strength: 'C16',
     sorted: false,
@@ -290,7 +300,9 @@ export const TIMBER: TimberItem[] = [
     id: `rund-buche-${d}`,
     kind: 'stab',
     group: 'rundstab',
-    name: `Rundstab Buche Ø ${d} mm`,
+    get name() {
+      return t('Rundstab Buche Ø {d} mm', { d })
+    },
     wood: 'Buche',
     strength: 'C24',
     sorted: false,
@@ -305,7 +317,7 @@ export const TIMBER: TimberItem[] = [
     id: 'rund-kiefer-23',
     kind: 'stab',
     group: 'rundstab',
-    name: 'Rundstab Kiefer Ø 23 mm, astfrei',
+    name: tk('Rundstab Kiefer Ø 23 mm, astfrei'),
     wood: 'Kiefer',
     strength: 'C16',
     sorted: false,
@@ -319,40 +331,40 @@ export const TIMBER: TimberItem[] = [
 ]
 
 export const SHEETS: SheetItem[] = [
-  { id: 'osb-18', kind: 'platte', group: 'osb', name: 'OSB/3 18 mm stumpf', thickness: 18, formats: [{ l: 2500, w: 1250, price: 31.09 }], eMean: 4930, maxSpan: 500 },
-  { id: 'osb-22', kind: 'platte', group: 'osb', name: 'OSB/3 22 mm stumpf', thickness: 22, formats: [{ l: 2500, w: 1250, price: 38.13 }], eMean: 4930, maxSpan: 625 },
-  { id: 'osb-25', kind: 'platte', group: 'osb', name: 'OSB/3 25 mm stumpf', thickness: 25, formats: [{ l: 2500, w: 1250, price: 46.72 }], eMean: 4930, maxSpan: 650 },
-  { id: 'osb-nf-18', kind: 'platte', group: 'osb-nf', name: 'OSB/3 Verlegeplatte N+F 18 mm', thickness: 18, formats: [{ l: 2500, w: 675, price: 14.5 }], eMean: 4930, maxSpan: 500 },
-  { id: 'osb-nf-22', kind: 'platte', group: 'osb-nf', name: 'OSB/3 Verlegeplatte N+F 22 mm', thickness: 22, formats: [{ l: 2050, w: 675, price: 17.28 }], eMean: 4930, maxSpan: 625 },
-  { id: '3s-19', kind: 'platte', group: 'dreischicht', name: 'Fichte 3-Schichtplatte B/C 19 mm', thickness: 19, formats: [{ l: 2500, w: 1250, price: 129 }], eMean: 10000, maxSpan: 600 },
-  { id: '3s-27', kind: 'platte', group: 'dreischicht', name: 'Fichte 3-Schichtplatte B/C 27 mm', thickness: 27, formats: [{ l: 2500, w: 1250, price: 179 }], eMean: 8200, maxSpan: 800 },
-  { id: 'mpx-18', kind: 'platte', group: 'multiplex', name: 'Multiplex Eukalyptus/Birke 18 mm', thickness: 18, formats: [{ l: 2500, w: 1220, price: 112 }], eMean: 10048, maxSpan: 600 },
-  { id: 'leimholz-fi-18', kind: 'platte', group: 'leimholz', name: 'Leimholzplatte Fichte B/C 18 mm', thickness: 18, formats: [{ l: 2000, w: 600, price: 31.95 }, { l: 1200, w: 600, price: 19.25 }] },
-  { id: 'leimholz-ki-18', kind: 'platte', group: 'leimholz', name: 'Leimholzplatte Kiefer B/C 18 mm', thickness: 18, formats: [{ l: 2000, w: 600, price: 28.95 }] },
-  { id: 'leimholz-fi-28', kind: 'platte', group: 'leimholz', name: 'Leimholzplatte Fichte A/B 28 mm', thickness: 28, formats: [{ l: 2000, w: 600, price: 79.95 }] },
-  { id: 'rauspund-18', kind: 'platte', group: 'diele', name: 'Rauspund Fichte 18×96 mm', thickness: 18, formats: [{ l: 2400, w: 96, price: 2.75 }, { l: 2100, w: 96, price: 2.41 }, { l: 2700, w: 96, price: 3.1 }], maxSpan: 500, eMean: 8000 },
-  { id: 'nf-kiefer-27', kind: 'platte', group: 'diele', name: 'Nut+Feder-Diele Kiefer 27×146 mm', thickness: 27, formats: [{ l: 2000, w: 146, price: 6.4 }, { l: 2500, w: 146, price: 8.0 }, { l: 3000, w: 146, price: 9.6 }, { l: 4000, w: 146, price: 12.8 }], maxSpan: 800, eMean: 8000, priceEstimated: true },
-  { id: 'douglasie-21', kind: 'platte', group: 'diele', name: 'Universaldiele Douglasie 21×124 mm', thickness: 21, formats: [{ l: 2500, w: 124, price: 6.5 }], maxSpan: 600, eMean: 8000 },
-  { id: 'rollrost', kind: 'platte', group: 'rollrost', name: 'Rollrost (Fertigteil)', thickness: 40, formats: [{ l: 2000, w: 900, price: 30 }, { l: 2000, w: 1000, price: 35 }, { l: 2000, w: 1200, price: 45 }, { l: 2000, w: 1400, price: 55 }], priceEstimated: true },
-  { id: 'lattenrost', kind: 'platte', group: 'lattenrost', name: 'Lattenrost (Fertigteil)', thickness: 80, formats: [{ l: 2000, w: 900, price: 60 }, { l: 2000, w: 1000, price: 70 }, { l: 2000, w: 1200, price: 90 }, { l: 2000, w: 1400, price: 110 }], priceEstimated: true },
-  { id: 'netz', kind: 'platte', group: 'netz', name: 'Sicherheitsnetz, Maschenweite ≤ 50 mm', thickness: 5, formats: [{ l: 3000, w: 1000, price: 25 }], priceEstimated: true },
-  { id: 'netz-begehbar', kind: 'platte', group: 'netz', name: 'Begehbares Netz (Kletter-/Trampolinnetz, PP 5 mm, Masche 45 mm, mit Randseil)', thickness: 6, formats: [{ l: 2000, w: 1000, price: 70 }, { l: 2000, w: 1500, price: 95 }, { l: 2500, w: 2000, price: 150 }], priceEstimated: true },
+  { id: 'osb-18', kind: 'platte', group: 'osb', name: tk('OSB/3 18 mm stumpf'), thickness: 18, formats: [{ l: 2500, w: 1250, price: 31.09 }], eMean: 4930, maxSpan: 500 },
+  { id: 'osb-22', kind: 'platte', group: 'osb', name: tk('OSB/3 22 mm stumpf'), thickness: 22, formats: [{ l: 2500, w: 1250, price: 38.13 }], eMean: 4930, maxSpan: 625 },
+  { id: 'osb-25', kind: 'platte', group: 'osb', name: tk('OSB/3 25 mm stumpf'), thickness: 25, formats: [{ l: 2500, w: 1250, price: 46.72 }], eMean: 4930, maxSpan: 650 },
+  { id: 'osb-nf-18', kind: 'platte', group: 'osb-nf', name: tk('OSB/3 Verlegeplatte N+F 18 mm'), thickness: 18, formats: [{ l: 2500, w: 675, price: 14.5 }], eMean: 4930, maxSpan: 500 },
+  { id: 'osb-nf-22', kind: 'platte', group: 'osb-nf', name: tk('OSB/3 Verlegeplatte N+F 22 mm'), thickness: 22, formats: [{ l: 2050, w: 675, price: 17.28 }], eMean: 4930, maxSpan: 625 },
+  { id: '3s-19', kind: 'platte', group: 'dreischicht', name: tk('Fichte 3-Schichtplatte B/C 19 mm'), thickness: 19, formats: [{ l: 2500, w: 1250, price: 129 }], eMean: 10000, maxSpan: 600 },
+  { id: '3s-27', kind: 'platte', group: 'dreischicht', name: tk('Fichte 3-Schichtplatte B/C 27 mm'), thickness: 27, formats: [{ l: 2500, w: 1250, price: 179 }], eMean: 8200, maxSpan: 800 },
+  { id: 'mpx-18', kind: 'platte', group: 'multiplex', name: tk('Multiplex Eukalyptus/Birke 18 mm'), thickness: 18, formats: [{ l: 2500, w: 1220, price: 112 }], eMean: 10048, maxSpan: 600 },
+  { id: 'leimholz-fi-18', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Fichte B/C 18 mm'), thickness: 18, formats: [{ l: 2000, w: 600, price: 31.95 }, { l: 1200, w: 600, price: 19.25 }] },
+  { id: 'leimholz-ki-18', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Kiefer B/C 18 mm'), thickness: 18, formats: [{ l: 2000, w: 600, price: 28.95 }] },
+  { id: 'leimholz-fi-28', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Fichte A/B 28 mm'), thickness: 28, formats: [{ l: 2000, w: 600, price: 79.95 }] },
+  { id: 'rauspund-18', kind: 'platte', group: 'diele', name: tk('Rauspund Fichte 18×96 mm'), thickness: 18, formats: [{ l: 2400, w: 96, price: 2.75 }, { l: 2100, w: 96, price: 2.41 }, { l: 2700, w: 96, price: 3.1 }], maxSpan: 500, eMean: 8000 },
+  { id: 'nf-kiefer-27', kind: 'platte', group: 'diele', name: tk('Nut+Feder-Diele Kiefer 27×146 mm'), thickness: 27, formats: [{ l: 2000, w: 146, price: 6.4 }, { l: 2500, w: 146, price: 8.0 }, { l: 3000, w: 146, price: 9.6 }, { l: 4000, w: 146, price: 12.8 }], maxSpan: 800, eMean: 8000, priceEstimated: true },
+  { id: 'douglasie-21', kind: 'platte', group: 'diele', name: tk('Universaldiele Douglasie 21×124 mm'), thickness: 21, formats: [{ l: 2500, w: 124, price: 6.5 }], maxSpan: 600, eMean: 8000 },
+  { id: 'rollrost', kind: 'platte', group: 'rollrost', name: tk('Rollrost (Fertigteil)'), thickness: 40, formats: [{ l: 2000, w: 900, price: 30 }, { l: 2000, w: 1000, price: 35 }, { l: 2000, w: 1200, price: 45 }, { l: 2000, w: 1400, price: 55 }], priceEstimated: true },
+  { id: 'lattenrost', kind: 'platte', group: 'lattenrost', name: tk('Lattenrost (Fertigteil)'), thickness: 80, formats: [{ l: 2000, w: 900, price: 60 }, { l: 2000, w: 1000, price: 70 }, { l: 2000, w: 1200, price: 90 }, { l: 2000, w: 1400, price: 110 }], priceEstimated: true },
+  { id: 'netz', kind: 'platte', group: 'netz', name: tk('Sicherheitsnetz, Maschenweite ≤ 50 mm'), thickness: 5, formats: [{ l: 3000, w: 1000, price: 25 }], priceEstimated: true },
+  { id: 'netz-begehbar', kind: 'platte', group: 'netz', name: tk('Begehbares Netz (Kletter-/Trampolinnetz, PP 5 mm, Masche 45 mm, mit Randseil)'), thickness: 6, formats: [{ l: 2000, w: 1000, price: 70 }, { l: 2000, w: 1500, price: 95 }, { l: 2500, w: 2000, price: 150 }], priceEstimated: true },
 ]
 
 export const HARDWARE: HardwareItem[] = [
-  { id: 'winkel-90', kind: 'beschlag', group: 'winkel', name: 'Winkelverbinder 90×90×65 mit Sicke, verzinkt', pack: 1, packPrice: 1.8, priceEstimated: true },
-  { id: 'balkenschuh-60', kind: 'beschlag', group: 'balkenschuh', name: 'Balkenschuh innen, passend zum Querschnitt', pack: 1, packPrice: 3.5, priceEstimated: true },
-  { id: 'schraube-5x50', kind: 'beschlag', group: 'schraube', name: 'Holzbauschraube / Winkelschraube 5×50, Packung 250', pack: 250, packPrice: 14, priceEstimated: true },
-  { id: 'schraube-8x160', kind: 'beschlag', group: 'schraube', name: 'Tellerkopf-Holzbauschraube 8×160, Packung 50', pack: 50, packPrice: 22, priceEstimated: true },
-  { id: 'schlossschraube-m10', kind: 'beschlag', group: 'bolzen', name: 'Schlossschraube M10 × 180 mit Mutter und U-Scheibe', pack: 1, packPrice: 1.6, priceEstimated: true },
-  { id: 'bettschraube-m8', kind: 'beschlag', group: 'beschlag', name: 'Bettschraube M8 mit Zylindermutter', pack: 1, packPrice: 1.2, priceEstimated: true },
-  { id: 'gewindestange-m10', kind: 'beschlag', group: 'bolzen', name: 'Gewindestange M10 verzinkt (je 1 m)', pack: 1000, packPrice: 3.5, perMeter: true, priceEstimated: true },
-  { id: 'lochband', kind: 'beschlag', group: 'lochband', name: 'Lochband 20 mm × 10 m', pack: 1, packPrice: 12, priceEstimated: true },
-  { id: 'rahmenduebel-10', kind: 'beschlag', group: 'duebel', name: 'Rahmendübel 10 × 115 mit Schraube', pack: 10, packPrice: 9, priceEstimated: true },
-  { id: 'stellfuss-m16', kind: 'beschlag', group: 'spindel', name: 'Stellfuß / Gewindespindel M16 für Deckenverspannung', pack: 1, packPrice: 6, priceEstimated: true },
-  { id: 'holzduebel-10', kind: 'beschlag', group: 'beschlag', name: 'Holzdübel Buche 10 × 40, Packung 100', pack: 100, packPrice: 5, priceEstimated: true },
-  { id: 'seil-12', kind: 'beschlag', group: 'netzzubehoer', name: 'Polypropylen-Seil Ø 12 mm (Meterware)', pack: 1000, packPrice: 1.5, perMeter: true, priceEstimated: true },
-  { id: 'netzhaken', kind: 'beschlag', group: 'netzzubehoer', name: 'Ösen/Haken und Spannschnur für Netz', pack: 1, packPrice: 15, priceEstimated: true },
+  { id: 'winkel-90', kind: 'beschlag', group: 'winkel', name: tk('Winkelverbinder 90×90×65 mit Sicke, verzinkt'), pack: 1, packPrice: 1.8, priceEstimated: true },
+  { id: 'balkenschuh-60', kind: 'beschlag', group: 'balkenschuh', name: tk('Balkenschuh innen, passend zum Querschnitt'), pack: 1, packPrice: 3.5, priceEstimated: true },
+  { id: 'schraube-5x50', kind: 'beschlag', group: 'schraube', name: tk('Holzbauschraube / Winkelschraube 5×50, Packung 250'), pack: 250, packPrice: 14, priceEstimated: true },
+  { id: 'schraube-8x160', kind: 'beschlag', group: 'schraube', name: tk('Tellerkopf-Holzbauschraube 8×160, Packung 50'), pack: 50, packPrice: 22, priceEstimated: true },
+  { id: 'schlossschraube-m10', kind: 'beschlag', group: 'bolzen', name: tk('Schlossschraube M10 × 180 mit Mutter und U-Scheibe'), pack: 1, packPrice: 1.6, priceEstimated: true },
+  { id: 'bettschraube-m8', kind: 'beschlag', group: 'beschlag', name: tk('Bettschraube M8 mit Zylindermutter'), pack: 1, packPrice: 1.2, priceEstimated: true },
+  { id: 'gewindestange-m10', kind: 'beschlag', group: 'bolzen', name: tk('Gewindestange M10 verzinkt (je 1 m)'), pack: 1000, packPrice: 3.5, perMeter: true, priceEstimated: true },
+  { id: 'lochband', kind: 'beschlag', group: 'lochband', name: tk('Lochband 20 mm × 10 m'), pack: 1, packPrice: 12, priceEstimated: true },
+  { id: 'rahmenduebel-10', kind: 'beschlag', group: 'duebel', name: tk('Rahmendübel 10 × 115 mit Schraube'), pack: 10, packPrice: 9, priceEstimated: true },
+  { id: 'stellfuss-m16', kind: 'beschlag', group: 'spindel', name: tk('Stellfuß / Gewindespindel M16 für Deckenverspannung'), pack: 1, packPrice: 6, priceEstimated: true },
+  { id: 'holzduebel-10', kind: 'beschlag', group: 'beschlag', name: tk('Holzdübel Buche 10 × 40, Packung 100'), pack: 100, packPrice: 5, priceEstimated: true },
+  { id: 'seil-12', kind: 'beschlag', group: 'netzzubehoer', name: tk('Polypropylen-Seil Ø 12 mm (Meterware)'), pack: 1000, packPrice: 1.5, perMeter: true, priceEstimated: true },
+  { id: 'netzhaken', kind: 'beschlag', group: 'netzzubehoer', name: tk('Ösen/Haken und Spannschnur für Netz'), pack: 1, packPrice: 15, priceEstimated: true },
 ]
 
 const ALL: CatalogItem[] = [...TIMBER, ...SHEETS, ...HARDWARE]
@@ -379,13 +391,13 @@ export function maxLength(item: TimberItem): number {
 }
 
 export const GROUP_LABEL: Record<TimberGroup, string> = {
-  kvh: 'KVH (C24, tragend)',
-  bsh: 'Brettschichtholz (GL24h)',
-  kantholz: 'Kantholz sägerau',
-  gehobelt: 'Kantholz gehobelt',
-  latte: 'Latten',
-  leiste: 'Leisten',
-  rundstab: 'Rundstäbe',
+  kvh: tk('KVH (C24, tragend)'),
+  bsh: tk('Brettschichtholz (GL24h)'),
+  kantholz: tk('Kantholz sägerau'),
+  gehobelt: tk('Kantholz gehobelt'),
+  latte: tk('Latten'),
+  leiste: tk('Leisten'),
+  rundstab: tk('Rundstäbe'),
 }
 
-export const PRICE_STAND = 'Richtpreise Hornbach, Stand 2025/26'
+export const PRICE_STAND = tk('Richtpreise Hornbach, Stand 2025/26')

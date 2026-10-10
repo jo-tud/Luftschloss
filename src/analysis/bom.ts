@@ -1,4 +1,4 @@
-import { locale } from '../i18n'
+import { getLang, locale, t, tr } from '../i18n'
 import { HARDWARE, PRICE_STAND, catalogItem, type HardwareItem, type SheetItem, type TimberItem } from '../model/catalog'
 import { fmtCm, fmtM, memberLength } from '../model/geometry'
 import { cutLengths } from '../model/joinery'
@@ -99,7 +99,7 @@ export function computeBom(p: Project, r: Resolved): Bom {
     if (!item) continue
     const L = Math.ceil(cutLen.get(m.id) ?? memberLength(m))
     if (item.kind === 'beschlag') {
-      addHw(item.id, item.perMeter ? L : 1, m.name ?? 'Bauteil')
+      addHw(item.id, item.perMeter ? L : 1, m.name ?? t('Bauteil'))
       continue
     }
     if (item.kind !== 'stab') continue
@@ -141,22 +141,22 @@ export function computeBom(p: Project, r: Resolved): Bom {
         const packed = packBars(Array.from({ length: rows }, () => ({ length: run, label: pa.name ?? '' })), lens)
         count += packed.bars.length + packed.oversize.length * Math.ceil(run / Math.max(...lens))
         fmt = item.formats.find((f) => f.l === Math.max(...packed.bars.map((x) => x.stock), lens[0])) ?? item.formats[0]
-        note = `${rows} Reihen à ${(run / 10).toFixed(0)} cm`
+        note = t('{rows} Reihen à {len} cm', { rows, len: (run / 10).toFixed(0) })
       } else if (item.group === 'rollrost' || item.group === 'lattenrost') {
         fmt = item.formats.find((f) => f.w >= Math.min(a, b) - 30) ?? item.formats[item.formats.length - 1]
         count += 1
-        note = 'Fertigteil passend zur Matratze'
+        note = t('Fertigteil passend zur Matratze')
       } else if (item.group === 'netz') {
         count += Math.ceil((a * b) / 1e6)
         fmt = { l: 1000, w: 1000, price: item.formats[0].price / ((item.formats[0].l * item.formats[0].w) / 1e6) }
-        note = 'Meterware nach Maß (m²)'
+        note = t('Meterware nach Maß (m²)')
       } else {
         const best = item.formats
           .map((f) => ({ f, n: sheetsNeeded(a, b, f.l, f.w) }))
           .sort((x, y) => x.n * x.f.price - y.n * y.f.price)[0]
         fmt = best.f
         count += best.n
-        note = best.n > 1 ? 'Stoß über einem Querträger' : ''
+        note = best.n > 1 ? t('Stoß über einem Querträger') : ''
         cuts += 2
       }
     }
@@ -165,16 +165,16 @@ export function computeBom(p: Project, r: Resolved): Bom {
   }
 
   for (const j of r.joints) {
-    const t = jointType(j.typeId)
-    if (!t) continue
-    for (const h of t.hardware) addHw(h.id, h.qty, t.name)
+    const jt = jointType(j.typeId)
+    if (!jt) continue
+    for (const h of jt.hardware) addHw(h.id, h.qty, tr(jt.name))
   }
-  for (const f of r.fixings) addHw(f.hardwareId, f.count, f.note)
+  for (const f of r.fixings) addHw(f.hardwareId, f.count, tr(f.note))
   // Liegefläche verschrauben
   for (const pa of r.panels) {
     if (pa.kind === 'platte' || pa.kind === 'dielen') {
       const { a, b } = panelSize(pa)
-      addHw('schraube-5x50', Math.ceil(((a + b) * 2) / 250 + (a * b) / 1e6 * 8), 'Liegefläche verschrauben')
+      addHw('schraube-5x50', Math.ceil(((a + b) * 2) / 250 + (a * b) / 1e6 * 8), t('Liegefläche verschrauben'))
     }
   }
 
@@ -214,24 +214,33 @@ function sheetsNeeded(a: number, b: number, l: number, w: number): number {
 /** Prompt zum Kopieren in einen KI-Chat mit Websuche: liefert eine Preistabelle zum Zurückfügen. */
 export function pricePrompt(p: Project, bom: Bom, market = ''): string {
   const lines: string[] = []
-  for (const t of bom.timber) {
+  for (const tl of bom.timber) {
     const counts = new Map<number, number>()
-    for (const b of t.bars) counts.set(b.stock, (counts.get(b.stock) ?? 0) + 1)
-    for (const [len, n] of counts) lines.push(`${t.item.id} | ${t.item.name}, Länge ${len} mm | ${n} Stück | Preis je laufender Meter`)
+    for (const b of tl.bars) counts.set(b.stock, (counts.get(b.stock) ?? 0) + 1)
+    for (const [len, n] of counts) lines.push(t('{id} | {name}, Länge {len} mm | {n} Stück | Preis je laufender Meter', { id: tl.item.id, name: tr(tl.item.name), len, n }))
   }
-  for (const s of bom.sheets) lines.push(`${s.item.id}@${s.format.l}x${s.format.w} | ${s.item.name}, Format ${s.format.l}×${s.format.w} mm | ${s.count} Stück | Preis je Stück`)
-  for (const h of bom.hardware) lines.push(`${h.item.id} | ${h.item.name} | ${h.packs} ${h.item.perMeter ? 'm' : 'Packung(en)'} | Preis je ${h.item.perMeter ? 'Meter' : 'Packung'}`)
+  for (const s of bom.sheets)
+    lines.push(t('{id} | {name}, Format {l}×{w} mm | {n} Stück | Preis je Stück', { id: `${s.item.id}@${s.format.l}x${s.format.w}`, name: tr(s.item.name), l: s.format.l, w: s.format.w, n: s.count }))
+  for (const h of bom.hardware)
+    lines.push(
+      h.item.perMeter
+        ? t('{id} | {name} | {n} m | Preis je Meter', { id: h.item.id, name: tr(h.item.name), n: h.packs })
+        : t('{id} | {name} | {n} Packung(en) | Preis je Packung', { id: h.item.id, name: tr(h.item.name), n: h.packs }),
+    )
   return [
-    `Du bist mein Einkaufsassistent für ein Hochbett-Projekt („${p.name}“). Recherchiere bitte mit Websuche die aktuellen Preise bei HORNBACH Deutschland${market ? ` (Markt: ${market})` : ''} für die folgenden Artikel. Wenn es einen Artikel nicht genau gibt, nimm den nächstpassenden aus dem Hornbach-Sortiment und nenne ihn. Wenn Hornbach nicht abrufbar ist, nimm OBI, Bauhaus oder toom und vermerke das.`,
+    t('Du bist mein Einkaufsassistent für ein Hochbett-Projekt („{name}“). Recherchiere bitte mit Websuche die aktuellen Preise bei HORNBACH Deutschland für die folgenden Artikel.', { name: p.name }) +
+      (market ? ' ' + t('Markt: {market}.', { market }) : '') +
+      ' ' +
+      t('Wenn es einen Artikel nicht genau gibt, nimm den nächstpassenden aus dem Hornbach-Sortiment und nenne ihn. Wenn Hornbach nicht abrufbar ist, nimm OBI, Bauhaus oder toom und vermerke das.'),
     '',
-    'Artikel (ID | Beschreibung | Menge | gewünschte Preiseinheit):',
+    t('Artikel (ID | Beschreibung | Menge | gewünschte Preiseinheit):'),
     ...lines.map((l) => `- ${l}`),
     '',
-    'Antworte am Ende mit genau einem Codeblock im Format (Semikolon-getrennt, eine Zeile pro Artikel, Dezimalkomma oder -punkt):',
+    t('Antworte am Ende mit genau einem Codeblock im Format (Semikolon-getrennt, eine Zeile pro Artikel, Dezimalkomma oder -punkt):'),
     '```',
     'id;preis_eur;einheit;produktname;url',
     '```',
-    'Die Spalte "id" muss exakt die ID aus der Liste sein. "preis_eur" ist der Preis in der gewünschten Einheit.',
+    t('Die Spalte "id" muss exakt die ID aus der Liste sein. "preis_eur" ist der Preis in der gewünschten Einheit.'),
   ].join('\n')
 }
 
@@ -250,30 +259,34 @@ export function parsePriceAnswer(text: string): { id: string; price: number; url
   return out
 }
 
-/** Einkaufsliste als CSV für deutsches Excel/LibreOffice: eine Zeile pro Artikel und Länge, Dezimalkomma, Summe */
+/**
+ * Einkaufsliste als CSV: eine Zeile pro Artikel und Länge, Summe. Deutsch: Semikolon und Dezimalkomma
+ * (deutsches Excel/LibreOffice), Englisch: Komma und Dezimalpunkt.
+ */
 export function bomCsv(bom: Bom, overrides: Record<string, unknown> = {}): string {
+  const sep = getLang() === 'de' ? ';' : ','
   const money = (x: number) => x.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false })
-  const est = (id: string, e?: boolean) => (overrides[id] ? 'recherchiert' : e ? 'geschätzt' : '')
-  const rows: string[][] = [['Gruppe', 'Artikel', 'Menge', 'Einheit', 'Länge/Format', 'Einzelpreis EUR', 'Summe EUR', 'Preis']]
-  for (const t of bom.timber) {
+  const est = (id: string, e?: boolean) => (overrides[id] ? t('recherchiert') : e ? t('geschätzt') : '')
+  const rows: string[][] = [[t('Gruppe'), t('Artikel'), t('Menge'), t('Einheit'), t('Länge/Format'), t('Einzelpreis EUR'), t('Summe EUR'), t('Preis')]]
+  for (const tl of bom.timber) {
     const counts = new Map<number, number>()
-    for (const b of t.bars) counts.set(b.stock, (counts.get(b.stock) ?? 0) + 1)
-    const totalLen = t.bars.reduce((x, b) => x + b.stock, 0) || 1
+    for (const b of tl.bars) counts.set(b.stock, (counts.get(b.stock) ?? 0) + 1)
+    const totalLen = tl.bars.reduce((x, b) => x + b.stock, 0) || 1
     for (const [len, n] of [...counts].sort((a, b) => b[0] - a[0])) {
-      const each = (t.price * len) / totalLen
-      rows.push(['Holz', t.item.name, String(n), 'Stange', fmtM(len), money(each), money(each * n), est(t.item.id, t.item.priceEstimated)])
+      const each = (tl.price * len) / totalLen
+      rows.push([t('Holz'), tr(tl.item.name), String(n), t('Stange'), fmtM(len), money(each), money(each * n), est(tl.item.id, tl.item.priceEstimated)])
     }
   }
   for (const sh of bom.sheets) {
     const each = sh.price / Math.max(1, sh.count)
-    rows.push(['Platte', sh.item.name, String(sh.count), 'Stück', `${fmtCm(sh.format.l, 0)} × ${fmtCm(sh.format.w, 0)}`, money(each), money(sh.price), est(`${sh.item.id}@${sh.format.l}x${sh.format.w}`, sh.item.priceEstimated)])
+    rows.push([t('Platte'), tr(sh.item.name), String(sh.count), t('Stück'), `${fmtCm(sh.format.l, 0)} × ${fmtCm(sh.format.w, 0)}`, money(each), money(sh.price), est(`${sh.item.id}@${sh.format.l}x${sh.format.w}`, sh.item.priceEstimated)])
   }
   for (const h of bom.hardware) {
-    if (h.item.perMeter) rows.push(['Beschlag', h.item.name, (h.qty / 1000).toLocaleString(locale(), { maximumFractionDigits: 2 }), 'm', '', money(h.price / Math.max(0.001, h.qty / 1000)), money(h.price), est(h.item.id, h.item.priceEstimated)])
-    else if (h.item.pack > 1) rows.push(['Beschlag', h.item.name, String(h.packs), `Packung à ${h.item.pack} Stück`, `${h.qty} Stück benötigt`, money(h.price / Math.max(1, h.packs)), money(h.price), est(h.item.id, h.item.priceEstimated)])
-    else rows.push(['Beschlag', h.item.name, String(h.qty), 'Stück', '', money(h.price / Math.max(1, h.qty)), money(h.price), est(h.item.id, h.item.priceEstimated)])
+    const name = tr(h.item.name)
+    if (h.item.perMeter) rows.push([t('Beschlag'), name, (h.qty / 1000).toLocaleString(locale(), { maximumFractionDigits: 2, useGrouping: false }), 'm', '', money(h.price / Math.max(0.001, h.qty / 1000)), money(h.price), est(h.item.id, h.item.priceEstimated)])
+    else if (h.item.pack > 1) rows.push([t('Beschlag'), name, String(h.packs), t('Packung à {n} Stück', { n: h.item.pack }), t('{n} Stück benötigt', { n: h.qty }), money(h.price / Math.max(1, h.packs)), money(h.price), est(h.item.id, h.item.priceEstimated)])
+    else rows.push([t('Beschlag'), name, String(h.qty), t('Stück'), '', money(h.price / Math.max(1, h.qty)), money(h.price), est(h.item.id, h.item.priceEstimated)])
   }
-  rows.push(['Summe', '', '', '', '', '', money(bom.total), bom.priceStand])
-  return rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(';')).join('\r\n')
+  rows.push([t('Summe'), '', '', '', '', '', money(bom.total), tr(bom.priceStand)])
+  return rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(sep)).join('\r\n')
 }
-

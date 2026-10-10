@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { t, tr } from '../i18n'
 import { MemberStatics } from './Statics'
-import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber } from '../model/catalog'
+import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber, type TimberGroup } from '../model/catalog'
 import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
 import { BED_TYPE_LABEL } from '../model/loftbed'
@@ -18,8 +19,8 @@ export function Properties() {
     <>
       {sel && label && (
         <div className="props-actions">
-          <button className="danger" onClick={() => deleteSelection(sel)} title={`${label} (Entf) – rückgängig mit ↶`}>
-            🗑 {label}
+          <button className="danger" onClick={() => deleteSelection(sel)} title={t('{label} (Entf) – rückgängig mit ↶', { label: tr(label) })}>
+            🗑 {tr(label)}
           </button>
         </div>
       )}
@@ -36,10 +37,10 @@ function PropertiesBody() {
     return (
       <div className="props empty">
         <p>
-          <b>Nichts ausgewählt.</b>
+          <b>{t('Nichts ausgewählt.')}</b>
         </p>
-        <p>Klicke ein Bauteil, Fenster oder Möbel an. Doppelklick fliegt zu dieser Stelle heran, jeder weitere geht näher.</p>
-        <p>Links unter „Bett“ setzt du eine Vorlage ein, unter „Raum“ trägst du Maße, Stuck und Sockelleiste ein.</p>
+        <p>{t('Klicke ein Bauteil, Fenster oder Möbel an. Doppelklick fliegt zu dieser Stelle heran, jeder weitere geht näher.')}</p>
+        <p>{t('Links unter „Bett“ setzt du eine Vorlage ein, unter „Raum“ trägst du Maße, Stuck und Sockelleiste ein.')}</p>
       </div>
     )
   if (sel.kind === 'assembly') {
@@ -55,9 +56,9 @@ function PropertiesBody() {
       <div className="props">
         {m && <MemberProps m={m} free={!m.assemblyId} />}
         {pa && !m && (
-          <Section title={pa.name ?? 'Fläche'}>
+          <Section title={pa.name ? tr(pa.name) : t('Fläche')}>
             <p className="kv">
-              Material: <b>{(pa.catalogId && catalogItem(pa.catalogId)?.name) ?? '–'}</b>
+              {t('Material')}: <b>{tr((pa.catalogId && catalogItem(pa.catalogId)?.name) || '–')}</b>
             </p>
           </Section>
         )}
@@ -70,8 +71,8 @@ function PropertiesBody() {
   if (sel.kind === 'rosette') {
     return (
       <div className="props">
-        <Section title="Deckenrosette & Lampe">
-          <p>Maße unter „Raum → Deckenrosette & Lampe“. In der Draufsicht oder 3D lässt sich die Rosette verschieben.</p>
+        <Section title={t('Deckenrosette & Lampe')}>
+          <p>{t('Maße unter „Raum → Deckenrosette & Lampe“. In der Draufsicht oder 3D lässt sich die Rosette verschieben.')}</p>
         </Section>
       </div>
     )
@@ -82,17 +83,74 @@ function PropertiesBody() {
 function catalogOptions(filter?: (t: (typeof TIMBER)[number]) => boolean): [string, string][] {
   const out: [string, string][] = []
   for (const g of Object.keys(GROUP_LABEL) as (keyof typeof GROUP_LABEL)[]) {
-    for (const t of TIMBER.filter((x) => x.group === g && (!filter || filter(x)))) out.push([t.id, `${t.round ? `Ø ${t.b}` : `${t.b}×${t.h}`} · ${GROUP_LABEL[g].split(' ')[0]}${t.priceEstimated ? '' : ''}`])
+    for (const t of TIMBER.filter((x) => x.group === g && (!filter || filter(x)))) out.push([t.id, `${t.round ? `Ø ${t.b}` : `${t.b}×${t.h}`} · ${groupShort(g)}`])
   }
   return out
 }
 
-const SIDES: Side[] = ['hinten', 'vorne', 'links', 'rechts']
+const SIDES: Side[] = ['hinten', 'vorne', 'links', 'rechts'] // i18n-ok
+
+/** Kurzname der Holzgruppe für Auswahllisten (erstes Wort von GROUP_LABEL) */
+function groupShort(g: TimberGroup): string {
+  switch (g) {
+    case 'kvh':
+      return 'KVH'
+    case 'bsh':
+      return t('Brettschichtholz')
+    case 'kantholz':
+    case 'gehobelt':
+      return t('Kantholz')
+    case 'latte':
+      return t('Latten')
+    case 'leiste':
+      return t('Leisten')
+    case 'rundstab':
+      return t('Rundstäbe')
+  }
+  return tr(GROUP_LABEL[g])
+}
+
+/** Seitenname zur Anzeige */
+function sideLabel(s: Side | 'links' | 'rechts'): string {
+  switch (s) {
+    case 'hinten':
+      return t('hinten')
+    case 'vorne':
+      return t('vorne')
+    case 'links':
+      return t('links')
+    case 'rechts':
+      return t('rechts')
+  }
+  return s
+}
+
+/** Steifigkeit einer Verbindung zur Anzeige */
+function stiffnessLabel(s: string): string {
+  switch (s) {
+    case 'gelenkig':
+      return t('gelenkig')
+    case 'halbsteif':
+      return t('halbsteif')
+    case 'steif':
+      return t('steif')
+  }
+  return tr(s)
+}
+
+const LEFT_RIGHT = (): ['links' | 'rechts', string][] => [
+  ['links', sideLabel('links')], // i18n-ok
+  ['rechts', sideLabel('rechts')], // i18n-ok
+]
 
 function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
   const update = useStore((s) => s.update)
   const select = useStore((s) => s.select)
   const d = useDerived()
+  // Querträger gibt es nicht bei jeder Liegefläche – dann die Auswahl nicht scheinbar wirkungslos anbieten
+  const hasJoists = d.resolved.members.some((m) => m.assemblyId === a.id && m.role === 'quertraeger')
+  const wallToWall = a.params.type === 'nische'
+  const styleMatters = a.params.deck === 'platte' || a.params.deck === 'dielen' || a.params.deck === 'lattenrost' || (a.params.deck === 'latten' && wallToWall)
   const P = a.params
   const roomHeight = useStore((s) => s.project.room.height)
   const info = d.resolved.beds.get(a.id)
@@ -105,184 +163,226 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
   const shift = d.resolved.shifts.find((s) => s.assemblyId === a.id)
   return (
     <div className={nested ? '' : 'props'}>
-      <Section title={`🛏 ${a.name}`} right={<small>{BED_TYPE_LABEL[P.type]}</small>}>
+      <Section title={`🛏 ${tr(a.name)}`} right={<small>{tr(BED_TYPE_LABEL[P.type])}</small>}>
         {info && clearance && (
           <div className="summary">
             <div>
               <b>{fmtM(info.underside)}</b>
-              <span>frei darunter</span>
+              <span>{t('frei darunter')}</span>
             </div>
             <div>
               <b>{fmtM(clearance.headroom)}</b>
-              <span>über Matratze</span>
+              <span>{t('über Matratze')}</span>
             </div>
             <div>
               <b>
                 {fmtCm(info.outerLength, 0)} × {fmtCm(info.outerWidth, 0)}
               </b>
-              <span>Außenmaß</span>
+              <span>{t('Außenmaß')}</span>
             </div>
           </div>
         )}
         {info && (info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && (
           <p className="hint">
-            Mit Leiter braucht das Bett {fmtCm(info.standLength, 0)} × {fmtCm(info.standWidth, 0)} Stellfläche.
+            {t('Mit Leiter braucht das Bett {l} × {w} Stellfläche.', { l: fmtCm(info.standLength, 0), w: fmtCm(info.standWidth, 0) })}
           </p>
         )}
-        <Sel<BedType> label="Bauart" value={P.type} options={(Object.keys(BED_TYPE_LABEL) as BedType[]).map((t) => [t, BED_TYPE_LABEL[t]])} onChange={(v) => setP({ type: v })} />
-        {P.type === 'eck' && <Sel label="Wandseitiges Ende" value={P.wallEnd} options={[['links', 'links'], ['rechts', 'rechts']]} onChange={(v) => setP({ wallEnd: v })} />}
-        <Num label="Liegehöhe (Oberkante Rost)" value={P.deckHeight} onChange={(v) => setP({ deckHeight: v })} min={300} max={roomHeight - P.mattressThickness - 200} />
+        <Sel<BedType> label={t('Bauart')} value={P.type} options={(Object.keys(BED_TYPE_LABEL) as BedType[]).map((b) => [b, tr(BED_TYPE_LABEL[b])])} onChange={(v) => setP({ type: v })} />
+        {P.type === 'eck' && <Sel label={t('Wandseitiges Ende')} value={P.wallEnd} options={LEFT_RIGHT()} onChange={(v) => setP({ wallEnd: v })} />}
+        <Num label={t('Liegehöhe (Oberkante Rost)')} value={P.deckHeight} onChange={(v) => setP({ deckHeight: v })} min={300} max={roomHeight - P.mattressThickness - 200} />
         <div className="pair">
-          <Num label={(P.mattressCount ?? 1) > 1 ? 'Matratze Länge (je)' : 'Matratze Länge'} value={P.mattressLength} onChange={(v) => setP({ mattressLength: v })} min={1000} max={3000} />
-          <Num label="Breite" value={P.mattressWidth} onChange={(v) => setP({ mattressWidth: v })} min={600} max={2000} />
+          <Num label={(P.mattressCount ?? 1) > 1 ? t('Matratze Länge (je)') : t('Matratze Länge')} value={P.mattressLength} onChange={(v) => setP({ mattressLength: v })} min={1000} max={3000} />
+          <Num label={t('Breite')} value={P.mattressWidth} onChange={(v) => setP({ mattressWidth: v })} min={600} max={2000} />
         </div>
-        <Num label="Matratzendicke" value={P.mattressThickness} onChange={(v) => setP({ mattressThickness: v })} min={50} />
+        <Num label={t('Matratzendicke')} value={P.mattressThickness} onChange={(v) => setP({ mattressThickness: v })} min={50} />
         <div className="pair">
-          <Sel label="Matratzen" value={String(P.mattressCount ?? 1) as '1'} options={[['1', '1'], ['2', '2'], ['3', '3']]} onChange={(v) => setP({ mattressCount: Number(v) })} title="Mehrere Matratzen auf der oberen Liegefläche, z. B. für zwei Kinder" />
+          <Sel label={t('Matratzen')} value={String(P.mattressCount ?? 1) as '1'} options={[['1', '1'], ['2', '2'], ['3', '3']]} onChange={(v) => setP({ mattressCount: Number(v) })} title={t('Mehrere Matratzen auf der oberen Liegefläche, z. B. für zwei Kinder')} />
           {(P.mattressCount ?? 1) > 1 && (
-            <Sel label="Anordnung" value={P.mattressLayout ?? 'nebeneinander'} options={[['nebeneinander', 'nebeneinander'], ['hintereinander', 'hintereinander']]} onChange={(v) => setP({ mattressLayout: v })} />
+            <Sel
+              label={t('Anordnung')}
+              value={P.mattressLayout ?? 'nebeneinander'}
+              options={[
+                ['nebeneinander', t('nebeneinander')],
+                ['hintereinander', t('hintereinander')],
+              ]}
+              onChange={(v) => setP({ mattressLayout: v })}
+            />
           )}
         </div>
         {(P.mattressCount ?? 1) > 1 && (
           <Num
-            label="Abstand zwischen den Matratzen"
+            label={t('Abstand zwischen den Matratzen')}
             value={P.mattressSpacing ?? P.mattressGap}
             onChange={(v) => setP({ mattressSpacing: v })}
             min={0}
             max={1000}
-            title="Platz zwischen den Matratzen, z. B. für eine Ablage, ein Brett als Trennung oder einfach mehr Luft. Das Bett wird entsprechend breiter bzw. länger."
+            title={t('Platz zwischen den Matratzen, z. B. für eine Ablage, ein Brett als Trennung oder einfach mehr Luft. Das Bett wird entsprechend breiter bzw. länger.')}
           />
         )}
         {(P.type === 'freistehend' || P.type === 'deckenhoch') && (
           <>
-            <Check label="Etagenbett (zweites Bett unten)" value={P.lowerBed} onChange={(v) => setP({ lowerBed: v })} />
-            {P.lowerBed && <Num label="Untere Liegehöhe (Oberkante Rost)" value={P.lowerDeckHeight} onChange={(v) => setP({ lowerDeckHeight: v })} min={150} />}
+            <Check label={t('Etagenbett (zweites Bett unten)')} value={P.lowerBed} onChange={(v) => setP({ lowerBed: v })} />
+            {P.lowerBed && <Num label={t('Untere Liegehöhe (Oberkante Rost)')} value={P.lowerDeckHeight} onChange={(v) => setP({ lowerDeckHeight: v })} min={150} />}
           </>
         )}
       </Section>
-      <Section title="Lage im Raum">
+      <Section title={t('Lage im Raum')}>
         {info && <BedPlacement a={a} fp={info.footprint} shift={(dx, dy) => setP({ x: Math.round(P.x + dx), y: Math.round(P.y + dy) }, `lage:${a.id}`)} />}
-        <Sel label="Drehung" value={String(P.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setP({ rotation: Number(v) as 0 })} />
-        <Check label="Gespiegelt (links ↔ rechts)" value={P.mirror} onChange={(v) => setP({ mirror: v })} />
-        <Sel label="An Sockelleiste" value={P.wallFit} options={[['ausklinken', 'Pfosten ausklinken'], ['abruecken', 'Bett abrücken']]} onChange={(v) => setP({ wallFit: v })} title="Wie das Bett an Wänden mit Sockelleiste anschließt" />
-        {shift && <p className="hint">Automatisch {fmtCm(Math.hypot(shift.dx, shift.dy))} von der Wand abgerückt.</p>}
-        {P.type === 'deckenhoch' && <Num label="Luft zur Decke (Stellfuß)" value={P.ceilingGap} unit="mm" onChange={(v) => setP({ ceilingGap: v })} />}
+        <Sel label={t('Drehung')} value={String(P.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setP({ rotation: Number(v) as 0 })} />
+        <Check label={t('Gespiegelt (links ↔ rechts)')} value={P.mirror} onChange={(v) => setP({ mirror: v })} />
+        <Sel
+          label={t('An Sockelleiste')}
+          value={P.wallFit}
+          options={[
+            ['ausklinken', t('Pfosten ausklinken')],
+            ['abruecken', t('Bett abrücken')],
+          ]}
+          onChange={(v) => setP({ wallFit: v })}
+          title={t('Wie das Bett an Wänden mit Sockelleiste anschließt')}
+        />
+        {shift && <p className="hint">{t('Automatisch {d} von der Wand abgerückt.', { d: fmtCm(Math.hypot(shift.dx, shift.dy)) })}</p>}
+        {P.type === 'deckenhoch' && <Num label={t('Luft zur Decke (Stellfuß)')} value={P.ceilingGap} unit="mm" onChange={(v) => setP({ ceilingGap: v })} />}
       </Section>
-      <Section title="Hölzer">
-        <Sel label="Pfosten" value={P.postCatalogId} options={catalogOptions((t) => !t.round && t.b === t.h && t.b >= 54)} onChange={(v) => setP({ postCatalogId: v })} />
-        <Sel label="Zargen / Riegel" value={P.railCatalogId} options={catalogOptions((t) => !t.round && t.h >= 94)} onChange={(v) => setP({ railCatalogId: v })} />
-        <Sel label="Querträger" value={P.joistCatalogId} options={catalogOptions((t) => !t.round && t.h >= 54)} onChange={(v) => setP({ joistCatalogId: v })} />
-        <Sel label="Bauweise" value={P.frameStyle} options={[['zargen', 'Querträger zwischen Zargen'], ['aufgelegt', 'Aufgelegt (Träger + Latten drauf)']]} onChange={(v) => setP({ frameStyle: v })} title="Aufgelegt: Querträger bzw. Latten liegen oben auf Wand- und Frontbalken" />
-        {(P.type === 'wandseitig' || P.type === 'eck') && (
-          <Sel label="Freie Ecke getragen von" value={P.cornerSupport} options={[['pfosten', 'Pfosten'], ['decke', 'Abhängung von der Decke']]} onChange={(v) => setP({ cornerSupport: v })} />
+      <Section title={t('Hölzer')}>
+        <Sel label={t('Pfosten')} value={P.postCatalogId} options={catalogOptions((t) => !t.round && t.b === t.h && t.b >= 54)} onChange={(v) => setP({ postCatalogId: v })} />
+        <Sel label={t('Zargen / Riegel')} value={P.railCatalogId} options={catalogOptions((t) => !t.round && t.h >= 94)} onChange={(v) => setP({ railCatalogId: v })} />
+        {hasJoists ? (
+          <Sel label={t('Querträger')} value={P.joistCatalogId} options={catalogOptions((t) => !t.round && t.h >= 54)} onChange={(v) => setP({ joistCatalogId: v })} />
+        ) : (
+          <p className="hint">{t('Querträger: bei dieser Liegefläche nicht nötig – die Latten liegen direkt auf den Längszargen.')}</p>
         )}
-        <Check label="Kopfbänder (Aussteifung)" value={P.braces} onChange={(v) => setP({ braces: v })} />
+        {styleMatters ? (
+          <Sel
+            label={t('Bauweise')}
+            value={P.frameStyle}
+            options={[
+              ['zargen', t('Querträger zwischen Zargen')],
+              ['aufgelegt', t('Aufgelegt (Träger + Latten drauf)')],
+            ]}
+            onChange={(v) => setP({ frameStyle: v })}
+            title={t('Aufgelegt: Querträger bzw. Latten liegen oben auf Wand- und Frontbalken')}
+          />
+        ) : (
+          <p className="hint">{t('Bauweise: bei Latten bzw. Netz ohne Wahl – erst mit Platte, Dielen oder Lattenrost gibt es Querträger, die zwischen den Zargen hängen oder oben aufliegen.')}</p>
+        )}
+        {(P.type === 'wandseitig' || P.type === 'eck') && (
+          <Sel
+            label={t('Freie Ecke getragen von')}
+            value={P.cornerSupport}
+            options={[
+              ['pfosten', t('Pfosten')],
+              ['decke', t('Abhängung von der Decke')],
+            ]}
+            onChange={(v) => setP({ cornerSupport: v })}
+          />
+        )}
+        <Check label={t('Kopfbänder (Aussteifung)')} value={P.braces} onChange={(v) => setP({ braces: v })} />
         {P.type !== 'nische' && P.type !== 'abgehaengt' && (
           <Sel
-            label="Mittelstützen je freier Längsseite"
+            label={t('Mittelstützen je freier Längsseite')}
             value={String(P.midPosts ?? 0) as '0'}
-            options={[['0', 'keine'], ['1', '1'], ['2', '2'], ['3', '3']]}
+            options={[['0', t('keine')], ['1', '1'], ['2', '2'], ['3', '3']]}
             onChange={(v) => setP({ midPosts: Number(v) })}
-            title="Zusätzliche Stützen unter den Längszargen – für lange Betten und Galerien"
+            title={t('Zusätzliche Stützen unter den Längszargen – für lange Betten und Galerien')}
           />
         )}
       </Section>
-      <Section title="Liegefläche">
+      <Section title={t('Liegefläche')}>
         <Sel<DeckType>
-          label="Art"
+          label={t('Art')}
           value={P.deck}
           options={[
-            ['latten', 'Latten lose aufgelegt (belüftet)'],
-            ['rollrost', 'Rollrost'],
-            ['lattenrost', 'Lattenrost (Fertigteil)'],
-            ['platte', 'Platte'],
-            ['dielen', 'Dielen / Rauspund'],
-            ['netz', 'Begehbares Netz (für Geübte)'],
+            ['latten', t('Latten lose aufgelegt (belüftet)')],
+            ['rollrost', t('Rollrost')],
+            ['lattenrost', t('Lattenrost (Fertigteil)')],
+            ['platte', t('Platte')],
+            ['dielen', t('Dielen / Rauspund')],
+            ['netz', t('Begehbares Netz (für Geübte)')],
           ]}
           onChange={(v) => setP({ deck: v, deckCatalogId: v === 'latten' ? 'geh-44x74' : v === 'platte' ? 'osb-22' : v === 'dielen' ? 'nf-kiefer-27' : v === 'netz' ? 'netz-begehbar' : v })}
         />
-        {P.deck === 'netz' && <p className="hint">Zum Chillen statt Schlafen: Das Netz hängt durch und zieht kräftig an den Zargen. Ringsum Zargen, am besten an zwei Wänden – die Prüfung nennt die Kräfte.</p>}
+        {P.deck === 'netz' && <p className="hint">{t('Zum Chillen statt Schlafen: Das Netz hängt durch und zieht kräftig an den Zargen. Ringsum Zargen, am besten an zwei Wänden – die Prüfung nennt die Kräfte.')}</p>}
         {P.deck === 'latten' && (
           <>
-            <Sel label="Latten" value={P.deckCatalogId} options={catalogOptions((t) => !t.round && t.b <= 44 && t.h >= 44)} onChange={(v) => setP({ deckCatalogId: v })} />
-            <Num label="Abstand der Latten" value={P.slatGap} unit="mm" onChange={(v) => setP({ slatGap: v })} min={10} />
+            <Sel label={t('Latten')} value={P.deckCatalogId} options={catalogOptions((t) => !t.round && t.b <= 44 && t.h >= 44)} onChange={(v) => setP({ deckCatalogId: v })} />
+            <Num label={t('Abstand der Latten')} value={P.slatGap} unit="mm" onChange={(v) => setP({ slatGap: v })} min={10} />
           </>
         )}
         {(P.deck === 'platte' || P.deck === 'dielen') && (
           <>
-            <Sel label="Material" value={P.deckCatalogId} options={SHEETS.filter((s) => (P.deck === 'dielen' ? s.group === 'diele' : ['osb', 'osb-nf', 'dreischicht', 'multiplex', 'leimholz'].includes(s.group))).map((s) => [s.id, s.name])} onChange={(v) => setP({ deckCatalogId: v })} />
-            <Num label="Max. Querträgerabstand" value={P.joistSpacing} onChange={(v) => setP({ joistSpacing: v })} min={200} />
-            {P.deck === 'platte' && <p className="hint">Geschlossene Platte unter der Matratze: Belüftung einplanen (Lattenrost auflegen oder Lüftungsbohrungen).</p>}
+            <Sel label={t('Material')} value={P.deckCatalogId} options={SHEETS.filter((s) => (P.deck === 'dielen' ? s.group === 'diele' : ['osb', 'osb-nf', 'dreischicht', 'multiplex', 'leimholz'].includes(s.group))).map((s) => [s.id, tr(s.name)])} onChange={(v) => setP({ deckCatalogId: v })} />
+            <Num label={t('Max. Querträgerabstand')} value={P.joistSpacing} onChange={(v) => setP({ joistSpacing: v })} min={200} />
+            {P.deck === 'platte' && <p className="hint">{t('Geschlossene Platte unter der Matratze: Belüftung einplanen (Lattenrost auflegen oder Lüftungsbohrungen).')}</p>}
           </>
         )}
       </Section>
-      <Section title="Absturzsicherung">
+      <Section title={t('Absturzsicherung')}>
         <Sel<GuardType>
-          label="Geländer"
+          label={t('Geländer')}
           value={P.guard}
           options={[
-            ['bretter', 'Bretter (Leimholz 18×200)'],
-            ['staebe', 'Senkrechte Rundstäbe'],
-            ['platte', 'Vollfläche (Leimholz)'],
-            ['netz', 'Netz im Rahmen'],
-            ['seil', 'Seile'],
-            ['keins', 'keins'],
+            ['bretter', t('Bretter (Leimholz 18×200)')],
+            ['staebe', t('Senkrechte Rundstäbe')],
+            ['platte', t('Vollfläche (Leimholz)')],
+            ['netz', t('Netz im Rahmen')],
+            ['seil', t('Seile')],
+            ['keins', t('keins')],
           ]}
           onChange={(v) => setP({ guard: v })}
         />
         {P.guard !== 'keins' && (
           <>
-            <Num label="Höhe über Liegefläche" value={P.guardHeight} onChange={(v) => setP({ guardHeight: v })} min={100} />
+            <Num label={t('Höhe über Liegefläche')} value={P.guardHeight} onChange={(v) => setP({ guardHeight: v })} min={100} />
             <p className="hint">
-              Reicht für Matratzen bis {fmtCm(P.guardHeight - 160)} (16 cm Überstand).
+              {t('Reicht für Matratzen bis {h} (16 cm Überstand).', { h: fmtCm(P.guardHeight - 160) })}
             </p>
             <div className="checks4">
               {SIDES.map((s) => (
-                <Check key={s} label={s} value={P.guardSides[s]} onChange={(v) => setP({ guardSides: { ...P.guardSides, [s]: v } })} />
+                <Check key={s} label={sideLabel(s)} value={P.guardSides[s]} onChange={(v) => setP({ guardSides: { ...P.guardSides, [s]: v } })} />
               ))}
             </div>
-            <Sel label="Handlauf/Holme" value={P.guardCatalogId} options={catalogOptions((t) => !t.round && t.h >= 44 && t.h <= 100)} onChange={(v) => setP({ guardCatalogId: v })} />
+            <Sel label={t('Handlauf/Holme')} value={P.guardCatalogId} options={catalogOptions((t) => !t.round && t.h >= 44 && t.h <= 100)} onChange={(v) => setP({ guardCatalogId: v })} />
           </>
         )}
       </Section>
-      <Section title="Leiter / Treppe">
+      <Section title={t('Leiter / Treppe')}>
         <Sel<LadderType>
-          label="Art"
+          label={t('Art')}
           value={P.ladder}
           options={[
-            ['stufen', 'Stufenleiter (flache Tritte)'],
-            ['senkrecht', 'Senkrechte Sprossenleiter'],
-            ['schraeg', 'Schräge Sprossenleiter'],
-            ['treppe', 'Treppe (breite Stufen)'],
-            ['keine', 'keine'],
+            ['stufen', t('Stufenleiter (flache Tritte)')],
+            ['senkrecht', t('Senkrechte Sprossenleiter')],
+            ['schraeg', t('Schräge Sprossenleiter')],
+            ['treppe', t('Treppe (breite Stufen)')],
+            ['keine', t('keine')], // i18n-ok
           ]}
           onChange={(v) => setP({ ladder: v, ladderAngle: v === 'treppe' ? 45 : v === 'stufen' ? 70 : v === 'schraeg' ? 75 : 90 })}
         />
         {P.ladder !== 'keine' && (
           <>
-            <Sel label="Seite" value={P.ladderSide} options={SIDES.map((s) => [s, s])} onChange={(v) => setP({ ladderSide: v })} />
-            <Num label="Abstand von links" value={P.ladderOffset} onChange={(v) => setP({ ladderOffset: v })} min={0} />
-            <Num label="Breite außen" value={P.ladderWidth} onChange={(v) => setP({ ladderWidth: v })} min={300} />
-            {P.ladder !== 'senkrecht' && <Num label="Neigung" value={P.ladderAngle} unit="°" onChange={(v) => setP({ ladderAngle: Math.max(30, Math.min(89, v)) })} />}
-            <Sel label="Holme / Wangen" value={P.ladderCatalogId} options={catalogOptions((t) => !t.round && t.h >= 74)} onChange={(v) => setP({ ladderCatalogId: v })} />
-            {(P.ladder === 'senkrecht' || P.ladder === 'schraeg') && <Sel label="Sprossen" value={P.rungCatalogId} options={catalogOptions((t) => !!t.round)} onChange={(v) => setP({ rungCatalogId: v })} />}
-            {info?.rungPitch && <p className="hint">Stufenabstand {fmtCm(info.rungPitch)} · Einstieg {fmtCm(info.accessWidth ?? 0)}</p>}
+            <Sel label={t('Seite')} value={P.ladderSide} options={SIDES.map((s) => [s, sideLabel(s)])} onChange={(v) => setP({ ladderSide: v })} />
+            <Num label={t('Abstand von links')} value={P.ladderOffset} onChange={(v) => setP({ ladderOffset: v })} min={0} />
+            <Num label={t('Breite außen')} value={P.ladderWidth} onChange={(v) => setP({ ladderWidth: v })} min={300} />
+            {P.ladder !== 'senkrecht' && <Num label={t('Neigung')} value={P.ladderAngle} unit="°" onChange={(v) => setP({ ladderAngle: Math.max(30, Math.min(89, v)) })} />}
+            <Sel label={t('Holme / Wangen')} value={P.ladderCatalogId} options={catalogOptions((t) => !t.round && t.h >= 74)} onChange={(v) => setP({ ladderCatalogId: v })} />
+            {(P.ladder === 'senkrecht' || P.ladder === 'schraeg') && <Sel label={t('Sprossen')} value={P.rungCatalogId} options={catalogOptions((t) => !!t.round)} onChange={(v) => setP({ rungCatalogId: v })} />}
+            {info?.rungPitch && <p className="hint">{t('Stufenabstand {pitch} · Einstieg {width}', { pitch: fmtCm(info.rungPitch), width: fmtCm(info.accessWidth ?? 0) })}</p>}
           </>
         )}
       </Section>
       {!nested && (
-        <Section title="Aktionen" open={false}>
+        <Section title={t('Aktionen')} open={false}>
           <div className="stack">
             <button
               onClick={() => {
                 const id = uid('bett')
-                update((dd) => void dd.assemblies.push({ ...JSON.parse(JSON.stringify(a)), id, name: `${a.name} (Kopie)`, params: { ...a.params, x: a.params.x - 300, y: a.params.y + 300 } }))
+                update((dd) => void dd.assemblies.push({ ...JSON.parse(JSON.stringify(a)), id, name: t('{name} (Kopie)', { name: tr(a.name) }), params: { ...a.params, x: a.params.x - 300, y: a.params.y + 300 } }))
                 select({ kind: 'assembly', id })
               }}
             >
-              Duplizieren
+              {t('Duplizieren')}
             </button>
-            {a.detached.length > 0 && <button onClick={() => update((dd) => void (dd.assemblies.find((y) => y.id === a.id)!.detached = []))}>Herausgelöste Teile wieder erzeugen ({a.detached.length})</button>}
+            {a.detached.length > 0 && <button onClick={() => update((dd) => void (dd.assemblies.find((y) => y.id === a.id)!.detached = []))}>{t('Herausgelöste Teile wieder erzeugen ({n})', { n: a.detached.length })}</button>}
             <button
               onClick={() => {
                 // Baugruppe in freie Bauteile umwandeln
@@ -297,10 +397,10 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
                 select(null)
               }}
             >
-              In Einzelteile auflösen
+              {t('In Einzelteile auflösen')}
             </button>
             <button className="danger" onClick={() => (update((dd) => void (dd.assemblies = dd.assemblies.filter((y) => y.id !== a.id))), select(null))}>
-              Bett löschen
+              {t('Bett löschen')}
             </button>
           </div>
         </Section>
@@ -324,22 +424,22 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
     })
   return (
     <>
-      <Section title={`▬ ${m.name ?? 'Bauteil'}`} right={<small>{free ? 'frei' : 'aus Vorlage'}</small>}>
+      <Section title={`▬ ${m.name ? tr(m.name) : t('Bauteil')}`} right={<small>{free ? t('frei') : t('aus Vorlage')}</small>}>
         <p className="kv">
-          {item?.name ?? m.catalogId}
+          {item?.name ? tr(item.name) : m.catalogId}
           <br />
-          Länge <b>{fmtCm(L)}</b>
-          {item?.kind === 'stab' && L > maxLength(item) && <em className="warn"> · länger als {fmtM(maxLength(item))}</em>}
+          {t('Länge')} <b>{fmtCm(L)}</b>
+          {item?.kind === 'stab' && L > maxLength(item) && <em className="warn"> · {t('länger als {max}', { max: fmtM(maxLength(item)) })}</em>}
         </p>
         {(m.notches ?? []).map((n, i) => (
           <p key={i} className="kv small">
-            Ausklinkung {n.reason}: {fmtCm(n.length)} × {fmtCm(n.depth)}
+            {t('Ausklinkung {reason}: {l} × {d}', { reason: tr(n.reason), l: fmtCm(n.length), d: fmtCm(n.depth) })}
           </p>
         ))}
         {free ? (
           <>
             <Sel
-              label="Querschnitt"
+              label={t('Querschnitt')}
               value={m.catalogId}
               options={catalogOptions()}
               onChange={(v) =>
@@ -353,17 +453,17 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
               }
             />
             <div className="pair">
-              <Num label="Start x" value={m.start.x} onChange={(v) => setM((x) => void (x.start.x = v))} />
+              <Num label={t('Start x')} value={m.start.x} onChange={(v) => setM((x) => void (x.start.x = v))} />
               <Num label="y" value={m.start.y} onChange={(v) => setM((x) => void (x.start.y = v))} />
               <Num label="z" value={m.start.z} onChange={(v) => setM((x) => void (x.start.z = v))} />
             </div>
             <div className="pair">
-              <Num label="Ende x" value={m.end.x} onChange={(v) => setM((x) => void (x.end.x = v))} />
+              <Num label={t('Ende x')} value={m.end.x} onChange={(v) => setM((x) => void (x.end.x = v))} />
               <Num label="y" value={m.end.y} onChange={(v) => setM((x) => void (x.end.y = v))} />
               <Num label="z" value={m.end.z} onChange={(v) => setM((x) => void (x.end.z = v))} />
             </div>
             <Num
-              label="Länge"
+              label={t('Länge')}
               value={L}
               onChange={(v) =>
                 setM((x) => {
@@ -374,11 +474,11 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
             />
             <ArrayTool m={m} />
             <div className="stack">
-              <button onClick={() => setM((x) => void ([x.b, x.h] = [x.h, x.b]))} title="Querschnitt um 90° drehen (R)">
-                Hochkant/flach drehen
+              <button onClick={() => setM((x) => void ([x.b, x.h] = [x.h, x.b]))} title={t('Querschnitt um 90° drehen (R)')}>
+                {t('Hochkant/flach drehen')}
               </button>
               <button className="danger" onClick={() => (update((dd) => void (dd.members = dd.members.filter((x) => x.id !== m.id))), select(null))}>
-                Löschen
+                {t('Löschen')}
               </button>
             </div>
           </>
@@ -386,7 +486,7 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
           <button
             onClick={() => {
               const [asmId, key] = m.id.split(':')
-              const copy = { ...m, id: uid('balken'), assemblyId: undefined, partKey: undefined, notches: undefined, name: `${m.name ?? 'Bauteil'} (gelöst)` }
+              const copy = { ...m, id: uid('balken'), assemblyId: undefined, partKey: undefined, notches: undefined, name: t('{name} (gelöst)', { name: m.name ? tr(m.name) : t('Bauteil') }) }
               update((dd) => {
                 const a = dd.assemblies.find((x) => x.id === asmId)
                 if (a && !a.detached.includes(key)) a.detached.push(key)
@@ -394,42 +494,42 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
               })
               select({ kind: 'member', id: copy.id })
             }}
-            title="Dieses Teil wird nicht mehr von der Vorlage erzeugt und lässt sich frei bearbeiten"
+            title={t('Dieses Teil wird nicht mehr von der Vorlage erzeugt und lässt sich frei bearbeiten')}
           >
-            Aus Vorlage lösen und frei bearbeiten
+            {t('Aus Vorlage lösen und frei bearbeiten')}
           </button>
         )}
       </Section>
-      <Section title="Statik">
+      <Section title={t('Statik')}>
         <MemberStatics m={m} />
       </Section>
-      <Section title={`Verbindungen (${joints.length})`}>
-        {joints.length === 0 && <p className="hint">Keine Berührung mit anderen Teilen.</p>}
+      <Section title={t('Verbindungen ({n})', { n: joints.length })}>
+        {joints.length === 0 && <p className="hint">{t('Keine Berührung mit anderen Teilen.')}</p>}
         {joints.map((j) => {
           const other = byId.get(j.a === m.id ? j.b : j.a)
           const jt = jointType(j.typeId)
           return (
             <div key={j.key} className="joint">
               <div className="joint-head">
-                <b>{JOINT_KIND_LABEL[j.kind]}</b> mit {other?.name ?? 'Bauteil'}
+                <b>{tr(JOINT_KIND_LABEL[j.kind])}</b> {t('mit {name}', { name: other?.name ? tr(other.name) : t('Bauteil') })}
                 <button className="link" onClick={() => useStore.getState().set({ jointDetail: j.key })}>
-                  3D-Detail
+                  {t('3D-Detail')}
                 </button>
               </div>
               <select value={j.typeId} onChange={(e) => update((dd) => setJoint(dd, j.key, e.target.value))}>
-                {typesForKind(j.kind).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {'●'.repeat(t.difficulty)} {t.name}
-                    {t.removable ? ' · zerlegbar' : ''}
+                {typesForKind(j.kind).map((jt2) => (
+                  <option key={jt2.id} value={jt2.id}>
+                    {'●'.repeat(jt2.difficulty)} {tr(jt2.name)}
+                    {jt2.removable ? ` · ${t('zerlegbar')}` : ''}
                   </option>
                 ))}
-                {!typesForKind(j.kind).some((t) => t.id === j.typeId) && <option value={j.typeId}>{jt?.name ?? j.typeId}</option>}
+                {!typesForKind(j.kind).some((x) => x.id === j.typeId) && <option value={j.typeId}>{jt ? tr(jt.name) : j.typeId}</option>}
               </select>
               {jt && (
                 <p className="hint">
-                  {jt.note} <br />
+                  {tr(jt.note)} <br />
                   <small>
-                    Werkzeug: {jt.tools.join(', ')} · {jt.stiffness}
+                    {t('Werkzeug: {tools}', { tools: jt.tools.map(tr).join(', ') })} · {stiffnessLabel(jt.stiffness)}
                   </small>
                 </p>
               )}
@@ -449,11 +549,20 @@ function ArrayTool({ m }: { m: Member }) {
   const [axis, setAxis] = useState<'x' | 'y' | 'z'>('x')
   return (
     <details className="sub">
-      <summary>Reihe erzeugen…</summary>
+      <summary>{t('Reihe erzeugen…')}</summary>
       <div className="sub-row">
-        <Num label="Anzahl Kopien" value={count} unit="" onChange={setCount} min={1} max={50} />
-        <Num label="Abstand" value={step} onChange={setStep} />
-        <Sel label="Richtung" value={axis} options={[['x', 'entlang x'], ['y', 'entlang y'], ['z', 'nach oben']]} onChange={setAxis} />
+        <Num label={t('Anzahl Kopien')} value={count} unit="" onChange={setCount} min={1} max={50} />
+        <Num label={t('Abstand')} value={step} onChange={setStep} />
+        <Sel
+          label={t('Richtung')}
+          value={axis}
+          options={[
+            ['x', t('entlang x')],
+            ['y', t('entlang y')],
+            ['z', t('nach oben')],
+          ]}
+          onChange={setAxis}
+        />
         <button
           onClick={() =>
             update((d) => {
@@ -464,7 +573,7 @@ function ArrayTool({ m }: { m: Member }) {
             })
           }
         >
-          {count} Kopien anlegen
+          {t('{n} Kopien anlegen', { n: count })}
         </button>
       </div>
     </details>
@@ -492,69 +601,94 @@ function WallObjectProps({ id }: { id: string }) {
   const estimated = p.estimated.includes(`wallObjects.${id}`)
   return (
     <div className="props">
-      <Section title={o.name} right={estimated ? <em className="est-tag">geschätzt</em> : undefined}>
+      <Section title={tr(o.name)} right={estimated ? <em className="est-tag">{t('geschätzt')}</em> : undefined}>
         <label className="field">
-          <span>Name</span>
+          <span>{t('Name')}</span>
           <input value={o.name} onChange={(e) => setO((x) => void (x.name = e.target.value), `name-${id}`)} />
         </label>
-        <Sel<WallId> label="Wand" value={o.wall} options={WALL_IDS.map((w) => [w, `Wand ${w}`])} onChange={(v) => setO((x) => void (x.wall = v))} />
-        <Num label="Abstand von links" value={o.offset} onChange={(v) => setO((x) => void (x.offset = v))} title="Vom Raum aus gesehen, ab der linken Wandecke" estimated={estimated} />
-        <Num label="Breite" value={o.width} onChange={(v) => setO((x) => void (x.width = v))} estimated={estimated} />
+        <Sel<WallId> label={t('Wand')} value={o.wall} options={WALL_IDS.map((w) => [w, t('Wand {w}', { w })])} onChange={(v) => setO((x) => void (x.wall = v))} />
+        <Num label={t('Abstand von links')} value={o.offset} onChange={(v) => setO((x) => void (x.offset = v))} title={t('Vom Raum aus gesehen, ab der linken Wandecke')} estimated={estimated} />
+        <Num label={t('Breite')} value={o.width} onChange={(v) => setO((x) => void (x.width = v))} estimated={estimated} />
         {o.kind === 'fenster' && (
           <>
-            <Num label="Brüstungshöhe" value={o.sillHeight} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sillHeight = v)))} estimated={estimated} />
-            <Num label="Höhe" value={o.height} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.height = v)))} estimated={estimated} />
-            <Num label="Laibungstiefe innen" value={o.revealDepth} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.revealDepth = v)))} title="Wie tief der Rahmen in der Wand sitzt" estimated={estimated} />
-            <Check label="Nische reicht bis zum Boden (Heizkörpernische)" value={o.niche.below} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.niche.below = v)))} />
-            {o.niche.below && <Num label="Tiefe der Nische unten" value={o.niche.belowDepth} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.niche.belowDepth = v)))} />}
-            <Sel label="Flügel" value={String(o.sashes.length) as '1'} options={[['1', '1 Flügel'], ['2', '2 Flügel'], ['3', '3 Flügel']]} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sashes = Array.from({ length: Number(v) }, (_, i) => x.sashes[i] ?? { opening: 'drehkipp', hinge: i === 0 ? 'links' : 'rechts' }))))} />
+            <Num label={t('Brüstungshöhe')} value={o.sillHeight} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sillHeight = v)))} estimated={estimated} />
+            <Num label={t('Höhe')} value={o.height} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.height = v)))} estimated={estimated} />
+            <Num label={t('Laibungstiefe innen')} value={o.revealDepth} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.revealDepth = v)))} title={t('Wie tief der Rahmen in der Wand sitzt')} estimated={estimated} />
+            <Check label={t('Nische reicht bis zum Boden (Heizkörpernische)')} value={o.niche.below} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.niche.below = v)))} />
+            {o.niche.below && <Num label={t('Tiefe der Nische unten')} value={o.niche.belowDepth} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.niche.belowDepth = v)))} />}
+            <Sel
+              label={t('Flügel')}
+              value={String(o.sashes.length) as '1'}
+              options={[
+                ['1', t('1 Flügel')],
+                ['2', t('{n} Flügel', { n: 2 })],
+                ['3', t('{n} Flügel', { n: 3 })],
+              ]}
+              onChange={(v) =>
+                setO(
+                  (x) =>
+                    void (x.kind === 'fenster' &&
+                      (x.sashes = Array.from({ length: Number(v) }, (_, i) => x.sashes[i] ?? { opening: 'drehkipp', hinge: i === 0 ? 'links' : 'rechts' }))), // i18n-ok
+                )
+              }
+            />
             {o.sashes.map((s, i) => {
               const res = d.analysis.windows.find((w) => w.windowId === id && w.sashIndex === i)
               return (
                 <div key={i} className="sash">
                   <div className="pair">
-                    <Sel label={`Flügel ${i + 1}`} value={s.opening} options={[['drehkipp', 'Dreh-Kipp'], ['dreh', 'Dreh'], ['kipp', 'Kipp'], ['fest', 'fest']]} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sashes[i].opening = v)))} />
-                    <Sel label="Band" value={s.hinge} options={[['links', 'links'], ['rechts', 'rechts']]} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sashes[i].hinge = v)))} />
+                    <Sel
+                      label={t('Flügel {n}', { n: i + 1 })}
+                      value={s.opening}
+                      options={[
+                        ['drehkipp', t('Dreh-Kipp')],
+                        ['dreh', t('Dreh')],
+                        ['kipp', t('Kipp')],
+                        ['fest', t('fest')],
+                      ]}
+                      onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sashes[i].opening = v)))}
+                    />
+                    <Sel label={t('Band')} value={s.hinge} options={LEFT_RIGHT()} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sashes[i].hinge = v)))} />
                   </div>
                   {res && s.opening !== 'fest' && s.opening !== 'kipp' && (
                     <p className={res.maxAngle >= 90 ? 'ok' : 'warn'}>
-                      Öffnet bis {res.maxAngle}°{res.blockedBy ? ` – stößt an ${res.blockedBy.label}` : ''}
+                      {res.blockedBy ? t('Öffnet bis {angle}° – stößt an {obj}', { angle: res.maxAngle, obj: tr(res.blockedBy.label) }) : t('Öffnet bis {angle}°', { angle: res.maxAngle })}
                     </p>
                   )}
-                  {res?.tiltFree === false && <p className="warn">Kippstellung blockiert durch {res.tiltBlockedBy?.label}</p>}
+                  {res?.tiltFree === false && <p className="warn">{t('Kippstellung blockiert durch {obj}', { obj: tr(res.tiltBlockedBy?.label ?? '') })}</p>}
                 </div>
               )
             })}
             <label className="field">
-              <span>Flügel öffnen (Ansicht)</span>
+              <span>{t('Flügel öffnen (Ansicht)')}</span>
               <input type="range" min={0} max={180} value={o.displayAngle} onChange={(e) => setO((x) => void (x.kind === 'fenster' && (x.displayAngle = Number(e.target.value))), `angle-${id}`)} />
             </label>
-            <Check label="Innere Fensterbank" value={o.sill.enabled} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sill.enabled = v)))} />
-            {o.sill.enabled && <Num label="Überstand Fensterbank" value={o.sill.projection} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sill.projection = v)))} />}
-            <Num label="Griff steht vor" value={o.handleProjection} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.handleProjection = v)))} />
+            <Check label={t('Innere Fensterbank')} value={o.sill.enabled} onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sill.enabled = v)))} />
+            {o.sill.enabled && <Num label={t('Überstand Fensterbank')} value={o.sill.projection} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.sill.projection = v)))} />}
+            <Num label={t('Griff steht vor')} value={o.handleProjection} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'fenster' && (x.handleProjection = v)))} />
           </>
         )}
         {o.kind === 'tuer' && (
           <>
-            <Num label="Höhe" value={o.height} onChange={(v) => setO((x) => void (x.kind === 'tuer' && (x.height = v)))} />
-            <Sel label="Band" value={o.hinge} options={[['links', 'links'], ['rechts', 'rechts']]} onChange={(v) => setO((x) => void (x.kind === 'tuer' && (x.hinge = v)))} />
-            <Check label="Öffnet in den Raum" value={o.opensInward} onChange={(v) => setO((x) => void (x.kind === 'tuer' && (x.opensInward = v)))} />
+            <Num label={t('Höhe')} value={o.height} onChange={(v) => setO((x) => void (x.kind === 'tuer' && (x.height = v)))} />
+            <Sel label={t('Band')} value={o.hinge} options={LEFT_RIGHT()} onChange={(v) => setO((x) => void (x.kind === 'tuer' && (x.hinge = v)))} />
+            <Check label={t('Öffnet in den Raum')} value={o.opensInward} onChange={(v) => setO((x) => void (x.kind === 'tuer' && (x.opensInward = v)))} />
             <label className="field">
-              <span>Tür öffnen (Ansicht)</span>
+              <span>{t('Tür öffnen (Ansicht)')}</span>
               <input type="range" min={0} max={110} value={o.displayAngle} onChange={(e) => setO((x) => void (x.kind === 'tuer' && (x.displayAngle = Number(e.target.value))), `angle-${id}`)} />
             </label>
           </>
         )}
         {o.kind === 'heizkoerper' && (
           <>
-            <Num label="Unterkante" value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.bottom = v)))} />
-            <Num label="Höhe" value={o.height} onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.height = v)))} />
-            <Num label="Tiefe" value={o.depth} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.depth = v)))} />
-            <Num label="Abstand zur Wand" value={o.wallGap} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.wallGap = v)))} title="Negativ, wenn der Heizkörper in einer Nische sitzt" />
-            <Num label="Freiraum oben" value={o.convectionClearance} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.convectionClearance = v)))} />
+            <Num label={t('Unterkante')} value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.bottom = v)))} />
+            <Num label={t('Höhe')} value={o.height} onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.height = v)))} />
+            <Num label={t('Tiefe')} value={o.depth} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.depth = v)))} />
+            <Num label={t('Abstand zur Wand')} value={o.wallGap} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.wallGap = v)))} title={t('Negativ, wenn der Heizkörper in einer Nische sitzt')} />
+            <Num label={t('Freiraum oben')} value={o.convectionClearance} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.convectionClearance = v)))} />
           </>
         )}
-        {o.kind === 'steckdose' && <Num label="Höhe über Boden" value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'steckdose' && (x.bottom = v)))} />}
+        {o.kind === 'steckdose' && <Num label={t('Höhe über Boden')} value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'steckdose' && (x.bottom = v)))} />}
       </Section>
     </div>
   )
@@ -569,9 +703,9 @@ function FurnitureProps({ id }: { id: string }) {
   const person = f.kind.startsWith('person')
   return (
     <div className="props">
-      <Section title={f.name}>
+      <Section title={tr(f.name)}>
         <label className="field">
-          <span>Name</span>
+          <span>{t('Name')}</span>
           <input value={f.name} onChange={(e) => update((dd) => void (dd.furniture.find((y) => y.id === id)!.name = e.target.value), `name-${id}`)} />
         </label>
         <div className="pair">
@@ -580,15 +714,15 @@ function FurnitureProps({ id }: { id: string }) {
           <Num label="z" value={f.z} onChange={(v) => setF((x) => void (x.z = v))} />
         </div>
         {person ? (
-          <Num label="Größe" value={f.sz} onChange={(v) => setF((x) => void (x.sz = v))} />
+          <Num label={t('Größe')} value={f.sz} onChange={(v) => setF((x) => void (x.sz = v))} />
         ) : (
           <div className="pair">
-            <Num label="Breite" value={f.sx} onChange={(v) => setF((x) => void (x.sx = v))} />
-            <Num label="Tiefe" value={f.sy} onChange={(v) => setF((x) => void (x.sy = v))} />
-            <Num label="Höhe" value={f.sz} onChange={(v) => setF((x) => void (x.sz = v))} />
+            <Num label={t('Breite')} value={f.sx} onChange={(v) => setF((x) => void (x.sx = v))} />
+            <Num label={t('Tiefe')} value={f.sy} onChange={(v) => setF((x) => void (x.sy = v))} />
+            <Num label={t('Höhe')} value={f.sz} onChange={(v) => setF((x) => void (x.sz = v))} />
           </div>
         )}
-        <Sel label="Drehung" value={String(f.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setF((x) => void (x.rotation = Number(v) as 0))} />
+        <Sel label={t('Drehung')} value={String(f.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setF((x) => void (x.rotation = Number(v) as 0))} />
       </Section>
     </div>
   )
@@ -613,37 +747,37 @@ function BedPlacement({ a, fp, shift }: { a: Assembly; fp: { x: number; y: numbe
   return (
     <>
       <div className="pair">
-        <Num label="Abstand zu Wand A" value={Math.round(minY)} onChange={(v) => shift(0, v - minY)} />
-        <Num label="zu Wand C" value={Math.round(room.width - maxY)} onChange={(v) => shift(0, room.width - maxY - v)} />
+        <Num label={t('Abstand zu Wand {w}', { w: 'A' })} value={Math.round(minY)} onChange={(v) => shift(0, v - minY)} />
+        <Num label={t('zu Wand {w}', { w: 'C' })} value={Math.round(room.width - maxY)} onChange={(v) => shift(0, room.width - maxY - v)} />
       </div>
       <div className="pair">
-        <Num label="Abstand zu Wand B" value={Math.round(minX)} onChange={(v) => shift(v - minX, 0)} />
-        <Num label="zu Wand D" value={Math.round(room.length - maxX)} onChange={(v) => shift(room.length - maxX - v, 0)} />
+        <Num label={t('Abstand zu Wand {w}', { w: 'B' })} value={Math.round(minX)} onChange={(v) => shift(v - minX, 0)} />
+        <Num label={t('zu Wand {w}', { w: 'D' })} value={Math.round(room.length - maxX)} onChange={(v) => shift(room.length - maxX - v, 0)} />
       </div>
-      <div className="nudge" role="group" aria-label="Bett schieben">
-        <span className="hint">Schieben</span>
-        <button onClick={() => shift(0, -step)} title={`Richtung Wand A um ${step / 10} cm`}>
+      <div className="nudge" role="group" aria-label={t('Bett schieben')}>
+        <span className="hint">{t('Schieben')}</span>
+        <button onClick={() => shift(0, -step)} title={t('Richtung Wand {w} um {d} cm', { w: 'A', d: step / 10 })}>
           ↑ A
         </button>
-        <button onClick={() => shift(0, step)} title={`Richtung Wand C um ${step / 10} cm`}>
+        <button onClick={() => shift(0, step)} title={t('Richtung Wand {w} um {d} cm', { w: 'C', d: step / 10 })}>
           ↓ C
         </button>
-        <button onClick={() => shift(-step, 0)} title={`Richtung Wand B um ${step / 10} cm`}>
+        <button onClick={() => shift(-step, 0)} title={t('Richtung Wand {w} um {d} cm', { w: 'B', d: step / 10 })}>
           ← B
         </button>
-        <button onClick={() => shift(step, 0)} title={`Richtung Wand D um ${step / 10} cm`}>
+        <button onClick={() => shift(step, 0)} title={t('Richtung Wand {w} um {d} cm', { w: 'D', d: step / 10 })}>
           → D
         </button>
-        <select value={step} onChange={(e) => setStep(Number(e.target.value))} aria-label="Schrittweite">
+        <select value={step} onChange={(e) => setStep(Number(e.target.value))} aria-label={t('Schrittweite')}>
           <option value={10}>1 cm</option>
           <option value={100}>10 cm</option>
           <option value={500}>50 cm</option>
         </select>
       </div>
       <div className="corners">
-        In Ecke schieben:
+        {t('In Ecke schieben:')}
         {(['AD', 'AB', 'CB', 'CD'] as const).map((c) => (
-          <button key={c} onClick={() => corner(c)} title={`Bett in die Ecke Wand ${c[0]}/${c[1]} schieben`}>
+          <button key={c} onClick={() => corner(c)} title={t('Bett in die Ecke Wand {a}/{b} schieben', { a: c[0], b: c[1] })}>
             {c[0]}/{c[1]}
           </button>
         ))}

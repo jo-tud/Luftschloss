@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import type { Assembly, LoftBedParams, Project, Room } from './types'
 
 export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedParams {
@@ -27,7 +28,7 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     guardSides: { vorne: true, hinten: true, links: true, rechts: true },
     guardCatalogId: 'geh-44x74',
     ladder: 'stufen',
-    ladderSide: 'vorne',
+    ladderSide: 'vorne', // i18n-ok
     ladderOffset: 150,
     ladderWidth: 500,
     ladderCatalogId: 'geh-44x94',
@@ -37,7 +38,7 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     frameStyle: 'zargen',
     cornerSupport: 'pfosten',
     wallFit: 'ausklinken',
-    wallEnd: 'rechts',
+    wallEnd: 'rechts', // i18n-ok
     ceilingGap: 15,
     lowerBed: false,
     lowerDeckHeight: 300,
@@ -80,7 +81,7 @@ export function testProject(): Project {
   const bed: Assembly = {
     id: 'bett-1',
     kind: 'hochbett',
-    name: 'Hochbett',
+    name: t('Hochbett'),
     detached: [],
     params: defaultBedParams({
       // Altbau-Praxis (siehe docs/recherche): freistehend auf vier KVH-Pfosten 80×80, an der
@@ -95,13 +96,13 @@ export function testProject(): Project {
   }
   return {
     version: 1,
-    name: 'Beispielzimmer',
+    name: t('Beispielzimmer'),
     room,
     wallObjects: [
       {
-        id: 'fenster-links',
+        id: 'fenster-links', // i18n-ok
         kind: 'fenster',
-        name: 'Fenster links',
+        name: t('Fenster links'),
         wall: 'A',
         offset: 800,
         width: 1150,
@@ -111,8 +112,8 @@ export function testProject(): Project {
         frameWidth: 60,
         niche: { below: false, belowDepth: 120 },
         sashes: [
-          { opening: 'dreh', hinge: 'links' },
-          { opening: 'drehkipp', hinge: 'rechts' },
+          { opening: 'dreh', hinge: 'links' }, // i18n-ok
+          { opening: 'drehkipp', hinge: 'rechts' }, // i18n-ok
         ],
         sashThickness: 75,
         handleProjection: 70,
@@ -120,9 +121,9 @@ export function testProject(): Project {
         displayAngle: 0,
       },
       {
-        id: 'fenster-rechts',
+        id: 'fenster-rechts', // i18n-ok
         kind: 'fenster',
-        name: 'Fenster rechts',
+        name: t('Fenster rechts'),
         wall: 'A',
         offset: 2750,
         width: 1150,
@@ -132,8 +133,8 @@ export function testProject(): Project {
         frameWidth: 60,
         niche: { below: false, belowDepth: 120 },
         sashes: [
-          { opening: 'dreh', hinge: 'links' },
-          { opening: 'drehkipp', hinge: 'rechts' },
+          { opening: 'dreh', hinge: 'links' }, // i18n-ok
+          { opening: 'drehkipp', hinge: 'rechts' }, // i18n-ok
         ],
         sashThickness: 75,
         handleProjection: 70,
@@ -141,9 +142,9 @@ export function testProject(): Project {
         displayAngle: 0,
       },
       {
-        id: 'heizung-links',
+        id: 'heizung-links', // i18n-ok
         kind: 'heizkoerper',
-        name: 'Heizkörper links',
+        name: t('Heizkörper links'),
         wall: 'A',
         offset: 900,
         width: 950,
@@ -154,9 +155,9 @@ export function testProject(): Project {
         convectionClearance: 100,
       },
       {
-        id: 'heizung-rechts',
+        id: 'heizung-rechts', // i18n-ok
         kind: 'heizkoerper',
-        name: 'Heizkörper rechts',
+        name: t('Heizkörper rechts'),
         wall: 'A',
         offset: 2850,
         width: 950,
@@ -169,20 +170,20 @@ export function testProject(): Project {
       {
         id: 'tuer',
         kind: 'tuer',
-        name: 'Tür',
+        name: t('Tür'),
         wall: 'C',
         offset: 1000,
         width: 900,
         height: 2150,
-        hinge: 'rechts',
+        hinge: 'rechts', // i18n-ok
         opensInward: false,
         displayAngle: 0,
       },
-      { id: 'steckdose-1', kind: 'steckdose', name: 'Steckdose', wall: 'C', offset: 2150, width: 80, bottom: 300, height: 80 },
+      { id: 'steckdose-1', kind: 'steckdose', name: t('Steckdose'), wall: 'C', offset: 2150, width: 80, bottom: 300, height: 80 },
     ],
     furniture: [
-      { id: 'tisch-1', kind: 'schreibtisch', name: 'Schreibtisch', x: room.length - 1500 - 150, y: 350, z: 0, sx: 1400, sy: 700, sz: 750, rotation: 0 },
-      { id: 'person-1', kind: 'person-stehend', name: 'Person 1,75 m', x: 1800, y: 1900, z: 0, sx: 450, sy: 280, sz: 1750, rotation: 0 },
+      { id: 'tisch-1', kind: 'schreibtisch', name: t('Schreibtisch'), x: room.length - 1500 - 150, y: 350, z: 0, sx: 1400, sy: 700, sz: 750, rotation: 0 },
+      { id: 'person-1', kind: 'person-stehend', name: t('Person 1,75 m'), x: 1800, y: 1900, z: 0, sx: 450, sy: 280, sz: 1750, rotation: 0 },
     ],
     members: [],
     panels: [],
@@ -205,7 +206,7 @@ export function emptyProject(length = 4000, width = 3500, height = 2500): Projec
   const p = testProject()
   return {
     ...p,
-    name: 'Neues Zimmer',
+    name: t('Neues Zimmer'),
     room: { ...testRoom(), length, width, height, cornice: { enabled: false, height: 120, projection: 120, shape: 'kehle' }, rosettes: [] },
     wallObjects: [],
     furniture: [],

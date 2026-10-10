@@ -1,9 +1,11 @@
+import { locale, t, tk, tr } from '../i18n'
 import { catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, type OBB } from '../model/geometry'
 import { LOADS, NET_SAG, netEdgePull } from './statics'
 import { cornice, corniceIntrusion, roomObstacles } from '../model/room'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project, Side, Vec3 } from '../model/types'
+import { WALL_IDS } from '../model/types'
 import { analyzeDoors, analyzeWindows, type DoorResult, type SwingResult } from './openings'
 import { transportCheck } from './assembly'
 
@@ -12,12 +14,16 @@ export type Severity = 'fehler' | 'warnung' | 'hinweis'
 export interface Finding {
   id: string
   severity: Severity
+  /** Kategorie als Schlüssel (deutsch); Anzeige mit tr(category) */
   category: 'Kollision' | 'Fenster & Tür' | 'Freiraum' | 'Sicherheit' | 'Stabilität' | 'Material' | 'Raum'
   title: string
   detail?: string
   targets: string[]
   pos?: Vec3
 }
+
+/** Kategorien (Schlüssel, nicht übersetzt – Anzeige mit tr()) */
+const CAT = { kollision: 'Kollision', oeffnung: 'Fenster & Tür', frei: 'Freiraum', sicherheit: 'Sicherheit', stabil: 'Stabilität', material: 'Material', raum: 'Raum' } as const // i18n-ok
 
 export interface Clearance {
   assemblyId: string
@@ -35,29 +41,67 @@ export interface Analysis {
   clearances: Clearance[]
 }
 
-/** Wandarten im Klartext für Befunde */
+/** Wandarten im Klartext für Befunde (Anzeige mit tr()) */
 export const WALL_MATERIAL_SHORT: Record<string, string> = {
-  beton: 'Betonwand',
-  kalksandstein: 'Kalksandsteinwand',
-  vollziegel: 'Vollziegelwand',
-  lochziegel: 'Hochlochziegelwand',
-  porenbeton: 'Porenbetonwand',
-  trockenbau: 'Trockenbauwand',
-  holzstaender: 'Holzständerwand',
-  leichtbau: 'Leichtbauwand',
+  beton: tk('Betonwand'),
+  kalksandstein: tk('Kalksandsteinwand'),
+  vollziegel: tk('Vollziegelwand'),
+  lochziegel: tk('Hochlochziegelwand'),
+  porenbeton: tk('Porenbetonwand'),
+  trockenbau: tk('Trockenbauwand'),
+  holzstaender: tk('Holzständerwand'),
+  leichtbau: tk('Leichtbauwand'),
 }
 
 const STRUCTURAL = new Set(['pfosten', 'zarge', 'quertraeger', 'wandriegel'])
 
+/** Bettseite im Klartext */
+function sideName(s: Side): string {
+  switch (s) {
+    case 'hinten':
+      return t('hinten')
+    case 'vorne':
+      return t('vorne')
+    case 'links':
+      return t('links')
+    case 'rechts':
+      return t('rechts')
+  }
+}
+
+/** Grund einer Ausklinkung (kommt aus resolve.ts bereits übersetzt) als deutscher Schlüssel – für Logik und stabile Befund-IDs */
+function notchKey(reason: string): string {
+  for (const id of WALL_IDS) {
+    if (reason === t('Stuck Wand {id}', { id })) return `Stuck Wand ${id}` // i18n-ok
+    if (reason === t('Sockelleiste Wand {id}', { id })) return `Sockelleiste Wand ${id}` // i18n-ok
+  }
+  return reason
+}
+
+const num1 = (x: number) => x.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+/** Zusatzangaben je Befund für das Zusammenfassen (Tiefe in mm, Hindernis) */
+type Meta = { depth?: number; obstacle?: string }
+
 export function analyze(p: Project, r: Resolved): Analysis {
   // Bei mehreren Betten den Bettnamen voranstellen
-  const bedPrefix = (m?: Member) => (p.assemblies.length > 1 && m?.assemblyId ? `${p.assemblies.find((a) => a.id === m.assemblyId)?.name ?? 'Bett'}: ` : '')
+  const bedName = (id?: string) => {
+    const n = p.assemblies.find((a) => a.id === id)?.name
+    return n ? tr(n) : t('Bett')
+  }
+  const bedPrefix = (m?: Member) => (p.assemblies.length > 1 && m?.assemblyId ? `${bedName(m.assemblyId)}: ` : '')
   const findings: Finding[] = []
+  const meta = new Map<Finding, Meta>()
   const prof = p.settings.safetyProfile
   const safety = (strict: Severity): Severity => (prof === 'kinder' ? strict : prof === 'jugendliche' ? (strict === 'fehler' ? 'warnung' : strict) : 'hinweis')
-  const add = (f: Finding) => findings.push(f)
+  const add = (f: Finding, m?: Meta) => {
+    findings.push(f)
+    if (m) meta.set(f, m)
+  }
   const room = p.room
   const memberById = new Map(r.members.map((m) => [m.id, m]))
+  const memberName = (m?: Member, fallback = t('Bauteil')) => (m?.name ? tr(m.name) : fallback)
+  const yes = (b: boolean) => (b ? t('ja') : t('nein'))
 
   // --- Fenster und Türen -----------------------------------------------------------
   const windows = analyzeWindows(p, r)
@@ -65,14 +109,15 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const win = p.wallObjects.find((o) => o.id === w.windowId)
     if (!win || win.kind !== 'fenster') continue
     const sash = win.sashes[w.sashIndex]
-    const label = `${win.name}, Flügel ${win.sashes.length > 1 ? (w.sashIndex === 0 ? 'links' : 'rechts') : ''}`.trim()
+    const name = tr(win.name)
+    const label = win.sashes.length > 1 ? (w.sashIndex === 0 ? t('{name}, Flügel links', { name }) : t('{name}, Flügel rechts', { name })) : t('{name}, Flügel', { name })
     if (sash.opening !== 'fest' && sash.opening !== 'kipp' && w.maxAngle < 90) {
       add({
         id: `fenster:${w.windowId}:${w.sashIndex}`,
         severity: w.maxAngle < 30 ? 'warnung' : 'hinweis',
-        category: 'Fenster & Tür',
-        title: `${label} öffnet nur bis ${w.maxAngle}°`,
-        detail: w.blockedBy ? `Blockiert durch: ${w.blockedBy.label}. Zum Lüften reicht oft die Kippstellung; zum Putzen braucht der Flügel ca. 90°.` : undefined,
+        category: CAT.oeffnung,
+        title: t('{label} öffnet nur bis {angle}°', { label, angle: w.maxAngle }),
+        detail: w.blockedBy ? t('Blockiert durch: {what}. Zum Lüften reicht oft die Kippstellung; zum Putzen braucht der Flügel ca. 90°.', { what: tr(w.blockedBy.label) }) : undefined,
         targets: [w.windowId, ...(w.blockedBy ? [w.blockedBy.id] : [])],
       })
     }
@@ -80,9 +125,9 @@ export function analyze(p: Project, r: Resolved): Analysis {
       add({
         id: `kipp:${w.windowId}:${w.sashIndex}`,
         severity: 'warnung',
-        category: 'Fenster & Tür',
-        title: `${label}: Kippstellung blockiert`,
-        detail: w.tiltBlockedBy ? `Im Kippspalt (ca. 12,5 cm) steht: ${w.tiltBlockedBy.label}` : undefined,
+        category: CAT.oeffnung,
+        title: t('{label}: Kippstellung blockiert', { label }),
+        detail: w.tiltBlockedBy ? t('Im Kippspalt (ca. 12,5 cm) steht: {what}', { what: tr(w.tiltBlockedBy.label) }) : undefined,
         targets: [w.windowId, ...(w.tiltBlockedBy ? [w.tiltBlockedBy.id] : [])],
       })
     }
@@ -91,15 +136,15 @@ export function analyze(p: Project, r: Resolved): Analysis {
   for (const d of doors) {
     const door = p.wallObjects.find((o) => o.id === d.doorId)
     if (door?.kind === 'tuer' && door.opensInward && d.maxAngle < 90) {
-      add({ id: `tuer:${d.doorId}`, severity: 'fehler', category: 'Fenster & Tür', title: `${door.name} öffnet nur bis ${d.maxAngle}°`, detail: d.blockedBy && `Blockiert durch: ${d.blockedBy.label}`, targets: [d.doorId, ...(d.blockedBy ? [d.blockedBy.id] : [])] })
+      add({ id: `tuer:${d.doorId}`, severity: 'fehler', category: CAT.oeffnung, title: t('{label} öffnet nur bis {angle}°', { label: tr(door.name), angle: d.maxAngle }), detail: d.blockedBy && t('Blockiert durch: {what}', { what: tr(d.blockedBy.label) }), targets: [d.doorId, ...(d.blockedBy ? [d.blockedBy.id] : [])] })
     }
   }
 
   // --- Kollisionen -----------------------------------------------------------------
   const obstacles = roomObstacles(p)
   const parts: { id: string; label: string; boxes: OBB[]; member?: Member }[] = [
-    ...r.members.map((m) => ({ id: m.id, label: m.name ?? 'Bauteil', boxes: memberBoxes(m), member: m })),
-    ...r.panels.filter((x) => x.kind !== 'matratze' && x.kind !== 'netz').map((x) => ({ id: x.id, label: x.name ?? 'Fläche', boxes: [panelOBB(x)] })),
+    ...r.members.map((m) => ({ id: m.id, label: memberName(m), boxes: memberBoxes(m), member: m })),
+    ...r.panels.filter((x) => x.kind !== 'matratze' && x.kind !== 'netz').map((x) => ({ id: x.id, label: x.name ? tr(x.name) : t('Fläche'), boxes: [panelOBB(x)] })),
   ]
   const reported = new Set<string>()
   for (const part of parts) {
@@ -110,47 +155,51 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const maxY = Math.max(...bounds.map((b) => b.max.y))
     const maxZ = Math.max(...bounds.map((b) => b.max.z))
     const out = Math.max(-minX, -minY, maxX - room.length, maxY - room.width)
-    if (out > 0.5) add({ id: `wand:${part.id}`, severity: 'fehler', category: 'Kollision', title: `${part.label} ragt ${fmtCm(out)} in die Wand`, targets: [part.id] })
-    if (maxZ - room.height > 0.5) add({ id: `decke:${part.id}`, severity: 'fehler', category: 'Kollision', title: `${part.label} ragt ${fmtCm(maxZ - room.height)} in die Decke`, targets: [part.id] })
+    if (out > 0.5) add({ id: `wand:${part.id}`, severity: 'fehler', category: CAT.kollision, title: t('{part} ragt {depth} in die Wand', { part: part.label, depth: fmtCm(out) }), targets: [part.id] }, { depth: out })
+    if (maxZ - room.height > 0.5) add({ id: `decke:${part.id}`, severity: 'fehler', category: CAT.kollision, title: t('{part} ragt {depth} in die Decke', { part: part.label, depth: fmtCm(maxZ - room.height) }), targets: [part.id] }, { depth: maxZ - room.height })
     // Stuck
     let stuck = 0
     for (const b of part.boxes) for (const c of obbCorners(b)) stuck = Math.max(stuck, corniceIntrusion(room, c)?.depth ?? 0)
-    if (stuck > 1) add({ id: `stuck:${part.id}`, severity: 'fehler', category: 'Kollision', title: `${part.label} stößt an den Stuck`, detail: `Rund ${fmtCm(stuck)} zu nah. Bauteil absenken, von der Wand abrücken oder (bei Pfosten) ausklinken. Stuck möglichst nie berühren.`, targets: [part.id] })
+    if (stuck > 1) add({ id: `stuck:${part.id}`, severity: 'fehler', category: CAT.kollision, title: t('{part} stößt an den Stuck', { part: part.label }), detail: t('Rund {depth} zu nah. Bauteil absenken, von der Wand abrücken oder (bei Pfosten) ausklinken. Stuck möglichst nie berühren.', { depth: fmtCm(stuck) }), targets: [part.id] }, { depth: stuck })
     for (const o of obstacles) {
       if (o.kind === 'person') continue
       let hit = false
       for (const b of part.boxes) if (obbOverlap(b, o.box) > 0.5) hit = true
       if (!hit) continue
       const key = `${o.ownerId}:${part.member?.assemblyId ?? part.id}:${o.kind}`
+      const what = tr(o.label)
       if (o.kind === 'konvektion' || o.kind === 'steckdose') {
         if (reported.has(key)) continue
         reported.add(key)
         add({
           id: `hindernis:${key}`,
           severity: 'hinweis',
-          category: 'Kollision',
-          title: o.kind === 'steckdose' ? `${o.label} wird verdeckt` : `${o.label} wird verbaut`,
-          detail: o.kind === 'konvektion' ? 'Über dem Heizkörper sollte ca. 10 cm frei bleiben, damit die Wärme aufsteigen kann.' : undefined,
+          category: CAT.kollision,
+          title: o.kind === 'steckdose' ? t('{what} wird verdeckt', { what }) : t('{what} wird verbaut', { what }),
+          detail: o.kind === 'konvektion' ? t('Über dem Heizkörper sollte ca. 10 cm frei bleiben, damit die Wärme aufsteigen kann.') : undefined,
           targets: [part.id, o.ownerId],
         })
         continue
       }
-      add({
-        id: `hindernis:${o.id}:${part.id}`,
-        severity: o.kind === 'sockelleiste' ? 'fehler' : o.kind === 'moebel' ? 'warnung' : 'fehler',
-        category: 'Kollision',
-        title: `${part.label} kollidiert mit ${o.label}`,
-        detail: o.kind === 'sockelleiste' ? `Pfosten ausklinken (${fmtCm(room.skirting.height)} × ${fmtCm(room.skirting.depth)}) oder das Bett um die Leistentiefe von der Wand abrücken – Einstellung „Wandanschluss“ am Bett.` : undefined,
-        targets: [part.id, o.ownerId],
-      })
+      add(
+        {
+          id: `hindernis:${o.id}:${part.id}`,
+          severity: o.kind === 'sockelleiste' ? 'fehler' : o.kind === 'moebel' ? 'warnung' : 'fehler',
+          category: CAT.kollision,
+          title: t('{part} kollidiert mit {what}', { part: part.label, what }),
+          detail: o.kind === 'sockelleiste' ? t('Pfosten ausklinken ({h} × {d}) oder das Bett um die Leistentiefe von der Wand abrücken – Einstellung „Wandanschluss“ am Bett.', { h: fmtCm(room.skirting.height), d: fmtCm(room.skirting.depth) }) : undefined,
+          targets: [part.id, o.ownerId],
+        },
+        { obstacle: what },
+      )
     }
   }
   for (const d of r.deepNotches) {
-    add({ id: `kerbe:${d.memberId}:${d.reason}`, severity: 'fehler', category: 'Stabilität', title: `${memberById.get(d.memberId)?.name ?? 'Bauteil'}: Ausklinkung für ${d.reason} zu tief`, detail: `Nötig wären ${fmtCm(d.depth)}, sinnvoll höchstens ${fmtCm(d.max)} (halber Querschnitt). Bauteil von der Wand abrücken oder kürzen.`, targets: [d.memberId] })
+    add({ id: `kerbe:${d.memberId}:${notchKey(d.reason)}`, severity: 'fehler', category: CAT.stabil, title: t('{part}: Ausklinkung für {reason} zu tief', { part: memberName(memberById.get(d.memberId)), reason: tr(d.reason) }), detail: t('Nötig wären {depth}, sinnvoll höchstens {max} (halber Querschnitt). Bauteil von der Wand abrücken oder kürzen.', { depth: fmtCm(d.depth), max: fmtCm(d.max) }), targets: [d.memberId] })
   }
   for (const m of r.members) {
     for (const n of m.notches ?? []) {
-      if (n.reason.startsWith('Stuck')) add({ id: `kerbe-stuck:${m.id}`, severity: 'hinweis', category: 'Raum', title: `${m.name ?? 'Pfosten'} am Stuck ausgeklinkt`, detail: `${fmtCm(n.length)} lang, ${fmtCm(n.depth)} tief. Stuck nicht berühren, 1–2 cm Luft lassen.`, targets: [m.id] })
+      if (notchKey(n.reason).startsWith('Stuck')) add({ id: `kerbe-stuck:${m.id}`, severity: 'hinweis', category: CAT.raum, title: m.name ? t('{part} am Stuck ausgeklinkt', { part: tr(m.name) }) : t('Pfosten am Stuck ausgeklinkt'), detail: t('{length} lang, {depth} tief. Stuck nicht berühren, 1–2 cm Luft lassen.', { length: fmtCm(n.length), depth: fmtCm(n.depth) }), targets: [m.id] })
     }
   }
 
@@ -182,21 +231,21 @@ export function analyze(p: Project, r: Resolved): Analysis {
     add({
       id: `frei:${a.id}`,
       severity: 'hinweis',
-      category: 'Freiraum',
-      title: `Unter dem Bett ${fmtM(info.underside)}, über der Matratze ${fmtM(headroom)}`,
-      detail: `Stehen (${fmtM(ph)}): ${c.canStand ? 'ja' : 'nein'} · Sitzen am Schreibtisch: ${c.canSitDesk ? 'ja' : 'nein'} · Aufrecht sitzen im Bett: ${c.canSitBed ? 'ja' : 'nein'}. Faustwerte Altbau: unten 1,80–2,00 m, Matratze bis Decke 0,80–1,00 m.`,
+      category: CAT.frei,
+      title: t('Unter dem Bett {under}, über der Matratze {above}', { under: fmtM(info.underside), above: fmtM(headroom) }),
+      detail: t('Stehen ({height}): {stand} · Sitzen am Schreibtisch: {desk} · Aufrecht sitzen im Bett: {bed}. Faustwerte Altbau: unten 1,80–2,00 m, Matratze bis Decke 0,80–1,00 m.', { height: fmtM(ph), stand: yes(c.canStand), desk: yes(c.canSitDesk), bed: yes(c.canSitBed) }),
       targets: [a.id],
     })
-    if (headroom < 750) add({ id: `kopf:${a.id}`, severity: 'warnung', category: 'Freiraum', title: `Nur ${fmtM(headroom)} über der Matratze`, detail: 'Zum Aufsetzen im Bett sind 0,80–1,00 m angenehm.', targets: [a.id] })
+    if (headroom < 750) add({ id: `kopf:${a.id}`, severity: 'warnung', category: CAT.frei, title: t('Nur {h} über der Matratze', { h: fmtM(headroom) }), detail: t('Zum Aufsetzen im Bett sind 0,80–1,00 m angenehm.'), targets: [a.id] })
     const wallC = Math.max(...(['A', 'B', 'C', 'D'] as const).map((w) => (cornice(room, w).enabled ? cornice(room, w).height : 0)))
-    if (info.mattressTop + 0.45 * ph > room.height - wallC && wallC > 0) add({ id: `kopf-stuck:${a.id}`, severity: 'hinweis', category: 'Freiraum', title: 'An der Wand ragt der Stuck in den Kopfraum', targets: [a.id] })
+    if (info.mattressTop + 0.45 * ph > room.height - wallC && wallC > 0) add({ id: `kopf-stuck:${a.id}`, severity: 'hinweis', category: CAT.frei, title: t('An der Wand ragt der Stuck in den Kopfraum'), targets: [a.id] })
 
     // Etagenbett
-    if (P.lowerBed && info.lowerMattressTop === undefined) add({ id: `etage-pfosten:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Untere Liegefläche nur mit vier Pfosten', detail: 'Das Etagenbett wird bei den Bauarten „freistehend“ und „deckenhoch“ erzeugt.', targets: [a.id] })
+    if (P.lowerBed && info.lowerMattressTop === undefined) add({ id: `etage-pfosten:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Untere Liegefläche nur mit vier Pfosten'), detail: t('Das Etagenbett wird bei den Bauarten „freistehend“ und „deckenhoch“ erzeugt.'), targets: [a.id] })
     if (info.lowerMattressTop !== undefined) {
       const sitUnder = info.underside - info.lowerMattressTop
-      if (sitUnder < 750) add({ id: `etage-kopf:${a.id}`, severity: 'warnung', category: 'Freiraum', title: `Unten nur ${fmtM(sitUnder)} über der Matratze`, detail: 'Zum Aufsetzen im unteren Bett sind mindestens 0,75 m, besser 0,85 m angenehm. Oberes Bett höher setzen oder die untere Liegefläche absenken.', targets: [a.id] })
-      add({ id: `etage-info:${a.id}`, severity: 'hinweis', category: 'Freiraum', title: `Etagenbett: unten ${fmtM(sitUnder)} Sitzhöhe über der Matratze`, detail: 'Die untere Liegefläche zählt nicht als „frei darunter“. Das obere Bett braucht weiterhin Geländer und Leiter wie ein Hochbett.', targets: [a.id] })
+      if (sitUnder < 750) add({ id: `etage-kopf:${a.id}`, severity: 'warnung', category: CAT.frei, title: t('Unten nur {h} über der Matratze', { h: fmtM(sitUnder) }), detail: t('Zum Aufsetzen im unteren Bett sind mindestens 0,75 m, besser 0,85 m angenehm. Oberes Bett höher setzen oder die untere Liegefläche absenken.'), targets: [a.id] })
+      add({ id: `etage-info:${a.id}`, severity: 'hinweis', category: CAT.frei, title: t('Etagenbett: unten {h} Sitzhöhe über der Matratze', { h: fmtM(sitUnder) }), detail: t('Die untere Liegefläche zählt nicht als „frei darunter“. Das obere Bett braucht weiterhin Geländer und Leiter wie ein Hochbett.'), targets: [a.id] })
     }
     // Begehbares Netz
     if (P.deck === 'netz') {
@@ -207,9 +256,12 @@ export function analyze(p: Project, r: Resolved): Analysis {
       add({
         id: `netz-deck:${a.id}`,
         severity: safety('warnung'),
-        category: 'Stabilität',
-        title: `Begehbares Netz zieht die Zargen mit ${pull.toFixed(1).replace('.', ',')} kN/m nach innen`,
-        detail: `Bei ${Math.round(NET_SAG * 100)} % Durchhang über ${fmtCm(span, 0)} Spannweite; springt jemand in die Mitte, kommen je Seite rund ${jump.toFixed(1).replace('.', ',')} kN hinzu. Die Zargen werden dabei quer zur schwachen Achse gebogen, die Ecken auf Zug. Bewährt: kräftige Zargen (mind. 80×160 oder hochkant BSH), Ecken mit Schlossschrauben und Winkeln, Netz mit Randseil und nachspannbarer Schnürung, Bruchlast des Netzes nach Herstellerangabe. Unter dem Netz rund ${fmtCm(span * NET_SAG * 2, 0)} Durchhang frei halten – keine Kanten und Möbel darunter. Für Jugendliche und Erwachsene, nicht für Kleinkinder.`,
+        category: CAT.stabil,
+        title: t('Begehbares Netz zieht die Zargen mit {pull} kN/m nach innen', { pull: num1(pull) }),
+        detail: t(
+          'Bei {sag} % Durchhang über {span} Spannweite; springt jemand in die Mitte, kommen je Seite rund {jump} kN hinzu. Die Zargen werden dabei quer zur schwachen Achse gebogen, die Ecken auf Zug. Bewährt: kräftige Zargen (mind. 80×160 oder hochkant BSH), Ecken mit Schlossschrauben und Winkeln, Netz mit Randseil und nachspannbarer Schnürung, Bruchlast des Netzes nach Herstellerangabe. Unter dem Netz rund {free} Durchhang frei halten – keine Kanten und Möbel darunter. Für Jugendliche und Erwachsene, nicht für Kleinkinder.',
+          { sag: Math.round(NET_SAG * 100), span: fmtCm(span, 0), jump: num1(jump), free: fmtCm(span * NET_SAG * 2, 0) },
+        ),
         targets: [a.id],
       })
     }
@@ -217,62 +269,71 @@ export function analyze(p: Project, r: Resolved): Analysis {
     // Absturzsicherung
     if (P.guard !== 'keins') {
       const aboveMattress = P.guardHeight - P.mattressThickness
-      if (aboveMattress < 160) add({ id: `gelaender-hoehe:${a.id}`, severity: safety('warnung'), category: 'Sicherheit', title: `Geländer nur ${fmtCm(aboveMattress)} über der Matratze`, detail: `Empfehlung (DIN EN 747): mind. 16 cm über Matratzenoberkante und 26 cm über Liegefläche. Maximale Matratzendicke bei diesem Geländer: ${fmtCm(P.guardHeight - 160)}.`, targets: [a.id] })
-      if (info.rodGap !== undefined && info.rodGap > 75 && P.guard !== 'seil') add({ id: `gelaender-spalt:${a.id}`, severity: safety('warnung'), category: 'Sicherheit', title: `Lücken im Geländer ${fmtCm(info.rodGap)}`, detail: 'Empfehlung: Öffnungen höchstens 7,5 cm (Kopf darf nicht durchpassen).', targets: [a.id] })
-      if (P.guard === 'seil') add({ id: `seil:${a.id}`, severity: safety('warnung'), category: 'Sicherheit', title: 'Seilgeländer: nur für Jugendliche und Erwachsene', detail: 'Seile geben nach und lassen große Lücken. Besondere Sorgfalt bei Befestigung und Nachspannen.', targets: [a.id] })
-      if (P.guard === 'netz') add({ id: `netz:${a.id}`, severity: 'hinweis', category: 'Sicherheit', title: 'Netz als Absturzsicherung', detail: 'Knotenloses PP-/Polyesternetz, Maschenweite 30–45 mm, Randseil. Befestigung alle 10–15 cm über Augschrauben oder Bohrungen, Netz etwas kleiner als den Rahmen bestellen und nach den ersten Tagen nachspannen.', targets: [a.id] })
+      if (aboveMattress < 160) add({ id: `gelaender-hoehe:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Geländer nur {h} über der Matratze', { h: fmtCm(aboveMattress) }), detail: t('Empfehlung (DIN EN 747): mind. 16 cm über Matratzenoberkante und 26 cm über Liegefläche. Maximale Matratzendicke bei diesem Geländer: {max}.', { max: fmtCm(P.guardHeight - 160) }), targets: [a.id] })
+      if (info.rodGap !== undefined && info.rodGap > 75 && P.guard !== 'seil') add({ id: `gelaender-spalt:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Lücken im Geländer {gap}', { gap: fmtCm(info.rodGap) }), detail: t('Empfehlung: Öffnungen höchstens 7,5 cm (Kopf darf nicht durchpassen).'), targets: [a.id] })
+      if (P.guard === 'seil') add({ id: `seil:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Seilgeländer: nur für Jugendliche und Erwachsene'), detail: t('Seile geben nach und lassen große Lücken. Besondere Sorgfalt bei Befestigung und Nachspannen.'), targets: [a.id] })
+      if (P.guard === 'netz') add({ id: `netz:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Netz als Absturzsicherung'), detail: t('Knotenloses PP-/Polyesternetz, Maschenweite 30–45 mm, Randseil. Befestigung alle 10–15 cm über Augschrauben oder Bohrungen, Netz etwas kleiner als den Rahmen bestellen und nach den ersten Tagen nachspannen.'), targets: [a.id] })
     }
     if (info.accessWidth !== undefined) {
-      if (info.accessWidth < 300) add({ id: `zugang:${a.id}`, severity: safety('warnung'), category: 'Sicherheit', title: `Einstieg nur ${fmtCm(info.accessWidth)} breit`, detail: 'Empfehlung: 30–40 cm lichte Breite.', targets: [a.id] })
-      else if (info.accessWidth > 400 && prof === 'kinder') add({ id: `zugang-breit:${a.id}`, severity: 'hinweis', category: 'Sicherheit', title: `Einstieg ${fmtCm(info.accessWidth)} breit`, detail: 'DIN EN 747 empfiehlt für Kinderbetten 30–40 cm.', targets: [a.id] })
+      if (info.accessWidth < 300) add({ id: `zugang:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Einstieg nur {w} breit', { w: fmtCm(info.accessWidth) }), detail: t('Empfehlung: 30–40 cm lichte Breite.'), targets: [a.id] })
+      else if (info.accessWidth > 400 && prof === 'kinder') add({ id: `zugang-breit:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Einstieg {w} breit', { w: fmtCm(info.accessWidth) }), detail: t('DIN EN 747 empfiehlt für Kinderbetten 30–40 cm.'), targets: [a.id] })
     }
-    if (info.rungPitch !== undefined && (info.rungPitch < 200 || info.rungPitch > 300)) add({ id: `sprossen:${a.id}`, severity: safety('warnung'), category: 'Sicherheit', title: `Sprossenabstand ${fmtCm(info.rungPitch)}`, detail: 'Richtwert: 25 cm ± 5 cm, alle gleich.', targets: [a.id] })
-    if (P.ladder === 'senkrecht' || P.ladder === 'schraeg') add({ id: `sprossen-flach:${a.id}`, severity: 'hinweis', category: 'Sicherheit', title: 'Rundsprossen sind barfuß unbequem', detail: 'Heimwerker-Erfahrung: flache Stufen in Gratnuten sind deutlich angenehmer (Leitertyp „Stufenleiter“).', targets: [a.id] })
+    if (info.rungPitch !== undefined && (info.rungPitch < 200 || info.rungPitch > 300)) add({ id: `sprossen:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Sprossenabstand {pitch}', { pitch: fmtCm(info.rungPitch) }), detail: t('Richtwert: 25 cm ± 5 cm, alle gleich.'), targets: [a.id] })
+    if (P.ladder === 'senkrecht' || P.ladder === 'schraeg') add({ id: `sprossen-flach:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Rundsprossen sind barfuß unbequem'), detail: t('Heimwerker-Erfahrung: flache Stufen in Gratnuten sind deutlich angenehmer (Leitertyp „Stufenleiter“).'), targets: [a.id] })
     // Offene Seiten zur Wand
-    const sides: Side[] = ['hinten', 'vorne', 'links', 'rechts']
+    const sides: Side[] = ['hinten', 'vorne', 'links', 'rechts'] // i18n-ok
     for (const s of sides) {
       if (info.walls.includes(s)) continue
       if (P.guard !== 'keins' && P.guardSides[s]) continue
       const gap = sideWallGap(s, fp, room, P.rotation)
       if (gap === undefined) continue
-      if (gap > 75 && gap < 230) add({ id: `wandspalt:${a.id}:${s}`, severity: safety('warnung'), category: 'Sicherheit', title: `Spalt ${fmtCm(gap)} zwischen Bett (${s}) und Wand`, detail: 'Einklemmgefahr: Spalt höchstens 7,5 cm oder über 23 cm – sonst Geländer auch auf dieser Seite.', targets: [a.id] })
-      else if (gap >= 230) add({ id: `offen:${a.id}:${s}`, severity: safety('fehler'), category: 'Sicherheit', title: `Seite ${s} ohne Absturzsicherung`, targets: [a.id] })
+      if (gap > 75 && gap < 230) add({ id: `wandspalt:${a.id}:${s}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Spalt {gap} zwischen Bett ({side}) und Wand', { gap: fmtCm(gap), side: sideName(s) }), detail: t('Einklemmgefahr: Spalt höchstens 7,5 cm oder über 23 cm – sonst Geländer auch auf dieser Seite.'), targets: [a.id] })
+      else if (gap >= 230) add({ id: `offen:${a.id}:${s}`, severity: safety('fehler'), category: CAT.sicherheit, title: t('Seite {side} ohne Absturzsicherung', { side: sideName(s) }), targets: [a.id] })
     }
-    if (prof === 'kinder' && P.deckHeight > 600) add({ id: `alter:${a.id}`, severity: 'hinweis', category: 'Sicherheit', title: 'Oben schlafen erst ab 6 Jahren', targets: [a.id] })
+    if (prof === 'kinder' && P.deckHeight > 600) add({ id: `alter:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Oben schlafen erst ab 6 Jahren'), targets: [a.id] })
 
     // Stabilität
     const wallFix = r.fixings.filter((f) => f.memberId.startsWith(`${a.id}:`) && f.target === 'wand')
-    if (P.type === 'freistehend' && !P.braces && wallFix.length === 0) add({ id: `wackeln:${a.id}`, severity: 'warnung', category: 'Stabilität', title: 'Freistehendes Gestell ohne Aussteifung', detail: 'Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).', targets: [a.id] })
-    if (P.type === 'abgehaengt') add({ id: `abgehaengt:${a.id}`, severity: 'warnung', category: 'Stabilität', title: 'Abgehängte Konstruktion: besondere Sorgfalt', detail: 'Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.', targets: [a.id] })
-    if (P.type === 'deckenhoch' && room.ceiling === 'holzbalken') add({ id: `decke-holz:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Verspannung gegen Holzbalkendecke', detail: 'Pfosten möglichst unter einem Deckenbalken verspannen und mit Lastverteilbrett arbeiten; Stuck nicht berühren.', targets: [a.id] })
-    if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: 'Raum', title: `${wallFix.reduce((s, f) => s + f.count, 0)} Bohrungen in der Wand`, detail: 'Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.', targets: [a.id] })
+    if (P.type === 'freistehend' && !P.braces && wallFix.length === 0) add({ id: `wackeln:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Freistehendes Gestell ohne Aussteifung'), detail: t('Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).'), targets: [a.id] })
+    if (P.type === 'abgehaengt') add({ id: `abgehaengt:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Abgehängte Konstruktion: besondere Sorgfalt'), detail: t('Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.'), targets: [a.id] })
+    if (P.type === 'deckenhoch' && room.ceiling === 'holzbalken') add({ id: `decke-holz:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Verspannung gegen Holzbalkendecke'), detail: t('Pfosten möglichst unter einem Deckenbalken verspannen und mit Lastverteilbrett arbeiten; Stuck nicht berühren.'), targets: [a.id] })
+    if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: CAT.raum, title: t('{n} Bohrungen in der Wand', { n: wallFix.reduce((s, f) => s + f.count, 0) }), detail: t('Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.'), targets: [a.id] })
     const weak = new Set(['porenbeton', 'lochziegel', 'trockenbau', 'leichtbau'])
     const hangers = r.members.filter((m) => m.assemblyId === a.id && m.catalogId === 'gewindestange-m10')
     if (hangers.length) {
       const c = room.ceiling
       if (c === 'schwach' || c === 'abgehaengt')
-        add({ id: `decke-haengen:${a.id}`, severity: 'fehler', category: 'Stabilität', title: 'Decke ist nicht für eine Abhängung geeignet', detail: 'Laut Raumangaben trägt die Decke keine Lasten. Freie Ecke besser auf einen Pfosten stellen (Bett → „Freie Ecke getragen von“).', targets: [a.id, ...hangers.map((h) => h.id)] })
+        add({ id: `decke-haengen:${a.id}`, severity: 'fehler', category: CAT.stabil, title: t('Decke ist nicht für eine Abhängung geeignet'), detail: t('Laut Raumangaben trägt die Decke keine Lasten. Freie Ecke besser auf einen Pfosten stellen (Bett → „Freie Ecke getragen von“).'), targets: [a.id, ...hangers.map((h) => h.id)] })
       else if (c === 'holzbalken')
-        add({ id: `decke-balken:${a.id}`, severity: 'warnung', category: 'Stabilität', title: 'Abhängung nur in einen Deckenbalken', detail: 'Balkenlage suchen (Leitungssucher, Probebohrung), Gewindestange mit Stahlplatte oder Schwerlastanker im Balken, Stuck nicht berühren. Redundant auslegen.', targets: [a.id, ...hangers.map((h) => h.id)] })
+        add({ id: `decke-balken:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Abhängung nur in einen Deckenbalken'), detail: t('Balkenlage suchen (Leitungssucher, Probebohrung), Gewindestange mit Stahlplatte oder Schwerlastanker im Balken, Stuck nicht berühren. Redundant auslegen.'), targets: [a.id, ...hangers.map((h) => h.id)] })
     }
-    if (P.frameStyle === 'aufgelegt' && wallFix.length) add({ id: `wandbalken:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Wandbalken-Bauweise', detail: 'Effizient und sehr tragfähig an Ziegel- oder Betonwänden: Wandbalken mit Schwerlastdübeln oder Betonschrauben alle ca. 40 cm, Querträger bzw. Latten oben auflegen und verschrauben.', targets: [a.id] })
+    if (P.frameStyle === 'aufgelegt' && wallFix.length) add({ id: `wandbalken:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Wandbalken-Bauweise'), detail: t('Effizient und sehr tragfähig an Ziegel- oder Betonwänden: Wandbalken mit Schwerlastdübeln oder Betonschrauben alle ca. 40 cm, Querträger bzw. Latten oben auflegen und verschrauben.'), targets: [a.id] })
     for (const f of wallFix) {
       const m = memberById.get(f.memberId)
       if (!m) continue
       const wall = nearestWallId(m, room)
-      if (weak.has(room.walls[wall].material)) {
+      const mat = room.walls[wall].material
+      if (weak.has(mat)) {
         const load = memberById.get(f.memberId)?.role === 'wandriegel'
-        add({ id: `wandmaterial:${f.memberId}`, severity: load ? 'fehler' : 'warnung', category: 'Stabilität', title: load ? `Wandbalken an nicht tragfähiger Wand ${wall} (${WALL_MATERIAL_SHORT[room.walls[wall].material] ?? room.walls[wall].material})` : `${bedPrefix(m)}Kippsicherung in ${WALL_MATERIAL_SHORT[room.walls[wall].material] ?? room.walls[wall].material} (Wand ${wall})`, detail: load ? 'Ein tragender Wandbalken braucht eine massive Wand (Ziegel, Beton, Kalksandstein). Hier besser Pfosten stellen.' : 'Dübel tragen hier nur 0,15–0,6 kN – für eine Kippsicherung reicht das meist; in Trockenbau in die Ständer schrauben.', targets: [f.memberId] })
+        const material = WALL_MATERIAL_SHORT[mat] ? tr(WALL_MATERIAL_SHORT[mat]) : mat
+        add({
+          id: `wandmaterial:${f.memberId}`,
+          severity: load ? 'fehler' : 'warnung',
+          category: CAT.stabil,
+          title: load ? t('Wandbalken an nicht tragfähiger Wand {wall} ({material})', { wall, material }) : bedPrefix(m) + t('Kippsicherung in {material} (Wand {wall})', { wall, material }),
+          detail: load ? t('Ein tragender Wandbalken braucht eine massive Wand (Ziegel, Beton, Kalksandstein). Hier besser Pfosten stellen.') : t('Dübel tragen hier nur 0,15–0,6 kN – für eine Kippsicherung reicht das meist; in Trockenbau in die Ständer schrauben.'),
+          targets: [f.memberId],
+        })
       }
     }
-    if (room.floor === 'holzdielen') add({ id: `boden:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Holzbalkendecke/Dielenboden', detail: 'Pfosten auf Lastverteilplatten (z. B. 20 × 20 cm Multiplex) stellen, möglichst wandnah.', targets: [a.id] })
+    if (room.floor === 'holzdielen') add({ id: `boden:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Holzbalkendecke/Dielenboden'), detail: t('Pfosten auf Lastverteilplatten (z. B. 20 × 20 cm Multiplex) stellen, möglichst wandnah.'), targets: [a.id] })
     // Heizkörper unter der Liegefläche
     for (const o of p.wallObjects) {
       if (o.kind !== 'heizkoerper') continue
       const ob = obstacles.find((x) => x.id === `${o.id}:koerper`)
       if (!ob) continue
       const b = obbBounds(ob.box)
-      if (b.max.x > fp.minX && b.min.x < fp.maxX && b.max.y > fp.minY && b.min.y < fp.maxY) add({ id: `heizung-unter:${a.id}:${o.id}`, severity: 'hinweis', category: 'Raum', title: `${o.name} liegt unter dem Bett`, detail: 'Wärme staut sich unter der Liegefläche, Thermostat muss erreichbar bleiben.', targets: [a.id, o.id] })
+      if (b.max.x > fp.minX && b.min.x < fp.maxX && b.max.y > fp.minY && b.min.y < fp.maxY) add({ id: `heizung-unter:${a.id}:${o.id}`, severity: 'hinweis', category: CAT.raum, title: t('{name} liegt unter dem Bett', { name: tr(o.name) }), detail: t('Wärme staut sich unter der Liegefläche, Thermostat muss erreichbar bleiben.'), targets: [a.id, o.id] })
     }
   }
 
@@ -282,31 +343,31 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const item = catalogItem(m.catalogId)
     if (!item || item.kind !== 'stab') continue
     const L = memberLength(m)
-    if (L > maxLength(item) + 0.5) add({ id: `laenge:${m.id}`, severity: 'warnung', category: 'Material', title: `${m.name ?? 'Bauteil'}: ${fmtM(L)} länger als Handelslänge ${fmtM(maxLength(item))}`, detail: 'Stoß über einem Auflager einplanen oder anderen Querschnitt wählen.', targets: [m.id] })
+    if (L > maxLength(item) + 0.5) add({ id: `laenge:${m.id}`, severity: 'warnung', category: CAT.material, title: t('{part}: {length} länger als Handelslänge {max}', { part: memberName(m), length: fmtM(L), max: fmtM(maxLength(item)) }), detail: t('Stoß über einem Auflager einplanen oder anderen Querschnitt wählen.'), targets: [m.id] })
     if (STRUCTURAL.has(m.role) && !timber(m.catalogId).sorted) unsorted.add(m.catalogId)
   }
-  for (const id of unsorted) add({ id: `sortierung:${id}`, severity: 'hinweis', category: 'Material', title: `${timber(id).name} ist nicht festigkeitssortiert`, detail: 'Wird später als C16 gerechnet. Für tragende Teile KVH (C24) empfehlen; Stücke mit großen Ästen oder Rissen aussortieren.', targets: [] })
+  for (const id of unsorted) add({ id: `sortierung:${id}`, severity: 'hinweis', category: CAT.material, title: t('{name} ist nicht festigkeitssortiert', { name: tr(timber(id).name) }), detail: t('Wird später als C16 gerechnet. Für tragende Teile KVH (C24) empfehlen; Stücke mit großen Ästen oder Rissen aussortieren.'), targets: [] })
   for (const j of r.joints) {
-    if (j.kind === 'kreuzung' && j.typeId !== 'ueberblattung') add({ id: `kreuzung:${j.key}`, severity: 'warnung', category: 'Kollision', title: 'Bauteile durchdringen sich', detail: 'Überblattung wählen oder Bauteile versetzen.', targets: [j.a, j.b], pos: j.pos })
+    if (j.kind === 'kreuzung' && j.typeId !== 'ueberblattung') add({ id: `kreuzung:${j.key}`, severity: 'warnung', category: CAT.kollision, title: t('Bauteile durchdringen sich'), detail: t('Überblattung wählen oder Bauteile versetzen.'), targets: [j.a, j.b], pos: j.pos })
   }
 
-  const tr = transportCheck(p, r)
-  if (tr.door && tr.longest > tr.door) add({ id: 'transport', severity: 'warnung', category: 'Material', title: `${tr.name} (${fmtM(tr.longest)}) passt nicht durch die Tür`, detail: `Türdiagonale ca. ${fmtM(tr.door)}. Holz erst im Zimmer zuschneiden oder das Teil teilen (Stoß über einem Auflager). Auch Flur und Treppenhaus bedenken.`, targets: [] })
-  else if (tr.door && tr.longest > tr.door - 300) add({ id: 'transport', severity: 'hinweis', category: 'Material', title: `${tr.name} (${fmtM(tr.longest)}) nur schräg durch die Tür`, detail: `Türdiagonale ca. ${fmtM(tr.door)} – lange Teile schräg tragen, Flurecken vorher ausmessen.`, targets: [] })
+  const tc = transportCheck(p, r)
+  if (tc.door && tc.longest > tc.door) add({ id: 'transport', severity: 'warnung', category: CAT.material, title: t('{name} ({length}) passt nicht durch die Tür', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Türdiagonale ca. {diag}. Holz erst im Zimmer zuschneiden oder das Teil teilen (Stoß über einem Auflager). Auch Flur und Treppenhaus bedenken.', { diag: fmtM(tc.door) }), targets: [] })
+  else if (tc.door && tc.longest > tc.door - 300) add({ id: 'transport', severity: 'hinweis', category: CAT.material, title: t('{name} ({length}) nur schräg durch die Tür', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Türdiagonale ca. {diag} – lange Teile schräg tragen, Flurecken vorher ausmessen.', { diag: fmtM(tc.door) }), targets: [] })
 
   // --- Projekt ------------------------------------------------------------------------
-  if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: 'Raum', title: `${p.estimated.length} Maße sind nur geschätzt`, detail: 'Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.', targets: [] })
-  if (p.assemblies.length) add({ id: 'rauchmelder', severity: 'hinweis', category: 'Sicherheit', title: 'Rauchmelder über der Schlafebene', detail: 'Rauch staut sich unter der Decke – ein Melder oberhalb der Liegefläche ist sinnvoll.', targets: [] })
+  if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: CAT.raum, title: t('{n} Maße sind nur geschätzt', { n: p.estimated.length }), detail: t('Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.'), targets: [] })
+  if (p.assemblies.length) add({ id: 'rauchmelder', severity: 'hinweis', category: CAT.sicherheit, title: t('Rauchmelder über der Schlafebene'), detail: t('Rauch staut sich unter der Decke – ein Melder oberhalb der Liegefläche ist sinnvoll.'), targets: [] })
 
   const ack = new Set(p.settings.acknowledged)
   const order: Record<Severity, number> = { fehler: 0, warnung: 1, hinweis: 2 }
   findings.sort((a, b) => Number(ack.has(a.id)) - Number(ack.has(b.id)) || order[a.severity] - order[b.severity])
-  return { findings: groupFindings(findings, p, r), windows, doors, clearances }
+  return { findings: groupFindings(findings, meta, p, r), windows, doors, clearances }
 }
 
 function sideWallGap(s: Side, fp: { minX: number; maxX: number; minY: number; maxY: number }, room: Project['room'], rotation: number): number | undefined {
   // Lokale Seite in Weltrichtung übersetzen
-  const order: Side[] = ['hinten', 'rechts', 'vorne', 'links']
+  const order: Side[] = ['hinten', 'rechts', 'vorne', 'links'] // i18n-ok
   const idx = (order.indexOf(s) + rotation / 90) % 4
   switch (order[idx]) {
     case 'hinten':
@@ -335,7 +396,7 @@ function nearestWallId(m: Member, room: Project['room']): 'A' | 'B' | 'C' | 'D' 
  * Fasst gleichartige Kollisionen eines Betts zu einem Befund zusammen (z. B. „Hochbett: 12 Teile ragen bis
  * 27 cm in die Wand“). Die Einzelteile stehen in der Beschreibung, alle bleiben Ziele des Befunds.
  */
-function groupFindings(findings: Finding[], p: Project, r: Resolved): Finding[] {
+function groupFindings(findings: Finding[], meta: Map<Finding, Meta>, p: Project, r: Resolved): Finding[] {
   const asmOf = new Map<string, string>()
   for (const m of r.members) if (m.assemblyId) asmOf.set(m.id, m.assemblyId)
   for (const x of r.panels) if (x.assemblyId) asmOf.set(x.id, x.assemblyId)
@@ -367,25 +428,26 @@ function groupFindings(findings: Finding[], p: Project, r: Resolved): Finding[] 
     const list = groups.get(key)!
     if (list.length === 1) return list[0]
     const [kind, asm] = key.split('|')
-    const bed = p.assemblies.find((a) => a.id === asm)?.name ?? 'Bett'
-    const depth = Math.max(...list.map((x) => Number(/([\d,]+) cm/.exec(x.title)?.[1]?.replace(',', '.') ?? 0)))
+    const name = p.assemblies.find((a) => a.id === asm)?.name
+    const bed = name ? tr(name) : t('Bett')
+    const depth = fmtCm(Math.max(...list.map((x) => meta.get(x)?.depth ?? 0)))
     const n = list.length
     const title =
       kind === 'wand'
-        ? `${bed}: ${n} Teile ragen bis ${fmtCm(depth * 10)} in die Wand`
+        ? t('{bed}: {n} Teile ragen bis {depth} in die Wand', { bed, n, depth })
         : kind === 'decke'
-          ? `${bed}: ${n} Teile ragen bis ${fmtCm(depth * 10)} in die Decke`
+          ? t('{bed}: {n} Teile ragen bis {depth} in die Decke', { bed, n, depth })
           : kind === 'stuck'
-            ? `${bed}: ${n} Teile stoßen an den Stuck`
+            ? t('{bed}: {n} Teile stoßen an den Stuck', { bed, n })
             : kind === 'kerbe-stuck'
-              ? `${bed}: ${n} Pfosten am Stuck ausgeklinkt`
-              : `${bed}: ${n} Teile kollidieren mit ${list[0].title.split(' kollidiert mit ')[1] ?? 'einem Hindernis'}`
+              ? t('{bed}: {n} Pfosten am Stuck ausgeklinkt', { bed, n })
+              : t('{bed}: {n} Teile kollidieren mit {what}', { bed, n, what: meta.get(list[0])?.obstacle ?? t('einem Hindernis') })
     const parts = list.map((x) => x.title).join('; ')
     return {
       ...list[0],
       id: `${kind}-gruppe:${asm}`,
       title,
-      detail: `${list[0].detail ? `${list[0].detail} ` : ''}Betroffen: ${parts}.`,
+      detail: [list[0].detail, t('Betroffen: {parts}.', { parts })].filter(Boolean).join(' '),
       targets: [...new Set(list.flatMap((x) => x.targets))],
     }
   })

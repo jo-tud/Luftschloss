@@ -1,4 +1,4 @@
-import { locale } from '../i18n'
+import { locale, t } from '../i18n'
 import { useEffect, useState, type ReactNode } from 'react'
 
 /** Zahl deutsch anzeigen (Dezimalkomma, ohne Tausenderpunkt) */
@@ -6,11 +6,11 @@ export const fmtNum = (x: number, digits = 1) => x.toLocaleString(locale(), { ma
 
 /** Liest „412,5“, „412.5“ und „1.234,5“; gibt NaN für alles andere */
 export function parseNum(text: string): number {
-  let t = text.trim().replace(/\s/g, '')
-  if (t.includes(',') && t.includes('.')) t = t.replace(/\./g, '')
-  t = t.replace(',', '.')
-  if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN
-  return Number(t)
+  let s = text.trim().replace(/\s/g, '')
+  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '')
+  s = s.replace(',', '.')
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN
+  return Number(s)
 }
 
 /**
@@ -31,19 +31,19 @@ export function Num({ label, value, onChange, unit = 'cm', step, min, max, title
   const hi = max ?? (unit === 'cm' || unit === 'mm' ? 50000 : undefined)
   const commit = () => {
     const n = parseNum(text)
-    if (!Number.isFinite(n)) return setError(`Bitte eine Zahl eingeben, z. B. ${fmtNum(shown || 412.5)}`)
+    if (!Number.isFinite(n)) return setError(t('Bitte eine Zahl eingeben, z. B. {example}', { example: fmtNum(shown || 412.5) }))
     const mm = Math.round(n * factor)
-    if (min !== undefined && mm < min) return setError(`Nicht übernommen: mindestens ${show(min)}`)
-    if (hi !== undefined && mm > hi) return setError(`Nicht übernommen: höchstens ${show(hi)}`)
+    if (min !== undefined && mm < min) return setError(t('Nicht übernommen: mindestens {min}', { min: show(min) }))
+    if (hi !== undefined && mm > hi) return setError(t('Nicht übernommen: höchstens {max}', { max: show(hi) }))
     setError('')
     if (mm !== value) onChange(mm)
     else setText(fmtNum(shown))
   }
   return (
-    <label className={`field${estimated ? ' est' : ''}${error ? ' invalid' : ''}`} title={estimated ? 'Geschätzt – bitte nachmessen' : title}>
+    <label className={`field${estimated ? ' est' : ''}${error ? ' invalid' : ''}`} title={estimated ? t('Geschätzt – bitte nachmessen') : title}>
       <span>
         {label}
-        {estimated && <small className="est-tag"> geschätzt</small>}
+        {estimated && <small className="est-tag"> {t('geschätzt')}</small>}
       </span>
       <span className="num">
         <input

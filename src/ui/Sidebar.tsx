@@ -1,3 +1,4 @@
+import { locale, t, tk, tr } from '../i18n'
 import { defaultBedParams } from '../model/defaults'
 import { uid } from '../model/geometry'
 import { BED_TYPE_LABEL, bedOuterSize } from '../model/loftbed'
@@ -8,14 +9,14 @@ import { Check, Num, Section, Sel } from './fields'
 import { ProjectActions } from './Project'
 
 const WALL_MAT: [WallMaterial, string][] = [
-  ['beton', 'Beton'],
-  ['kalksandstein', 'Kalksandstein'],
-  ['vollziegel', 'Vollziegel'],
-  ['lochziegel', 'Hochlochziegel'],
-  ['porenbeton', 'Porenbeton'],
-  ['trockenbau', 'Trockenbau'],
-  ['holzstaender', 'Holzständer/Fachwerk'],
-  ['leichtbau', 'Leichtbau/Altbau-Innenwand (nicht tragend)'],
+  ['beton', tk('Beton')],
+  ['kalksandstein', tk('Kalksandstein')],
+  ['vollziegel', tk('Vollziegel')],
+  ['lochziegel', tk('Hochlochziegel')],
+  ['porenbeton', tk('Porenbeton')],
+  ['trockenbau', tk('Trockenbau')],
+  ['holzstaender', tk('Holzständer/Fachwerk')],
+  ['leichtbau', tk('Leichtbau/Altbau-Innenwand (nicht tragend)')],
 ]
 
 /** Listeneintrag per Klick, Enter oder Leertaste auslösen (Tastaturbedienung) */
@@ -35,10 +36,10 @@ export function Sidebar() {
   const tab = useStore((s) => s.sidebar)
   const set = useStore((s) => s.set)
   const tabs: [typeof tab, string][] = [
-    ['raum', 'Raum'],
-    ['ausstattung', 'Ausstattung'],
-    ['bett', 'Bett'],
-    ['moebel', 'Möbel'],
+    ['raum', t('Raum')],
+    ['ausstattung', t('Ausstattung')],
+    ['bett', t('Bett')],
+    ['moebel', t('Möbel')],
   ]
   return (
     <aside className="sidebar">
@@ -75,31 +76,40 @@ function RoomTab() {
   const setCornice = (patch: Partial<CorniceProfile>) => setRoom((d) => void (d.room.cornice = { ...d.room.cornice, ...patch }), 'room.cornice')
   return (
     <>
-      <Section title="Maße">
-        <Num label="Länge (Wand A/C)" value={r.length} onChange={(v) => setRoom((d) => void (d.room.length = v))} min={1000} max={20000} />
-        <Num label="Breite (Wand B/D)" value={r.width} onChange={(v) => setRoom((d) => void (d.room.width = v))} min={1000} max={20000} />
-        <Num label="Raumhöhe" value={r.height} onChange={(v) => setRoom((d) => void (d.room.height = v), 'room.height')} min={1800} max={6000} estimated={est(p, 'room.height')} />
-        <Num label="Wanddicke (Fensterwand)" value={r.wallThickness} onChange={(v) => setRoom((d) => void (d.room.wallThickness = v))} min={80} />
+      <Section title={t('Maße')}>
+        <Num label={t('Länge (Wand A/C)')} value={r.length} onChange={(v) => setRoom((d) => void (d.room.length = v))} min={1000} max={20000} />
+        <Num label={t('Breite (Wand B/D)')} value={r.width} onChange={(v) => setRoom((d) => void (d.room.width = v))} min={1000} max={20000} />
+        <Num label={t('Raumhöhe')} value={r.height} onChange={(v) => setRoom((d) => void (d.room.height = v), 'room.height')} min={1800} max={6000} estimated={est(p, 'room.height')} />
+        <Num label={t('Wanddicke (Fensterwand)')} value={r.wallThickness} onChange={(v) => setRoom((d) => void (d.room.wallThickness = v))} min={80} />
       </Section>
-      <Section title="Stuckleiste">
-        <Check label="Stuck an der Decke" value={r.cornice.enabled} onChange={(v) => setCornice({ enabled: v })} />
+      <Section title={t('Stuckleiste')}>
+        <Check label={t('Stuck an der Decke')} value={r.cornice.enabled} onChange={(v) => setCornice({ enabled: v })} />
         {r.cornice.enabled && (
           <>
-            <Num label="Höhe an der Wand" value={r.cornice.height} onChange={(v) => setCornice({ height: v })} estimated={est(p, 'room.cornice')} />
-            <Num label="Ausladung an der Decke" value={r.cornice.projection} onChange={(v) => setCornice({ projection: v })} estimated={est(p, 'room.cornice')} />
-            <Sel label="Profil" value={r.cornice.shape} options={[['kehle', 'Hohlkehle'], ['schraege', 'Schräge'], ['rechteck', 'Rechteck (voll)']]} onChange={(v) => setCornice({ shape: v })} />
+            <Num label={t('Höhe an der Wand')} value={r.cornice.height} onChange={(v) => setCornice({ height: v })} estimated={est(p, 'room.cornice')} />
+            <Num label={t('Ausladung an der Decke')} value={r.cornice.projection} onChange={(v) => setCornice({ projection: v })} estimated={est(p, 'room.cornice')} />
+            <Sel
+              label={t('Profil')}
+              value={r.cornice.shape}
+              options={[
+                ['kehle', t('Hohlkehle')],
+                ['schraege', t('Schräge')],
+                ['rechteck', t('Rechteck (voll)')],
+              ]}
+              onChange={(v) => setCornice({ shape: v })}
+            />
             <details className="sub">
-              <summary>Abweichend je Wand</summary>
+              <summary>{t('Abweichend je Wand')}</summary>
               {WALL_IDS.map((w) => {
                 const o = r.corniceOverrides[w]
                 return (
                   <div key={w} className="sub-row">
-                    <Check label={`Wand ${w} abweichend`} value={!!o} onChange={(v) => setRoom((d) => void (v ? (d.room.corniceOverrides[w] = { ...d.room.cornice }) : delete d.room.corniceOverrides[w]))} />
+                    <Check label={t('Wand {w} abweichend', { w })} value={!!o} onChange={(v) => setRoom((d) => void (v ? (d.room.corniceOverrides[w] = { ...d.room.cornice }) : delete d.room.corniceOverrides[w]))} />
                     {o && (
                       <>
-                        <Check label="Stuck vorhanden" value={o.enabled} onChange={(v) => setRoom((d) => void (d.room.corniceOverrides[w]!.enabled = v))} />
-                        <Num label="Höhe" value={o.height} onChange={(v) => setRoom((d) => void (d.room.corniceOverrides[w]!.height = v))} />
-                        <Num label="Ausladung" value={o.projection} onChange={(v) => setRoom((d) => void (d.room.corniceOverrides[w]!.projection = v))} />
+                        <Check label={t('Stuck vorhanden')} value={o.enabled} onChange={(v) => setRoom((d) => void (d.room.corniceOverrides[w]!.enabled = v))} />
+                        <Num label={t('Höhe')} value={o.height} onChange={(v) => setRoom((d) => void (d.room.corniceOverrides[w]!.height = v))} />
+                        <Num label={t('Ausladung')} value={o.projection} onChange={(v) => setRoom((d) => void (d.room.corniceOverrides[w]!.projection = v))} />
                       </>
                     )}
                   </div>
@@ -109,49 +119,94 @@ function RoomTab() {
           </>
         )}
       </Section>
-      <Section title="Sockelleiste">
-        <Check label="Sockel-/Parkettleiste" value={r.skirting.enabled} onChange={(v) => setRoom((d) => void (d.room.skirting.enabled = v), 'room.skirting')} />
+      <Section title={t('Sockelleiste')}>
+        <Check label={t('Sockel-/Parkettleiste')} value={r.skirting.enabled} onChange={(v) => setRoom((d) => void (d.room.skirting.enabled = v), 'room.skirting')} />
         {r.skirting.enabled && (
           <>
-            <Num label="Höhe" value={r.skirting.height} unit="mm" onChange={(v) => setRoom((d) => void (d.room.skirting.height = v), 'room.skirting')} estimated={est(p, 'room.skirting')} />
-            <Num label="Tiefe" value={r.skirting.depth} unit="mm" onChange={(v) => setRoom((d) => void (d.room.skirting.depth = v), 'room.skirting')} estimated={est(p, 'room.skirting')} />
+            <Num label={t('Höhe')} value={r.skirting.height} unit="mm" onChange={(v) => setRoom((d) => void (d.room.skirting.height = v), 'room.skirting')} estimated={est(p, 'room.skirting')} />
+            <Num label={t('Tiefe')} value={r.skirting.depth} unit="mm" onChange={(v) => setRoom((d) => void (d.room.skirting.depth = v), 'room.skirting')} estimated={est(p, 'room.skirting')} />
           </>
         )}
       </Section>
-      <Section title="Deckenrosette & Lampe">
+      <Section title={t('Deckenrosette & Lampe')}>
         {r.rosettes.map((ro, i) => (
           <div key={ro.id} className="sub-row">
-            <Num label="Position x" value={ro.x} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].x = v), 'room.rosettes')} />
-            <Num label="Position y" value={ro.y} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].y = v), 'room.rosettes')} />
-            <Num label="Durchmesser" value={ro.diameter} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].diameter = v), 'room.rosettes')} estimated={est(p, 'room.rosettes')} />
-            <Num label="Lampe hängt bis" value={ro.lampDrop} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].lampDrop = v), 'room.rosettes')} title="Abstand von der Decke bis zur Unterkante der Lampe" />
-            <Num label="Lampendurchmesser" value={ro.lampDiameter} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].lampDiameter = v), 'room.rosettes')} />
+            <Num label={t('Position x')} value={ro.x} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].x = v), 'room.rosettes')} />
+            <Num label={t('Position y')} value={ro.y} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].y = v), 'room.rosettes')} />
+            <Num label={t('Durchmesser')} value={ro.diameter} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].diameter = v), 'room.rosettes')} estimated={est(p, 'room.rosettes')} />
+            <Num label={t('Lampe hängt bis')} value={ro.lampDrop} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].lampDrop = v), 'room.rosettes')} title={t('Abstand von der Decke bis zur Unterkante der Lampe')} />
+            <Num label={t('Lampendurchmesser')} value={ro.lampDiameter} onChange={(v) => setRoom((d) => void (d.room.rosettes[i].lampDiameter = v), 'room.rosettes')} />
             <button className="link danger" onClick={() => setRoom((d) => void d.room.rosettes.splice(i, 1))}>
-              Rosette entfernen
+              {t('Rosette entfernen')}
             </button>
           </div>
         ))}
         <button className="add" onClick={() => setRoom((d) => void d.room.rosettes.push({ id: uid('rosette'), x: r.length / 2, y: r.width / 2, diameter: 600, depth: 30, lampDrop: 700, lampDiameter: 350 }))}>
-          + Rosette/Lampe
+          + {t('Rosette/Lampe')}
         </button>
       </Section>
-      <Section title="Wände, Boden, Decke" open={false}>
+      <Section title={t('Wände, Boden, Decke')} open={false}>
         {WALL_IDS.map((w) => (
-          <Sel key={w} label={`Wand ${w}`} value={r.walls[w].material} options={WALL_MAT} onChange={(v) => setRoom((d) => void (d.room.walls[w].material = v))} />
+          <Sel key={w} label={t('Wand {w}', { w })} value={r.walls[w].material} options={WALL_MAT.map(([k, l]) => [k, tr(l)])} onChange={(v) => setRoom((d) => void (d.room.walls[w].material = v))} />
         ))}
-        <Sel<FloorMaterial> label="Boden" value={r.floor} options={[['estrich', 'Estrich mit Belag'], ['fussbodenheizung', 'Fußbodenheizung (nicht bohren)'], ['holzdielen', 'Dielen/Holzbalkendecke']]} onChange={(v) => setRoom((d) => void (d.room.floor = v))} />
-        <Sel<CeilingMaterial> label="Decke" value={r.ceiling} options={[['beton', 'Betondecke'], ['holzbalken', 'Holzbalkendecke'], ['abgehaengt', 'Abgehängte Decke'], ['schwach', 'Nicht tragfähig (keine Abhängung)']]} onChange={(v) => setRoom((d) => void (d.room.ceiling = v))} />
+        <Sel<FloorMaterial>
+          label={t('Boden')}
+          value={r.floor}
+          options={[
+            ['estrich', t('Estrich mit Belag')],
+            ['fussbodenheizung', t('Fußbodenheizung (nicht bohren)')],
+            ['holzdielen', t('Dielen/Holzbalkendecke')],
+          ]}
+          onChange={(v) => setRoom((d) => void (d.room.floor = v))}
+        />
+        <Sel<CeilingMaterial>
+          label={t('Decke')}
+          value={r.ceiling}
+          options={[
+            ['beton', t('Betondecke')],
+            ['holzbalken', t('Holzbalkendecke')],
+            ['abgehaengt', t('Abgehängte Decke')],
+            ['schwach', t('Nicht tragfähig (keine Abhängung)')],
+          ]}
+          onChange={(v) => setRoom((d) => void (d.room.ceiling = v))}
+        />
       </Section>
-      <Section title="Einstellungen">
-        <Sel label="Sicherheitsempfehlungen" value={p.settings.safetyProfile} options={[['kinder', 'Kinder (streng)'], ['jugendliche', 'Jugendliche'], ['erwachsene', 'Erwachsene (nur Hinweise)']]} onChange={(v) => update((d) => void (d.settings.safetyProfile = v))} />
-        <Num label="Körpergröße (für Freiraum)" value={p.settings.personHeight} onChange={(v) => update((d) => void (d.settings.personHeight = v))} />
-        <Check label="Mietwohnung – möglichst wenig bohren" value={p.settings.rentalMode} onChange={(v) => update((d) => void (d.settings.rentalMode = v))} />
-        <Sel label="Lastannahme Statik" value={p.settings.loadProfile} options={[['bett', 'Bett (1,0 kN/m²)'], ['hochebene', 'Hochebene/Spielfläche (2,0 kN/m²)']]} onChange={(v) => update((d) => void (d.settings.loadProfile = v))} />
+      <Section title={t('Einstellungen')}>
+        <Sel
+          label={t('Sicherheitsempfehlungen')}
+          value={p.settings.safetyProfile}
+          options={[
+            ['kinder', t('Kinder (streng)')],
+            ['jugendliche', t('Jugendliche')],
+            ['erwachsene', t('Erwachsene (nur Hinweise)')],
+          ]}
+          onChange={(v) => update((d) => void (d.settings.safetyProfile = v))}
+        />
+        <Num label={t('Körpergröße (für Freiraum)')} value={p.settings.personHeight} onChange={(v) => update((d) => void (d.settings.personHeight = v))} />
+        <Check label={t('Mietwohnung – möglichst wenig bohren')} value={p.settings.rentalMode} onChange={(v) => update((d) => void (d.settings.rentalMode = v))} />
+        <Sel
+          label={t('Lastannahme Statik')}
+          value={p.settings.loadProfile}
+          options={[
+            ['bett', t('Bett ({load} kN/m²)', { load: (1).toLocaleString(locale(), { minimumFractionDigits: 1 }) })],
+            ['hochebene', t('Hochebene/Spielfläche ({load} kN/m²)', { load: (2).toLocaleString(locale(), { minimumFractionDigits: 1 }) })],
+          ]}
+          onChange={(v) => update((d) => void (d.settings.loadProfile = v))}
+        />
         <MouseProfile />
         <QualitySetting />
-        <Sel label="Verbindungen bevorzugt" value={p.settings.jointPreference} options={[['einfach', 'möglichst einfach (Winkel)'], ['zerlegbar', 'zerlegbar (Schlossschrauben)'], ['wenig-metall', 'wenig Metall (Holzverbindungen)']]} onChange={(v) => update((d) => void ((d.settings.jointPreference = v), (d.joints = [])))} />
+        <Sel
+          label={t('Verbindungen bevorzugt')}
+          value={p.settings.jointPreference}
+          options={[
+            ['einfach', t('möglichst einfach (Winkel)')],
+            ['zerlegbar', t('zerlegbar (Schlossschrauben)')],
+            ['wenig-metall', t('wenig Metall (Holzverbindungen)')],
+          ]}
+          onChange={(v) => update((d) => void ((d.settings.jointPreference = v), (d.joints = [])))}
+        />
       </Section>
-      <Section title="Projekt" open={false}>
+      <Section title={t('Projekt')} open={false}>
         <ProjectActions />
       </Section>
     </>
@@ -162,12 +217,12 @@ function QualitySetting() {
   const q = useStore((s) => s.quality)
   return (
     <Sel
-      label="Darstellung"
+      label={t('Darstellung')}
       value={q}
       options={[
-        ['hoch', 'Hoch (scharf, für Desktop)'],
-        ['normal', 'Normal'],
-        ['einfach', 'Einfach (schnell, ältere Geräte)'],
+        ['hoch', t('Hoch (scharf, für Desktop)')],
+        ['normal', t('Normal')],
+        ['einfach', t('Einfach (schnell, ältere Geräte)')],
       ]}
       onChange={(v) => {
         useStore.setState({ quality: v })
@@ -185,11 +240,11 @@ function MouseProfile() {
   const profile = useStore((s) => s.mouseProfile)
   return (
     <Sel
-      label="Mausbelegung"
+      label={t('Mausbelegung')}
       value={profile}
       options={[
-        ['standard', 'Standard (links ziehen dreht)'],
-        ['cad', 'CAD (links verschiebt, Shift + mittlere Taste dreht)'],
+        ['standard', t('Standard (links ziehen dreht)')],
+        ['cad', t('CAD (links verschiebt, Shift + mittlere Taste dreht)')],
       ]}
       onChange={(v) => {
         useStore.setState({ mouseProfile: v })
@@ -238,29 +293,29 @@ function FixturesTab() {
   const wall: WallId = 'A'
   return (
     <>
-      <Section title="Fenster, Türen, Heizkörper">
+      <Section title={t('Fenster, Türen, Heizkörper')}>
         <ul className="list">
           {p.wallObjects.map((o) => (
             <li key={o.id} className={sel?.id === o.id ? 'on' : ''} {...activate(() => (select({ kind: 'wallObject', id: o.id }), useStore.getState().focus(o.id)))}>
               <span>{o.kind === 'fenster' ? '🪟' : o.kind === 'tuer' ? '🚪' : o.kind === 'heizkoerper' ? '♨' : '🔌'}</span>
-              {o.name} <small>Wand {o.wall}</small>
-              {p.estimated.includes(`wallObjects.${o.id}`) && <em className="est-tag">geschätzt</em>}
+              {tr(o.name)} <small>{t('Wand {w}', { w: o.wall })}</small>
+              {p.estimated.includes(`wallObjects.${o.id}`) && <em className="est-tag">{t('geschätzt')}</em>}
             </li>
           ))}
         </ul>
         <div className="add-row">
           <button
             onClick={() =>
-              addObj({ id: uid('fenster'), kind: 'fenster', name: 'Fenster', wall, offset: 500, width: 1000, sillHeight: 850, height: 1400, revealDepth: 150, frameWidth: 60, niche: { below: false, belowDepth: 100 }, sashes: [{ opening: 'drehkipp', hinge: 'links' }], sashThickness: 75, handleProjection: 70, sill: { enabled: true, projection: 40, thickness: 30, sideOverhang: 30 }, displayAngle: 0 })
+              addObj({ id: uid('fenster'), kind: 'fenster', name: t('Fenster'), wall, offset: 500, width: 1000, sillHeight: 850, height: 1400, revealDepth: 150, frameWidth: 60, niche: { below: false, belowDepth: 100 }, sashes: [{ opening: 'drehkipp', hinge: 'links' /* i18n-ok */ }], sashThickness: 75, handleProjection: 70, sill: { enabled: true, projection: 40, thickness: 30, sideOverhang: 30 }, displayAngle: 0 })
             }
           >
-            + Fenster
+            + {t('Fenster')}
           </button>
-          <button onClick={() => addObj({ id: uid('tuer'), kind: 'tuer', name: 'Tür', wall, offset: 300, width: 885, height: 2010, hinge: 'links', opensInward: true, displayAngle: 0 })}>+ Tür</button>
-          <button onClick={() => addObj({ id: uid('heizung'), kind: 'heizkoerper', name: 'Heizkörper', wall, offset: 500, width: 1000, bottom: 150, height: 600, depth: 100, wallGap: 50, convectionClearance: 100 })}>+ Heizkörper</button>
-          <button onClick={() => addObj({ id: uid('dose'), kind: 'steckdose', name: 'Steckdose', wall, offset: 300, width: 80, bottom: 300, height: 80 })}>+ Steckdose</button>
+          <button onClick={() => addObj({ id: uid('tuer'), kind: 'tuer', name: t('Tür'), wall, offset: 300, width: 885, height: 2010, hinge: 'links' /* i18n-ok */, opensInward: true, displayAngle: 0 })}>+ {t('Tür')}</button>
+          <button onClick={() => addObj({ id: uid('heizung'), kind: 'heizkoerper', name: t('Heizkörper'), wall, offset: 500, width: 1000, bottom: 150, height: 600, depth: 100, wallGap: 50, convectionClearance: 100 })}>+ {t('Heizkörper')}</button>
+          <button onClick={() => addObj({ id: uid('dose'), kind: 'steckdose', name: t('Steckdose'), wall, offset: 300, width: 80, bottom: 300, height: 80 })}>+ {t('Steckdose')}</button>
         </div>
-        <p className="hint">Objekte lassen sich in der Seitenansicht direkt an der Wand verschieben (waagrecht und in der Höhe).</p>
+        <p className="hint">{t('Objekte lassen sich in der Seitenansicht direkt an der Wand verschieben (waagrecht und in der Höhe).')}</p>
       </Section>
     </>
   )
@@ -275,18 +330,18 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  { key: 'frei', label: 'Freistehend, 4 Pfosten', hint: 'Am häufigsten. Vier Pfosten tragen, die Wand nur als Kippsicherung. Mietwohnungs-tauglich.', type: 'freistehend', patch: {} },
-  { key: 'wandbalken', label: 'Wandbalken, Latten drauf', hint: 'Balken direkt an die massive Wand (Ziegel/Beton), vorne ein Balken auf zwei Pfosten, Latten einfach auflegen. Sehr effizient.', type: 'wandseitig', patch: { frameStyle: 'aufgelegt' } },
-  { key: 'eck', label: 'Eckbett, 1 Pfosten', hint: 'Zwei Wände tragen, ein freier Pfosten. Viel Platz darunter.', type: 'eck', patch: { frameStyle: 'aufgelegt' } },
-  { key: 'eck-decke', label: 'Eckbett, Ecke abgehängt', hint: 'Zwei Wandbalken, die freie Ecke hängt an einer Gewindestange von der Decke. Nur bei sehr tragfähiger Decke.', type: 'eck', patch: { frameStyle: 'aufgelegt', cornerSupport: 'decke' } },
-  { key: 'deckenhoch', label: 'Deckenhoch verspannt', hint: 'Pfosten bis zur Decke verspannt, sehr steif. Stuck und Deckenart beachten.', type: 'deckenhoch', patch: {} },
-  { key: 'nische', label: 'Hochebene Wand zu Wand', hint: 'Wandbalken an beiden Enden, Querträger aufgelegt – für Nischen bis ca. 2,5 m.', type: 'nische', patch: { frameStyle: 'aufgelegt' } },
-  { key: 'zwei', label: 'Zwei Kinder oben', hint: 'Freistehend, zwei Matratzen 90 × 200 nebeneinander. Mittelträger unter der Fuge, Kopfbänder.', type: 'freistehend', patch: { mattressCount: 2, mattressWidth: 900, railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
-  { key: 'halbhoch', label: 'Halbhoch, 1,20 m', hint: 'Für jüngere Kinder: niedrig, darunter Spielecke oder Kiste. Geländer und Leiter wie beim Hochbett.', type: 'freistehend', patch: { deckHeight: 1200, braces: false } },
-  { key: 'etage', label: 'Etagenbett', hint: 'Zwei Betten übereinander zwischen vier Pfosten. Unten 0,30 m, oben so hoch, dass man unten aufrecht sitzt.', type: 'freistehend', patch: { lowerBed: true, deckHeight: 1550, braces: false } },
-  { key: 'galerie', label: 'Galerie mit Mittelstütze', hint: 'Lange Hochebene (2,80 × 1,40 m) zum Spielen oder für zwei Matratzen. Eine Stütze in der Mitte jeder Längsseite.', type: 'wandseitig', patch: { mattressLength: 2800, mattressWidth: 1400, midPosts: 1, frameStyle: 'aufgelegt', railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
-  { key: 'netz', label: 'Netz-Hochebene', hint: 'Begehbares Netz zum Chillen, 2,00 × 1,40 m. Das Netz zieht stark nach innen – daher kräftige Zargen 12×12 cm. Für Geübte.', type: 'freistehend', patch: { deck: 'netz', deckCatalogId: 'netz-begehbar', mattressWidth: 1400, railCatalogId: 'kvh-120x120', postCatalogId: 'kvh-120x120', ladder: 'senkrecht' } },
-  { key: 'abgehaengt', label: 'Wandbalken + Decke', hint: 'Wandbalken hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.', type: 'abgehaengt', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'frei', label: tk('Freistehend, 4 Pfosten'), hint: tk('Am häufigsten. Vier Pfosten tragen, die Wand nur als Kippsicherung. Mietwohnungs-tauglich.'), type: 'freistehend', patch: {} },
+  { key: 'wandbalken', label: tk('Wandbalken, Latten drauf'), hint: tk('Balken direkt an die massive Wand (Ziegel/Beton), vorne ein Balken auf zwei Pfosten, Latten einfach auflegen. Sehr effizient.'), type: 'wandseitig', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'eck', label: tk('Eckbett, 1 Pfosten'), hint: tk('Zwei Wände tragen, ein freier Pfosten. Viel Platz darunter.'), type: 'eck', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'eck-decke', label: tk('Eckbett, Ecke abgehängt'), hint: tk('Zwei Wandbalken, die freie Ecke hängt an einer Gewindestange von der Decke. Nur bei sehr tragfähiger Decke.'), type: 'eck', patch: { frameStyle: 'aufgelegt', cornerSupport: 'decke' } },
+  { key: 'deckenhoch', label: tk('Deckenhoch verspannt'), hint: tk('Pfosten bis zur Decke verspannt, sehr steif. Stuck und Deckenart beachten.'), type: 'deckenhoch', patch: {} },
+  { key: 'nische', label: tk('Hochebene Wand zu Wand'), hint: tk('Wandbalken an beiden Enden, Querträger aufgelegt – für Nischen bis ca. 2,5 m.'), type: 'nische', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'zwei', label: tk('Zwei Kinder oben'), hint: tk('Freistehend, zwei Matratzen 90 × 200 nebeneinander. Mittelträger unter der Fuge, Kopfbänder.'), type: 'freistehend', patch: { mattressCount: 2, mattressWidth: 900, railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
+  { key: 'halbhoch', label: tk('Halbhoch, 1,20 m'), hint: tk('Für jüngere Kinder: niedrig, darunter Spielecke oder Kiste. Geländer und Leiter wie beim Hochbett.'), type: 'freistehend', patch: { deckHeight: 1200, braces: false } },
+  { key: 'etage', label: tk('Etagenbett'), hint: tk('Zwei Betten übereinander zwischen vier Pfosten. Unten 0,30 m, oben so hoch, dass man unten aufrecht sitzt.'), type: 'freistehend', patch: { lowerBed: true, deckHeight: 1550, braces: false } },
+  { key: 'galerie', label: tk('Galerie mit Mittelstütze'), hint: tk('Lange Hochebene (2,80 × 1,40 m) zum Spielen oder für zwei Matratzen. Eine Stütze in der Mitte jeder Längsseite.'), type: 'wandseitig', patch: { mattressLength: 2800, mattressWidth: 1400, midPosts: 1, frameStyle: 'aufgelegt', railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
+  { key: 'netz', label: tk('Netz-Hochebene'), hint: tk('Begehbares Netz zum Chillen, 2,00 × 1,40 m. Das Netz zieht stark nach innen – daher kräftige Zargen 12×12 cm. Für Geübte.'), type: 'freistehend', patch: { deck: 'netz', deckCatalogId: 'netz-begehbar', mattressWidth: 1400, railCatalogId: 'kvh-120x120', postCatalogId: 'kvh-120x120', ladder: 'senkrecht' } },
+  { key: 'abgehaengt', label: tk('Wandbalken + Decke'), hint: tk('Wandbalken hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.'), type: 'abgehaengt', patch: { frameStyle: 'aufgelegt' } },
 ]
 
 /** Ecke des Raums, in die ein neues Bett gestellt wird */
@@ -299,7 +354,7 @@ function BedTab() {
   const sel = useStore((s) => s.selection)
   const insert = (preset: Preset, corner: Corner) => {
     const type = preset.type
-    const params = defaultBedParams({ type, deckHeight: Math.min(1900, p.room.height - 1100), wallEnd: corner === 'AD' || corner === 'CB' ? 'rechts' : 'links', braces: type === 'freistehend', ...preset.patch })
+    const params = defaultBedParams({ type, deckHeight: Math.min(1900, p.room.height - 1100), wallEnd: corner === 'AD' || corner === 'CB' ? 'rechts' : 'links' /* i18n-ok */, braces: type === 'freistehend', ...preset.patch })
     // Die Rückseite steht an der Wand: dort übernimmt die Wand die Absturzsicherung
     params.guardSides = { ...params.guardSides, hinten: false }
     const { length } = bedOuterSize(params)
@@ -312,35 +367,40 @@ function BedTab() {
     if (type === 'nische') Object.assign(params, { mattressLength: Math.max(1600, r.length - 2 * 80 - 20), x: 0, rotation: corner.startsWith('C') ? 180 : 0, y: corner.startsWith('C') ? r.width : 0 })
     if (type === 'nische' && corner.startsWith('C')) params.x = r.length
     const id = uid('bett')
-    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: preset.label, params, detached: [] }))
+    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: tr(preset.label), params, detached: [] }))
     select({ kind: 'assembly', id })
     // neues Bett ins Bild holen
     setTimeout(() => useStore.getState().focus(id), 50)
   }
   return (
     <>
-      <Section title="Hochbetten im Projekt">
+      <Section title={t('Hochbetten im Projekt')}>
         <ul className="list">
           {p.assemblies.map((a) => (
             <li key={a.id} className={sel?.id === a.id ? 'on' : ''} {...activate(() => (select({ kind: 'assembly', id: a.id }), useStore.getState().focus(a.id)))}>
-              🛏 {a.name} <small>{BED_TYPE_LABEL[a.params.type]}</small>
+              🛏 {tr(a.name)} <small>{tr(BED_TYPE_LABEL[a.params.type])}</small>
             </li>
           ))}
-          {!p.assemblies.length && <li className="empty">Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.</li>}
+          {!p.assemblies.length && <li className="empty">{t('Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.')}</li>}
         </ul>
       </Section>
-      <Section title="Vorlage einsetzen">
+      <Section title={t('Vorlage einsetzen')}>
         <div className="templates">
-          {PRESETS.map((t) => (
-            <div key={t.key} className="template">
-              <TemplateIcon type={t.type} aufgelegt={t.patch.frameStyle === 'aufgelegt'} hang={t.patch.cornerSupport === 'decke' || t.type === 'abgehaengt'} lower={t.patch.lowerBed} net={t.patch.deck === 'netz'} two={(t.patch.mattressCount ?? 1) > 1} mid={!!t.patch.midPosts} low={t.patch.deckHeight === 1200} />
+          {PRESETS.map((pr) => (
+            <div key={pr.key} className="template">
+              <TemplateIcon type={pr.type} aufgelegt={pr.patch.frameStyle === 'aufgelegt'} hang={pr.patch.cornerSupport === 'decke' || pr.type === 'abgehaengt'} lower={pr.patch.lowerBed} net={pr.patch.deck === 'netz'} two={(pr.patch.mattressCount ?? 1) > 1} mid={!!pr.patch.midPosts} low={pr.patch.deckHeight === 1200} />
               <div>
-                <b>{t.label}</b>
-                <p>{t.hint}</p>
-                <div className="corners" role="group" aria-label={`${t.label} neu einsetzen`}>
-                  + neu in Ecke:
+                <b>{tr(pr.label)}</b>
+                <p>{tr(pr.hint)}</p>
+                <div className="corners" role="group" aria-label={t('{name} neu einsetzen', { name: tr(pr.label) })}>
+                  {t('+ neu in Ecke:')}
                   {(['AD', 'AB', 'CB', 'CD'] as Corner[]).map((c) => (
-                    <button key={c} onClick={() => insert(t, c)} title={`Neues Bett „${t.label}“ in die Ecke Wand ${c[0]}/${c[1]} einsetzen`} aria-label={`${t.label} in Ecke ${c[0]}/${c[1]} einsetzen`}>
+                    <button
+                      key={c}
+                      onClick={() => insert(pr, c)}
+                      title={t('Neues Bett „{name}“ in die Ecke Wand {a}/{b} einsetzen', { name: tr(pr.label), a: c[0], b: c[1] })}
+                      aria-label={t('{name} in Ecke {a}/{b} einsetzen', { name: tr(pr.label), a: c[0], b: c[1] })}
+                    >
                       {c[0]}/{c[1]}
                     </button>
                   ))}
@@ -349,7 +409,7 @@ function BedTab() {
             </div>
           ))}
         </div>
-        <p className="hint">Setzt ein zusätzliches Bett ein. Ein vorhandenes Bett verschiebst du über „Lage im Raum“ (Bett auswählen). Alle Vorlagen bleiben voll anpassbar: Bett auswählen und rechts Maße, Bauart, Hölzer, Geländer und Leiter ändern. Einzelne Teile lassen sich herauslösen.</p>
+        <p className="hint">{t('Setzt ein zusätzliches Bett ein. Ein vorhandenes Bett verschiebst du über „Lage im Raum“ (Bett auswählen). Alle Vorlagen bleiben voll anpassbar: Bett auswählen und rechts Maße, Bauart, Hölzer, Geländer und Leiter ändern. Einzelne Teile lassen sich herauslösen.')}</p>
       </Section>
     </>
   )
@@ -399,15 +459,15 @@ function TemplateIcon({ type, aufgelegt, hang, lower, net, mid, low, two }: { ty
 }
 
 const FURN: [FurnitureKind, string, [number, number, number]][] = [
-  ['schreibtisch', 'Schreibtisch', [1400, 700, 750]],
-  ['stuhl', 'Stuhl', [500, 500, 900]],
-  ['sofa', 'Sofa', [1800, 850, 800]],
-  ['schrank', 'Kleiderschrank', [1000, 600, 2000]],
-  ['regal', 'Regal', [800, 400, 1800]],
-  ['kommode', 'Kommode', [1200, 500, 800]],
-  ['koerper', 'Freier Körper', [500, 500, 500]],
-  ['person-stehend', 'Person stehend', [450, 280, 1750]],
-  ['person-sitzend', 'Person sitzend', [450, 550, 1300]],
+  ['schreibtisch', tk('Schreibtisch'), [1400, 700, 750]],
+  ['stuhl', tk('Stuhl'), [500, 500, 900]],
+  ['sofa', tk('Sofa'), [1800, 850, 800]],
+  ['schrank', tk('Kleiderschrank'), [1000, 600, 2000]],
+  ['regal', tk('Regal'), [800, 400, 1800]],
+  ['kommode', tk('Kommode'), [1200, 500, 800]],
+  ['koerper', tk('Freier Körper'), [500, 500, 500]],
+  ['person-stehend', tk('Person stehend'), [450, 280, 1750]],
+  ['person-sitzend', tk('Person sitzend'), [450, 550, 1300]],
 ]
 
 function FurnitureTab() {
@@ -418,28 +478,28 @@ function FurnitureTab() {
   const add = (k: FurnitureKind, name: string, size: [number, number, number]) => {
     const ph = p.settings.personHeight
     const sz = k === 'person-stehend' ? ph : k === 'person-sitzend' ? Math.round(ph * 0.74) : size[2]
-    const f: Furniture = { id: uid('moebel'), kind: k, name: k.startsWith('person') ? `${name} ${(ph / 1000).toFixed(2).replace('.', ',')} m` : name, x: p.room.length / 2 - size[0] / 2, y: p.room.width / 2, z: 0, sx: size[0], sy: size[1], sz, rotation: 0 }
+    const f: Furniture = { id: uid('moebel'), kind: k, name: k.startsWith('person') ? `${name} ${(ph / 1000).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m` : name, x: p.room.length / 2 - size[0] / 2, y: p.room.width / 2, z: 0, sx: size[0], sy: size[1], sz, rotation: 0 }
     update((d) => void d.furniture.push(f))
     select({ kind: 'furniture', id: f.id })
   }
   return (
     <>
-      <Section title="Möbel und Personen">
+      <Section title={t('Möbel und Personen')}>
         <ul className="list">
           {p.furniture.map((f) => (
             <li key={f.id} className={sel?.id === f.id ? 'on' : ''} {...activate(() => (select({ kind: 'furniture', id: f.id }), useStore.getState().focus(f.id)))}>
-              {f.kind.startsWith('person') ? '🧍' : '▭'} {f.name}
+              {f.kind.startsWith('person') ? '🧍' : '▭'} {tr(f.name)}
             </li>
           ))}
         </ul>
         <div className="add-row">
           {FURN.map(([k, n, s]) => (
-            <button key={k} onClick={() => add(k, n, s)}>
-              + {n}
+            <button key={k} onClick={() => add(k, tr(n), s)}>
+              + {tr(n)}
             </button>
           ))}
         </div>
-        <p className="hint">Möbel sind einfache Platzhalter für die Platz- und Höhenprüfung. Personen zeigen, wo man stehen und sitzen kann.</p>
+        <p className="hint">{t('Möbel sind einfache Platzhalter für die Platz- und Höhenprüfung. Personen zeigen, wo man stehen und sitzen kann.')}</p>
       </Section>
     </>
   )

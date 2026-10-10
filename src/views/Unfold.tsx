@@ -4,6 +4,7 @@ import { cornice } from '../model/room'
 import type { Project, WallId } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
+import { t, tr } from '../i18n'
 
 /**
  * Abwicklung: Der Raum wird wie eine Schachtel aufgeklappt. Boden in der Mitte (Draufsicht),
@@ -147,12 +148,12 @@ export function UnfoldView() {
             <g key={o.id} className={`uf-obj ${o.kind}${isSel ? ' sel' : ''}${blocked ? ' blocked' : ''}`} onPointerDown={(e) => onDown(e, o.id, o.wall)}>
               <polygon points={wallRect(p, o.wall, o.offset, o.offset + o.width, z0, z1)} />
               <text x={label.x} y={-label.y} textAnchor="middle" dominantBaseline="middle" fontSize={130}>
-                {o.name}
+                {tr(o.name)}
               </text>
               {o.kind === 'fenster' && (
                 <text x={label.x} y={-label.y + 170} textAnchor="middle" fontSize={100}>
-                  Brüstung {fmtCm(o.sillHeight, 0)}
-                  {blocked ? ` · öffnet bis ${Math.min(...res.map((w) => w.maxAngle))}°` : ''}
+                  {t('Brüstung {h}', { h: fmtCm(o.sillHeight, 0) })}
+                  {blocked ? ` · ${t('öffnet bis {a}°', { a: Math.min(...res.map((w) => w.maxAngle)) })}` : ''}
                 </text>
               )}
             </g>
@@ -162,7 +163,7 @@ export function UnfoldView() {
           <circle key={ro.id} cx={ro.x} cy={-ro.y} r={ro.diameter / 2} className="uf-rosette" />
         ))}
       </svg>
-      <p className="unfold-hint">Abwicklung: Wände nach außen geklappt, jeweils von innen gesehen. Fenster, Heizkörper und Steckdosen hier direkt ziehen.</p>
+      <p className="unfold-hint">{t('Abwicklung: Wände nach außen geklappt, jeweils von innen gesehen. Fenster, Heizkörper und Steckdosen hier direkt ziehen.')}</p>
     </div>
   )
 }
@@ -172,7 +173,7 @@ function WallLabel({ p, wall }: { p: Project; wall: WallId }) {
   const q = unfoldPoint(p, wall, f.length / 2, p.room.height + 160)
   return (
     <text x={q.x} y={-q.y} textAnchor="middle" dominantBaseline="middle" fontSize={170} className="uf-label">
-      Wand {wall} · {fmtCm(f.length, 0)}
+      {t('Wand {w}', { w: wall })} · {fmtCm(f.length, 0)}
     </text>
   )
 }

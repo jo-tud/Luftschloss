@@ -1,15 +1,16 @@
+import { t, tk, tr } from '../i18n'
 import { catalogItem } from '../model/catalog'
 import { memberLength } from '../model/geometry'
 import { CARPENTRY, cutLengths } from '../model/joinery'
 
 const JOINERY_LABEL: Record<string, string> = {
-  ueberblattung: 'Blatt',
-  zapfen: 'Zapfen bzw. Zapfenloch',
-  schwalbenschwanz: 'Schwalbenschwanz',
-  gratnut: 'Gratnut bzw. Grat',
-  ausklinkung: 'Einlassung',
-  stecken: 'Bohrung bzw. Stab',
-  auflagerleiste: 'Auflagerleiste',
+  ueberblattung: tk('Blatt'),
+  zapfen: tk('Zapfen bzw. Zapfenloch'),
+  schwalbenschwanz: tk('Schwalbenschwanz'),
+  gratnut: tk('Gratnut bzw. Grat'),
+  ausklinkung: tk('Einlassung'),
+  stecken: tk('Bohrung bzw. Stab'),
+  auflagerleiste: tk('Auflagerleiste'),
 }
 import { jointType } from '../model/joints'
 import type { Resolved } from '../model/resolve'
@@ -74,7 +75,7 @@ export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<strin
 }
 
 function baseName(n: string): string {
-  return n.replace(/\s+\d+$/, '').replace(/ (vorne|hinten|links|rechts)( (links|rechts))?$/, '')
+  return n.replace(/\s+\d+$/, '').replace(/ (vorne|hinten|links|rechts|front|back|rear|left|right)( (links|rechts|left|right))?$/, '')
 }
 
 export interface BuildStep {
@@ -97,7 +98,7 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   const toolsFor = (ids: string[]) => {
     const set = new Set<string>()
     const idSet = new Set(ids)
-    for (const j of r.joints) if (idSet.has(j.a) || idSet.has(j.b)) jointType(j.typeId)?.tools.forEach((t) => set.add(t))
+    for (const j of r.joints) if (idSet.has(j.a) || idSet.has(j.b)) jointType(j.typeId)?.tools.forEach((x) => set.add(tr(x)))
     return [...set]
   }
   const push = (title: string, text: string, ids: string[], panelIds: string[] = []) => {
@@ -105,29 +106,30 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     steps.push({ title, text, memberIds: ids, panelIds, tools: toolsFor(ids) })
   }
   const isLadder = (m: Member) => !!m.partKey?.startsWith('leiter-')
-  const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && !isLadder(m)) || m.name?.startsWith('Geländerpfosten') === true
+  const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && !isLadder(m)) || (m.role === 'pfosten' && Math.min(m.start.z, m.end.z) >= 5) || m.name?.startsWith('Geländerpfosten') === true // i18n-ok – Name nur noch als Rückfall (übersetzt)
   const ceilingWarn = r.members.some((m) => m.role === 'pfosten' && Math.max(m.start.z, m.end.z) > p.room.height - 60)
 
-  push('Wandbalken anbringen', 'Wandbalken waagrecht ausrichten (Wasserwaage), anzeichnen, bohren und mit Schwerlastdübeln oder Betonschrauben ca. alle 40 cm befestigen.', take((m) => m.role === 'wandriegel'))
+  push(t('Wandbalken anbringen'), t('Wandbalken waagrecht ausrichten (Wasserwaage), anzeichnen, bohren und mit Schwerlastdübeln oder Betonschrauben ca. alle 40 cm befestigen.'), take((m) => m.role === 'wandriegel'))
   push(
-    'Pfosten stellen',
-    `Ausklinkungen (Sockelleiste, Stuck) vorher sägen. Pfosten lotrecht stellen und provisorisch abstützen.${ceilingWarn ? ' Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.' : ''}`,
+    t('Pfosten stellen'),
+    t('Ausklinkungen (Sockelleiste, Stuck) vorher sägen. Pfosten lotrecht stellen und provisorisch abstützen.') +
+      (ceilingWarn ? ' ' + t('Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.') : ''),
     take((m) => m.role === 'pfosten' && Math.min(m.start.z, m.end.z) < 5),
   )
-  push('Abhängung montieren', 'Gewindestangen in tragfähige Decke (Balken!) verankern, unten mit Unterlegscheibe und Mutter.', take((m) => m.catalogId === 'gewindestange-m10'))
-  push('Zargen bzw. Träger anschrauben', 'Längszargen und Querzargen auf Höhe anzeichnen, mit Schraubzwingen fixieren, rechtwinklig ausrichten (Diagonalen messen) und verschrauben.', take((m) => m.role === 'zarge'))
-  push('Aussteifung', 'Kopfbänder 45° zuschneiden und verschrauben – erst danach steht das Gestell steif.', take((m) => m.role === 'strebe'))
+  push(t('Abhängung montieren'), t('Gewindestangen in tragfähige Decke (Balken!) verankern, unten mit Unterlegscheibe und Mutter.'), take((m) => m.catalogId === 'gewindestange-m10'))
+  push(t('Zargen bzw. Träger anschrauben'), t('Längszargen und Querzargen auf Höhe anzeichnen, mit Schraubzwingen fixieren, rechtwinklig ausrichten (Diagonalen messen) und verschrauben.'), take((m) => m.role === 'zarge'))
+  push(t('Aussteifung'), t('Kopfbänder 45° zuschneiden und verschrauben – erst danach steht das Gestell steif.'), take((m) => m.role === 'strebe'))
   const fixings = r.fixings.filter((f) => f.target === 'wand' && r.members.find((m) => m.id === f.memberId)?.role === 'pfosten')
-  if (fixings.length) steps.push({ title: 'Kippsicherung', text: `${fixings.length} Pfosten mit Winkel und Rahmendübel an der Wand befestigen.`, memberIds: [], panelIds: [], tools: ['Bohrmaschine', 'Steinbohrer 10 mm'] })
-  push('Querträger', 'Querträger einsetzen bzw. auflegen und befestigen.', take((m) => m.role === 'quertraeger'))
+  if (fixings.length) steps.push({ title: t('Kippsicherung'), text: t('{n} Pfosten mit Winkel und Rahmendübel an der Wand befestigen.', { n: fixings.length }), memberIds: [], panelIds: [], tools: [t('Bohrmaschine'), t('Steinbohrer 10 mm')] })
+  push(t('Querträger'), t('Querträger einsetzen bzw. auflegen und befestigen.'), take((m) => m.role === 'quertraeger'))
   const decks = r.panels.filter((x) => !x.vertical && x.kind !== 'matratze').map((x) => x.id)
-  push('Liegefläche', 'Latten bzw. Platte auflegen, ausrichten und gegen Verrutschen sichern. Filzstreifen gegen Quietschen.', take((m) => m.role === 'leiste'), decks)
+  push(t('Liegefläche'), t('Latten bzw. Platte auflegen, ausrichten und gegen Verrutschen sichern. Filzstreifen gegen Quietschen.'), take((m) => m.role === 'leiste'), decks)
   const guardPanels = r.panels.filter((x) => x.vertical).map((x) => x.id)
-  push('Geländer', 'Geländerpfosten, Handläufe und Füllung montieren. Lücken höchstens 7,5 cm.', take(isGuard), guardPanels)
-  push('Leiter bzw. Treppe', 'Leiter vormontieren (Sprossen/Stufen einleimen), einhängen bzw. anschrauben, gegen Verrutschen sichern.', take(isLadder))
-  push('Restliche Teile', 'Übrige Teile nach Plan montieren.', take(() => true))
+  push(t('Geländer'), t('Geländerpfosten, Handläufe und Füllung montieren. Lücken höchstens 7,5 cm.'), take(isGuard), guardPanels)
+  push(t('Leiter bzw. Treppe'), t('Leiter vormontieren (Sprossen/Stufen einleimen), einhängen bzw. anschrauben, gegen Verrutschen sichern.'), take(isLadder))
+  push(t('Restliche Teile'), t('Übrige Teile nach Plan montieren.'), take(() => true))
   const mattress = r.panels.filter((x) => x.kind === 'matratze').map((x) => x.id)
-  push('Matratze', 'Matratze einlegen, Schrauben nach einigen Wochen nachziehen.', [], mattress)
+  push(t('Matratze'), t('Matratze einlegen, Schrauben nach einigen Wochen nachziehen.'), [], mattress)
   return steps
 }
 
@@ -141,7 +143,7 @@ export function transportCheck(p: Project, r: Resolved): { longest: number; name
     const L = memberLength(m)
     if (L > longest) {
       longest = L
-      name = m.name ?? 'Bauteil'
+      name = m.name ?? t('Bauteil')
     }
   }
   const door = p.wallObjects.find((o) => o.kind === 'tuer')

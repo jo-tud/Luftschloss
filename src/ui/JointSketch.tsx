@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { t } from '../i18n'
 import { add, cross, dot, memberBoxes, norm, scale, sub, v, type OBB } from '../model/geometry'
 import { clipBoxesNear, cutMemberBoxes, jointCuts, jointFrame, jointViewDir, prismCorners, type JointCuts, type Prism } from '../model/joinery'
 import type { DetectedJoint, Resolved } from '../model/resolve'
@@ -256,42 +257,44 @@ export function jointSketchNote(j: DetectedJoint, resolved: Resolved): string {
   switch (j.typeId) {
     case 'schlossschraube':
       return stoss
-        ? '2 × M10 durch das durchlaufende Holz ins Hirnholz, Mutter in einer Querbohrung Ø 25 mm, 70 mm vom Ende. Bolzen zweier Stöße am selben Pfosten in der Höhe versetzen.'
-        : '2 × M10 durchgebolzt, Ø 11 mm vorbohren, Randabstand ≥ 40 mm, Bolzenabstand ≥ 50 mm.'
+        ? t('2 × M10 durch das durchlaufende Holz ins Hirnholz, Mutter in einer Querbohrung Ø 25 mm, 70 mm vom Ende. Bolzen zweier Stöße am selben Pfosten in der Höhe versetzen.')
+        : t('2 × M10 durchgebolzt, Ø 11 mm vorbohren, Randabstand ≥ 40 mm, Bolzenabstand ≥ 50 mm.')
     case 'bettschraube':
-      return 'Bettschraube M8 durch das durchlaufende Holz, Zylindermutter in Querbohrung Ø 10 mm, 70 mm vom Ende. Bohrschablone verwenden.'
+      return t('Bettschraube M8 durch das durchlaufende Holz, Zylindermutter in Querbohrung Ø 10 mm, 70 mm vom Ende. Bohrschablone verwenden.')
     case 'holzbauschraube':
-      return stoss ? '3 Schrauben 8 × 160 durch das durchlaufende Holz ins Hirnholz, Ø 5 mm vorbohren.' : '2 Schrauben 8 × 160 durch das aufliegende Holz, Ø 5 mm vorbohren.'
+      return stoss ? t('3 Schrauben 8 × 160 durch das durchlaufende Holz ins Hirnholz, Ø 5 mm vorbohren.') : t('2 Schrauben 8 × 160 durch das aufliegende Holz, Ø 5 mm vorbohren.')
     case 'auflage':
-      return 'Stumpf auflegen, 2 Schrauben 8 × 160 von oben.'
+      return t('Stumpf auflegen, 2 Schrauben 8 × 160 von oben.')
     case 'lose':
-      return 'Lose auflegen, Filz- oder Gummistreifen dazwischen, ggf. 1 Schraube gegen Verrutschen.'
+      return t('Lose auflegen, Filz- oder Gummistreifen dazwischen, ggf. 1 Schraube gegen Verrutschen.')
     case 'winkel':
-      return '2 Winkel 90 mm mit Sicke in die Innenecken, je Winkel 10 Schrauben 5 × 50.'
+      return t('2 Winkel 90 mm mit Sicke in die Innenecken, je Winkel 10 Schrauben 5 × 50.')
     case 'balkenschuh':
-      return 'Balkenschuh passend zum Querschnitt, alle Löcher mit 5 × 50 verschrauben (Vollausnagelung).'
+      return t('Balkenschuh passend zum Querschnitt, alle Löcher mit 5 × 50 verschrauben (Vollausnagelung).')
     case 'ueberblattung':
-      return `Beide Hölzer auf halbe Dicke ausnehmen: Blatttiefe ${d.blatt ?? '–'} mm. Leimen und 2 Schrauben 6 × 80 diagonal.`
+      return t('Beide Hölzer auf halbe Dicke ausnehmen: Blatttiefe {blatt} mm. Leimen und 2 Schrauben 6 × 80 diagonal.', { blatt: d.blatt ?? '–' })
     case 'schwalbenschwanz':
-      return `Schwalbenschwanzblatt ${d.dicke ?? '–'} mm dick, ${d.tiefe ?? '–'} mm lang, Hals ${d.schmal ?? '–'} mm, Ende ${d.breit ?? '–'} mm (Neigung 1:6). 2 Holznägel Ø 10.`
+      return t('Schwalbenschwanzblatt {dicke} mm dick, {tiefe} mm lang, Hals {schmal} mm, Ende {breit} mm (Neigung 1:6). 2 Holznägel Ø 10.', { dicke: d.dicke ?? '–', tiefe: d.tiefe ?? '–', schmal: d.schmal ?? '–', breit: d.breit ?? '–' })
     case 'zapfen':
-      return `Zapfen ${d.dicke ?? '–'} × ${d.hoehe ?? '–'} mm, ${d.laenge ?? '–'} mm lang${d.durch ? ' (durchgehend)' : ''}. Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.`
+      return d.durch
+        ? t('Zapfen {dicke} × {hoehe} mm, {laenge} mm lang (durchgehend). Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.', { dicke: d.dicke ?? '–', hoehe: d.hoehe ?? '–', laenge: d.laenge ?? '–' })
+        : t('Zapfen {dicke} × {hoehe} mm, {laenge} mm lang. Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.', { dicke: d.dicke ?? '–', hoehe: d.hoehe ?? '–', laenge: d.laenge ?? '–' })
     case 'gratnut':
-      return `Gratnut ${d.tiefe ?? '–'} mm tief, Flanken 1:6, Stufe von der Seite einschieben, leimen + 2 Schrauben 5 × 50.`
+      return t('Gratnut {tiefe} mm tief, Flanken 1:6, Stufe von der Seite einschieben, leimen + 2 Schrauben 5 × 50.', { tiefe: d.tiefe ?? '–' })
     case 'ausklinkung':
-      return `Einlassung ${d.tiefe ?? '–'} mm tief über die ganze Anlagefläche, 2 Schrauben 8 × 160.`
+      return t('Einlassung {tiefe} mm tief über die ganze Anlagefläche, 2 Schrauben 8 × 160.', { tiefe: d.tiefe ?? '–' })
     case 'holzduebel':
-      return '2 Holzdübel Ø 10 × 80 mm, je 40 mm tief, mit Dübelspitzen anzeichnen, leimen.'
+      return t('2 Holzdübel Ø 10 × 80 mm, je 40 mm tief, mit Dübelspitzen anzeichnen, leimen.')
     case 'stecken':
-      return `Bohrung Ø ${d.durchmesser ?? '–'} mm, ${d.tiefe ?? '–'} mm tief (2/3 der Holzdicke), leimen.`
+      return t('Bohrung Ø {durchmesser} mm, {tiefe} mm tief (2/3 der Holzdicke), leimen.', { durchmesser: d.durchmesser ?? '–', tiefe: d.tiefe ?? '–' })
     case 'auflagerleiste':
-      return 'Leiste 40 × 60 mm unter das Ende an das durchlaufende Holz, 3 Schrauben 5 × 50, darauf auflegen.'
+      return t('Leiste 40 × 60 mm unter das Ende an das durchlaufende Holz, 3 Schrauben 5 × 50, darauf auflegen.')
     case 'gewindestange':
-      return 'Gewindestange M10 mit großen Unterlegscheiben und Muttern beiderseits des Holzes, Kontermutter.'
+      return t('Gewindestange M10 mit großen Unterlegscheiben und Muttern beiderseits des Holzes, Kontermutter.')
     case 'kopfband':
-      return 'Kopfband 45°, je Ende 2 Schrauben 8 × 160.'
+      return t('Kopfband 45°, je Ende 2 Schrauben 8 × 160.')
     case 'seilbefestigung':
-      return 'Seil durch Bohrung bzw. Augschraube, mit Achtknoten sichern.'
+      return t('Seil durch Bohrung bzw. Augschraube, mit Achtknoten sichern.')
   }
   return ''
 }

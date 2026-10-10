@@ -13,6 +13,7 @@ import { WALL_IDS } from '../model/types'
 import { buildSteps } from '../analysis/assembly'
 import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
+import { locale, t } from '../i18n'
 import { hardwareInstances } from './hardware'
 import { prismGeometry } from './joineryGeo'
 import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
@@ -668,7 +669,7 @@ function WallLabel({ p, wall, labelRef }: { p: Project; wall: WallId; labelRef: 
   const pos = T(f.start.x + f.u.x * f.length / 2 + f.n.x * 250, f.start.y + f.u.y * f.length / 2 + f.n.y * 250, 5)
   return (
     <Html position={pos} center className="wall-label" zIndexRange={[10, 0]} ref={labelRef}>
-      Wand {wall}
+      {t('Wand {w}', { w: wall })}
     </Html>
   )
 }
@@ -822,11 +823,11 @@ export function ClearanceMarks({ p, d }: { p: Project; d: Derived }) {
           <group key={a.id}>
             <Line points={[T(pt.x, pt.y, 0), T(pt.x, pt.y, info.underside)]} color="#2a6fdb" lineWidth={1.5} />
             <Html position={T(pt.x, pt.y, info.underside / 2)} center className="dim-label" zIndexRange={[10, 0]}>
-              ↕ {fmtM(info.underside)} frei
+              ↕ {t('{h} frei', { h: fmtM(info.underside) })}
             </Html>
             <Line points={[T(mid.x, mid.y, info.mattressTop), T(mid.x, mid.y, top)]} color="#2a6fdb" lineWidth={1.5} dashed dashSize={0.05} gapSize={0.03} />
             <Html position={T(mid.x, mid.y, (info.mattressTop + top) / 2)} center className="dim-label" zIndexRange={[10, 0]}>
-              ↕ {fmtM(c.headroom)} Kopfraum
+              ↕ {t('{h} Kopfraum', { h: fmtM(c.headroom) })}
             </Html>
           </group>
         )
@@ -880,7 +881,7 @@ export function MemberHandles({ p }: { p: Project }) {
           <input
             className="len-input"
             autoFocus
-            defaultValue={(L / 10).toFixed(1).replace('.', ',')}
+            defaultValue={(L / 10).toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 const v = Number((e.target as HTMLInputElement).value.replace(',', '.'))
@@ -892,7 +893,7 @@ export function MemberHandles({ p }: { p: Project }) {
             onBlur={() => setEditing(false)}
           />
         ) : (
-          <button className="len-label" onClick={() => setEditing(true)} title="Länge eingeben">
+          <button className="len-label" onClick={() => setEditing(true)} title={t('Länge eingeben')}>
             {fmtCm(L)} ✎
           </button>
         )}
@@ -938,7 +939,10 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
           shadow-camera-right={6}
           shadow-camera-top={6}
           shadow-camera-bottom={-6}
-          shadow-bias={-0.0005}
+          shadow-camera-near={0.5}
+          shadow-camera-far={16}
+          shadow-bias={-0.0002}
+          shadow-normalBias={0.004}
         />
       )}
       <RoomMeshes p={p} mini={mini} showCeiling={showCeiling} wallShadows={!!sun && !mini} />
@@ -1262,8 +1266,8 @@ function SunLight({ p, hour, quality }: { p: Project; hour: number; quality: str
       shadow-camera-top={5}
       shadow-camera-bottom={-5}
       shadow-camera-far={30}
-      shadow-bias={-0.0004}
-      shadow-normalBias={0.02}
+      shadow-bias={-0.0002}
+      shadow-normalBias={0.005}
     />
   )
 }

@@ -10,21 +10,22 @@ import { PhotoView } from './PhotoView'
 import { UnfoldView } from './Unfold'
 import { StaticsPanel } from '../ui/Statics'
 import { BuildPlayer } from '../ui/BuildPlayer'
+import { t, tr } from '../i18n'
 
 export function viewLabel(v: ViewMode): string {
   switch (v.kind) {
     case 'plan':
-      return 'Draufsicht'
+      return t('Draufsicht')
     case 'elev':
-      return `Seitenansicht Wand ${v.wall}`
+      return t('Seitenansicht Wand {w}', { w: v.wall })
     case '3d':
       return '3D'
     case 'person':
-      return PERSON_LABEL[v.preset]
+      return tr(PERSON_LABEL[v.preset])
     case 'unfold':
-      return 'Abwicklung'
+      return t('Abwicklung')
     case 'foto':
-      return 'Foto-Abgleich'
+      return t('Foto-Abgleich')
   }
 }
 
@@ -92,7 +93,7 @@ export function Viewport() {
       <BuildPlayer />
       <div className="minis">
         {minis.map((v) => (
-          <button key={v.kind} className="mini" onClick={() => setView(v)} title={`${viewLabel(v)} groß anzeigen`}>
+          <button key={v.kind} className="mini" onClick={() => setView(v)} title={t('{view} groß anzeigen', { view: viewLabel(v) })}>
             <Canvas frameloop="demand" camera={{ fov: 40, near: 0.05, far: 300 }} dpr={1} gl={{ stencil: true }}>
               <MiniScene view={v} />
             </Canvas>
@@ -112,22 +113,22 @@ function ViewSwitcher() {
   const personRef = useRef<HTMLDetailsElement>(null)
   return (
     <div className="view-switcher">
-      <button className={view.kind === 'plan' ? 'on' : ''} onClick={() => setView({ kind: 'plan' })} title="Draufsicht (1)">
-        Draufsicht
+      <button className={view.kind === 'plan' ? 'on' : ''} onClick={() => setView({ kind: 'plan' })} title={t('Draufsicht (1)')}>
+        {t('Draufsicht')}
       </button>
       <span className="seg">
         {walls.map((w) => (
-          <button key={w} className={view.kind === 'elev' && view.wall === w ? 'on' : ''} onClick={() => setView({ kind: 'elev', wall: w })} title={`Seitenansicht auf Wand ${w} (2)`} aria-label={`Seitenansicht Wand ${w}`}>
+          <button key={w} className={view.kind === 'elev' && view.wall === w ? 'on' : ''} onClick={() => setView({ kind: 'elev', wall: w })} title={t('Seitenansicht auf Wand {w} (2)', { w })} aria-label={t('Seitenansicht Wand {w}', { w })}>
             {w}
           </button>
         ))}
       </span>
-      <button className={view.kind === '3d' ? 'on' : ''} onClick={() => setView({ kind: '3d' })} title="3D-Ansicht (3)">
+      <button className={view.kind === '3d' ? 'on' : ''} onClick={() => setView({ kind: '3d' })} title={t('3D-Ansicht (3)')}>
         3D
       </button>
       <details className="dropdown person-menu" ref={personRef}>
-        <summary className={view.kind === 'person' ? 'on' : ''} title="Ich-Perspektive: den Raum aus Augenhöhe erleben (4)">
-          👁 Ich ▾
+        <summary className={view.kind === 'person' ? 'on' : ''} title={t('Ich-Perspektive: den Raum aus Augenhöhe erleben (4)')}>
+          👁 {t('Ich')} ▾
         </summary>
         <div className="menu">
           {presets.map((p) => (
@@ -139,19 +140,19 @@ function ViewSwitcher() {
                 personRef.current?.removeAttribute('open')
               }}
             >
-              {p === 'tuer' ? '🚪' : p === 'unter' ? '🪑' : p === 'matratze' ? '🛏' : '😴'} {PERSON_LABEL[p]}
+              {p === 'tuer' ? '🚪' : p === 'unter' ? '🪑' : p === 'matratze' ? '🛏' : '😴'} {tr(PERSON_LABEL[p])}
             </button>
           ))}
         </div>
       </details>
-      <button className={view.kind === 'unfold' ? 'on' : ''} onClick={() => setView({ kind: 'unfold' })} title="Raum aufgeklappt: Wände von innen, Fenster und Heizkörper direkt ziehen (5)">
-        Abwicklung
+      <button className={view.kind === 'unfold' ? 'on' : ''} onClick={() => setView({ kind: 'unfold' })} title={t('Raum aufgeklappt: Wände von innen, Fenster und Heizkörper direkt ziehen (5)')}>
+        {t('Abwicklung')}
       </button>
-      <button className={view.kind === 'foto' ? 'on' : ''} onClick={() => setView({ kind: 'foto' })} title="Das geplante Bett in ein Foto des Zimmers einblenden (6)">
-        📷 Foto
+      <button className={view.kind === 'foto' ? 'on' : ''} onClick={() => setView({ kind: 'foto' })} title={t('Das geplante Bett in ein Foto des Zimmers einblenden (6)')}>
+        📷 {t('Foto')}
       </button>
-      <button onClick={() => setView({ kind: '3d' })} title="Ansicht zurücksetzen (0)" aria-label="Ansicht zurücksetzen">
-        ⌂<span className="lbl"> Zurück</span>
+      <button onClick={() => setView({ kind: '3d' })} title={t('Ansicht zurücksetzen (0)')} aria-label={t('Ansicht zurücksetzen')}>
+        ⌂<span className="lbl"> {t('Zurück')}</span>
       </button>
       <SectionToggle />
       <span className="view-name">{viewLabel(view)}</span>
@@ -166,8 +167,8 @@ function SectionToggle() {
   const set = useStore((s) => s.set)
   if (view.kind !== '3d' && view.kind !== 'person') return null
   return (
-    <button className={box ? 'on' : ''} onClick={() => set({ sectionBox: box ? null : { x0: 0, x1: room.length, y0: 0, y1: room.width, z1: room.height } })} title="Schnittbox: Raum in 3D zuschneiden">
-      ✂ Schnitt
+    <button className={box ? 'on' : ''} onClick={() => set({ sectionBox: box ? null : { x0: 0, x1: room.length, y0: 0, y1: room.width, z1: room.height } })} title={t('Schnittbox: Raum in 3D zuschneiden')}>
+      ✂ {t('Schnitt')}
     </button>
   )
 }
@@ -186,14 +187,14 @@ function SectionBoxPanel() {
   )
   return (
     <div className="section-box">
-      <b>Schnittbox</b>
-      {slider('x von', 'x0', room.length)}
-      {slider('x bis', 'x1', room.length)}
-      {slider('y von', 'y0', room.width)}
-      {slider('y bis', 'y1', room.width)}
-      {slider('Höhe bis', 'z1', room.height)}
+      <b>{t('Schnittbox')}</b>
+      {slider(t('x von'), 'x0', room.length)}
+      {slider(t('x bis'), 'x1', room.length)}
+      {slider(t('y von'), 'y0', room.width)}
+      {slider(t('y bis'), 'y1', room.width)}
+      {slider(t('Höhe bis'), 'z1', room.height)}
       <button className="link" onClick={() => set({ sectionBox: null })}>
-        Schnitt aus
+        {t('Schnitt aus')}
       </button>
     </div>
   )
@@ -242,7 +243,7 @@ function MiniMap() {
   }
   return (
     <svg className="minimap" width={w + 12} height={h + 12} onClick={onClick}>
-      <title>Übersicht – klicken, um Standort bzw. Blickziel zu setzen</title>
+      <title>{t('Übersicht – klicken, um Standort bzw. Blickziel zu setzen')}</title>
       <g transform="translate(6 6)">
         <rect x={0} y={0} width={w} height={h} className="mm-room" />
         {[...d.resolved.beds.values()].map((b, i) => (

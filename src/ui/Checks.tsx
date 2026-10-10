@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t, tk, tr } from '../i18n'
 import type { Severity } from '../analysis/checks'
 import { selectionFor, useDerived, useStore } from '../state/store'
 import { staticsFindings } from './Statics'
@@ -16,8 +17,9 @@ export function useCheckCounts(): Record<Severity, number> {
 }
 
 export function CountBadges({ c }: { c: Record<Severity, number> }) {
+  const label = t('{e} Fehler, {w} Warnungen, {h} Hinweise', { e: c.fehler, w: c.warnung, h: c.hinweis })
   return (
-    <span className="badges" aria-label={`${c.fehler} Fehler, ${c.warnung} Warnungen, ${c.hinweis} Hinweise`} title={`${c.fehler} Fehler, ${c.warnung} Warnungen, ${c.hinweis} Hinweise`}>
+    <span className="badges" aria-label={label} title={label}>
       <span className="b fehler">⛔ {c.fehler}</span>
       <span className="b warnung">⚠ {c.warnung}</span>
       <span className="b hinweis">ℹ {c.hinweis}</span>
@@ -26,11 +28,11 @@ export function CountBadges({ c }: { c: Record<Severity, number> }) {
 }
 
 const ESTIMATED_LABEL: Record<string, string> = {
-  'room.height': 'Raumhöhe',
-  'room.ceiling': 'Deckenart',
-  'room.cornice': 'Stuckleiste',
-  'room.rosettes': 'Deckenrosette und Lampe',
-  'room.skirting': 'Sockelleiste',
+  'room.height': tk('Raumhöhe'),
+  'room.ceiling': tk('Deckenart'),
+  'room.cornice': tk('Stuckleiste'),
+  'room.rosettes': tk('Deckenrosette und Lampe'),
+  'room.skirting': tk('Sockelleiste'),
 }
 
 export function Checks() {
@@ -50,11 +52,11 @@ export function Checks() {
   return (
     <section className="checks">
       <header>
-        <b>Prüfung</b>
+        <b>{t('Prüfung')}</b>
         <CountBadges c={{ fehler: count('fehler'), warnung: count('warnung'), hinweis: count('hinweis') }} />
         <label className="check small">
           <input type="checkbox" checked={showAck} onChange={(e) => setShowAck(e.target.checked)} />
-          <span>quittierte zeigen</span>
+          <span>{t('quittierte zeigen')}</span>
         </label>
       </header>
       <ul>
@@ -75,11 +77,11 @@ export function Checks() {
                 }}
               >
                 <span aria-hidden>{ICON[f.severity]}</span>
-                <span>{f.title}</span>
+                <span>{tr(f.title)}</span>
               </button>
               {open === f.id && (
                 <div className="detail">
-                  {f.detail && <p>{f.detail}</p>}
+                  {f.detail && <p>{tr(f.detail)}</p>}
                   {f.id === 'geschaetzt' && (
                     <ul className="est-list">
                       {p.estimated.map((path) => {
@@ -100,7 +102,7 @@ export function Checks() {
                                 }
                               }}
                             >
-                              {obj ? `${obj.name} → Ausstattung` : `${ESTIMATED_LABEL[path] ?? path} → Raum`}
+                              {obj ? t('{name} → Ausstattung', { name: tr(obj.name) }) : t('{name} → Raum', { name: tr(ESTIMATED_LABEL[path] ?? path) })}
                             </button>
                           </li>
                         )
@@ -117,14 +119,14 @@ export function Checks() {
                         })
                       }
                     />
-                    <span>Zur Kenntnis genommen (ausblenden)</span>
+                    <span>{t('Zur Kenntnis genommen (ausblenden)')}</span>
                   </label>
                 </div>
               )}
             </li>
           )
         })}
-        {!list.length && <li className="empty">Keine offenen Punkte.</li>}
+        {!list.length && <li className="empty">{t('Keine offenen Punkte.')}</li>}
       </ul>
     </section>
   )

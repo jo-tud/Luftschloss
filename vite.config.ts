@@ -12,10 +12,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Luftschloss – Hochbettplaner',
+        name: 'Luftschloss – Loft Bed Planner',
         short_name: 'Luftschloss',
-        description: 'Hochbett ins echte Zimmer planen – mit Statik, Bauplan und Einkaufsliste',
-        lang: 'de',
+        description: 'Plan your loft bed in your real room – with structural check, build plan and shopping list',
+        lang: 'en',
         display: 'standalone',
         orientation: 'any',
         background_color: '#f4f5f7',

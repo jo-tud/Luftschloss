@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { catalogItem } from './catalog'
 import { add, dot, memberAxes, memberBoxes, memberLength, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
 import { defaultJointType } from './joints'
@@ -58,7 +59,7 @@ export function resolveProject(p: Project): Resolved {
     if (a.params.type === 'freistehend') {
       for (const m of g.members.filter((x) => x.role === 'pfosten' && x.start.z < 1)) {
         if (nearestWall(p.room, m).gap < 40) {
-          fixings.push({ memberId: m.id, target: 'wand', hardwareId: 'rahmenduebel-10', count: 2, note: 'Kippsicherung: Pfosten mit Winkel an der Wand befestigen' })
+          fixings.push({ memberId: m.id, target: 'wand', hardwareId: 'rahmenduebel-10', count: 2, note: t('Kippsicherung: Pfosten mit Winkel an der Wand befestigen') })
         }
       }
     }
@@ -139,7 +140,7 @@ function addWallNotches(room: Room, m: Member, fit: 'ausklinken' | 'abruecken', 
     if (fit === 'ausklinken' && room.skirting.enabled && gap < room.skirting.depth && zLow < room.skirting.height) {
       const depth = room.skirting.depth - gap + 2
       const top = room.skirting.height + 5
-      pushNotch(m, { along: Math.min(along(zLow), along(top)), length: top - zLow, depth, side, reason: `Sockelleiste Wand ${id}` }, maxDepth, deep, L)
+      pushNotch(m, { along: Math.min(along(zLow), along(top)), length: top - zLow, depth, side, reason: t('Sockelleiste Wand {id}', { id }) }, maxDepth, deep, L)
     }
     // Stuck
     const c = cornice(room, id)
@@ -149,7 +150,7 @@ function addWallNotches(room: Room, m: Member, fit: 'ausklinken' | 'abruecken', 
       if (depths.length) {
         const depth = Math.ceil(Math.max(...depths)) + 3
         const z0 = room.height - c.height - 5
-        pushNotch(m, { along: Math.min(along(z0), along(zHigh)), length: zHigh - z0, depth, side, reason: `Stuck Wand ${id}` }, maxDepth, deep, L)
+        pushNotch(m, { along: Math.min(along(z0), along(zHigh)), length: zHigh - z0, depth, side, reason: t('Stuck Wand {id}', { id }) }, maxDepth, deep, L)
       }
     }
   }
