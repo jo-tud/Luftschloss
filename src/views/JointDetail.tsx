@@ -3,8 +3,8 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
-import { fmtCm, memberBoxes, memberLength, type OBB } from '../model/geometry'
-import { clipBoxesNear, cutMemberBoxes, jointCuts, jointFrame, jointViewDir, type Prism } from '../model/joinery'
+import { fmtCm, memberLength, type OBB } from '../model/geometry'
+import { clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
 import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
 import type { DetectedJoint } from '../model/resolve'
 import type { Member } from '../model/types'
@@ -78,7 +78,8 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
   const piece = (m: Member | undefined, color: string) => {
     if (!m) return null
     const mc = cuts?.members.get(m.id)
-    return <Pieces m={m} boxes={clipBoxesNear(mc ? cutMemberBoxes(m, mc) : memberBoxes(m), j.pos, 260)} prisms={mc?.prisms ?? []} color={color} />
+    const sol = memberSolids(m, mc)
+    return <Pieces m={m} boxes={clipBoxesNear(sol.boxes, j.pos, 260)} prisms={sol.prisms} color={color} />
   }
   return (
     <>

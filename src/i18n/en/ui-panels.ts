@@ -1,4 +1,6 @@
 const en: Record<string, string> = {
+  'Kopfbänder aus': 'Knee braces made of',
+  'automatisch (Kantholz)': 'automatic (squared timber)',
   'Querträger: bei dieser Liegefläche nicht nötig – die Latten liegen direkt auf den Längszargen.': 'Cross beams: not needed for this deck – the slats rest directly on the long rails.',
   'Bauweise: bei Latten bzw. Netz ohne Wahl – erst mit Platte, Dielen oder Lattenrost gibt es Querträger, die zwischen den Zargen hängen oder oben aufliegen.': 'Construction: no choice with slats or a net – only boards, planks or a slatted base need cross beams, which either hang between the rails or rest on top.',
   // Properties.tsx
