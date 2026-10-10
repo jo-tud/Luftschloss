@@ -205,7 +205,7 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         if (upper?.role === 'leiste') typeId = 'lose'
         // Geländerbretter werden angeschraubt, nicht gebolzt; Latten liegen nur lose an
         if (kindInfo.kind === 'beischlag' && (A.catalogId.startsWith('leimholz') || B.catalogId.startsWith('leimholz'))) typeId = 'holzbauschraube'
-        if (kindInfo.kind === 'beischlag' && (A.role === 'leiste' || B.role === 'leiste')) typeId = 'lose'
+        if (kindInfo.kind === 'beischlag' && (A.role === 'leiste' || B.role === 'leiste' || (A.role === 'stufe' && B.role === 'stufe'))) typeId = 'lose' // Trittbretter einer Stufe liegen nebeneinander auf den Wangen
         if ((A.catalogId === 'seil-12' || B.catalogId === 'seil-12') && kindInfo.kind !== 'auflage') typeId = 'seilbefestigung'
         if (A.catalogId === 'gewindestange-m10' || B.catalogId === 'gewindestange-m10') typeId = 'gewindestange'
       }

@@ -144,6 +144,44 @@ export function jointFrame(j: DetectedJoint, A: Member, B: Member): JointFrame |
   return { E, T, pE, into, out, face, depth: tr[1] - face, across, side }
 }
 
+/**
+ * Richtung, in der E beim Zerlegen von T weggezogen wird (beim Fügen umgekehrt). Formschlüssige
+ * Verbindungen lassen sich nur in eine Richtung lösen: ein Blatt wird von oben eingelegt, ein
+ * Schwalbenschwanz von der offenen Seite eingesetzt, eine Gratnut der Länge nach eingeschoben,
+ * ein Träger in Balkenschuh oder auf Auflagerleiste von oben eingelegt.
+ */
+export function assemblyDir(j: DetectedJoint, F: JointFrame): Vec3 {
+  const { E, T, across } = F
+  const eA = rangeAlong(E, across)
+  const tA = rangeAlong(T, across)
+  // E liegt bündig auf der Seite low (kleineres across) bzw. high
+  const low = Math.abs(eA[0] - tA[0]) <= Math.abs(eA[1] - tA[1])
+  const up = v(0, 0, 1)
+  switch (j.typeId) {
+    case 'ueberblattung': {
+      // Gleiche Wahl wie in jointCuts: A behält bei bündig unten die untere Hälfte, B liegt darauf
+      const A = j.a === E.id ? E : T
+      const B = A === E ? T : E
+      const cr = norm(cross(memberAxes(A)[0], memberAxes(B)[0]))
+      if (len(cr) < 0.5) return F.into
+      const aR = rangeAlong(A, cr)
+      const bR = rangeAlong(B, cr)
+      const lo = Math.abs(aR[0] - bR[0]) <= Math.abs(aR[1] - bR[1])
+      const bUp = lo ? cr : scale(cr, -1)
+      return E === B ? bUp : scale(bUp, -1)
+    }
+    case 'schwalbenschwanz':
+      return low ? scale(across, -1) : across
+    case 'gratnut':
+      // Die Nut läuft quer durch T: lieber nach oben herausziehen
+      return dot(across, up) < -1e-6 ? scale(across, -1) : across
+    case 'balkenschuh':
+    case 'auflagerleiste':
+      return up
+  }
+  return F.into
+}
+
 function cutOf(map: Map<string, MemberCut>, m: Member): MemberCut {
   let c = map.get(m.id)
   if (!c) {

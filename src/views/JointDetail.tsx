@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
-import { clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
-import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
+import { assemblyDir, clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
+import { JOINT_KIND_LABEL, jointType } from '../model/joints'
+import { assemblyHint, JointGuide } from '../ui/JointGuide'
+import { JointTypeSelect } from '../ui/JointTypeSelect'
 import type { DetectedJoint } from '../model/resolve'
 import type { Member } from '../model/types'
 import { useDerived, useStore } from '../state/store'
@@ -67,14 +69,25 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
   const frame = useMemo(() => (A && B ? jointFrame(j, A, B) : undefined), [j, A, B])
   const cuts = useMemo(() => jointCuts(j, byId), [j, byId])
   const hw = useHardware(j.key)
-  // Teile langsam auseinander- und wieder zusammenfahren: E bewegt sich von T weg
-  const dir = frame ? new THREE.Vector3(frame.into.x, frame.into.z, -frame.into.y) : new THREE.Vector3(0, 1, 0)
+  // Teile langsam auseinander- und wieder zusammenfahren, in der Richtung, in der sich die
+  // Verbindung fügen lässt. 2 mm Fuge auch im zusammengesetzten Zustand: sonst flimmern die
+  // aufeinanderliegenden Flächen.
+  const dir = useMemo(() => {
+    const d = frame ? assemblyDir(j, frame) : { x: 0, y: 0, z: 1 }
+    return new THREE.Vector3(d.x, d.z, -d.y)
+  }, [j, frame])
   useFrame(() => {
     const t = (performance.now() - t0.current) / 1000
     const k = (Math.sin(t * 1.1 - Math.PI / 2) + 1) / 2
-    if (moving.current) moving.current.position.copy(dir).multiplyScalar(0.11 * k)
+    if (moving.current) moving.current.position.copy(dir).multiplyScalar(0.002 + 0.11 * k)
   })
-  const center = new THREE.Vector3(j.pos.x, j.pos.z, -j.pos.y).multiplyScalar(0.001)
+  const center = useMemo(() => new THREE.Vector3(j.pos.x, j.pos.z, -j.pos.y).multiplyScalar(0.001), [j])
+  // Licht auf den Knoten gerichtet, Schattenkamera eng darum: sonst grobe, flackernde Schatten
+  const target = useMemo(() => {
+    const o = new THREE.Object3D()
+    o.position.copy(center)
+    return o
+  }, [center])
   const E = frame?.E ?? ending
   const Tm = frame?.T ?? through
   const piece = (m: Member | undefined, color: string) => {
@@ -87,7 +100,22 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
     <>
       <ambientLight intensity={0.55} />
       <hemisphereLight args={['#fffaf0', '#b9a58a', 0.5]} />
-      <directionalLight position={[center.x + 1, center.y + 2, center.z + 1.5]} intensity={1.3} castShadow />
+      <primitive object={target} />
+      <directionalLight
+        position={[center.x + 1, center.y + 2, center.z + 1.5]}
+        target={target}
+        intensity={1.3}
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-left={-0.4}
+        shadow-camera-right={0.4}
+        shadow-camera-top={0.4}
+        shadow-camera-bottom={-0.4}
+        shadow-camera-near={0.5}
+        shadow-camera-far={5}
+        shadow-bias={-0.0003}
+        shadow-normalBias={0.002}
+      />
       <directionalLight position={[center.x - 1.5, center.y + 0.5, center.z - 1]} intensity={0.35} />
       <OrbitControls target={center} makeDefault />
       {piece(Tm, COLORS.wood)}
@@ -155,27 +183,22 @@ export function JointDetailDialog() {
           <div className="joint-info">
             <label className="field stacked">
               <span>{t('Verbindung')}</span>
-              <select
-                value={j.typeId}
-                onChange={(e) =>
+              <JointTypeSelect
+                j={j}
+                byId={byId}
+                onChange={(v) =>
                   update((dd) => {
                     const x = dd.joints.find((y) => y.key === j.key)
-                    if (x) x.typeId = e.target.value
-                    else dd.joints.push({ key: j.key, typeId: e.target.value })
+                    if (x) x.typeId = v
+                    else dd.joints.push({ key: j.key, typeId: v })
                   })
                 }
-              >
-                {typesForKind(j.kind).map((ty) => (
-                  <option key={ty.id} value={ty.id}>
-                    {tr(ty.name)}
-                  </option>
-                ))}
-                {!typesForKind(j.kind).some((ty) => ty.id === j.typeId) && <option value={j.typeId}>{jt ? tr(jt.name) : j.typeId}</option>}
-              </select>
+              />
             </label>
             {jt && (
               <>
                 <p>{tr(jt.note)}</p>
+                <JointGuide typeId={jt.id} hint={assemblyHint(j, byId)} />
                 <p>
                   <b>{t('Schwierigkeit:')}</b> {'●'.repeat(jt.difficulty)}
                   {'○'.repeat(3 - jt.difficulty)} · {jt.removable ? t('zerlegbar') : t('fest')} · {t('wirkt {s}', { s: stiffnessLabel(jt.stiffness) })}

@@ -10,6 +10,7 @@ import type { Member, Vec3 } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
 import { CutPlan } from './Material'
+import { assemblyHint, JointGuide } from './JointGuide'
 import { JointIso, jointSketchNote } from './JointSketch'
 import { staticsFindings } from './Statics'
 
@@ -146,7 +147,8 @@ export function BauplanDialog() {
   const data = useMemo(() => {
     const { parts, byMember } = partTypes(d.resolved)
     const steps = buildSteps(p, d.resolved)
-    return { parts, byMember, steps }
+    const byId = new Map(d.resolved.members.map((m) => [m.id, m]))
+    return { parts, byMember, steps, byId }
   }, [p, d])
   if (!show) return null
   const a = p.assemblies[0]
@@ -306,6 +308,7 @@ export function BauplanDialog() {
                     </b>
                     <p>{jointSketchNote(sample, d.resolved)}</p>
                     <p className="hint">{jt?.note ? tr(jt.note) : null}</p>
+                    <JointGuide typeId={typeId} hint={assemblyHint(sample, data.byId)} />
                     {jt?.tools.length ? (
                       <p className="hint">
                         {t('Werkzeug:')} {jt.tools.map(tr).join(', ')}

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { t } from '../i18n'
 import { add, cross, dot, norm, scale, sub, v, type OBB } from '../model/geometry'
-import { clipBoxesNear, memberSolids, jointCuts, jointFrame, jointViewDir, prismCorners, type JointCuts, type Prism } from '../model/joinery'
+import { assemblyDir, clipBoxesNear, memberSolids, jointCuts, jointFrame, jointViewDir, prismCorners, type JointCuts, type Prism } from '../model/joinery'
 import type { DetectedJoint, Resolved } from '../model/resolve'
 import type { Member, Vec3 } from '../model/types'
 import { hardwareInstances } from '../views/hardware'
@@ -123,7 +123,8 @@ export function JointIso({ j, resolved, width = 260, height = 190 }: { j: Detect
   const cuts: JointCuts | undefined = jointCuts(j, byId)
   const E = F?.E ?? A
   const Tm = F?.T ?? B
-  const explode = F ? scale(F.into, 70) : v(0, 0, 70)
+  // auseinandergezogen in der Richtung, in der sich die Verbindung tatsächlich fügen lässt
+  const explode = F ? scale(assemblyDir(j, F), 70) : v(0, 0, 70)
   const shift = (o: OBB): OBB => ({ ...o, center: add(o.center, explode) })
   const solids: Solid[] = []
   const pieces = (m: Member, color: [number, number, number], moved: boolean, group: number) => {

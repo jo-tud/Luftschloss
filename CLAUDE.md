@@ -19,7 +19,8 @@
 - Das **Beispielzimmer** (`testProject()` in `src/model/defaults.ts`) ist öffentlich und Grundlage vieler Tests:
   nicht leichtfertig ändern, keine „geschätzt“-Markierungen. Eigene Zimmer entstehen in der App bzw. mit dem Planungsassistenten.
 - Zimmermannsmäßige Verbindungen nur in `src/model/joinery.ts` rechnen: 3D-Ansicht, Verbindungsdetail, Bauplan-Skizze
-  und Zuschnittlängen nutzen dieselbe Geometrie. Erklärung (Wirkprinzip) und Herstellungsschritte stehen bei den
-  Verbindungsarten in `src/model/joints.ts`.
+  und Zuschnittlängen nutzen dieselbe Geometrie, ebenso die Fügerichtung (`assemblyDir`). Welche Art für zwei
+  Bauteile taugt, entscheidet `unsuitable()` in `src/model/joints.ts`; Wirkprinzip und Herstellungsschritte stehen in
+  `src/model/jointGuide.ts`.
 - **Visuelle Qualität** (M8) ist umgesetzt; offene Punkte in SPEZIFIKATION.md, Kapitel 13.
 - Online-Version: GitHub Pages über `.github/workflows/pages.yml` (Push auf `main`), Adresse https://jo-tud.github.io/Luftschloss/. Keine Laufzeit-Downloads von fremden CDNs (Offline-PWA).

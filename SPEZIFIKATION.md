@@ -153,6 +153,8 @@ Parameter sind:
 Jeder Typ trägt:
 - Schwierigkeit, Werkzeuge, ob zerlegbar, Hinweistext mit belegten Werten
 - Je Verbindungsart: Wirkprinzip und Herstellungsschritte (Verbindungsdetail, Bauplan)
+- Zur Auswahl stehen nur Arten, die für die beiden Bauteile praktisch taugen (z. B. Gratnut nur für Bretter und Stufen, Rundstab in Bohrung nur für Rundstäbe, Zapfen und Blatt erst ab 40 mm Holzstärke). Eine schon gewählte, unpassende Art bleibt sichtbar und wird begründet.
+- Fügerichtung je Art: Blatt und Schwalbenschwanz von der Seite eingelegt, Gratnut entlang der Nut eingeschoben, Balkenschuh und Auflagerleiste von oben, sonst in Stabrichtung. Animation im Verbindungsdetail und Explosionsskizze im Bauplan folgen dieser Richtung.
 - Beschläge für die Stückliste
 - **Steifigkeitsklasse** (gelenkig, halbsteif, steif) und **Restquerschnitt** für die Statik
 

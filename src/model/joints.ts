@@ -1,5 +1,5 @@
 import { tk } from '../i18n'
-import type { JointKind, ProjectSettings } from './types'
+import type { JointKind, Member, ProjectSettings } from './types'
 
 /**
  * Verbindungstypen. stiffness bereitet die spätere Rahmenstatik vor: Winkel und Balkenschuhe
@@ -203,7 +203,7 @@ export const JOINT_TYPES: JointType[] = [
     id: 'lose',
     name: tk('Lose aufgelegt (ggf. 1 Schraube gegen Verrutschen)'),
     group: 'holz',
-    kinds: ['auflage', 'kreuzung'],
+    kinds: ['auflage', 'kreuzung', 'beischlag'],
     difficulty: 1,
     removable: true,
     stiffness: 'gelenkig',
@@ -307,6 +307,64 @@ export function jointType(id: string): JointType | undefined {
 
 export function typesForKind(kind: JointKind): JointType[] {
   return JOINT_TYPES.filter((j) => j.kinds.includes(kind))
+}
+
+/** Verbindung zwischen zwei Bauteilen; ending ist das am Stoß endende Teil */
+export interface JointMembers {
+  kind: JointKind
+  a: Member
+  b: Member
+  ending?: Member
+}
+
+/**
+ * Warum eine Verbindungsart für genau diese zwei Bauteile nicht taugt (undefined = passt).
+ * Die Typliste je Stoßart ist absichtlich weit; hier fallen Kombinationen heraus, die sich am
+ * echten Holz nicht herstellen oder nicht fügen lassen.
+ */
+export function unsuitable(typeId: string, jm: JointMembers): string | undefined {
+  const { a, b } = jm
+  const E = jm.ending ?? a
+  const T = E === a ? b : a
+  const both = [a, b]
+  const thin = (m: Member) => Math.min(m.b, m.h)
+  const rope = both.some((m) => m.catalogId === 'seil-12')
+  const rod = both.some((m) => m.catalogId === 'gewindestange-m10')
+  const round = both.some((m) => m.round)
+  const len = Math.hypot(E.end.x - E.start.x, E.end.y - E.start.y, E.end.z - E.start.z) || 1
+  const horizontal = Math.abs(E.end.z - E.start.z) / len < 0.3
+  const board = thin(E) <= 45 && Math.max(E.b, E.h) >= 2 * thin(E)
+  if (typeId === 'seilbefestigung') return rope ? undefined : tk('Nur für Seile.')
+  if (typeId === 'gewindestange') return rod ? undefined : tk('Nur für Abhängungen mit Gewindestange.')
+  if (rope && typeId !== 'lose' && typeId !== 'auflage') return tk('Ein Seil wird angeknotet, nicht verschraubt oder verzapft.')
+  if (rod) return tk('Die Gewindestange wird mit Muttern befestigt.')
+  if (typeId === 'stecken') return E.round ? undefined : tk('Nur für Rundstäbe – ein Kantholz passt in keine Bohrung.')
+  if (round && !['holzbauschraube', 'auflage', 'lose'].includes(typeId)) return tk('Rundstäbe werden gesteckt oder verschraubt; Winkel, Bolzen und Zimmermannsverbindungen finden am runden Holz keinen Halt.')
+  switch (typeId) {
+    case 'gratnut':
+      return board ? undefined : tk('Nur für Bretter und Stufen, die in eine Nut geschoben werden.')
+    case 'zapfen':
+    case 'schwalbenschwanz':
+    case 'holzduebel':
+      if (thin(E) < 40 || thin(T) < 40) return tk('Holz zu dünn – Zapfen, Schwalbenschwanz und Dübel brauchen mindestens 40 mm Stärke.')
+      return undefined
+    case 'ueberblattung':
+      return thin(a) < 40 || thin(b) < 40 ? tk('Holz zu dünn zum Überblatten – jedes Teil verliert die halbe Stärke.') : undefined
+    case 'balkenschuh':
+    case 'auflagerleiste':
+      if (!horizontal) return tk('Nur für liegende Träger, die von oben eingelegt werden.')
+      return board ? tk('Für Bretter zu schmal – eher anschrauben.') : undefined
+    case 'bettschraube':
+      return thin(E) < 44 ? tk('Holz zu dünn für die Quermutter der Bettschraube (mindestens 44 mm).') : undefined
+    case 'schlossschraube':
+      return board && thin(E) < 25 ? tk('Brett zu dünn für einen Bolzen – eher anschrauben.') : undefined
+  }
+  return undefined
+}
+
+/** Verbindungsarten für diese Stoßart, jeweils mit Grund, falls sie hier nicht taugt */
+export function jointOptions(jm: JointMembers): { type: JointType; reason?: string }[] {
+  return typesForKind(jm.kind).map((type) => ({ type, reason: unsuitable(type.id, jm) }))
 }
 
 export function defaultJointType(kind: JointKind, pref: ProjectSettings['jointPreference']): string {
