@@ -59,3 +59,28 @@ describe('M7 Bauarten', () => {
     expect(a.findings.some((f) => f.id.startsWith('netz-deck'))).toBe(true)
   })
 })
+
+describe('Mehrere Matratzen', () => {
+  it('zwei Matratzen nebeneinander: breiteres Gestell, Mittelträger unter der Fuge, beide tragen', () => {
+    const p = withBed({ mattressCount: 2, mattressWidth: 900 })
+    const r = resolveProject(p)
+    const info = r.beds.get(p.assemblies[0].id)!
+    const mats = r.panels.filter((x) => x.kind === 'matratze')
+    expect(mats).toHaveLength(2)
+    expect(info.outerWidth).toBeGreaterThan(1800 + 160)
+    const mid = r.members.find((m) => m.partKey === 'mitteltraeger')!
+    expect(mid).toBeDefined()
+    const s = computeStatics(p, r)
+    expect(s.warnings).toEqual([])
+    expect(s.members.get(mid.id)!.util).toBeGreaterThan(0.05)
+  })
+
+  it('Rollroste hintereinander: ein Rost je Matratze und ein Querträger an der Fuge', () => {
+    const p = withBed({ mattressCount: 2, mattressLayout: 'hintereinander', deck: 'rollrost', deckCatalogId: 'rollrost' })
+    const r = resolveProject(p)
+    expect(r.panels.filter((x) => x.kind === 'rollrost')).toHaveLength(2)
+    expect(r.beds.get(p.assemblies[0].id)!.outerLength).toBeGreaterThan(4000)
+    expect(r.members.some((m) => m.partKey === 'quertraeger-1')).toBe(true)
+    expect(computeStatics(p, r).warnings).toEqual([])
+  })
+})

@@ -133,10 +133,16 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
         {P.type === 'eck' && <Sel label="Wandseitiges Ende" value={P.wallEnd} options={[['links', 'links'], ['rechts', 'rechts']]} onChange={(v) => setP({ wallEnd: v })} />}
         <Num label="Liegehöhe (Oberkante Rost)" value={P.deckHeight} onChange={(v) => setP({ deckHeight: v })} min={300} max={roomHeight - P.mattressThickness - 200} />
         <div className="pair">
-          <Num label="Matratze Länge" value={P.mattressLength} onChange={(v) => setP({ mattressLength: v })} min={1000} />
-          <Num label="Breite" value={P.mattressWidth} onChange={(v) => setP({ mattressWidth: v })} min={600} />
+          <Num label={(P.mattressCount ?? 1) > 1 ? 'Matratze Länge (je)' : 'Matratze Länge'} value={P.mattressLength} onChange={(v) => setP({ mattressLength: v })} min={1000} max={3000} />
+          <Num label="Breite" value={P.mattressWidth} onChange={(v) => setP({ mattressWidth: v })} min={600} max={2000} />
         </div>
         <Num label="Matratzendicke" value={P.mattressThickness} onChange={(v) => setP({ mattressThickness: v })} min={50} />
+        <div className="pair">
+          <Sel label="Matratzen" value={String(P.mattressCount ?? 1) as '1'} options={[['1', '1'], ['2', '2'], ['3', '3']]} onChange={(v) => setP({ mattressCount: Number(v) })} title="Mehrere Matratzen auf der oberen Liegefläche, z. B. für zwei Kinder" />
+          {(P.mattressCount ?? 1) > 1 && (
+            <Sel label="Anordnung" value={P.mattressLayout ?? 'nebeneinander'} options={[['nebeneinander', 'nebeneinander'], ['hintereinander', 'hintereinander']]} onChange={(v) => setP({ mattressLayout: v })} />
+          )}
+        </div>
         {(P.type === 'freistehend' || P.type === 'deckenhoch') && (
           <>
             <Check label="Etagenbett (zweites Bett unten)" value={P.lowerBed} onChange={(v) => setP({ lowerBed: v })} />

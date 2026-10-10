@@ -531,10 +531,20 @@ function loadSurfaces(r: Resolved): Surface[] {
   }
   const surfaces: { pa: Panel; supportZ: number; weight?: number }[] = []
   for (const mat of r.panels.filter((x) => x.kind === 'matratze')) {
-    const deck = deckPanels.find((d) => Math.abs(d.z + d.thickness - mat.z) < 3)
+    // Auflage unter dieser Matratze (bei mehreren Rosten der, unter dem ihre Mitte liegt)
+    const mb = bbox(mat)
+    const mcx = (mb.x0 + mb.x1) / 2
+    const mcy = (mb.y0 + mb.y1) / 2
+    const level = deckPanels.filter((d) => Math.abs(d.z + d.thickness - mat.z) < 3)
+    const deck = level.find((d) => {
+      const b = bbox(d)
+      return mcx >= b.x0 && mcx <= b.x1 && mcy >= b.y0 && mcy <= b.y1
+    }) ?? level[0]
     if (deck) {
       const b = bbox(deck)
-      const sheetW = deck.kind === 'rollrost' || deck.kind === 'lattenrost' ? 150 : 6 * deck.thickness * (b.x1 - b.x0) * (b.y1 - b.y0) * 1e-6
+      // Plattengewicht anteilig auf die Matratzen verteilen, die darauf liegen
+      const share = Math.min(1, ((mb.x1 - mb.x0) * (mb.y1 - mb.y0)) / Math.max(1, (b.x1 - b.x0) * (b.y1 - b.y0)))
+      const sheetW = deck.kind === 'rollrost' || deck.kind === 'lattenrost' ? 150 : 6 * deck.thickness * (b.x1 - b.x0) * (b.y1 - b.y0) * 1e-6 * Math.min(1, share * 1.2)
       surfaces.push({ pa: { ...mat }, supportZ: deck.z, weight: sheetW })
     } else surfaces.push({ pa: mat, supportZ: mat.z })
   }

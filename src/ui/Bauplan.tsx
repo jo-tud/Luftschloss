@@ -325,7 +325,9 @@ export function BauplanDialog() {
                     <tr>
                       <th>Matratze</th>
                       <td>
+                        {(a.params.mattressCount ?? 1) > 1 ? `${a.params.mattressCount} × ` : ''}
                         {fmtCm(a.params.mattressWidth, 0)} × {fmtCm(a.params.mattressLength, 0)}, {fmtCm(a.params.mattressThickness, 0)} dick
+                        {(a.params.mattressCount ?? 1) > 1 ? `, ${a.params.mattressLayout ?? 'nebeneinander'}` : ''}
                       </td>
                     </tr>
                     {info && (
