@@ -86,7 +86,7 @@ function PropertiesBody() {
         )}
         {a && <BedProps a={a} nested />}
         {g && <GroupProps id={g.id} nested />}
-        {!a && !g && m && <p className="hint">{t('Shift-Klick wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.')}</p>}
+        {!a && !g && m && <p className="hint">{t('Shift-Klick oder Shift + Ziehen (Rahmen) wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.')}</p>}
       </div>
     )
   }

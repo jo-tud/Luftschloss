@@ -238,5 +238,6 @@ const en: Record<string, string> = {
   'Teil entfernen': 'Remove part',
   Entfernen: 'Remove',
   "abbrechen bzw. vom Bauteil zum ganzen Bett": "cancel, or go from a part to the whole bed",
+  "Eigenes Bett: freie Teile mit Shift-Klick oder Shift + Ziehen (Rahmen) auswählen, dann „Als Bett zusammenfassen“ – das Bett bekommt eine Liegefläche und wird geprüft wie eine Vorlage": "Custom bed: select free parts with shift-click or shift-drag (box), then “Combine into a bed” – the bed gets a sleeping surface and is checked like a template",
 }
 export default en

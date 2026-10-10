@@ -316,14 +316,12 @@ const en: Record<string, string> = {
   "Ganzes Bett auswählen (Esc)": "Select the whole bed (Esc)",
   "Eigenes Bett": "Custom bed",
   "{n} Teile ausgewählt": "{n} parts selected",
-  "Shift-Klick nimmt weitere Teile hinzu oder wieder heraus. Ziehen verschiebt alle gemeinsam.": "Shift-click adds or removes parts. Dragging moves them all together.",
   "Die Teile als ein Bett behandeln: gemeinsam auswählen, verschieben und prüfen": "Treat the parts as one bed: select, move and check them together",
   "Als Bett zusammenfassen": "Combine into a bed",
   "eigene Konstruktion": "custom build",
   "Heranholen": "Zoom to",
   "Die Teile werden wieder einzelne freie Teile": "The parts become separate free parts again",
   "Zusammenfassung lösen": "Ungroup",
-  "Shift-Klick wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.": "Shift-click selects more free parts; several can be combined into a bed.",
   "Alle freien Teile auswählen, z. B. um sie als Bett zusammenzufassen": "Select all free parts, e.g. to combine them into a bed",
   "Freie Teile ({n})": "Free parts ({n})",
   "{n} Teile entfernen": "Remove {n} parts",
@@ -336,5 +334,7 @@ const en: Record<string, string> = {
   "Ecke der Matratze, gemessen von Wand A": "Mattress corner, measured from wall A",
   "Neu erkennen": "Detect again",
   "Liegefläche entfernen": "Remove sleeping surface",
+  "Shift-Klick oder Shift + Ziehen (Rahmen) wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.": "Shift-click or shift-drag (box) selects more free parts; several can be combined into a bed.",
+  "Shift-Klick nimmt weitere Teile hinzu oder wieder heraus, Shift + Ziehen wählt alle Teile im Rahmen. Ziehen verschiebt alle gemeinsam.": "Shift-click adds or removes parts, shift-drag selects all parts in the box. Dragging moves them all together.",
 }
 export default en

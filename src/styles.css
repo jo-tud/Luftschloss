@@ -2177,3 +2177,13 @@ button.wide {
 .crumbs .link {
   font-weight: 600;
 }
+
+/* Auswahlrahmen (Shift + Ziehen) */
+.select-box {
+  position: absolute;
+  display: none;
+  border: 1.5px dashed var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  pointer-events: none;
+  z-index: 5;
+}

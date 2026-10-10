@@ -13,7 +13,7 @@ import type { PickData } from './Scene'
 import { tk } from '../i18n'
 
 interface DragState {
-  kind: 'nav-orbit' | 'nav-pan' | 'nav-look' | 'object'
+  kind: 'nav-orbit' | 'nav-pan' | 'nav-look' | 'object' | 'box'
   startX: number
   startY: number
   moved: boolean
@@ -175,6 +175,39 @@ export function Controller() {
       return new THREE.Plane(new THREE.Vector3(0, 1, 0), -pt.y)
     }
 
+    // Auswahlrahmen (Shift + Ziehen)
+    const boxDiv = document.createElement('div')
+    boxDiv.className = 'select-box'
+    el.parentElement?.appendChild(boxDiv)
+    const selectInBox = (x0: number, y0: number, x1: number, y1: number) => {
+      const st = useStore.getState()
+      const r = el.getBoundingClientRect()
+      const [lx, hx, ly, hy] = [Math.min(x0, x1), Math.max(x0, x1), Math.min(y0, y1), Math.max(y0, y1)]
+      const inside = (q: { x: number; y: number; z: number }) => {
+        const v = T(q.x, q.y, q.z).project(camera)
+        const sx = r.left + ((v.x + 1) / 2) * r.width
+        const sy = r.top + ((1 - v.y) / 2) * r.height
+        return v.z < 1 && sx >= lx && sx <= hx && sy >= ly && sy <= hy
+      }
+      const p = st.project
+      const ids = [
+        ...p.members.filter((m) => !m.groupId && inside({ x: (m.start.x + m.end.x) / 2, y: (m.start.y + m.end.y) / 2, z: (m.start.z + m.end.z) / 2 })).map((m) => m.id),
+        ...p.panels
+          .filter((x) => {
+            if (x.groupId) return false
+            const n = x.outline.length || 1
+            return inside({ x: x.outline.reduce((a, q) => a + q.x, 0) / n, y: x.outline.reduce((a, q) => a + q.y, 0) / n, z: x.z + (x.vertical ? x.vertical.height / 2 : x.thickness / 2) })
+          })
+          .map((x) => x.id),
+      ]
+      if (!ids.length) return
+      // zur bestehenden Auswahl hinzufügen
+      const cur = st.multi.length ? st.multi : st.selection && isFreePart(p, st.selection.id) ? [st.selection.id] : []
+      const all = [...new Set([...cur, ...ids])]
+      if (all.length > 1) useStore.setState({ multi: all, selection: selectionFor(p, all[all.length - 1]) })
+      else st.select(selectionFor(p, all[0]))
+    }
+
     // Finger auf dem Bildschirm (für Zwei-Finger-Gesten) und Doppeltipp
     const touches = new Map<number, { x: number; y: number }>()
     let gesture: { d0: number; mx: number; my: number; a0: number; cam0: CamState } | null = null
@@ -252,6 +285,11 @@ export function Controller() {
         // Shift-Klick: freies Teil zur Mehrfachauswahl hinzufügen bzw. herausnehmen
         st.toggleMulti(hit.data.id)
         drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: hit.data }
+        return
+      }
+      if (e.shiftKey && e.button === 0 && !person) {
+        // Shift + Ziehen neben einem freien Teil: Rahmen aufziehen, freie Teile darin auswählen
+        drag.current = { ...base, kind: 'box', pick: hit?.data }
         return
       }
       if (hit) {
@@ -338,6 +376,13 @@ export function Controller() {
         }
         c.yaw = dr.cam0.yaw + dx * 0.3
         c.pitch = THREE.MathUtils.clamp(dr.cam0.pitch - dy * 0.25, -89, 60)
+      } else if (dr.kind === 'box') {
+        boxDiv.style.display = 'block'
+        const r = el.getBoundingClientRect()
+        boxDiv.style.left = `${Math.min(dr.startX, e.clientX) - r.left}px`
+        boxDiv.style.top = `${Math.min(dr.startY, e.clientY) - r.top}px`
+        boxDiv.style.width = `${Math.abs(dx)}px`
+        boxDiv.style.height = `${Math.abs(dy)}px`
       } else if (dr.kind === 'nav-look') {
         c.yaw = dr.cam0.yaw - dx * 0.2
         c.pitch = THREE.MathUtils.clamp(dr.cam0.pitch + dy * 0.2, -85, 85)
@@ -372,6 +417,14 @@ export function Controller() {
       }
       const dr = drag.current
       drag.current = null
+      if (dr?.kind === 'box') {
+        boxDiv.style.display = 'none'
+        if (dr.moved) selectInBox(dr.startX, dr.startY, e.clientX, e.clientY)
+        // Shift-Klick ohne Ziehen auf ein Teil, das nicht frei ist: ganz normal auswählen
+        else if (dr.pick) st.select(selectionFor(st.project, dr.pick.id))
+        st.endCoalesce()
+        return
+      }
       // Klick ins Leere hebt die Auswahl auf, mit Shift (Mehrfachauswahl) nicht
       if (dr && !dr.moved && dr.kind !== 'object' && !dr.pick && e.button === 0 && st.tool === 'select' && !e.shiftKey) st.select(null)
       // Doppeltipp = auf das Teil zentrieren
@@ -523,6 +576,7 @@ export function Controller() {
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     return () => {
+      boxDiv.remove()
       el.removeEventListener('pointerdown', onPointerDown)
       el.removeEventListener('pointermove', onPointerMove)
       el.removeEventListener('pointerup', onPointerUp)

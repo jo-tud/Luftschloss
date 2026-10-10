@@ -193,7 +193,7 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 - Griffe an den Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Spiegeln. ✅
 - Seitenleisten und Prüfliste in der Größe veränderbar (Rand ziehen, Doppelklick setzt zurück). ✅
 - Ein angeklicktes Bauteil zeigt oben den Pfad „Bett › Bauteil“; ein Klick auf das Bett oder `Esc` wählt das ganze Bett. ✅
-- **Eigenes Bett aus freien Teilen:** Shift-Klick wählt mehrere freie Teile (gemeinsam verschieben oder entfernen), „Als Bett zusammenfassen“ macht daraus ein Bett mit Namen. Es steht in der Bettliste, wird als Ganzes ausgewählt und verschoben (Pfad und `Esc` wie bei Vorlagen) und lässt sich wieder auflösen. „Freie Teile (n)“ in der Bettliste wählt alle freien Teile. ✅
+- **Eigenes Bett aus freien Teilen:** Shift-Klick bzw. Shift + Ziehen (Rahmen) wählt mehrere freie Teile (gemeinsam verschieben oder entfernen), „Als Bett zusammenfassen“ macht daraus ein Bett mit Namen. Es steht in der Bettliste, wird als Ganzes ausgewählt und verschoben (Pfad und `Esc` wie bei Vorlagen) und lässt sich wieder auflösen. „Freie Teile (n)“ in der Bettliste wählt alle freien Teile. ✅
 - **Liegefläche eines eigenen Betts:** beim Zusammenfassen übernommen (mitgewählte Matratze) bzw. erkannt (größte Platte, sonst die Ebene mit den meisten waagrechten Hölzern), Maße und Lage anpassbar. Daraus entstehen die Matratzenlast für die Statik und die Prüfungen für Freiraum unter und über dem Bett und offene Seiten (Geländer mind. 16 cm über der Matratze auf mind. 60 % der Seite, sonst Wandspalt bzw. fehlende Absturzsicherung). ✅
 - Geplant ◻: Maßketten mit direkter Eingabe in der Ansicht.
 

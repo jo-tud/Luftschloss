@@ -277,6 +277,7 @@ function Help() {
             <li>{t('Bett verschieben: erst anklicken bzw. antippen, dann ziehen (rastet an Wänden ein und hält dort an); in der Seitenansicht hoch/runter = Liegehöhe. Genau geht es rechts unter „Lage im Raum“: Abstand zu jeder Wand, Schieben in Schritten, „In Ecke schieben“.')}</li>
             <li>{t('Tablet: antippen = auswählen, Ausgewähltes mit einem Finger ziehen, leere Fläche mit einem Finger = drehen, zwei Finger = zoomen und verschieben, Doppeltipp = heranholen. ☰ öffnet Raum und Vorlagen, ⓘ Eigenschaften und Prüfung.')}</li>
             <li>{t('Frei gezeichnete Balken: orange Griffe an den Enden ziehen, Länge im Etikett anklicken und eintippen')}</li>
+            <li>{t('Eigenes Bett: freie Teile mit Shift-Klick oder Shift + Ziehen (Rahmen) auswählen, dann „Als Bett zusammenfassen“ – das Bett bekommt eine Liegefläche und wird geprüft wie eine Vorlage')}</li>
             <li>{t('Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen')}</li>
             <li>{t('Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen')}</li>
             <li>

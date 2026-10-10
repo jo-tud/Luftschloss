@@ -11,7 +11,7 @@ export function MultiProps() {
   return (
     <div className="props">
       <Section title={t('{n} Teile ausgewählt', { n: multi.length })}>
-        <p className="hint">{t('Shift-Klick nimmt weitere Teile hinzu oder wieder heraus. Ziehen verschiebt alle gemeinsam.')}</p>
+        <p className="hint">{t('Shift-Klick nimmt weitere Teile hinzu oder wieder heraus, Shift + Ziehen wählt alle Teile im Rahmen. Ziehen verschiebt alle gemeinsam.')}</p>
         <div className="stack">
           <button
             className="primary"
