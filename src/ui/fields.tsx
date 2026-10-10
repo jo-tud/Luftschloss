@@ -1,7 +1,8 @@
+import { locale } from '../i18n'
 import { useEffect, useState, type ReactNode } from 'react'
 
 /** Zahl deutsch anzeigen (Dezimalkomma, ohne Tausenderpunkt) */
-export const fmtNum = (x: number, digits = 1) => x.toLocaleString('de-DE', { maximumFractionDigits: digits, useGrouping: false })
+export const fmtNum = (x: number, digits = 1) => x.toLocaleString(locale(), { maximumFractionDigits: digits, useGrouping: false })
 
 /** Liest „412,5“, „412.5“ und „1.234,5“; gibt NaN für alles andere */
 export function parseNum(text: string): number {
@@ -108,4 +109,4 @@ export function Row({ children }: { children: ReactNode }) {
   return <div className="row">{children}</div>
 }
 
-export const eur = (x: number) => x.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+export const eur = (x: number) => x.toLocaleString(locale(), { style: 'currency', currency: 'EUR' })

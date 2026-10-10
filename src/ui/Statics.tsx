@@ -1,3 +1,4 @@
+import { locale } from '../i18n'
 import { useEffect, useMemo, useState } from 'react'
 import type { Finding } from '../analysis/checks'
 import { computeStatics, UTIL_COLOR, type StaticsResult } from '../analysis/statics'
@@ -41,7 +42,7 @@ export function staticsFindings(p: Project, s: StaticsResult | null): Finding[] 
   for (const c of s.joints.values()) {
     if (c.util <= 1) continue
     const j = d.resolved.joints.find((x) => x.key === c.key)
-    out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: 'Stabilität', title: `Verbindung ${jointNames.get(c.key)}: ${pct(c.util)} ausgelastet`, detail: `Kraft ca. ${c.forceKN.toLocaleString('de-DE', { maximumFractionDigits: 1 })} kN, Verbindung trägt grob ${c.capacityKN} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.`, targets: j ? [j.a, j.b] : [], pos: j?.pos })
+    out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: 'Stabilität', title: `Verbindung ${jointNames.get(c.key)}: ${pct(c.util)} ausgelastet`, detail: `Kraft ca. ${c.forceKN.toLocaleString(locale(), { maximumFractionDigits: 1 })} kN, Verbindung trägt grob ${c.capacityKN} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.`, targets: j ? [j.a, j.b] : [], pos: j?.pos })
   }
   const sMax = Math.max(s.sway.x, s.sway.y)
   if (s.swayClass !== 'steif')
@@ -76,7 +77,7 @@ export function StaticsPanel() {
               <span>höchste Ausnutzung</span>
             </div>
             <div>
-              <b style={{ color: st.swayClass === 'steif' ? '#2f9e5b' : st.swayClass === 'spürbar' ? '#e0a400' : '#d64545' }}>{Math.max(st.sway.x, st.sway.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm</b>
+              <b style={{ color: st.swayClass === 'steif' ? '#2f9e5b' : st.swayClass === 'spürbar' ? '#e0a400' : '#d64545' }}>{Math.max(st.sway.x, st.sway.y).toLocaleString(locale(), { maximumFractionDigits: 1 })} mm</b>
               <span>Wackeln ({st.swayClass})</span>
             </div>
           </div>
@@ -179,7 +180,7 @@ export function MemberStatics({ m }: { m: Member }) {
           </div>
         ))}
       </div>
-      {c.span > 0 && <p className="hint">Durchbiegung im Endzustand {c.w.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm auf {fmtCm(c.span, 0)} (Grenze L/200).</p>}
+      {c.span > 0 && <p className="hint">Durchbiegung im Endzustand {c.w.toLocaleString(locale(), { maximumFractionDigits: 1 })} mm auf {fmtCm(c.span, 0)} (Grenze L/200).</p>}
       {!compare ? (
         <button onClick={() => setCompare(true)}>Querschnitte vergleichen</button>
       ) : (

@@ -1,3 +1,4 @@
+import type { LangSetting } from '../i18n'
 import { useDerived, useStore, type Layers } from '../state/store'
 import { useCheckCounts } from './Checks'
 import { eur } from './fields'
@@ -115,6 +116,7 @@ export function Toolbar() {
       >
         ⓘ{counts.fehler > 0 ? <span className="b fehler">⛔ {counts.fehler}</span> : counts.warnung > 0 ? <span className="b warnung">⚠ {counts.warnung}</span> : null}
       </button>
+      <LangSelect />
       <button onClick={() => s.set({ showHelp: true })} title="Bedienung und Tastenkürzel (?)" aria-label="Hilfe">
         ?
       </button>
@@ -135,5 +137,19 @@ function SunControl() {
       </label>
       {hour !== null && <input type="range" min={6} max={20} step={0.25} value={hour} onChange={(e) => set({ sunHour: Number(e.target.value) })} aria-label="Uhrzeit" />}
     </div>
+  )
+}
+
+/** Sprache: automatisch (Browser), Englisch oder Deutsch */
+function LangSelect() {
+  const setting = useStore((s) => s.langSetting)
+  const lang = useStore((s) => s.lang)
+  const setLangSetting = useStore((s) => s.setLangSetting)
+  return (
+    <select className="lang-select" value={setting} onChange={(e) => setLangSetting(e.target.value as LangSetting)} title="Language / Sprache" aria-label="Language / Sprache">
+      <option value="auto">🌐 Auto ({lang.toUpperCase()})</option>
+      <option value="en">English</option>
+      <option value="de">Deutsch</option>
+    </select>
   )
 }

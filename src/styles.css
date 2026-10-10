@@ -1936,3 +1936,9 @@ button.primary:disabled {
 .sun-control input[type='range'] {
   width: 100%;
 }
+
+.lang-select {
+  width: auto;
+  flex-shrink: 0;
+  padding: 4px 6px;
+}

@@ -1,3 +1,4 @@
+import { locale } from '../i18n'
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { buildSteps, partTypes, transportCheck } from '../analysis/assembly'
 import { catalogItem } from '../model/catalog'
@@ -174,7 +175,7 @@ export function BauplanDialog() {
       <div className="modal plan" onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>Bauplan · {p.name}</h2>
-          <span className="muted">{new Date().toLocaleDateString('de-DE')}</span>
+          <span className="muted">{new Date().toLocaleDateString(locale())}</span>
           <button onClick={() => window.print()}>🖨 Drucken / PDF</button>
           <button className="close" onClick={() => set({ showPlan: false })}>
             ✕
@@ -228,7 +229,7 @@ export function BauplanDialog() {
                       <tr>
                         <th>Statik</th>
                         <td>
-                          höchste Ausnutzung {Math.round(statics.maxUtil * 100)} %, Gestell {statics.swayClass} ({Math.max(statics.sway.x, statics.sway.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm)
+                          höchste Ausnutzung {Math.round(statics.maxUtil * 100)} %, Gestell {statics.swayClass} ({Math.max(statics.sway.x, statics.sway.y).toLocaleString(locale(), { maximumFractionDigits: 1 })} mm)
                         </td>
                       </tr>
                     )}

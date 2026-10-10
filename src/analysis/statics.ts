@@ -1,3 +1,4 @@
+import { locale } from '../i18n'
 import { STRENGTH, catalogItem, type StrengthClass } from '../model/catalog'
 import { add, dot, memberAxes, memberLength, scale, sub, v } from '../model/geometry'
 import { jointType } from '../model/joints'
@@ -437,7 +438,7 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
         deflection: util,
         w: wMax,
         span,
-        governing: total === util ? `Durchbiegung ${wMax.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm auf ${Math.round(span / 10)} cm` : total === shear ? 'Schub' : `Biegung beim Lastfall „${gov}“`,
+        governing: total === util ? `Durchbiegung ${wMax.toLocaleString(locale(), { maximumFractionDigits: 1 })} mm auf ${Math.round(span / 10)} cm` : total === shear ? 'Schub' : `Biegung beim Lastfall „${gov}“`,
       })
     }
   }

@@ -1,3 +1,4 @@
+import { locale } from '../i18n'
 import type { Member, Mm, Panel, Room, Vec3, WallId } from './types'
 
 export const v = (x: number, y: number, z: number): Vec3 => ({ x, y, z })
@@ -218,11 +219,11 @@ export function rotate2(x: number, y: number, deg: number): { x: number; y: numb
 export const round = (x: number, step = 1): number => Math.round(x / step) * step
 
 export function fmtCm(mm: number, digits = 1): string {
-  return `${(mm / 10).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: digits })} cm`
+  return `${(mm / 10).toLocaleString(locale(), { minimumFractionDigits: 0, maximumFractionDigits: digits })} cm`
 }
 
 export function fmtM(mm: number): string {
-  return `${(mm / 1000).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`
+  return `${(mm / 1000).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m`
 }
 
 let idCounter = 0
