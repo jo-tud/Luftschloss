@@ -46,6 +46,8 @@ export function staticsFindings(p: Project, s: StaticsResult | null): Finding[] 
     const j = d.resolved.joints.find((x) => x.key === c.key)
     out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: STAB, title: t('Verbindung {name}: {pct} ausgelastet', { name: jointNames.get(c.key) ?? '', pct: pct(c.util) }), detail: t('Kraft ca. {f} kN, Verbindung trägt grob {cap} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.', { f: num1(c.forceKN), cap: num1(c.capacityKN) }), targets: j ? [j.a, j.b] : [], pos: j?.pos })
   }
+  // Rechenhinweise (z. B. Gestell ohne Halt) als Fehler zeigen – sonst sähe man nur eine absurde Zahl
+  if (s.members.size) s.warnings.forEach((w, i) => out.push({ id: `statik-warnung:${i}`, severity: 'fehler', category: STAB, title: w, targets: [] }))
   const sMax = Math.max(s.sway.x, s.sway.y)
   if (s.swayClass !== 'steif')
     out.push({ id: 'statik-wackeln', severity: s.swayClass === 'wackelt' ? 'warnung' : 'hinweis', category: STAB, title: s.swayClass === 'wackelt' ? t('Gestell wackelt ({mm} mm bei 0,5 kN Seitenlast)', { mm: sMax.toFixed(0) }) : t('Gestell gibt spürbar nach ({mm} mm bei 0,5 kN)', { mm: sMax.toFixed(0) }), detail: t('Kopfbänder oder Diagonalen einbauen, zwei Pfosten an der Wand befestigen oder steifere Verbindungen wählen. In der Statik-Ansicht „Wackeln“ abspielen.'), targets: [] })

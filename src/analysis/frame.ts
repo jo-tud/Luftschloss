@@ -66,7 +66,8 @@ export interface FrameResult {
   u: Float64Array
   elements: ElementResult[]
   /** Federkraft je Kopplung (Betrag der Verschiebungsfeder-Kraft, N) und Moment (Nmm) */
-  links: { force: number; moment: number }[]
+  /** Federkraft je Verbindung (N): Betrag, Moment und Kraftvektor am zweiten Knoten (global) */
+  links: { force: number; moment: number; vec: [number, number, number] }[]
 }
 
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -317,7 +318,7 @@ export function solveFrame(model: FrameModel, cases: LoadCase[]): FrameResult[] 
     const links = model.links.map((l, i) => {
       const ue = [...u.slice(l.n1 * 6, l.n1 * 6 + 6), ...u.slice(l.n2 * 6, l.n2 * 6 + 6)]
       const fk = linkData[i].map((row) => row.reduce((s, t, k) => s + t * ue[k], 0))
-      return { force: Math.hypot(fk[6], fk[7], fk[8]), moment: Math.hypot(fk[9], fk[10], fk[11]) }
+      return { force: Math.hypot(fk[6], fk[7], fk[8]), moment: Math.hypot(fk[9], fk[10], fk[11]), vec: [fk[6], fk[7], fk[8]] as [number, number, number] }
     })
     return { u, elements, links }
   })

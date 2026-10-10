@@ -2,7 +2,7 @@ import { locale, t, tk, tr } from '../i18n'
 import { catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { LOADS, NET_SAG, netEdgePull } from './statics'
-import { cornice, corniceIntrusion, roomObstacles } from '../model/room'
+import { cornice, corniceIntrusion, memberWall, roomObstacles } from '../model/room'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project, Side, Vec3 } from '../model/types'
 import { WALL_IDS } from '../model/types'
@@ -322,7 +322,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
     // Tragender Wandbalken über einem Fenster oder einer Tür: dort ist keine Wand zum Befestigen
     for (const m of r.members) {
       if (m.assemblyId !== a.id || m.role !== 'wandriegel') continue
-      const wall = nearestWallId(m, room)
+      const wall = memberWall(m, room).wall
       const f = wallFrame(room, wall)
       const along = (q: Vec3) => (q.x - f.start.x) * f.u.x + (q.y - f.start.y) * f.u.y
       const s0 = Math.min(along(m.start), along(m.end))
@@ -347,7 +347,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
     for (const f of wallFix) {
       const m = memberById.get(f.memberId)
       if (!m) continue
-      const wall = nearestWallId(m, room)
+      const wall = memberWall(m, room).wall
       const mat = room.walls[wall].material
       if (weak.has(mat)) {
         const load = memberById.get(f.memberId)?.role === 'wandriegel'
@@ -481,21 +481,6 @@ function sideWallGap(s: Side, fp: { minX: number; maxX: number; minY: number; ma
   }
 }
 
-/** Wand, an der das Bauteil liegt: bei waagrechten Teilen die Wand, zu der es parallel läuft (in Ecken berühren sie zwei) */
-function nearestWallId(m: Member, room: Project['room']): 'A' | 'B' | 'C' | 'D' {
-  const b = obbBounds(memberBoxes(m)[0])
-  const dx = Math.abs(m.end.x - m.start.x)
-  const dy = Math.abs(m.end.y - m.start.y)
-  const dz = Math.abs(m.end.z - m.start.z)
-  const gaps: ['A' | 'B' | 'C' | 'D', number][] = [
-    ['A', b.min.y],
-    ['B', b.min.x],
-    ['C', room.width - b.max.y],
-    ['D', room.length - b.max.x],
-  ]
-  const along = dz >= Math.max(dx, dy) ? gaps : dx >= dy ? gaps.filter(([w]) => w === 'A' || w === 'C') : gaps.filter(([w]) => w === 'B' || w === 'D')
-  return along.sort((x, y) => x[1] - y[1])[0][0]
-}
 
 /**
  * Fasst gleichartige Kollisionen eines Betts zu einem Befund zusammen (z. B. „Hochbett: 12 Teile ragen bis

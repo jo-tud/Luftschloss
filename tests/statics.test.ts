@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { solveFrame, type FrameModel } from '../src/analysis/frame'
 import { computeStatics } from '../src/analysis/statics'
 import { defaultBedParams, testProject } from '../src/model/defaults'
+import { memberLength } from '../src/model/geometry'
+import type { LoftBedParams } from '../src/model/types'
 import { resolveProject } from '../src/model/resolve'
 
 function beam(n: number, L: number): FrameModel {
@@ -94,5 +96,51 @@ describe('Statik: Geländer und aufgelegte Querträger', () => {
         const s = computeStatics(p, resolveProject(p))
         for (const [id, c] of s.members) if (id.includes(':quertraeger')) expect(c.util).toBeLessThan(0.8)
       }
+  })
+})
+
+describe('Statik: Lasten und Auflager aus der echten Lage', () => {
+  const proj = (patch: Partial<LoftBedParams>) => {
+    const p = testProject()
+    p.furniture = []
+    Object.assign(p.assemblies[0].params, patch)
+    return p
+  }
+
+  it('Seitenlast je Bett: ein zweites Bett halbiert das Wackeln des ersten nicht', () => {
+    const a = proj({ type: 'freistehend', braces: false, x: 1000, y: 1500 })
+    const alone = computeStatics(a, resolveProject(a)).sway
+    const b = structuredClone(a)
+    b.assemblies.push({ ...structuredClone(a.assemblies[0]), id: 'bett-2', params: { ...a.assemblies[0].params, y: 3800 } })
+    const two = computeStatics(b, resolveProject(b)).sway
+    expect(two.x).toBeCloseTo(alone.x, 0)
+    expect(two.y).toBeCloseTo(alone.y, 0)
+  })
+
+  it('Geländerlast trifft das längste Handlauffeld, nicht das kurze Stück neben der Leiter', () => {
+    const p = proj({})
+    const r = resolveProject(p)
+    const s = computeStatics(p, r)
+    const rails = r.members.filter((m) => m.partKey?.startsWith('handlauf'))
+    const longest = rails.reduce((x, y) => (memberLength(y) > memberLength(x) ? y : x))
+    expect(s.members.get(longest.id)!.governing).toContain('Geländer')
+  })
+
+  it('Wandbalken ohne Wand dahinter: kein Auflager, die Statik meldet fehlenden Halt', () => {
+    const off = proj({ type: 'wandseitig', frameStyle: 'aufgelegt', y: 1000 })
+    expect(computeStatics(off, resolveProject(off)).warnings.length).toBeGreaterThan(0)
+    const at = proj({ type: 'wandseitig', frameStyle: 'aufgelegt', y: 0 })
+    const s = computeStatics(at, resolveProject(at))
+    expect(s.warnings).toEqual([])
+    expect(s.maxUtil).toBeLessThan(1)
+  })
+
+  it('lose aufgelegte Latten: Druck auf die Auflage überlastet die Verbindung nicht', () => {
+    for (const type of ['freistehend', 'wandseitig', 'eck'] as const) {
+      const p = proj({ type, frameStyle: 'aufgelegt', y: 0 })
+      const s = computeStatics(p, resolveProject(p))
+      const lose = [...s.joints.values()].filter((j) => j.key.includes('latte'))
+      expect(Math.max(...lose.map((j) => j.util)), type).toBeLessThan(1)
+    }
   })
 })

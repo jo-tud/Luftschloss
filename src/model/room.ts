@@ -1,6 +1,6 @@
 import { t, tr } from '../i18n'
-import { aabbOBB, add, cross, norm, scale, v, wallFrame, type OBB, type WallFrame } from './geometry'
-import type { CorniceProfile, DoorObj, Furniture, Project, Room, Vec3, WallId, WindowObj } from './types'
+import { aabbOBB, add, cross, memberBoxes, norm, obbBounds, scale, v, wallFrame, type OBB, type WallFrame } from './geometry'
+import type { CorniceProfile, DoorObj, Furniture, Member, Project, Room, Vec3, WallId, WindowObj } from './types'
 import { WALL_IDS } from './types'
 
 export function cornice(room: Room, wall: WallId): CorniceProfile {
@@ -242,4 +242,35 @@ export function corniceIntrusion(room: Room, q: Vec3): { depth: number; wall: Wa
 /** Höhe des Lampenschirms: typischer Pendelschirm, etwa halb so hoch wie breit */
 export function lampShadeHeight(r: { lampDrop: number; lampDiameter: number }): number {
   return Math.min(r.lampDrop, r.lampDiameter * 0.5)
+}
+
+/**
+ * Wand, an der ein Bauteil liegt, und sein Abstand dazu. Waagrechte Teile gehören zu der Wand, zu der sie
+ * parallel laufen – in einer Ecke berühren sie zwei.
+ */
+export function memberWall(m: Member, room: Room): { wall: WallId; gap: number } {
+  const b = obbBounds(memberBoxes(m)[0])
+  const dx = Math.abs(m.end.x - m.start.x)
+  const dy = Math.abs(m.end.y - m.start.y)
+  const dz = Math.abs(m.end.z - m.start.z)
+  const gaps: { wall: WallId; gap: number }[] = [
+    { wall: 'A', gap: b.min.y },
+    { wall: 'B', gap: b.min.x },
+    { wall: 'C', gap: room.width - b.max.y },
+    { wall: 'D', gap: room.length - b.max.x },
+  ]
+  const along = dz >= Math.max(dx, dy) ? gaps : dx >= dy ? gaps.filter((g) => g.wall === 'A' || g.wall === 'C') : gaps.filter((g) => g.wall === 'B' || g.wall === 'D')
+  return along.sort((x, y) => x.gap - y.gap)[0]
+}
+
+/** Liegt der Punkt (auf Höhe z, entlang der Wand) in einer Fenster- oder Türöffnung dieser Wand? */
+export function inWallOpening(p: Project, wall: WallId, q: Vec3, margin = 0): boolean {
+  const f = wallFrame(p.room, wall)
+  const s = (q.x - f.start.x) * f.u.x + (q.y - f.start.y) * f.u.y
+  return p.wallObjects.some((o) => {
+    if (o.wall !== wall || (o.kind !== 'fenster' && o.kind !== 'tuer')) return false
+    const z0 = o.kind === 'fenster' ? o.sillHeight : 0
+    const z1 = o.kind === 'fenster' ? o.sillHeight + o.height : o.height
+    return s > o.offset - margin && s < o.offset + o.width + margin && q.z > z0 - margin && q.z < z1 + margin
+  })
 }
