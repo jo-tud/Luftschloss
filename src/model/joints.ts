@@ -19,6 +19,8 @@ export interface JointType {
   tools: string[]
   hardware: { id: string; qty: number }[]
   note: string
+  /** Grobe charakteristische Tragfähigkeit der ganzen Verbindung in kN (für die Statik-Abschätzung) */
+  capacityKN: number
 }
 
 export const JOINT_TYPES: JointType[] = [
@@ -37,6 +39,7 @@ export const JOINT_TYPES: JointType[] = [
       { id: 'schraube-5x50', qty: 20 },
     ],
     note: 'Einfachste Lösung. Senkrecht tragfähig (ca. 8 kN char. je Paar), gegen Verdrehen schwach – Aussteifung nötig.',
+    capacityKN: 8,
   },
   {
     id: 'balkenschuh',
@@ -53,6 +56,7 @@ export const JOINT_TYPES: JointType[] = [
       { id: 'schraube-5x50', qty: 12 },
     ],
     note: 'Klassisch für Querträger zwischen Zargen. Volle Last nur bei Vollausnagelung/-verschraubung.',
+    capacityKN: 4.3,
   },
   {
     id: 'schlossschraube',
@@ -66,6 +70,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Akkuschrauber', 'Holzbohrer 10 mm', 'Gabelschlüssel 17'],
     hardware: [{ id: 'schlossschraube-m10', qty: 2 }],
     note: 'Robust und zerlegbar. Abscheren ca. 5,7 kN char. je Bolzen bei 60 mm Holz. Nach einigen Wochen nachziehen.',
+    capacityKN: 11,
   },
   {
     id: 'holzbauschraube',
@@ -79,6 +84,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Akkuschrauber (kräftig)', 'TX40-Bit'],
     hardware: [{ id: 'schraube-8x160', qty: 3 }],
     note: 'Schnell und günstig. Abscheren ca. 3,3 kN char. je Schraube. Mindestholzdicke 30 mm.',
+    capacityKN: 9,
   },
   {
     id: 'bettschraube',
@@ -92,6 +98,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Bohrmaschine', 'Forstnerbohrer', 'Bohrschablone'],
     hardware: [{ id: 'bettschraube-m8', qty: 2 }],
     note: 'Unsichtbar und zerlegbar, typisch im Möbelbau. Bohrungen müssen genau sitzen.',
+    capacityKN: 4,
   },
   {
     id: 'auflage',
@@ -105,6 +112,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Akkuschrauber'],
     hardware: [{ id: 'schraube-8x160', qty: 2 }],
     note: 'Last geht direkt über Druck ins untere Holz – die tragfähigste einfache Lösung.',
+    capacityKN: 20,
   },
   {
     id: 'auflagerleiste',
@@ -118,6 +126,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Akkuschrauber'],
     hardware: [{ id: 'schraube-5x50', qty: 6 }],
     note: 'Leiste unter dem Querträger trägt; Schrauben der Leiste auf Abscheren beansprucht.',
+    capacityKN: 5,
   },
   {
     id: 'ausklinkung',
@@ -131,6 +140,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Handkreissäge oder Japansäge', 'Stechbeitel'],
     hardware: [{ id: 'schraube-8x160', qty: 2 }],
     note: 'Unterseitig höchstens h/4 ausklinken, Innenecke ausrunden. Schwächt den Schub am Auflager.',
+    capacityKN: 12,
   },
   {
     id: 'ueberblattung',
@@ -144,6 +154,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Handkreissäge', 'Stechbeitel', 'Holzleim'],
     hardware: [{ id: 'schraube-8x160', qty: 2 }],
     note: 'Beide Hölzer auf halbe Dicke. Nur ca. 50 % Restquerschnitt – für geringere Lasten.',
+    capacityKN: 6,
   },
   {
     id: 'schwalbenschwanz',
@@ -157,6 +168,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Feinsäge', 'Stechbeitel', 'Schmiege (1:6 Nadelholz)'],
     hardware: [{ id: 'holzduebel-10', qty: 2 }],
     note: 'Zugfest ohne Metall. Neigung 1:6 bei Nadelholz. Viel Handarbeit.',
+    capacityKN: 6,
   },
   {
     id: 'zapfen',
@@ -170,6 +182,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Stemmeisen', 'Bohrmaschine', 'Feinsäge', 'Holzleim'],
     hardware: [{ id: 'holzduebel-10', qty: 2 }],
     note: 'Zapfendicke ca. 1/3 des Holzes. Klassisch und steif, aber aufwändig.',
+    capacityKN: 8,
   },
   {
     id: 'holzduebel',
@@ -183,6 +196,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Bohrmaschine', 'Dübelhilfe', 'Holzleim'],
     hardware: [{ id: 'holzduebel-10', qty: 4 }],
     note: 'Für Geländer und leichte Teile.',
+    capacityKN: 3,
   },
   {
     id: 'lose',
@@ -196,6 +210,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Akkuschrauber'],
     hardware: [{ id: 'schraube-5x50', qty: 1 }],
     note: 'Für Latten der Liegefläche üblich; Filz- oder Gummistreifen gegen Quietschen.',
+    capacityKN: 1.5,
   },
   {
     id: 'stecken',
@@ -209,6 +224,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Bohrmaschine', 'Forstner- oder Holzbohrer in Stabdicke', 'Holzleim'],
     hardware: [],
     note: 'Übliche Lösung für Geländerstäbe und Leitersprossen (Buche Ø 30–35 mm). Bohrtiefe ca. 2/3 der Holzdicke, optional mit Schraube sichern.',
+    capacityKN: 2,
   },
   {
     id: 'gratnut',
@@ -222,6 +238,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Oberfräse mit Führung oder Tauchsäge', 'Holzleim'],
     hardware: [{ id: 'schraube-5x50', qty: 2 }],
     note: 'Flache Stufen in Wangen eingelassen – angenehmer als Rundsprossen (Forenempfehlung).',
+    capacityKN: 4,
   },
   {
     id: 'seilbefestigung',
@@ -235,6 +252,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Bohrmaschine'],
     hardware: [{ id: 'netzhaken', qty: 1 }],
     note: 'Nachspannen nach den ersten Tagen einplanen.',
+    capacityKN: 2,
   },
   {
     id: 'gewindestange',
@@ -248,6 +266,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Bohrmaschine', 'Gabelschlüssel'],
     hardware: [],
     note: 'Für Abhängungen nur in tragfähige Decken (Beton oder Holzbalken), nie in Stuck oder abgehängte Decken.',
+    capacityKN: 3,
   },
   {
     id: 'kopfband',
@@ -261,6 +280,7 @@ export const JOINT_TYPES: JointType[] = [
     tools: ['Kapp- oder Gehrungssäge (45°)', 'Akkuschrauber'],
     hardware: [{ id: 'schraube-8x160', qty: 2 }],
     note: 'Steift die Ecke aus. Möglichst beidseitig bzw. in beiden Richtungen anordnen.',
+    capacityKN: 6,
   },
 ]
 

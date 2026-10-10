@@ -132,6 +132,7 @@ function RoomTab() {
         <Sel label="Sicherheitsempfehlungen" value={p.settings.safetyProfile} options={[['kinder', 'Kinder (streng)'], ['jugendliche', 'Jugendliche'], ['erwachsene', 'Erwachsene (nur Hinweise)']]} onChange={(v) => update((d) => void (d.settings.safetyProfile = v))} />
         <Num label="Körpergröße (für Freiraum)" value={p.settings.personHeight} onChange={(v) => update((d) => void (d.settings.personHeight = v))} />
         <Check label="Mietwohnung – möglichst wenig bohren" value={p.settings.rentalMode} onChange={(v) => update((d) => void (d.settings.rentalMode = v))} />
+        <Sel label="Lastannahme Statik" value={p.settings.loadProfile} options={[['bett', 'Bett (1,0 kN/m²)'], ['hochebene', 'Hochebene/Spielfläche (2,0 kN/m²)']]} onChange={(v) => update((d) => void (d.settings.loadProfile = v))} />
         <MouseProfile />
         <Sel label="Verbindungen bevorzugt" value={p.settings.jointPreference} options={[['einfach', 'möglichst einfach (Winkel)'], ['zerlegbar', 'zerlegbar (Schlossschrauben)'], ['wenig-metall', 'wenig Metall (Holzverbindungen)']]} onChange={(v) => update((d) => void ((d.settings.jointPreference = v), (d.joints = [])))} />
       </Section>

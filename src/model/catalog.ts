@@ -7,8 +7,14 @@ export type StrengthClass = 'C16' | 'C24' | 'GL24h'
 export interface Strength {
   /** Biegefestigkeit f_m,k in N/mm² */
   fmk: number
+  /** Zugfestigkeit f_t,0,k */
+  ft0k: number
+  /** Druckfestigkeit f_c,0,k */
+  fc0k: number
   /** E-Modul E_0,mean in N/mm² */
   e0mean: number
+  /** E-Modul E_0,05 (5-%-Fraktile, für Knicken) */
+  e005: number
   /** Schubfestigkeit f_v,k in N/mm² */
   fvk: number
   /** mittlere Rohdichte in kg/m³ */
@@ -17,9 +23,9 @@ export interface Strength {
 
 // DIN EN 338:2016 bzw. EN 14080, siehe docs/recherche/statik-grundlagen.md
 export const STRENGTH: Record<StrengthClass, Strength> = {
-  C16: { fmk: 16, e0mean: 8000, fvk: 3.2, rhoMean: 370 },
-  C24: { fmk: 24, e0mean: 11000, fvk: 4.0, rhoMean: 420 },
-  GL24h: { fmk: 24, e0mean: 11500, fvk: 3.5, rhoMean: 420 },
+  C16: { fmk: 16, ft0k: 8.5, fc0k: 17, e0mean: 8000, e005: 5400, fvk: 3.2, rhoMean: 370 },
+  C24: { fmk: 24, ft0k: 14.5, fc0k: 21, e0mean: 11000, e005: 7400, fvk: 4.0, rhoMean: 420 },
+  GL24h: { fmk: 24, ft0k: 19.2, fc0k: 24, e0mean: 11500, e005: 9600, fvk: 3.5, rhoMean: 420 },
 }
 
 export type TimberGroup = 'kvh' | 'bsh' | 'kantholz' | 'gehobelt' | 'latte' | 'leiste' | 'rundstab'

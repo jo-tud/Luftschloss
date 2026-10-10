@@ -16,7 +16,8 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     railCatalogId: 'kvh-60x120',
     joistCatalogId: 'geh-44x74',
     deck: 'latten',
-    deckCatalogId: 'geh-24x94',
+    // 44×74 flach: trägt auch tobende Jugendliche auf ~1,1 m (Statik), Forenpraxis 40×80
+    deckCatalogId: 'geh-44x74',
     joistSpacing: 500,
     slatGap: 60,
     guard: 'bretter',
@@ -188,6 +189,7 @@ export function testProject(): Project {
       personHeight: 1750,
       acknowledged: [],
       jointPreference: 'zerlegbar',
+      loadProfile: 'bett',
       priceOverrides: {},
     },
     estimated: [

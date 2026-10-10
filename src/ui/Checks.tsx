@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Severity } from '../analysis/checks'
 import { selectionFor, useDerived, useStore } from '../state/store'
+import { staticsFindings } from './Statics'
 
 const ICON: Record<Severity, string> = { fehler: '⛔', warnung: '⚠️', hinweis: 'ℹ️' }
 
@@ -12,9 +13,12 @@ export function Checks() {
   const focus = useStore((s) => s.focus)
   const [open, setOpen] = useState<string | null>(null)
   const [showAck, setShowAck] = useState(false)
+  const statics = useStore((s) => s.statics)
   const ack = new Set(p.settings.acknowledged)
-  const list = d.analysis.findings.filter((f) => showAck || !ack.has(f.id))
-  const count = (s: Severity) => d.analysis.findings.filter((f) => f.severity === s && !ack.has(f.id)).length
+  const order: Record<Severity, number> = { fehler: 0, warnung: 1, hinweis: 2 }
+  const all = [...d.analysis.findings, ...staticsFindings(p, statics)].sort((a, b) => Number(ack.has(a.id)) - Number(ack.has(b.id)) || order[a.severity] - order[b.severity])
+  const list = all.filter((f) => showAck || !ack.has(f.id))
+  const count = (s: Severity) => all.filter((f) => f.severity === s && !ack.has(f.id)).length
   return (
     <section className="checks">
       <header>

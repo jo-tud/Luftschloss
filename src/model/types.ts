@@ -310,6 +310,8 @@ export interface ProjectSettings {
   personHeight: Mm
   acknowledged: string[]
   jointPreference: 'einfach' | 'wenig-metall' | 'zerlegbar'
+  /** Nutzlast für die Statik: Bett 1,0 kN/m², Hochebene/Spielfläche 2,0 kN/m² */
+  loadProfile: 'bett' | 'hochebene'
   priceOverrides: Record<string, { price: number; url?: string; date: string }>
 }
 

@@ -4,6 +4,7 @@ import { analyze, type Analysis } from '../analysis/checks'
 import { computeBom, type Bom } from '../analysis/bom'
 import { testProject } from '../model/defaults'
 import { resolveProject, type Resolved } from '../model/resolve'
+import type { StaticsResult } from '../analysis/statics'
 import type { Project, Vec3, WallId } from '../model/types'
 
 export type ViewMode =
@@ -64,6 +65,13 @@ interface State {
   mouseProfile: 'standard' | 'cad'
   /** Geöffnete Detailansicht einer Verbindung */
   jointDetail: string | null
+  /** Statik: zuletzt berechnetes Ergebnis (verzögert nach Änderungen) und Anzeige-Einstellungen */
+  statics: StaticsResult | null
+  staticsFor: Project | null
+  staticsMode: boolean
+  staticsCase: 'gq' | 'jump' | 'hx' | 'hy'
+  staticsScale: number
+  wobble: boolean
   /** Änderung am Projekt; coalesce fasst viele Schritte (z. B. Ziehen) zu einem Undo-Schritt zusammen */
   update: (recipe: (d: Project) => void, coalesce?: string) => void
   /** Wie update, aber ausgehend von einem festen Ausgangsstand (für Ziehen ohne Rundungsfehler) */
@@ -150,6 +158,12 @@ export const useStore = create<State>((set, get) => ({
     }
   })(),
   jointDetail: null,
+  statics: null,
+  staticsFor: null,
+  staticsMode: false,
+  staticsCase: 'gq',
+  staticsScale: 30,
+  wobble: false,
   update: (recipe, coalesce) => {
     const { project, past, coalesce: current } = get()
     const next = produce(project, recipe)
