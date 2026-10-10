@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { t, tk, tr, type LangSetting } from '../i18n'
 import { useDerived, useStore, type Layers } from '../state/store'
 import { useCheckCounts } from './Checks'
@@ -14,13 +15,15 @@ const LAYER_LABEL: Record<keyof Layers, string> = {
 }
 
 export function Toolbar() {
+  const bar = useRef<HTMLElement>(null)
+  useFixedMenus(bar)
   const s = useStore()
   const d = useDerived()
   const counts = useCheckCounts()
   const util = s.statics?.maxUtil
   const utilClass = util === undefined ? '' : util > 1 ? ' util-err' : util > 0.6 ? ' util-warn' : ' util-ok'
   return (
-    <header className="toolbar">
+    <header className="toolbar" ref={bar}>
       <button className="narrow-only" onClick={() => s.set({ leftOpen: !s.leftOpen, rightOpen: false })} title={t('Raum, Ausstattung, Vorlagen')} aria-label={t('Seitenleiste: Raum, Ausstattung, Vorlagen')}>
         <Ico i={Menu} />
       </button>
@@ -134,6 +137,8 @@ export function Toolbar() {
         <Ico i={TabletSmartphone} />
         <span className="lbl lbl-xl">{t('Tablet')}</span>
       </button>
+      {/* bleibt auf schmalen Bildschirmen am rechten Rand, auch wenn die Leiste scrollt */}
+      <span className="tb-end">
       <button
         className={`narrow-only info-btn${counts.fehler ? ' has-err' : counts.warnung ? ' has-warn' : ''}`}
         onClick={() => s.set({ rightOpen: !s.rightOpen, leftOpen: false })}
@@ -149,6 +154,7 @@ export function Toolbar() {
       <button onClick={() => s.set({ showHelp: true })} title={t('Bedienung und Tastenkürzel (?)')} aria-label={t('Hilfe')}>
         <Ico i={CircleHelp} />
       </button>
+      </span>
     </header>
   )
 }
@@ -193,4 +199,40 @@ function LangSelect() {
     </select>
     </label>
   )
+}
+
+/**
+ * Die Werkzeugleiste scrollt auf schmalen Bildschirmen waagrecht und schneidet dabei alles ab, was
+ * darüber hinausragt – auch aufgeklappte Menüs. Deshalb liegen sie beim Öffnen fest am Bildschirm,
+ * unter ihrem Knopf und ganz im sichtbaren Bereich.
+ */
+function useFixedMenus(bar: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = bar.current
+    if (!el) return
+    const place = (d: HTMLDetailsElement) => {
+      const menu = d.querySelector<HTMLElement>(':scope > .menu')
+      const sum = d.querySelector('summary')
+      if (!menu || !sum || !d.open) return
+      const r = sum.getBoundingClientRect()
+      const right = d.classList.contains('more-menu')
+      Object.assign(menu.style, { position: 'fixed', top: `${r.bottom + 4}px`, maxHeight: `${window.innerHeight - r.bottom - 12}px`, overflowY: 'auto', right: 'auto', left: '0px' })
+      const w = menu.offsetWidth
+      const left = right ? r.right - w : r.left
+      menu.style.left = `${Math.max(8, Math.min(left, window.innerWidth - w - 8))}px`
+    }
+    const onToggle = (e: Event) => {
+      if (e.target instanceof HTMLDetailsElement) place(e.target)
+    }
+    const onMove = () => el.querySelectorAll<HTMLDetailsElement>('details[open]').forEach(place)
+    // toggle steigt nicht auf – in der Capture-Phase kommt es trotzdem an
+    el.addEventListener('toggle', onToggle, true)
+    el.addEventListener('scroll', onMove)
+    window.addEventListener('resize', onMove)
+    return () => {
+      el.removeEventListener('toggle', onToggle, true)
+      el.removeEventListener('scroll', onMove)
+      window.removeEventListener('resize', onMove)
+    }
+  }, [bar])
 }

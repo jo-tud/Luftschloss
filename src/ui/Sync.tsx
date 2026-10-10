@@ -10,7 +10,8 @@ import type { Project } from '../model/types'
  */
 
 const DEVICE_KEY = 'luftschloss.geraet'
-const SAVED_KEY = 'luftschloss.gespeichert'
+const REV_KEY = 'luftschloss.abgleich-stand'
+const DIRTY_KEY = 'luftschloss.abgleich-offen'
 
 function deviceId(): string {
   try {
@@ -25,21 +26,110 @@ function deviceId(): string {
   }
 }
 
-function localSavedAt(): number {
+function readKey(key: string): string | null {
   try {
-    return Number(localStorage.getItem(SAVED_KEY) ?? 0)
+    return localStorage.getItem(key)
   } catch {
-    return 0
+    return null
   }
 }
 
+function writeKey(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // ohne Speicher gilt der Stand nur bis zum Neuladen
+  }
+}
+
+type Remote = { project: unknown; rev: number }
+
+/**
+ * Abgleich über eine Revision, die der Server vergibt (nicht über die Uhren der Geräte):
+ * - Eigene Änderungen gelten als offen, bis der Server sie bestätigt hat; fehlgeschlagene Sendungen
+ *   werden wiederholt, auch über einen Neustart hinweg.
+ * - Ein fremder Stand wird nur übernommen, wenn hier nichts offen ist.
+ * - Haben beide Geräte geändert, gilt der Stand hier; der andere bleibt über Rückgängig erreichbar.
+ */
 export function ServerSync() {
   useEffect(() => {
     let stop = false
-    let lastSent = 0
-    let lastChange = 0
+    let rev = Number(readKey(REV_KEY) ?? 0)
+    let dirty = readKey(DIRTY_KEY) === '1'
+    let seq = 0
     let applying = false
+    let sending = false
+    let timer: ReturnType<typeof setTimeout> | undefined
     const me = deviceId()
+    const setRev = (r: number) => {
+      rev = r
+      writeKey(REV_KEY, String(r))
+    }
+    const setDirty = (d: boolean) => {
+      dirty = d
+      writeKey(DIRTY_KEY, d ? '1' : '0')
+    }
+    const status = (st: 'verbunden' | 'getrennt', lastSync?: number) =>
+      useStore.setState((s) => ({ server: s.server && { ...s.server, status: st, ...(lastSync ? { lastSync } : {}) } }))
+    const toast = (msg: string, ms = 2500) => {
+      useStore.setState({ toast: msg })
+      setTimeout(() => useStore.setState({ toast: null }), ms)
+    }
+    const apply = (remote: Remote): boolean => {
+      let p: Project
+      try {
+        p = migrate(remote.project as Project)
+      } catch {
+        return false
+      }
+      applying = true
+      useStore.getState().replaceProject(p)
+      applying = false
+      return true
+    }
+    /** Beide Geräte haben geändert: der fremde Stand kommt in den Verlauf, der eigene gilt und wird gesendet */
+    const merge = (remote: Remote) => {
+      const local = useStore.getState().project
+      if (apply(remote)) {
+        applying = true
+        useStore.getState().replaceProject(local)
+        applying = false
+        toast(t('Auch auf dem anderen Gerät wurde geändert. Dieser Stand gilt – der andere ist mit Rückgängig erreichbar.'), 6000)
+      }
+      setRev(remote.rev)
+      setDirty(true)
+      push(0)
+    }
+    const push = (delay = 700) => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void send(), delay)
+    }
+    const send = async () => {
+      if (stop || !dirty || !useStore.getState().server) return
+      if (sending) return push(500)
+      sending = true
+      const at = seq
+      try {
+        const r = await fetch('/api/projekt', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ baseRev: rev, device: me, savedAt: Date.now(), project: useStore.getState().project }),
+        })
+        if (r.status === 409) merge((await r.json()) as Remote)
+        else if (r.ok) {
+          setRev(((await r.json()) as { rev: number }).rev)
+          // während des Sendens weiter geändert: bleibt offen und geht mit der nächsten Sendung
+          if (seq === at) setDirty(false)
+          else push()
+          status('verbunden', Date.now())
+        } else throw new Error(String(r.status))
+      } catch {
+        status('getrennt')
+        push(3000)
+      } finally {
+        sending = false
+      }
+    }
     const ctrl = new AbortController()
     const timeout = setTimeout(() => ctrl.abort(), 2500)
     const start = async () => {
@@ -50,40 +140,24 @@ export function ServerSync() {
         clearTimeout(timeout)
         if (!info || stop) return
         useStore.setState({ server: { ips: info.ips, port: info.port, status: 'verbunden', lastSync: 0 } })
-        // Neueren Stand vom Server übernehmen
-        const remote = await fetch('/api/projekt').then((r) => (r.ok ? r.json() : null))
-        if (remote && remote.savedAt > localSavedAt() && remote.project) {
-          applying = true
-          useStore.getState().replaceProject(migrate(remote.project as Project))
-          applying = false
-          lastSent = remote.savedAt
-          localStorage.setItem(SAVED_KEY, String(remote.savedAt))
-        } else push(useStore.getState().project)
+        const remote = (await fetch('/api/projekt').then((r) => (r.ok ? r.json() : null))) as Remote | null
+        if (remote && remote.rev !== rev) {
+          if (dirty) merge(remote)
+          else if (apply(remote)) setRev(remote.rev)
+        } else if (!remote || dirty) {
+          // Server noch leer oder hier liegt Ungesendetes
+          setDirty(true)
+          push(0)
+        }
       } catch {
         // kein Server: rein lokal arbeiten
       }
     }
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const push = (project: Project) => {
-      clearTimeout(timer)
-      timer = setTimeout(async () => {
-        const savedAt = Date.now()
-        try {
-          const r = await fetch('/api/projekt', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ savedAt, device: me, project }) })
-          if (r.ok) {
-            lastSent = savedAt
-            localStorage.setItem(SAVED_KEY, String(savedAt))
-            useStore.setState((s) => ({ server: s.server && { ...s.server, status: 'verbunden', lastSync: savedAt } }))
-          }
-        } catch {
-          useStore.setState((s) => ({ server: s.server && { ...s.server, status: 'getrennt' } }))
-        }
-      }, 700)
-    }
     const unsub = useStore.subscribe((s, prev) => {
-      if (s.project !== prev.project && s.server && !applying) {
-        lastChange = Date.now()
-        push(s.project)
+      if (s.project !== prev.project && !applying && (s.server || rev > 0)) {
+        seq++
+        setDirty(true)
+        if (s.server) push()
       }
     })
     const poll = setInterval(async () => {
@@ -91,19 +165,18 @@ export function ServerSync() {
       if (!s.server) return
       try {
         const meta = await fetch('/api/projekt?meta').then((r) => (r.ok ? r.json() : null))
-        if (meta && meta.savedAt > lastSent && meta.device !== me && Date.now() - lastChange > 3000) {
-          const remote = await fetch('/api/projekt').then((r) => (r.ok ? r.json() : null))
-          if (!remote?.project) return
-          applying = true
-          useStore.getState().replaceProject(migrate(remote.project as Project))
-          applying = false
-          lastSent = remote.savedAt
-          localStorage.setItem(SAVED_KEY, String(remote.savedAt))
-          useStore.setState((st) => ({ server: st.server && { ...st.server, status: 'verbunden', lastSync: remote.savedAt }, toast: t('Vom anderen Gerät aktualisiert') }))
-          setTimeout(() => useStore.setState({ toast: null }), 2500)
-        } else if (s.server.status !== 'verbunden') useStore.setState({ server: { ...s.server, status: 'verbunden' } })
+        if (meta && meta.rev !== rev) {
+          // Hier Offenes zuerst senden – der Server antwortet mit 409, dann wird zusammengeführt
+          if (dirty) return push(0)
+          const remote = (await fetch('/api/projekt').then((r) => (r.ok ? r.json() : null))) as Remote | null
+          if (remote && !dirty && apply(remote)) {
+            setRev(remote.rev)
+            status('verbunden', Date.now())
+            toast(t('Vom anderen Gerät aktualisiert'))
+          }
+        } else if (!dirty && s.server.status !== 'verbunden') status('verbunden')
       } catch {
-        useStore.setState((st) => ({ server: st.server && { ...st.server, status: 'getrennt' } }))
+        status('getrennt')
       }
     }, 4000)
     void start()

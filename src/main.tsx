@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { getLang, setLang } from './i18n'
 import { useStore } from './state/store'
 import { App } from './ui/App'
+import { ErrorBoundary } from './ui/ErrorBoundary'
 import './styles.css'
 
 // Für automatisierte Tests und Fehlersuche im Browser erreichbar
@@ -18,6 +19,8 @@ function Root() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Root />
+    <ErrorBoundary>
+      <Root />
+    </ErrorBoundary>
   </StrictMode>,
 )
