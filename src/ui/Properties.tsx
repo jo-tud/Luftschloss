@@ -24,7 +24,7 @@ export function Properties() {
 function deleteAction(): HeaderAction[] {
   const sel = useStore.getState().selection
   const label = sel ? deleteLabel(sel) : null
-  return sel && label ? [{ icon: <Ico i={Trash2} />, label: `${tr(label)} (Entf)`, danger: true, onClick: () => deleteSelection(sel) }] : []
+  return sel && label ? [{ icon: <Ico i={Trash2} />, label: t('{label} (Entf)', { label: tr(label) }), danger: true, onClick: () => deleteSelection(sel) }] : []
 }
 
 const focusAction = (id: string): HeaderAction => ({ icon: <Ico i={Crosshair} />, label: t('Heranholen (F)'), onClick: () => useStore.getState().focus(id) })
@@ -713,7 +713,7 @@ function WallObjectProps({ id }: { id: string }) {
       <Section title={t('Maße und Lage')} id="wandobjekt" right={estimated ? <em className="est-tag">{t('geschätzt')}</em> : undefined}>
         <label className="field">
           <span>{t('Name')}</span>
-          <input value={o.name} onChange={(e) => setO((x) => void (x.name = e.target.value), `name-${id}`)} />
+          <input value={tr(o.name)} onChange={(e) => setO((x) => void (x.name = e.target.value), `name-${id}`)} />
         </label>
         <Sel<WallId> label={t('Wand')} value={o.wall} options={WALL_IDS.map((w) => [w, t('Wand {w}', { w })])} onChange={(v) => setO((x) => void (x.wall = v))} />
         <Num label={t('Abstand von links')} value={o.offset} onChange={(v) => setO((x) => void (x.offset = v))} title={t('Vom Raum aus gesehen, ab der linken Wandecke')} estimated={estimated} />
@@ -817,7 +817,7 @@ function FurnitureProps({ id }: { id: string }) {
       <Section title={t('Maße und Lage')} id="moebel">
         <label className="field">
           <span>{t('Name')}</span>
-          <input value={f.name} onChange={(e) => update((dd) => void (dd.furniture.find((y) => y.id === id)!.name = e.target.value), `name-${id}`)} />
+          <input value={tr(f.name)} onChange={(e) => update((dd) => void (dd.furniture.find((y) => y.id === id)!.name = e.target.value), `name-${id}`)} />
         </label>
         <div className="pair">
           <Num label="x" value={f.x} onChange={(v) => setF((x) => void (x.x = v))} />

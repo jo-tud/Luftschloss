@@ -34,6 +34,10 @@ export default defineConfig({
       },
     }),
   ],
+  // Abgleich über Tailscale (`tailscale serve`, MagicDNS): diese Namen zulassen. Andere fremde Hostnamen
+  // bleiben gesperrt – das schützt den Abgleich vor DNS-Rebinding
+  server: { allowedHosts: ['.ts.net'] },
+  preview: { allowedHosts: ['.ts.net'] },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],

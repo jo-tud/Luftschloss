@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { renderSVG } from 'uqr'
+import { copyText } from './clipboard'
 import { t, tr } from '../i18n'
 import { migrate, useStore } from '../state/store'
 import type { Project } from '../model/types'
@@ -199,7 +200,7 @@ export function ShareDialog() {
   const urls = server ? server.ips.map((ip) => `http://${ip}:${server.port}/`) : []
   return (
     <div className="modal-bg" onClick={() => set({ showShare: false })}>
-      <div className="modal share" onClick={(e) => e.stopPropagation()}>
+      <div className="modal share" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Auf dem Tablet öffnen')}>
         <header>
           <h2>{t('Auf dem Tablet öffnen')}</h2>
           <button className="close" onClick={() => set({ showShare: false })} aria-label={t('Schließen')}>
@@ -216,7 +217,7 @@ export function ShareDialog() {
                 {urls.map((u) => (
                   <div key={u} className="qr">
                     <div dangerouslySetInnerHTML={{ __html: renderSVG(u, { border: 1 }) }} />
-                    <button className="link" onClick={() => navigator.clipboard?.writeText(u).then(() => setCopied(u))}>
+                    <button className="link" onClick={() => void copyText(u).then((ok) => ok && setCopied(u))}>
                       {u}
                     </button>
                     {copied === u && <small className="ok">{t('kopiert')}</small>}

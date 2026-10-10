@@ -173,12 +173,12 @@ export function JointDetailDialog() {
   const cam = new THREE.Vector3(j.pos.x + (look.x / ln) * 650, j.pos.z + (look.z / ln) * 650, -(j.pos.y + (look.y / ln) * 650)).multiplyScalar(0.001)
   return (
     <div className="modal-bg" onClick={() => set({ jointDetail: null })}>
-      <div className="modal joint-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal joint-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Verbindung')}>
         <header>
           <h2>
             {tr(JOINT_KIND_LABEL[j.kind])}: {tr(ending?.name ?? '')} ↔ {tr(through?.name ?? '')}
           </h2>
-          <button className="close" onClick={() => set({ jointDetail: null })}>
+          <button className="close" onClick={() => set({ jointDetail: null })} aria-label={t('Schließen')}>
             ✕
           </button>
         </header>

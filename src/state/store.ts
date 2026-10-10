@@ -258,7 +258,7 @@ export const useStore = create<State>((set, get) => ({
   },
   replaceProject: (p) => {
     const { project, past } = get()
-    set({ project: p, past: [...past.slice(-199), project], future: [], selection: null, coalesce: null })
+    set({ project: p, past: [...past.slice(-199), project], future: [], selection: null, multi: [], coalesce: null })
     persist(p)
   },
   endCoalesce: () => set({ coalesce: null }),
@@ -266,14 +266,14 @@ export const useStore = create<State>((set, get) => ({
     const { past, project, future } = get()
     if (!past.length) return
     const prev = past[past.length - 1]
-    set({ project: prev, past: past.slice(0, -1), future: [project, ...future], coalesce: null })
+    set({ project: prev, past: past.slice(0, -1), future: [project, ...future], coalesce: null, ...stillThere(prev, get()) })
     persist(prev)
   },
   redo: () => {
     const { past, project, future } = get()
     if (!future.length) return
     const next = future[0]
-    set({ project: next, past: [...past, project], future: future.slice(1), coalesce: null })
+    set({ project: next, past: [...past, project], future: future.slice(1), coalesce: null, ...stillThere(next, get()) })
     persist(next)
   },
   // eine neue Auswahl zeigt ihre Eigenschaften (die Prüfliste schaltet danach selbst zurück)
@@ -342,6 +342,36 @@ export function groupOf(p: Project, id: string | undefined): string | undefined 
 }
 
 /** Zu welchem Projektobjekt gehört eine ID (Bauteile einer Baugruppe gehören zur Baugruppe)? */
+/** Nach Rückgängig/Wiederholen: Auswahl nur behalten, was es im Stand noch gibt */
+function stillThere(p: Project, s: { selection: Selection | null; multi: string[] }): { selection: Selection | null; multi: string[] } {
+  const owner = (id: string) => {
+    const pre = id.split(':')[0]
+    return p.assemblies.some((a) => a.id === pre) || p.groups.some((g) => g.id === pre)
+  }
+  const exists = (sel: Selection): boolean => {
+    switch (sel.kind) {
+      case 'assembly':
+        return p.assemblies.some((a) => a.id === sel.id)
+      case 'group':
+        return p.groups.some((g) => g.id === sel.id)
+      case 'wallObject':
+        return p.wallObjects.some((o) => o.id === sel.id)
+      case 'furniture':
+        return p.furniture.some((f) => f.id === sel.id)
+      case 'rosette':
+        return p.room.rosettes.some((r) => r.id === sel.id)
+      case 'member':
+        return sel.id.includes(':') ? owner(sel.id) : p.members.some((m) => m.id === sel.id)
+      case 'panel':
+        return sel.id.includes(':') ? owner(sel.id) : p.panels.some((x) => x.id === sel.id)
+      default:
+        return false
+    }
+  }
+  const multi = s.multi.filter((id) => isFreePart(p, id))
+  return { selection: s.selection && exists(s.selection) ? s.selection : null, multi: multi.length > 1 ? multi : [] }
+}
+
 export function selectionFor(p: Project, id: string): Selection | null {
   if (p.assemblies.some((a) => a.id === id)) return { kind: 'assembly', id }
   if (p.groups.some((g) => g.id === id)) return { kind: 'group', id }

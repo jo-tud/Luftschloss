@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { t, tr } from '../i18n'
+import { t, tk, tn, tr } from '../i18n'
 import { bomCsv, parsePriceAnswer, pricePrompt, type Bom } from '../analysis/bom'
 import { loadApiKey, runPriceAgent, storeApiKey, type PriceAgentProgress } from '../analysis/priceAgent'
 import { fmtCm, fmtM } from '../model/geometry'
 import { useDerived, useStore } from '../state/store'
+import { copyText } from './clipboard'
 import { eur } from './fields'
 
 export function MaterialDialog() {
@@ -30,7 +31,7 @@ export function MaterialDialog() {
   }
   return (
     <div className="modal-bg" onClick={() => set({ showMaterial: false })}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Material & Kosten')}>
         <header>
           <h2>{t('Material & Kosten')}</h2>
           <nav className="tabs">
@@ -44,7 +45,7 @@ export function MaterialDialog() {
               {t('Preise recherchieren')}
             </button>
           </nav>
-          <button className="close" onClick={() => set({ showMaterial: false })}>
+          <button className="close" onClick={() => set({ showMaterial: false })} aria-label={t('Schließen')}>
             ✕
           </button>
         </header>
@@ -65,7 +66,7 @@ export function MaterialDialog() {
               <PriceAgent prompt={prompt} onAnswer={(text) => (setAnswer(text), setMsg(t('{n} Preise gefunden – bitte kurz prüfen und übernehmen.', { n: parsePriceAnswer(text).length })))} />
               <h3>{t('Oder per Chat')}</h3>
               <textarea readOnly value={prompt} rows={12} />
-              <button onClick={() => navigator.clipboard?.writeText(prompt).then(() => setMsg(t('Prompt kopiert.')))}>📋 {t('Prompt kopieren')}</button>
+              <button onClick={() => void copyText(prompt).then((ok) => setMsg(ok ? t('Prompt kopiert.') : t('Kopieren hat nicht geklappt – Text unten markieren und kopieren.')))}>📋 {t('Prompt kopieren')}</button>
               <h3>{t('Antwort einfügen')}</h3>
               <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={8} placeholder={t('id;preis_eur;einheit;produktname;url\nkvh-80x80;6,49;m;Konsta KVH 80×80;https://…')} />
               <div className="row">
@@ -123,7 +124,7 @@ function ShoppingList({ bom, overrides }: { bom: Bom; overrides: Record<string, 
                 {tl.oversize.length > 0 && <em className="warn"> + {t('{n} Überlänge', { n: tl.oversize.length })}</em>}
               </td>
               <td className="muted">
-                {t('{n} Teile', { n: tl.pieces.length })}, {fmtM(tl.totalLength)}
+                {tn(tl.pieces.length, tk('1 Teil'), tk('{n} Teile'))}, {fmtM(tl.totalLength)}
               </td>
               <td className="r">{eur(tl.price)}</td>
             </tr>
@@ -265,7 +266,15 @@ function PriceAgent({ prompt, onAnswer }: { prompt: string; onAnswer: (text: str
         <input type="password" value={key} placeholder="sk-ant-…" /* i18n-ok */ autoComplete="off" onChange={(e) => setKey(e.target.value)} />
       </label>
       <label className="check">
-        <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => {
+            setRemember(e.target.checked)
+            // abwählen löscht den gemerkten Schlüssel sofort, nicht erst bei der nächsten Recherche
+            if (!e.target.checked) storeApiKey(null)
+          }}
+        />
         <span>{t('In diesem Browser merken')}</span>
       </label>
       <div className="row">
@@ -283,7 +292,7 @@ function PriceAgent({ prompt, onAnswer }: { prompt: string; onAnswer: (text: str
       {error && <p className="warn">{error}</p>}
       {!busy && progress.sources.length > 0 && (
         <details>
-          <summary>{t('{n} Quellen', { n: progress.sources.length })}</summary>
+          <summary>{tn(progress.sources.length, tk('1 Quelle'), tk('{n} Quellen'))}</summary>
           <ul className="sources">
             {progress.sources.slice(0, 40).map((s) => (
               <li key={s.url}>

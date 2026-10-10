@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { t, tr } from '../i18n'
+import { t, tk, tn, tr } from '../i18n'
 import { fmtCm, fmtM, uid, wallFrame } from '../model/geometry'
 import { BED_TYPE_LABEL } from '../model/loftbed'
 import type { WallId } from '../model/types'
@@ -23,7 +23,7 @@ export function WizardDialog() {
   const close = () => set({ showWizard: false })
   return (
     <div className="modal-bg" onClick={close}>
-      <div className="modal wizard" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={t('Planungsassistent')}>
+      <div className="modal wizard" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Planungsassistent')}>
         <header>
           <h2>🧭 {t('Planungsassistent')}</h2>
           <ol className="wiz-steps">
@@ -290,7 +290,7 @@ function ProposalStep({ a, onDone }: { a: WizardAnswers; onDone: () => void }) {
             ))}
             {p.compromise && <p className="hint warn">⚠ {p.compromise}</p>}
             <p className={`wiz-status${p.errors ? ' err' : p.warnings ? ' warn' : ' ok'}`}>
-              {p.errors ? `⛔ ${t('{n} Fehler', { n: p.errors })}` : p.warnings ? `⚠ ${t('{n} Hinweise zum Prüfen', { n: p.warnings })}` : `✓ ${t('Keine Probleme gefunden')}`}
+              {p.errors ? `⛔ ${tn(p.errors, tk('1 Fehler'), tk('{n} Fehler'))}` : p.warnings ? `⚠ ${tn(p.warnings, tk('1 Hinweis zum Prüfen'), tk('{n} Hinweise zum Prüfen'))}` : `✓ ${t('Keine Probleme gefunden')}`}
             </p>
             {p.issues.length > 0 && (
               <ul className="wiz-issues">

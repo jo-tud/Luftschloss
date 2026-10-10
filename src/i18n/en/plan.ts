@@ -140,6 +140,7 @@ const en: Record<string, string> = {
   '{n} Preise gefunden – bitte kurz prüfen und übernehmen.': '{n} prices found – please check briefly and apply.',
   'Oder per Chat': 'Or via chat',
   'Prompt kopiert.': 'Prompt copied.',
+  'Kopieren hat nicht geklappt – Text unten markieren und kopieren.': 'Copying did not work – select the text below and copy it.',
   'Prompt kopieren': 'Copy prompt',
   'Antwort einfügen': 'Paste answer',
   'id;preis_eur;einheit;produktname;url\nkvh-80x80;6,49;m;Konsta KVH 80×80;https://…': 'id;preis_eur;einheit;produktname;url\nkvh-80x80;6.49;m;Konsta KVH 80×80;https://…',

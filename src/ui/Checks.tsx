@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { t, tk, tr } from '../i18n'
+import { t, tk, tn, tr } from '../i18n'
 import type { Severity } from '../analysis/checks'
 import { selectionFor, useDerived, useStore } from '../state/store'
 import { staticsFindings } from './Statics'
@@ -17,7 +17,7 @@ export function useCheckCounts(): Record<Severity, number> {
 }
 
 export function CountBadges({ c }: { c: Record<Severity, number> }) {
-  const label = t('{e} Fehler, {w} Warnungen, {h} Hinweise', { e: c.fehler, w: c.warnung, h: c.hinweis })
+  const label = [tn(c.fehler, tk('1 Fehler'), tk('{n} Fehler')), tn(c.warnung, tk('1 Warnung'), tk('{n} Warnungen')), tn(c.hinweis, tk('1 Hinweis'), tk('{n} Hinweise'))].join(', ')
   return (
     <span className="badges" aria-label={label} title={label}>
       <span className="b fehler">⛔ {c.fehler}</span>
@@ -134,7 +134,7 @@ export function Checks() {
           <li className="notes-toggle">
             <button className="title" aria-expanded={showNotes} onClick={() => setShowNotes(!showNotes)}>
               <span aria-hidden>{showNotes ? '▾' : '▸'}</span>
-              <span>{showNotes ? t('Hinweise ausblenden') : t('{n} Hinweise anzeigen', { n: notes.length })}</span>
+              <span>{showNotes ? t('Hinweise ausblenden') : tn(notes.length, tk('1 Hinweis anzeigen'), tk('{n} Hinweise anzeigen'))}</span>
             </button>
           </li>
         )}

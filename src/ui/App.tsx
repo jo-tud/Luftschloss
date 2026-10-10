@@ -126,7 +126,17 @@ function usePanelSizes(): [PanelSizes, (patch: Partial<PanelSizes>) => void] {
       }
       return next
     })
-  return [sizes, update]
+  // gespeicherte Breiten (z. B. vom großen Monitor) an das aktuelle Fenster anpassen – die Mitte behält Platz
+  const [vw, setVw] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const on = () => setVw(window.innerWidth)
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  const room = Math.max(440, vw - 420)
+  const sum = sizes.left + sizes.right
+  const shown = sum <= room ? sizes : { left: Math.max(220, Math.round((sizes.left * room) / sum)), right: Math.max(220, Math.round((sizes.right * room) / sum)) }
+  return [shown, update]
 }
 
 /** Ziehleiste: meldet die Verschiebung seit Beginn des Ziehens zusammen mit den Größen beim Start */
@@ -247,7 +257,7 @@ function Help() {
   if (!show) return null
   return (
     <div className="modal-bg" onClick={() => set({ showHelp: false })}>
-      <div className="modal help" onClick={(e) => e.stopPropagation()}>
+      <div className="modal help" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Bedienung')}>
         <header>
           <h2>{t('Bedienung')}</h2>
           <button className="close" onClick={() => set({ showHelp: false })} aria-label={t('Schließen')}>
@@ -373,9 +383,31 @@ function useDialogFocus() {
   useEffect(() => {
     if (!open) return
     const before = document.activeElement as HTMLElement | null
-    const t = setTimeout(() => (document.querySelector('.modal .close, .modal button') as HTMLElement | null)?.focus(), 30)
+    // zuerst auf „Schließen“ (sonst landete der Fokus z. B. im Assistenten auf Schritt 1)
+    const t = setTimeout(() => (document.querySelector<HTMLElement>('.modal .close') ?? document.querySelector<HTMLElement>('.modal button'))?.focus(), 30)
+    const focusables = () => [...(document.querySelector('.modal')?.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])') ?? [])].filter((e) => !e.hasAttribute('disabled') && e.offsetParent !== null)
+    // Tab bleibt im Dialog
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const list = focusables()
+      if (!list.length) return
+      const first = list[0]
+      const last = list[list.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      } else if (!document.querySelector('.modal')?.contains(document.activeElement)) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', trap)
     return () => {
       clearTimeout(t)
+      window.removeEventListener('keydown', trap)
       before?.focus?.()
     }
   }, [open])

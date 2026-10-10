@@ -56,7 +56,7 @@ export function ProjectActions() {
     <div className="stack">
       <label className="field">
         <span>{t('Name')}</span>
-        <input value={p.name} onChange={(e) => useStore.getState().update((d) => void (d.name = e.target.value), 'name')} />
+        <input value={tr(p.name)} onChange={(e) => useStore.getState().update((d) => void (d.name = e.target.value), 'name')} />
       </label>
       <button onClick={() => exportProject(p)}>{t('Projekt speichern als Datei (.json)')}</button>
       <button onClick={importProject}>{t('Projektdatei öffnen…')}</button>
