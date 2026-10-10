@@ -83,6 +83,11 @@ const en: Record<string, string> = {
 
   // --- Absturzsicherung, Leiter ---
   'Geländer nur {h} über der Matratze': 'Guard rail only {h} above the mattress',
+  'Geländer nur {h} über der Liegefläche': 'Guard rail only {h} above the deck',
+  'Wandseite {side} steht {gap} von der Wand ab': 'Wall side {side} stands {gap} away from the wall',
+  'Diese Bauweise trägt auf dieser Seite über einen Wandbalken an der Wand. Das Bett an die Wand rücken oder eine freistehende Bauart wählen.': 'On this side this design is carried by a wall beam fixed to the wall. Move the bed against the wall or choose a freestanding design.',
+  'Wandbalken läuft über {name}': 'Wall beam runs across {name}',
+  'Dort fehlt die Wand zum Befestigen, der Balken trägt in diesem Bereich nicht. Liegefläche höher oder tiefer legen, das Bett verschieben oder auf dieser Seite Pfosten stellen.': 'There is no wall to fix it to there, so the beam carries nothing in that section. Raise or lower the deck, move the bed, or put posts on this side.',
   'Empfehlung (DIN EN 747): mind. 16 cm über Matratzenoberkante und 26 cm über Liegefläche. Maximale Matratzendicke bei diesem Geländer: {max}.': 'Recommendation (DIN EN 747): at least 16 cm above the top of the mattress and 26 cm above the sleeping deck. Maximum mattress thickness with this guard rail: {max}.',
   'Lücken im Geländer {gap}': 'Gaps in the guard rail {gap}',
   'Empfehlung: Öffnungen höchstens 7,5 cm (Kopf darf nicht durchpassen).': 'Recommendation: openings of at most 7.5 cm (a head must not fit through).',

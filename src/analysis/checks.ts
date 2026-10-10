@@ -1,6 +1,6 @@
 import { locale, t, tk, tr } from '../i18n'
 import { catalogItem, maxLength, timber } from '../model/catalog'
-import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, type OBB } from '../model/geometry'
+import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { LOADS, NET_SAG, netEdgePull } from './statics'
 import { cornice, corniceIntrusion, roomObstacles } from '../model/room'
 import type { Resolved } from '../model/resolve'
@@ -269,7 +269,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
     // Absturzsicherung
     if (P.guard !== 'keins') {
       const aboveMattress = P.guardHeight - P.mattressThickness
-      if (aboveMattress < 160) add({ id: `gelaender-hoehe:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Geländer nur {h} über der Matratze', { h: fmtCm(aboveMattress) }), detail: t('Empfehlung (DIN EN 747): mind. 16 cm über Matratzenoberkante und 26 cm über Liegefläche. Maximale Matratzendicke bei diesem Geländer: {max}.', { max: fmtCm(P.guardHeight - 160) }), targets: [a.id] })
+      if (aboveMattress < 160 || P.guardHeight < 260) add({ id: `gelaender-hoehe:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: aboveMattress < 160 ? t('Geländer nur {h} über der Matratze', { h: fmtCm(aboveMattress) }) : t('Geländer nur {h} über der Liegefläche', { h: fmtCm(P.guardHeight) }), detail: t('Empfehlung (DIN EN 747): mind. 16 cm über Matratzenoberkante und 26 cm über Liegefläche. Maximale Matratzendicke bei diesem Geländer: {max}.', { max: fmtCm(P.guardHeight - 160) }), targets: [a.id] })
       if (info.rodGap !== undefined && info.rodGap > 75 && P.guard !== 'seil') add({ id: `gelaender-spalt:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Lücken im Geländer {gap}', { gap: fmtCm(info.rodGap) }), detail: t('Empfehlung: Öffnungen höchstens 7,5 cm (Kopf darf nicht durchpassen).'), targets: [a.id] })
       if (P.guard === 'seil') add({ id: `seil:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Seilgeländer: nur für Jugendliche und Erwachsene'), detail: t('Seile geben nach und lassen große Lücken. Besondere Sorgfalt bei Befestigung und Nachspannen.'), targets: [a.id] })
       if (P.guard === 'netz') add({ id: `netz:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Netz als Absturzsicherung'), detail: t('Knotenloses PP-/Polyesternetz, Maschenweite 30–45 mm, Randseil. Befestigung alle 10–15 cm über Augschrauben oder Bohrungen, Netz etwas kleiner als den Rahmen bestellen und nach den ersten Tagen nachspannen.'), targets: [a.id] })
@@ -283,9 +283,20 @@ export function analyze(p: Project, r: Resolved): Analysis {
     // Offene Seiten zur Wand
     const sides: Side[] = ['hinten', 'vorne', 'links', 'rechts'] // i18n-ok
     for (const s of sides) {
-      if (info.walls.includes(s)) continue
+      const gap = sideWallGap(s, fp, room, P.rotation, P.mirror)
+      if (info.walls.includes(s)) {
+        // Wandseite: trägt und sichert nur, wenn das Bett dort wirklich an der Wand steht
+        if (gap === undefined || gap <= 20) continue
+        add({
+          id: `wandseite:${a.id}:${s}`,
+          severity: 'fehler',
+          category: CAT.stabil,
+          title: t('Wandseite {side} steht {gap} von der Wand ab', { side: sideName(s), gap: fmtCm(gap) }),
+          detail: t('Diese Bauweise trägt auf dieser Seite über einen Wandbalken an der Wand. Das Bett an die Wand rücken oder eine freistehende Bauart wählen.'),
+          targets: [a.id],
+        })
+      }
       if (P.guard !== 'keins' && P.guardSides[s]) continue
-      const gap = sideWallGap(s, fp, room, P.rotation)
       if (gap === undefined) continue
       if (gap > 75 && gap < 230) add({ id: `wandspalt:${a.id}:${s}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Spalt {gap} zwischen Bett ({side}) und Wand', { gap: fmtCm(gap), side: sideName(s) }), detail: t('Einklemmgefahr: Spalt höchstens 7,5 cm oder über 23 cm – sonst Geländer auch auf dieser Seite.'), targets: [a.id] })
       else if (gap >= 230) add({ id: `offen:${a.id}:${s}`, severity: safety('fehler'), category: CAT.sicherheit, title: t('Seite {side} ohne Absturzsicherung', { side: sideName(s) }), targets: [a.id] })
@@ -308,6 +319,31 @@ export function analyze(p: Project, r: Resolved): Analysis {
         add({ id: `decke-balken:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Abhängung nur in einen Deckenbalken'), detail: t('Balkenlage suchen (Leitungssucher, Probebohrung), Gewindestange mit Stahlplatte oder Schwerlastanker im Balken, Stuck nicht berühren. Redundant auslegen.'), targets: [a.id, ...hangers.map((h) => h.id)] })
     }
     if (P.frameStyle === 'aufgelegt' && wallFix.length) add({ id: `wandbalken:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Wandbalken-Bauweise'), detail: t('Effizient und sehr tragfähig an Ziegel- oder Betonwänden: Wandbalken mit Schwerlastdübeln oder Betonschrauben alle ca. 40 cm, Querträger bzw. Latten oben auflegen und verschrauben.'), targets: [a.id] })
+    // Tragender Wandbalken über einem Fenster oder einer Tür: dort ist keine Wand zum Befestigen
+    for (const m of r.members) {
+      if (m.assemblyId !== a.id || m.role !== 'wandriegel') continue
+      const wall = nearestWallId(m, room)
+      const f = wallFrame(room, wall)
+      const along = (q: Vec3) => (q.x - f.start.x) * f.u.x + (q.y - f.start.y) * f.u.y
+      const s0 = Math.min(along(m.start), along(m.end))
+      const s1 = Math.max(along(m.start), along(m.end))
+      const z0 = Math.min(m.start.z, m.end.z) - m.h / 2
+      const z1 = Math.max(m.start.z, m.end.z) + m.h / 2
+      for (const o of p.wallObjects) {
+        if (o.wall !== wall || (o.kind !== 'fenster' && o.kind !== 'tuer')) continue
+        const oz0 = o.kind === 'fenster' ? o.sillHeight : 0
+        const oz1 = o.kind === 'fenster' ? o.sillHeight + o.height : o.height
+        if (s1 <= o.offset || s0 >= o.offset + o.width || z1 <= oz0 || z0 >= oz1) continue
+        add({
+          id: `wandbalken-oeffnung:${m.id}:${o.id}`,
+          severity: 'fehler',
+          category: CAT.stabil,
+          title: bedPrefix(m) + t('Wandbalken läuft über {name}', { name: tr(o.name) }),
+          detail: t('Dort fehlt die Wand zum Befestigen, der Balken trägt in diesem Bereich nicht. Liegefläche höher oder tiefer legen, das Bett verschieben oder auf dieser Seite Pfosten stellen.'),
+          targets: [m.id, o.id],
+        })
+      }
+    }
     for (const f of wallFix) {
       const m = memberById.get(f.memberId)
       if (!m) continue
@@ -428,10 +464,11 @@ export function analyze(p: Project, r: Resolved): Analysis {
   return { findings: groupFindings(findings, meta, p, r), windows, doors, clearances }
 }
 
-function sideWallGap(s: Side, fp: { minX: number; maxX: number; minY: number; maxY: number }, room: Project['room'], rotation: number): number | undefined {
-  // Lokale Seite in Weltrichtung übersetzen
+function sideWallGap(s: Side, fp: { minX: number; maxX: number; minY: number; maxY: number }, room: Project['room'], rotation: number, mirror = false): number | undefined {
+  // Lokale Seite in Weltrichtung übersetzen; gespiegelt tauschen links und rechts (wie in toWorld)
   const order: Side[] = ['hinten', 'rechts', 'vorne', 'links'] // i18n-ok
-  const idx = (order.indexOf(s) + rotation / 90) % 4
+  const local: Side = mirror && s === 'links' ? 'rechts' : mirror && s === 'rechts' ? 'links' : s // i18n-ok
+  const idx = (order.indexOf(local) + rotation / 90) % 4
   switch (order[idx]) {
     case 'hinten':
       return fp.minY
@@ -444,15 +481,20 @@ function sideWallGap(s: Side, fp: { minX: number; maxX: number; minY: number; ma
   }
 }
 
+/** Wand, an der das Bauteil liegt: bei waagrechten Teilen die Wand, zu der es parallel läuft (in Ecken berühren sie zwei) */
 function nearestWallId(m: Member, room: Project['room']): 'A' | 'B' | 'C' | 'D' {
   const b = obbBounds(memberBoxes(m)[0])
+  const dx = Math.abs(m.end.x - m.start.x)
+  const dy = Math.abs(m.end.y - m.start.y)
+  const dz = Math.abs(m.end.z - m.start.z)
   const gaps: ['A' | 'B' | 'C' | 'D', number][] = [
     ['A', b.min.y],
     ['B', b.min.x],
     ['C', room.width - b.max.y],
     ['D', room.length - b.max.x],
   ]
-  return gaps.sort((x, y) => x[1] - y[1])[0][0]
+  const along = dz >= Math.max(dx, dy) ? gaps : dx >= dy ? gaps.filter(([w]) => w === 'A' || w === 'C') : gaps.filter(([w]) => w === 'B' || w === 'D')
+  return along.sort((x, y) => x[1] - y[1])[0][0]
 }
 
 /**
