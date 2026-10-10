@@ -271,7 +271,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M1 Raum & Zeichnen | Raum, Hindernisse, Ansichten mit Übergängen, Zeichnen, Fang, Undo, Speichern | ✅ Prototyp |
 | M2 Vorlagen & Freiraum | 6 Bauarten, Geländer, Leitern, Freiraum, Fenster- und Tür-Schwenk, Prüfliste | ✅ Prototyp |
 | M3 Verbindungen & Material | Verbindungskatalog, automatische Erkennung, Einkaufsliste, Zuschnitt, Preis-Prompt | ✅ Prototyp |
-| M4 Bedienung verfeinern | Griffe, Maßketten-Eingabe, Abwicklung, Schnittbox, Ansichtswürfel, Panini, Mausprofile, Detailansicht je Verbindung (3D-Explosion) | ◻ |
+| M4 Bedienung verfeinern | Griffe an Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Bett spiegeln, Abwicklung (Wandobjekte ziehen), Schnittbox, „Ansicht zurücksetzen“, Kamera nicht unter den Boden, Mausprofil CAD, 3D-Detail je Verbindung (Explosion mit Beschlägen). Statt Ansichtswürfel: Übersichtskarte und Ansichtsleiste. Panini-Projektion zurückgestellt. | ✅ |
 | M5 Statik des Gestells | Stabwerk, Lastfälle, Einfärbung, Querschnittsvergleich, Wackeln | ◻ |
 | M6 Bauplan | PDF mit Maßen, Teilenummern, Verbindungsdetails, Plattenzuschnitt, Montagereihenfolge | ◻ |
 | M6b Tablet | Finger- und Stiftbedienung, Tablet-Layout, WLAN-/Tailscale-Freigabe mit Projekt-Sync, Offline (PWA) | ◻ |

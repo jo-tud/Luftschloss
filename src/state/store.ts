@@ -11,6 +11,7 @@ export type ViewMode =
   | { kind: 'elev'; wall: WallId }
   | { kind: '3d' }
   | { kind: 'person'; preset: PersonPreset }
+  | { kind: 'unfold' }
 
 export type PersonPreset = 'tuer' | 'unter' | 'matratze' | 'liegen'
 
@@ -57,6 +58,12 @@ interface State {
   showMaterial: boolean
   showHelp: boolean
   focusRequest: { id: string; nonce: number } | null
+  /** Schnittbox in 3D (mm); null = aus */
+  sectionBox: { x0: number; x1: number; y0: number; y1: number; z1: number } | null
+  /** Mausbelegung: standard = links ziehen dreht; cad = mittlere Taste dreht, links nur Auswahl */
+  mouseProfile: 'standard' | 'cad'
+  /** Geöffnete Detailansicht einer Verbindung */
+  jointDetail: string | null
   /** Änderung am Projekt; coalesce fasst viele Schritte (z. B. Ziehen) zu einem Undo-Schritt zusammen */
   update: (recipe: (d: Project) => void, coalesce?: string) => void
   /** Wie update, aber ausgehend von einem festen Ausgangsstand (für Ziehen ohne Rundungsfehler) */
@@ -134,6 +141,15 @@ export const useStore = create<State>((set, get) => ({
   showMaterial: false,
   showHelp: false,
   focusRequest: null,
+  sectionBox: null,
+  mouseProfile: (() => {
+    try {
+      return localStorage.getItem('luftschloss.maus') === 'cad' ? 'cad' : 'standard'
+    } catch {
+      return 'standard'
+    }
+  })(),
+  jointDetail: null,
   update: (recipe, coalesce) => {
     const { project, past, coalesce: current } = get()
     const next = produce(project, recipe)

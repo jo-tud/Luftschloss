@@ -1,9 +1,9 @@
 import { Edges, Html, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, type ReactElement } from 'react'
+import { useMemo, useRef, useState, type ReactElement } from 'react'
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
-import { fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
+import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { cornice, doorGeom, furnitureBox, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
@@ -33,8 +33,10 @@ const COLORS = {
 }
 
 export interface PickData {
-  kind: 'member' | 'panel' | 'wallObject' | 'furniture' | 'rosette'
+  kind: 'member' | 'panel' | 'wallObject' | 'furniture' | 'rosette' | 'handle' | 'joint'
   id: string
+  /** Bei Griffen: welches Stabende */
+  end?: 'start' | 'end'
 }
 
 function vec(v: { x: number; y: number; z: number }): THREE.Vector3 {
@@ -583,11 +585,61 @@ export function JointMarkers({ d }: { d: Derived }) {
   return (
     <group>
       {joints.map((j) => (
-        <mesh key={j.key} position={T(j.pos.x, j.pos.y, j.pos.z)}>
-          <sphereGeometry args={[0.018, 12, 10]} />
+        <mesh key={j.key} position={T(j.pos.x, j.pos.y, j.pos.z)} userData={{ pick: { kind: 'joint', id: j.key } }}>
+          <sphereGeometry args={[0.022, 12, 10]} />
           <meshStandardMaterial color={j.kind === 'kreuzung' ? '#d64545' : j.kind === 'auflage' ? '#2f9e5b' : '#2a6fdb'} emissive="#111" />
         </mesh>
       ))}
+    </group>
+  )
+}
+
+/** Griffe an den Enden eines frei gezeichneten Stabs und editierbare Länge */
+export function MemberHandles({ p }: { p: Project }) {
+  const sel = useStore((s) => s.selection)
+  const update = useStore((s) => s.update)
+  const [editing, setEditing] = useState(false)
+  const m = sel?.kind === 'member' ? p.members.find((x) => x.id === sel.id) : undefined
+  if (!m) return null
+  const L = Math.hypot(m.end.x - m.start.x, m.end.y - m.start.y, m.end.z - m.start.z)
+  const mid = T((m.start.x + m.end.x) / 2, (m.start.y + m.end.y) / 2, (m.start.z + m.end.z) / 2 + m.h / 2 + 60)
+  const setLength = (v: number) =>
+    update((d) => {
+      const x = d.members.find((y) => y.id === m.id)
+      if (!x || L < 1) return
+      const k = v / L
+      x.end = { x: Math.round(x.start.x + (x.end.x - x.start.x) * k), y: Math.round(x.start.y + (x.end.y - x.start.y) * k), z: Math.round(x.start.z + (x.end.z - x.start.z) * k) }
+    })
+  return (
+    <group>
+      {(['start', 'end'] as const).map((end) => (
+        <mesh key={end} position={T(m[end].x, m[end].y, m[end].z)} userData={{ pick: { kind: 'handle', id: m.id, end } }}>
+          <sphereGeometry args={[0.035, 16, 12]} />
+          <meshStandardMaterial color="#ff8a3d" emissive="#ff8a3d" emissiveIntensity={0.4} depthTest={false} transparent opacity={0.9} />
+        </mesh>
+      ))}
+      <Html position={mid} center zIndexRange={[20, 0]}>
+        {editing ? (
+          <input
+            className="len-input"
+            autoFocus
+            defaultValue={(L / 10).toFixed(1).replace('.', ',')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const v = Number((e.target as HTMLInputElement).value.replace(',', '.'))
+                if (Number.isFinite(v) && v > 1) setLength(Math.round(v * 10))
+                setEditing(false)
+              }
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            onBlur={() => setEditing(false)}
+          />
+        ) : (
+          <button className="len-label" onClick={() => setEditing(true)} title="Länge eingeben">
+            {fmtCm(L)} ✎
+          </button>
+        )}
+      </Html>
     </group>
   )
 }
@@ -632,6 +684,7 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
       {!mini && <ClearanceMarks p={p} d={d} />}
       {!mini && <JointMarkers d={d} />}
       {!mini && <FootprintShadows d={d} />}
+      {!mini && <MemberHandles p={p} />}
     </>
   )
 }

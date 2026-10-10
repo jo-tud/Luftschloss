@@ -103,6 +103,10 @@ export function goalFor(view: ViewMode, p: Project, d: Derived, aspect: number):
     }
     case 'person':
       return personGoal(view.preset, p, d)
+    case 'unfold': {
+      const viewH = Math.max(W, L / aspect) * 1.12
+      return { target: center, yaw: 0, pitch: -89.9, viewH, fov: ORTHO_FOV }
+    }
   }
 }
 

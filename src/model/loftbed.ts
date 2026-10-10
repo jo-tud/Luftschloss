@@ -104,7 +104,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const fixings: BedFixing[] = []
 
   const toWorld = (q: Vec3): Vec3 => {
-    const r = rotate2(q.x, q.y, P.rotation)
+    const r = rotate2(P.mirror ? Lo - q.x : q.x, q.y, P.rotation)
     return v(Math.round((P.x + r.x) * 10) / 10, Math.round((P.y + r.y) * 10) / 10, q.z)
   }
   const to2 = (x: number, y: number) => {

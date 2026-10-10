@@ -6,6 +6,7 @@ import { useDerived, useStore, type PersonPreset, type ViewMode } from '../state
 import { applyCam, goalFor, PERSON_LABEL, T } from './camera'
 import { Controller, mainCam } from './Controller'
 import { SceneContent } from './Scene'
+import { UnfoldView } from './Unfold'
 
 export function viewLabel(v: ViewMode): string {
   switch (v.kind) {
@@ -17,6 +18,8 @@ export function viewLabel(v: ViewMode): string {
       return '3D'
     case 'person':
       return PERSON_LABEL[v.preset]
+    case 'unfold':
+      return 'Abwicklung'
   }
 }
 
@@ -70,12 +73,14 @@ export function Viewport() {
   if (view.kind === 'elev') lastWall.current = view.wall
   const minis = miniViews(view, lastWall.current)
   return (
-    <div className="viewport">
+    <div className={`viewport${view.kind === 'unfold' ? ' unfold-on' : ''}`}>
       <Canvas shadows camera={{ fov: 40, near: 0.05, far: 200, position: [3, 3, 3] }} gl={{ antialias: true, preserveDrawingBuffer: true }} dpr={[1, 2]}>
         <MainScene />
       </Canvas>
+      {view.kind === 'unfold' && <UnfoldView />}
       <ViewSwitcher />
-      <MiniMap />
+      {view.kind !== 'unfold' && <MiniMap />}
+      <SectionBoxPanel />
       <div className="minis">
         {minis.map((v) => (
           <button key={v.kind} className="mini" onClick={() => setView(v)} title={`${viewLabel(v)} groß anzeigen`}>
@@ -117,7 +122,54 @@ function ViewSwitcher() {
           </button>
         ))}
       </span>
+      <button className={view.kind === 'unfold' ? 'on' : ''} onClick={() => setView({ kind: 'unfold' })} title="Raum aufgeklappt: Wände von innen, Fenster und Heizkörper direkt ziehen (5)">
+        Abwicklung
+      </button>
+      <button onClick={() => setView({ kind: '3d' })} title="Ansicht zurücksetzen (0)">
+        ⌂
+      </button>
+      <SectionToggle />
       <span className="view-name">{viewLabel(view)}</span>
+    </div>
+  )
+}
+
+function SectionToggle() {
+  const box = useStore((s) => s.sectionBox)
+  const view = useStore((s) => s.view)
+  const room = useStore((s) => s.project.room)
+  const set = useStore((s) => s.set)
+  if (view.kind !== '3d' && view.kind !== 'person') return null
+  return (
+    <button className={box ? 'on' : ''} onClick={() => set({ sectionBox: box ? null : { x0: 0, x1: room.length, y0: 0, y1: room.width, z1: room.height } })} title="Schnittbox: Raum in 3D zuschneiden">
+      ✂ Schnitt
+    </button>
+  )
+}
+
+function SectionBoxPanel() {
+  const box = useStore((s) => s.sectionBox)
+  const view = useStore((s) => s.view)
+  const room = useStore((s) => s.project.room)
+  const set = useStore((s) => s.set)
+  if (!box || (view.kind !== '3d' && view.kind !== 'person')) return null
+  const slider = (label: string, key: keyof typeof box, max: number) => (
+    <label key={key}>
+      <span>{label}</span>
+      <input type="range" min={0} max={max} step={50} value={box[key]} onChange={(e) => set({ sectionBox: { ...box, [key]: Number(e.target.value) } })} />
+    </label>
+  )
+  return (
+    <div className="section-box">
+      <b>Schnittbox</b>
+      {slider('x von', 'x0', room.length)}
+      {slider('x bis', 'x1', room.length)}
+      {slider('y von', 'y0', room.width)}
+      {slider('y bis', 'y1', room.width)}
+      {slider('Höhe bis', 'z1', room.height)}
+      <button className="link" onClick={() => set({ sectionBox: null })}>
+        Schnitt aus
+      </button>
     </div>
   )
 }

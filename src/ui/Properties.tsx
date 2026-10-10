@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
@@ -118,6 +119,7 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           <Num label="y" value={P.y} onChange={(v) => setP({ y: v })} />
         </div>
         <Sel label="Drehung" value={String(P.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setP({ rotation: Number(v) as 0 })} />
+        <Check label="Gespiegelt (links ↔ rechts)" value={P.mirror} onChange={(v) => setP({ mirror: v })} />
         <Sel label="An Sockelleiste" value={P.wallFit} options={[['ausklinken', 'Pfosten ausklinken'], ['abruecken', 'Bett abrücken']]} onChange={(v) => setP({ wallFit: v })} title="Wie das Bett an Wänden mit Sockelleiste anschließt" />
         {shift && <p className="hint">Automatisch {fmtCm(Math.hypot(shift.dx, shift.dy))} von der Wand abgerückt.</p>}
         {P.type === 'deckenhoch' && <Num label="Luft zur Decke (Stellfuß)" value={P.ceilingGap} unit="mm" onChange={(v) => setP({ ceilingGap: v })} />}
@@ -315,6 +317,7 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
                 })
               }
             />
+            <ArrayTool m={m} />
             <div className="stack">
               <button onClick={() => setM((x) => void ([x.b, x.h] = [x.h, x.b]))} title="Querschnitt um 90° drehen (R)">
                 Hochkant/flach drehen
@@ -351,6 +354,9 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
             <div key={j.key} className="joint">
               <div className="joint-head">
                 <b>{JOINT_KIND_LABEL[j.kind]}</b> mit {other?.name ?? 'Bauteil'}
+                <button className="link" onClick={() => useStore.getState().set({ jointDetail: j.key })}>
+                  3D-Detail
+                </button>
               </div>
               <select value={j.typeId} onChange={(e) => update((dd) => setJoint(dd, j.key, e.target.value))}>
                 {typesForKind(j.kind).map((t) => (
@@ -374,6 +380,36 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
         })}
       </Section>
     </>
+  )
+}
+
+/** Reihe erzeugen: Kopien in gleichem Abstand */
+function ArrayTool({ m }: { m: Member }) {
+  const update = useStore((s) => s.update)
+  const [count, setCount] = useState(3)
+  const [step, setStep] = useState(500)
+  const [axis, setAxis] = useState<'x' | 'y' | 'z'>('x')
+  return (
+    <details className="sub">
+      <summary>Reihe erzeugen…</summary>
+      <div className="sub-row">
+        <Num label="Anzahl Kopien" value={count} unit="" onChange={setCount} min={1} max={50} />
+        <Num label="Abstand" value={step} onChange={setStep} />
+        <Sel label="Richtung" value={axis} options={[['x', 'entlang x'], ['y', 'entlang y'], ['z', 'nach oben']]} onChange={setAxis} />
+        <button
+          onClick={() =>
+            update((d) => {
+              for (let i = 1; i <= count; i++) {
+                const off = { x: 0, y: 0, z: 0, [axis]: step * i }
+                d.members.push({ ...m, id: uid('balken'), notches: undefined, start: { x: m.start.x + off.x, y: m.start.y + off.y, z: m.start.z + off.z }, end: { x: m.end.x + off.x, y: m.end.y + off.y, z: m.end.z + off.z } })
+              }
+            })
+          }
+        >
+          {count} Kopien anlegen
+        </button>
+      </div>
+    </details>
   )
 }
 

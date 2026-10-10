@@ -132,12 +132,35 @@ function RoomTab() {
         <Sel label="Sicherheitsempfehlungen" value={p.settings.safetyProfile} options={[['kinder', 'Kinder (streng)'], ['jugendliche', 'Jugendliche'], ['erwachsene', 'Erwachsene (nur Hinweise)']]} onChange={(v) => update((d) => void (d.settings.safetyProfile = v))} />
         <Num label="Körpergröße (für Freiraum)" value={p.settings.personHeight} onChange={(v) => update((d) => void (d.settings.personHeight = v))} />
         <Check label="Mietwohnung – möglichst wenig bohren" value={p.settings.rentalMode} onChange={(v) => update((d) => void (d.settings.rentalMode = v))} />
+        <MouseProfile />
         <Sel label="Verbindungen bevorzugt" value={p.settings.jointPreference} options={[['einfach', 'möglichst einfach (Winkel)'], ['zerlegbar', 'zerlegbar (Schlossschrauben)'], ['wenig-metall', 'wenig Metall (Holzverbindungen)']]} onChange={(v) => update((d) => void ((d.settings.jointPreference = v), (d.joints = [])))} />
       </Section>
       <Section title="Projekt" open={false}>
         <ProjectActions />
       </Section>
     </>
+  )
+}
+
+function MouseProfile() {
+  const profile = useStore((s) => s.mouseProfile)
+  return (
+    <Sel
+      label="Mausbelegung"
+      value={profile}
+      options={[
+        ['standard', 'Standard (links ziehen dreht)'],
+        ['cad', 'CAD (mittlere Taste dreht)'],
+      ]}
+      onChange={(v) => {
+        useStore.setState({ mouseProfile: v })
+        try {
+          localStorage.setItem('luftschloss.maus', v)
+        } catch {
+          // nur Komfort
+        }
+      }}
+    />
   )
 }
 
