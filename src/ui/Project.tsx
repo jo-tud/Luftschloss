@@ -32,6 +32,11 @@ export function importProject() {
   input.click()
 }
 
+/** Planungsassistent öffnen: Schritt für Schritt vom leeren Raum zum ersten Entwurf */
+export function openWizard() {
+  useStore.getState().set({ showWizard: true, leftOpen: false, rightOpen: false })
+}
+
 export function newEmptyRoom() {
   if (!confirm(t('Aktuellen Plan verwerfen und mit einem leeren Zimmer beginnen? (Rückgängig ist möglich.)'))) return
   const s = useStore.getState()
@@ -55,6 +60,7 @@ export function ProjectActions() {
       <button onClick={() => exportProject(p)}>{t('Projekt speichern als Datei (.json)')}</button>
       <button onClick={importProject}>{t('Projektdatei öffnen…')}</button>
       <button onClick={loadExample}>{t('Beispielzimmer laden')}</button>
+      <button onClick={openWizard}>🧭 {t('Planungsassistent')}</button>
       <button onClick={newEmptyRoom}>{t('Neues, leeres Zimmer')}</button>
     </div>
   )
@@ -78,7 +84,8 @@ export function ProjectMenu() {
       </summary>
       <div className="menu" onClick={close}>
         <p className="hint">{status}</p>
-        <button onClick={newEmptyRoom}>{t('Neues Zimmer')}</button>
+        <button onClick={openWizard}>🧭 {t('Planungsassistent')}</button>
+        <button onClick={newEmptyRoom}>{t('Neues, leeres Zimmer')}</button>
         <button onClick={importProject}>{t('Öffnen…')}</button>
         <button onClick={() => exportProject(p)}>{t('Als Datei speichern')}</button>
         <button onClick={loadExample}>{t('Beispielzimmer laden')}</button>
@@ -125,10 +132,10 @@ export function ExampleBanner() {
         className="primary"
         onClick={() => {
           dismiss()
-          newEmptyRoom()
+          openWizard()
         }}
       >
-        {t('Eigenes Zimmer anlegen')}
+        🧭 {t('Eigenes Zimmer planen')}
       </button>
       <button onClick={dismiss}>{t('Beispiel ansehen')}</button>
     </div>

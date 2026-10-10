@@ -1942,3 +1942,177 @@ button.primary:disabled {
   flex-shrink: 0;
   padding: 4px 6px;
 }
+
+/* Planungsassistent */
+.modal.wizard {
+  width: min(900px, 96vw);
+}
+.wiz-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wiz-steps button {
+  border-color: transparent;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.wiz-steps span {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eceae6;
+  font-size: 11px;
+  margin-right: 2px;
+}
+.wiz-steps .on button {
+  color: inherit;
+  background: var(--accent-soft);
+}
+.wiz-steps .on span,
+.wiz-steps .done span {
+  background: var(--accent);
+  color: #fff;
+}
+.wiz-body {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 18px;
+  overflow: auto;
+}
+.wiz-main h3 {
+  margin: 4px 0 8px;
+  font-size: 15px;
+}
+.wiz-main .field {
+  margin-bottom: 8px;
+}
+.wiz-side {
+  align-self: start;
+  position: sticky;
+  top: 0;
+}
+.wiz-sketch {
+  width: 100%;
+  background: #fbfaf7;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.wiz-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+.wiz-opening {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px 2px;
+  margin: 0 0 8px;
+}
+.wiz-opening legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.wiz-opening .link {
+  border: none;
+  padding: 0 4px;
+}
+.wiz-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.wiz-card {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  text-align: left;
+  padding: 10px;
+  border-radius: 10px;
+}
+.wiz-card .icon {
+  font-size: 22px;
+}
+.wiz-card.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.wiz-proposals {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+.wiz-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.wiz-proposal.best {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.wiz-proposal header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0;
+  border: none;
+}
+.wiz-proposal .badge {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+}
+.wiz-proposal ul {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.wiz-proposal > button {
+  margin-top: auto;
+}
+.wiz-status.ok {
+  color: #2f9e5b;
+}
+.wiz-status.warn {
+  color: #b07a00;
+}
+.wiz-status.err {
+  color: #d64545;
+}
+.wiz-issues {
+  color: var(--muted);
+}
+.hint.warn {
+  color: #9a6a00;
+}
+button.wide {
+  width: calc(100% - 24px);
+  margin: 8px 12px 0;
+}
+@media (max-width: 760px) {
+  .wiz-body {
+    grid-template-columns: 1fr;
+  }
+  .wiz-side {
+    position: static;
+  }
+}

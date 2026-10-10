@@ -1,7 +1,8 @@
 import { locale, t, tk, tr } from '../i18n'
-import { defaultBedParams } from '../model/defaults'
+import { placeBed, type Corner } from '../model/placement'
+import { openWizard } from './Project'
 import { uid } from '../model/geometry'
-import { BED_TYPE_LABEL, bedOuterSize } from '../model/loftbed'
+import { BED_TYPE_LABEL } from '../model/loftbed'
 import type { BedType, CeilingMaterial, LoftBedParams, CorniceProfile, FloorMaterial, Furniture, FurnitureKind, Project, WallId, WallMaterial, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useStore } from '../state/store'
@@ -344,8 +345,6 @@ const PRESETS: Preset[] = [
   { key: 'abgehaengt', label: tk('Wandbalken + Decke'), hint: tk('Wandbalken hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.'), type: 'abgehaengt', patch: { frameStyle: 'aufgelegt' } },
 ]
 
-/** Ecke des Raums, in die ein neues Bett gestellt wird */
-type Corner = 'AD' | 'AB' | 'CB' | 'CD'
 
 function BedTab() {
   const p = useStore((s) => s.project)
@@ -353,19 +352,7 @@ function BedTab() {
   const select = useStore((s) => s.select)
   const sel = useStore((s) => s.selection)
   const insert = (preset: Preset, corner: Corner) => {
-    const type = preset.type
-    const params = defaultBedParams({ type, deckHeight: Math.min(1900, p.room.height - 1100), wallEnd: corner === 'AD' || corner === 'CB' ? 'rechts' : 'links' /* i18n-ok */, braces: type === 'freistehend', ...preset.patch })
-    // Die Rückseite steht an der Wand: dort übernimmt die Wand die Absturzsicherung
-    params.guardSides = { ...params.guardSides, hinten: false }
-    const { length } = bedOuterSize(params)
-    const r = p.room
-    // Bett läuft entlang Wand A (bzw. C), die Rückseite liegt an der Wand
-    if (corner === 'AD') Object.assign(params, { x: r.length - length, y: 0, rotation: 0 })
-    if (corner === 'AB') Object.assign(params, { x: 0, y: 0, rotation: 0 })
-    if (corner === 'CB') Object.assign(params, { x: length, y: r.width, rotation: 180 })
-    if (corner === 'CD') Object.assign(params, { x: r.length, y: r.width, rotation: 180 })
-    if (type === 'nische') Object.assign(params, { mattressLength: Math.max(1600, r.length - 2 * 80 - 20), x: 0, rotation: corner.startsWith('C') ? 180 : 0, y: corner.startsWith('C') ? r.width : 0 })
-    if (type === 'nische' && corner.startsWith('C')) params.x = r.length
+    const params = placeBed(p.room, preset.type, preset.patch, corner)
     const id = uid('bett')
     update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: tr(preset.label), params, detached: [] }))
     select({ kind: 'assembly', id })
@@ -383,6 +370,11 @@ function BedTab() {
           ))}
           {!p.assemblies.length && <li className="empty">{t('Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.')}</li>}
         </ul>
+        {!p.assemblies.length && (
+          <button className="primary wide" onClick={openWizard}>
+            🧭 {t('Mit dem Planungsassistenten starten')}
+          </button>
+        )}
       </Section>
       <Section title={t('Vorlage einsetzen')}>
         <div className="templates">

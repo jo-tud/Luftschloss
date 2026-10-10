@@ -12,6 +12,7 @@ import { Properties } from './Properties'
 import { Sidebar } from './Sidebar'
 import { StaticsRunner } from './Statics'
 import { BauplanDialog } from './Bauplan'
+import { WizardDialog } from './Wizard'
 import { ServerSync, ShareDialog, Toast } from './Sync'
 import { Toolbar } from './Toolbar'
 import { ExampleBanner } from './Project'
@@ -79,6 +80,7 @@ export function App() {
       <MaterialDialog />
       <JointDetailDialog />
       <BauplanDialog />
+      <WizardDialog />
       <Help />
     </div>
   )
