@@ -318,12 +318,13 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   // --- Liegefläche ---------------------------------------------------------------------
   if (slat) {
     // Lose aufgelegte Latten quer über die Längszargen (Forenpraxis: Abstand 6–10 cm, belüftet)
+    // 5 mm Luft zu den Pfosten, damit die Latten lose liegen und nicht mit den Pfosten verschraubt werden
     const w = slat.h
-    const span = Lo - 2 * p
+    const span = Lo - 2 * p - 10
     const n = Math.max(2, Math.floor((span + P.slatGap) / (w + P.slatGap)))
     const gap = (span - n * w) / (n - 1)
     for (let i = 0; i < n; i++) {
-      const x = p + w / 2 + i * (w + gap)
+      const x = p + 5 + w / 2 + i * (w + gap)
       add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 0, railTop + t / 2), v(x, Wo, railTop + t / 2), w, t, { name: `Latte ${i + 1}` })
     }
     if (wideSlats) {

@@ -8,6 +8,7 @@ import { Num } from './fields'
 import { MaterialDialog } from './Material'
 import { Properties } from './Properties'
 import { Sidebar } from './Sidebar'
+import { StaticsRunner } from './Statics'
 import { Toolbar } from './Toolbar'
 
 export function App() {
@@ -26,6 +27,7 @@ export function App() {
         </div>
         <Checks />
       </aside>
+      <StaticsRunner />
       <MaterialDialog />
       <JointDetailDialog />
       <Help />

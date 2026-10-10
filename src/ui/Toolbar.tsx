@@ -71,6 +71,11 @@ export function Toolbar() {
           </div>
         </details>
       </div>
+      <div className="group">
+        <button className={s.staticsMode ? 'on' : ''} onClick={() => s.set({ staticsMode: !s.staticsMode, wobble: false })} title="Statik des Gestells: Ausnutzung, Verformung, Wackeln">
+          ⚖ Statik{s.statics ? ` ${Math.round(s.statics.maxUtil * 100)} %` : ''}
+        </button>
+      </div>
       <div className="spacer" />
       <button className="cost" onClick={() => s.set({ showMaterial: true })} title="Stückliste, Zuschnitt und Kosten">
         🧾 Material · {eur(d.bom.total)}

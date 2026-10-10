@@ -7,6 +7,7 @@ import { applyCam, goalFor, PERSON_LABEL, T } from './camera'
 import { Controller, mainCam } from './Controller'
 import { SceneContent } from './Scene'
 import { UnfoldView } from './Unfold'
+import { StaticsPanel } from '../ui/Statics'
 
 export function viewLabel(v: ViewMode): string {
   switch (v.kind) {
@@ -81,6 +82,7 @@ export function Viewport() {
       <ViewSwitcher />
       {view.kind !== 'unfold' && <MiniMap />}
       <SectionBoxPanel />
+      <StaticsPanel />
       <div className="minis">
         {minis.map((v) => (
           <button key={v.kind} className="mini" onClick={() => setView(v)} title={`${viewLabel(v)} groß anzeigen`}>

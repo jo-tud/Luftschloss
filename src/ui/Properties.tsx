@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MemberStatics } from './Statics'
 import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
@@ -145,7 +146,7 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
             ['platte', 'Platte'],
             ['dielen', 'Dielen / Rauspund'],
           ]}
-          onChange={(v) => setP({ deck: v, deckCatalogId: v === 'latten' ? 'geh-24x94' : v === 'platte' ? 'osb-22' : v === 'dielen' ? 'nf-kiefer-27' : v })}
+          onChange={(v) => setP({ deck: v, deckCatalogId: v === 'latten' ? 'geh-44x74' : v === 'platte' ? 'osb-22' : v === 'dielen' ? 'nf-kiefer-27' : v })}
         />
         {P.deck === 'latten' && (
           <>
@@ -344,6 +345,9 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
             Aus Vorlage lösen und frei bearbeiten
           </button>
         )}
+      </Section>
+      <Section title="Statik">
+        <MemberStatics m={m} />
       </Section>
       <Section title={`Verbindungen (${joints.length})`}>
         {joints.length === 0 && <p className="hint">Keine Berührung mit anderen Teilen.</p>}

@@ -2,6 +2,7 @@ import { Edges, Html, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef, useState, type ReactElement } from 'react'
 import * as THREE from 'three'
+import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { cornice, doorGeom, furnitureBox, sashBoxes, windowSashes } from '../model/room'
@@ -84,14 +85,63 @@ function isSelected(sel: ReturnType<typeof useStore.getState>['selection'], m: {
 export function MemberMeshes({ members, mini }: { members: Member[]; mini?: boolean }) {
   const sel = useStore((s) => s.selection)
   const hover = useStore((s) => s.hover)
+  const staticsMode = useStore((s) => s.staticsMode)
+  const statics = useStore((s) => s.statics)
   return (
     <group>
       {members.map((m) => {
         const boxes = memberBoxes(m)
-        const highlight = mini ? undefined : isSelected(sel, m) ? COLORS.select : hover && (hover === m.id || hover === m.assemblyId) ? COLORS.hover : undefined
-        return boxes.map((o, i) => <Box key={`${m.id}-${i}`} o={o} color={memberColor(m)} pick={{ kind: 'member', id: m.id }} edges={!m.round} round={m.round} highlight={highlight} />)
+        let highlight = mini ? undefined : isSelected(sel, m) ? COLORS.select : hover && (hover === m.id || hover === m.assemblyId) ? COLORS.hover : undefined
+        let color = memberColor(m)
+        if (!mini && staticsMode && statics) {
+          const c = statics.members.get(m.id)
+          color = c ? UTIL_COLOR(c.util) : '#c9c9c9'
+          if (highlight && !isSelected(sel, m)) highlight = undefined
+        }
+        return boxes.map((o, i) => <Box key={`${m.id}-${i}`} o={o} color={color} pick={{ kind: 'member', id: m.id }} edges={!m.round} round={m.round} highlight={highlight} opacity={!mini && staticsMode ? 0.85 : 1} />)
       })}
     </group>
+  )
+}
+
+/** Verformungsfigur der Statik als Linien; beim Wackeln schwingt sie hin und her */
+export function StaticsShapes() {
+  const st = useStore((s) => s.statics)
+  const mode = useStore((s) => s.staticsMode)
+  const kase = useStore((s) => s.staticsCase)
+  const scale = useStore((s) => s.staticsScale)
+  const wobble = useStore((s) => s.wobble)
+  const ref = useRef<THREE.LineSegments>(null)
+  const data = useMemo(() => {
+    if (!st) return null
+    const shapes = st.shapes[kase]
+    const base: number[] = []
+    const disp: number[] = []
+    for (const pts of shapes.values()) {
+      for (let i = 0; i < pts.length - 1; i++) {
+        for (const q of [pts[i], pts[i + 1]]) {
+          base.push(q.p.x / 1000, q.p.z / 1000, -q.p.y / 1000)
+          disp.push(q.u.x / 1000, q.u.z / 1000, -q.u.y / 1000)
+        }
+      }
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(base.length), 3))
+    return { base, disp, geo }
+  }, [st, kase])
+  useFrame(({ clock }) => {
+    if (!data || !ref.current) return
+    const f = wobble ? Math.sin(clock.elapsedTime * 2 * Math.PI * 1.1) : 1
+    const k = scale * (wobble ? Math.max(1, 15 / Math.max(0.5, Math.max(st!.sway.x, st!.sway.y))) : 1) * f
+    const arr = data.geo.getAttribute('position') as THREE.BufferAttribute
+    for (let i = 0; i < data.base.length; i++) (arr.array as Float32Array)[i] = data.base[i] + data.disp[i] * k
+    arr.needsUpdate = true
+  })
+  if (!mode || !data) return null
+  return (
+    <lineSegments ref={ref} geometry={data.geo} renderOrder={10}>
+      <lineBasicMaterial color="#1d3fd6" depthTest={false} transparent opacity={0.9} />
+    </lineSegments>
   )
 }
 
@@ -685,6 +735,7 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
       {!mini && <JointMarkers d={d} />}
       {!mini && <FootprintShadows d={d} />}
       {!mini && <MemberHandles p={p} />}
+      {!mini && <StaticsShapes />}
     </>
   )
 }
