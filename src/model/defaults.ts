@@ -17,7 +17,7 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     deckHeight: 1800,
     postCatalogId: 'kvh-80x80',
     railCatalogId: 'kvh-60x120',
-    joistCatalogId: 'geh-44x74',
+    joistCatalogId: 'geh-44x94',
     deck: 'latten',
     // 44×74 flach: trägt auch tobende Jugendliche auf ~1,1 m (Statik), Forenpraxis 40×80
     deckCatalogId: 'geh-44x74',
