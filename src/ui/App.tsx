@@ -2,7 +2,7 @@ import { GROUP_LABEL, TIMBER } from '../model/catalog'
 import { t, tr } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { fmtCm } from '../model/geometry'
-import { useStore } from '../state/store'
+import { groupOf, useStore } from '../state/store'
 import { JointDetailDialog } from '../views/JointDetail'
 import { Viewport } from '../views/Viewport'
 import { Checks } from './Checks'
@@ -336,9 +336,12 @@ function useShortcuts() {
       else if (k === '6') s.setView({ kind: 'foto' })
       else if (k === '0') s.setView({ kind: '3d' })
       else if (k === '4') s.setView({ kind: 'person', preset: s.view.kind === 'person' ? presets[(presets.indexOf(s.view.preset) + 1) % 4] : 'tuer' })
+      else if (k === 'escape' && s.tool === 'select' && s.multi.length) s.select(null)
       else if (k === 'escape' && s.tool === 'select' && (s.selection?.kind === 'member' || s.selection?.kind === 'panel') && s.selection.id.includes(':'))
         // Esc geht vom Einzelteil eines Betts eine Ebene hoch zum ganzen Bett
         s.select({ kind: 'assembly', id: s.selection.id.split(':')[0] })
+      else if (k === 'escape' && s.tool === 'select' && (s.selection?.kind === 'member' || s.selection?.kind === 'panel') && groupOf(s.project, s.selection.id))
+        s.select({ kind: 'group', id: groupOf(s.project, s.selection.id)! })
       else if (k === 'v' || k === 'escape') s.set({ tool: 'select' })
       else if (k === 'b') s.set({ tool: 'balken' })
       else if (k === 'p') s.set({ tool: 'pfosten' })

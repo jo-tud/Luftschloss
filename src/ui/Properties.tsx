@@ -5,6 +5,7 @@ import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber, type Timbe
 import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { JointTypeSelect } from './JointTypeSelect'
+import { GroupProps, MultiProps } from './GroupProps'
 import { BED_TYPE_LABEL } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
 import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, Project, Side, WallId, WallObject } from '../model/types'
@@ -32,8 +33,10 @@ export function Properties() {
 
 function PropertiesBody() {
   const sel = useStore((s) => s.selection)
+  const multi = useStore((s) => s.multi)
   const p = useStore((s) => s.project)
   const d = useDerived()
+  if (multi.length > 1) return <MultiProps />
   if (!sel)
     return (
       <div className="props empty">
@@ -49,17 +52,25 @@ function PropertiesBody() {
     const a = p.assemblies.find((x) => x.id === sel.id)
     return a ? <BedProps a={a} /> : null
   }
+  if (sel.kind === 'group')
+    return (
+      <div className="props">
+        <GroupProps id={sel.id} />
+      </div>
+    )
   if (sel.kind === 'member' || sel.kind === 'panel') {
     const m = d.resolved.members.find((x) => x.id === sel.id)
     const pa = d.resolved.panels.find((x) => x.id === sel.id)
     const asmId = sel.id.includes(':') ? sel.id.split(':')[0] : undefined
     const a = asmId ? p.assemblies.find((x) => x.id === asmId) : undefined
+    const g = p.groups.find((x) => x.id === (m?.groupId ?? pa?.groupId))
+    const parent = a ? { sel: { kind: 'assembly' as const, id: a.id }, name: a.name } : g ? { sel: { kind: 'group' as const, id: g.id }, name: g.name } : undefined
     return (
       <div className="props">
-        {a && (
+        {parent && (
           <nav className="crumbs" aria-label={t('Auswahl')}>
-            <button className="link" onClick={() => useStore.getState().select({ kind: 'assembly', id: a.id })} title={t('Ganzes Bett auswählen (Esc)')}>
-              🛏 {tr(a.name)}
+            <button className="link" onClick={() => useStore.getState().select(parent.sel)} title={t('Ganzes Bett auswählen (Esc)')}>
+              🛏 {tr(parent.name)}
             </button>
             <span>›</span>
             <b>{tr(m?.name ?? pa?.name ?? '') || t('Bauteil')}</b>
@@ -74,6 +85,8 @@ function PropertiesBody() {
           </Section>
         )}
         {a && <BedProps a={a} nested />}
+        {g && <GroupProps id={g.id} nested />}
+        {!a && !g && m && <p className="hint">{t('Shift-Klick wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.')}</p>}
       </div>
     )
   }

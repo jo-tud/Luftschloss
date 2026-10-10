@@ -351,6 +351,8 @@ function BedTab() {
   const update = useStore((s) => s.update)
   const select = useStore((s) => s.select)
   const sel = useStore((s) => s.selection)
+  // freie Balken, die zu keinem Bett gehören (Flächen ohne Balken allein sind selten gemeint)
+  const freeIds = p.members.filter((m) => !m.groupId).map((m) => m.id)
   const insert = (preset: Preset, corner: Corner) => {
     const params = placeBed(p.room, preset.type, preset.patch, corner)
     const id = uid('bett')
@@ -368,9 +370,27 @@ function BedTab() {
               🛏 {tr(a.name)} <small>{tr(BED_TYPE_LABEL[a.params.type])}</small>
             </li>
           ))}
-          {!p.assemblies.length && <li className="empty">{t('Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.')}</li>}
+          {p.groups.map((g) => {
+            const first = p.members.find((m) => m.groupId === g.id)?.id ?? p.panels.find((x) => x.groupId === g.id)?.id
+            return (
+              <li key={g.id} className={sel?.id === g.id ? 'on' : ''} {...activate(() => (select({ kind: 'group', id: g.id }), first && useStore.getState().focus(first)))}>
+                🛏 {tr(g.name)} <small>{t('eigene Konstruktion')}</small>
+              </li>
+            )
+          })}
+          {freeIds.length > 0 && (
+            <li
+              {...activate(() =>
+                freeIds.length > 1 ? useStore.setState({ multi: freeIds, selection: { kind: 'member', id: freeIds[0] } }) : select({ kind: 'member', id: freeIds[0] }),
+              )}
+              title={t('Alle freien Teile auswählen, z. B. um sie als Bett zusammenzufassen')}
+            >
+              ▬ {t('Freie Teile ({n})', { n: freeIds.length })}
+            </li>
+          )}
+          {!p.assemblies.length && !p.groups.length && <li className="empty">{t('Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.')}</li>}
         </ul>
-        {!p.assemblies.length && (
+        {!p.assemblies.length && !p.groups.length && (
           <button className="primary wide" onClick={openWizard}>
             🧭 {t('Mit dem Planungsassistenten starten')}
           </button>

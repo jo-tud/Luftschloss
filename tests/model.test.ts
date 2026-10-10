@@ -5,6 +5,7 @@ import { testProject, defaultBedParams } from '../src/model/defaults'
 import { memberBoxes, memberOBB, obbOverlap, v } from '../src/model/geometry'
 import { generateLoftBed } from '../src/model/loftbed'
 import { placeBed } from '../src/model/placement'
+import { createGroup, deleteGroup, groupParts, pruneGroups, ungroup } from '../src/model/groups'
 import { resolveProject } from '../src/model/resolve'
 import { corniceIntrusion, sashBoxes, windowSashes } from '../src/model/room'
 import type { Assembly, BedType, Member } from '../src/model/types'
@@ -200,5 +201,30 @@ describe('Geländerpfosten an Ecken ohne Pfosten', () => {
         expect(js.some((j) => /handlauf/.test(j.a + j.b))).toBe(true)
       }
     }
+  })
+})
+
+describe('Eigenes Bett aus freien Teilen', () => {
+  it('zusammenfassen, auflösen, löschen; Teile behalten die Zugehörigkeit bis in die Auswertung', () => {
+    const p = testProject()
+    p.assemblies = []
+    const beam = (id: string, x: number): Member => ({ id, role: 'zarge', start: v(x, 0, 1500), end: v(x, 1000, 1500), catalogId: 'kvh-60x120', b: 60, h: 120, roll: 0 })
+    p.members = [beam('a', 0), beam('b', 1000), beam('c', 3000)]
+    const id = createGroup(p, ['a', 'b'])
+    expect(groupParts(p, id)).toEqual(['a', 'b'])
+    expect(resolveProject(p).members.find((m) => m.id === 'a')?.groupId).toBe(id)
+    // ein Teil gehört höchstens zu einem Bett
+    const id2 = createGroup(p, ['b', 'c'])
+    expect(groupParts(p, id2)).toEqual(['c'])
+    expect(ungroup(p, id2)).toEqual(['c'])
+    expect(p.groups.map((g) => g.id)).toEqual([id])
+    deleteGroup(p, id)
+    expect(p.members.map((m) => m.id)).toEqual(['c'])
+    expect(p.groups).toEqual([])
+    // leere Betten verschwinden
+    const id3 = createGroup(p, ['c'])
+    p.members = []
+    pruneGroups(p)
+    expect(p.groups.some((g) => g.id === id3)).toBe(false)
   })
 })

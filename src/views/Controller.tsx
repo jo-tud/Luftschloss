@@ -5,7 +5,8 @@ import { timber } from '../model/catalog'
 import { uid, wallFrame } from '../model/geometry'
 import { bedOuterSize } from '../model/loftbed'
 import type { Member, Project, Vec3 } from '../model/types'
-import { derive, selectionFor, useStore } from '../state/store'
+import { derive, groupOf, isFreePart, selectionFor, useStore } from '../state/store'
+import { groupParts } from '../model/groups'
 import { applyCam, camDir, camDistance, cloneCam, easeInOut, fromT, goalFor, isOrtho, lerpCam, ORTHO_FOV, T, type CamState } from './camera'
 import type { PickData } from './Scene'
 import { tk } from '../i18n'
@@ -236,21 +237,35 @@ export function Controller() {
         }
         return
       }
+      if (hit && e.shiftKey && isFreePart(st.project, hit.data.id)) {
+        // Shift-Klick: freies Teil zur Mehrfachauswahl hinzufügen bzw. herausnehmen
+        st.toggleMulti(hit.data.id)
+        drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: hit.data }
+        return
+      }
       if (hit) {
         const sel = selectionFor(st.project, hit.data.id)
         // Erst anklicken/antippen = auswählen; Ziehen verschiebt nur, was schon ausgewählt ist
         // (ein Teil eines ausgewählten Betts verschiebt das ganze Bett). Sonst dreht bzw. schiebt die Ansicht.
         const asmOf = (id?: string) => (id?.includes(':') ? id.split(':')[0] : id)
         const cur = st.selection
+        const grp = groupOf(st.project, hit.data.id)
         const already =
-          !!cur && !!sel && ((cur.kind === sel.kind && cur.id === sel.id) || (hit.data.id.includes(':') && asmOf(cur.id) === asmOf(hit.data.id)))
+          st.multi.includes(hit.data.id) ||
+          (!!cur &&
+            !!sel &&
+            ((cur.kind === sel.kind && cur.id === sel.id) ||
+              (hit.data.id.includes(':') && asmOf(cur.id) === asmOf(hit.data.id)) ||
+              (!!grp && (cur.id === grp || groupOf(st.project, cur.id) === grp))))
         if (!already) st.select(sel)
         if (!already) {
           drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: hit.data }
           return
         }
         const plane = viewPlaneThrough(hit.point)
-        const mover = makeMover(st.project, hit.data, st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45))
+        // ein selbst konstruiertes Bett bzw. eine Mehrfachauswahl wird als Ganzes verschoben
+        const together = st.multi.includes(hit.data.id) ? st.multi : grp ? groupParts(st.project, grp) : undefined
+        const mover = makeMover(st.project, hit.data, st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45), together)
         if (mover) {
           drag.current = { ...base, kind: 'object', plane, hit0: hit.point.clone(), pick: hit.data, apply: mover, coalesce: `drag-${Date.now()}`, snapshot: st.project }
           return
@@ -344,7 +359,8 @@ export function Controller() {
       }
       const dr = drag.current
       drag.current = null
-      if (dr && !dr.moved && dr.kind !== 'object' && !dr.pick && e.button === 0 && st.tool === 'select') st.select(null)
+      // Klick ins Leere hebt die Auswahl auf, mit Shift (Mehrfachauswahl) nicht
+      if (dr && !dr.moved && dr.kind !== 'object' && !dr.pick && e.button === 0 && st.tool === 'select' && !e.shiftKey) st.select(null)
       // Doppeltipp = auf das Teil zentrieren
       if (e.pointerType === 'touch' && dr && !dr.moved) {
         const now = performance.now()
@@ -378,6 +394,8 @@ export function Controller() {
     const onDblClick = (e: MouseEvent) => {
       const hit = pick(e)
       const st = useStore.getState()
+      // Doppelklick mit Shift gehört zur Mehrfachauswahl, nicht zum Heranholen
+      if (e.shiftKey) return
       if (hit) {
         const sel = selectionFor(st.project, hit.data.id)
         st.select(sel)
@@ -621,7 +639,26 @@ function snapPoint(q: Vec3, p: Project, grid: number, radius: number): Vec3 {
 }
 
 /** Liefert eine Funktion, die ein gezogenes Objekt um delta verschiebt (vom Ausgangszustand aus). */
-function makeMover(p: Project, pick: PickData, elevation: boolean): ((delta: Vec3, d: Project) => void) | null {
+function makeMover(p: Project, pick: PickData, elevation: boolean, together?: string[]): ((delta: Vec3, d: Project) => void) | null {
+  if (together?.length) {
+    const ms = p.members.filter((m) => together.includes(m.id))
+    const ps = p.panels.filter((x) => together.includes(x.id))
+    return (delta, d) => {
+      const dz = elevation ? delta.z : 0
+      const mv = (q: Vec3) => ({ x: q.x + delta.x, y: q.y + delta.y, z: q.z + dz })
+      for (const m of ms) {
+        const dm = d.members.find((x) => x.id === m.id)!
+        dm.start = mv(m.start)
+        dm.end = mv(m.end)
+      }
+      for (const pa of ps) {
+        const dp = d.panels.find((x) => x.id === pa.id)!
+        dp.outline = pa.outline.map((q) => ({ x: q.x + delta.x, y: q.y + delta.y }))
+        dp.z = pa.z + dz
+        if (pa.vertical) dp.vertical = { ...pa.vertical, a: { x: pa.vertical.a.x + delta.x, y: pa.vertical.a.y + delta.y }, b: { x: pa.vertical.b.x + delta.x, y: pa.vertical.b.y + delta.y } }
+      }
+    }
+  }
   const assemblyId = pick.id.includes(':') ? pick.id.split(':')[0] : null
   if (assemblyId) {
     const a = p.assemblies.find((x) => x.id === assemblyId)
