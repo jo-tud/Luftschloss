@@ -101,3 +101,20 @@ describe('Mehrere Matratzen', () => {
     expect(computeStatics(p, r).warnings).toEqual([])
   })
 })
+
+describe('Liegefläche auf Querträgern', () => {
+  it('aufgelegte Bauweise: Dielen bzw. Platte liegen oben auf den Querträgern, nicht darunter', () => {
+    for (const [deck, cat] of [
+      ['dielen', 'nf-kiefer-27'],
+      ['platte', 'osb-22'],
+    ] as const) {
+      const p = withBed({ deck, deckCatalogId: cat, frameStyle: 'aufgelegt' })
+      const r = resolveProject(p)
+      const joists = r.members.filter((m) => m.role === 'quertraeger')
+      expect(joists.length).toBeGreaterThan(0)
+      const top = Math.max(...joists.map((m) => m.start.z + m.h / 2))
+      const panel = r.panels.find((x) => x.kind === deck)!
+      expect(Math.abs(panel.z - top)).toBeLessThan(1)
+    }
+  })
+})

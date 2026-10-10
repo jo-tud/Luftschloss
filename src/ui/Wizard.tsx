@@ -238,7 +238,7 @@ function ProposalStep({ a, onDone }: { a: WizardAnswers; onDone: () => void }) {
   const replace = useStore((s) => s.replaceProject)
   const take = (i: number) => {
     const pr = list[i]
-    replace({ ...pr.project, assemblies: pr.project.assemblies.map((x) => ({ ...x, name: tr(BED_TYPE_LABEL[pr.type]) })) })
+    replace({ ...pr.project, assemblies: pr.project.assemblies.map((x) => ({ ...x, name: BED_TYPE_LABEL[pr.type] })) })
     const s = useStore.getState()
     const id = s.project.assemblies[0]?.id
     s.set({ sidebar: 'bett' })

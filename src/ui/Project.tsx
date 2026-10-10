@@ -11,7 +11,8 @@ export function exportProject(p: Project) {
   a.href = URL.createObjectURL(blob)
   a.download = `${p.name.replace(/\s+/g, '-').toLowerCase()}.hochbett.json`
   a.click()
-  URL.revokeObjectURL(a.href)
+  // erst nach dem Start des Downloads freigeben (manche Browser brechen sonst ab)
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000)
 }
 
 export function importProject() {

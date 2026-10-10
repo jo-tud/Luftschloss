@@ -2,7 +2,6 @@ import { t, tr } from '../i18n'
 import { wallFrame } from '../model/geometry'
 import { cornice } from '../model/room'
 import type { Project, Vec3, WallId } from '../model/types'
-import { WALL_IDS } from '../model/types'
 
 /**
  * Foto-Abgleich: Aus 4–8 angeklickten Raumpunkten im Foto werden Kamerastandort, Blickrichtung
@@ -51,7 +50,6 @@ export function referencePoints(project: Project): RefPoint[] {
       out.push({ id: `${o.id}-${k}`, label: l, p: at(s, z), group: o.name })
     }
   }
-  void WALL_IDS
   return out
 }
 

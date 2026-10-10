@@ -80,7 +80,7 @@ describe('Hochbett-Generator', () => {
   })
 })
 
-describe('Testzimmer', () => {
+describe('Beispielzimmer', () => {
   const p = testProject()
   const r = resolveProject(p)
   const a = analyze(p, r)
@@ -143,7 +143,7 @@ describe('Wandbalken-Bauweise', () => {
     const g = generateLoftBed(a, 3500)
     expect(g.members.filter((m) => m.catalogId === 'gewindestange-m10')).toHaveLength(1)
     expect(g.members.some((m) => m.partKey === 'pfosten-FL' && m.start.z === 0)).toBe(false)
-    // Testzimmer: Holzbalkendecke → Abhängung nur in einen Balken (Warnung)
+    // Beispielzimmer: Holzbalkendecke → Abhängung nur in einen Balken (Warnung)
     const p = { ...testProject(), assemblies: [a] }
     expect(analyze(p, resolveProject(p)).findings.some((f) => f.id.startsWith('decke-balken'))).toBe(true)
     // nicht tragfähige Decke → Fehler

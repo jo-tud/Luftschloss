@@ -1,5 +1,4 @@
 import { t } from '../i18n'
-import { catalogItem } from './catalog'
 import { add, dot, memberAxes, memberBoxes, memberLength, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
 import { defaultJointType } from './joints'
 import { generateLoftBed, type BedFixing, type BedInfo } from './loftbed'
@@ -246,8 +245,4 @@ function classify(A: Member, B: Member, boxesA: OBB[], boxesB: OBB[], penetratio
   if (stacked(ba, bb) || stacked(bb, ba)) return { kind: 'auflage', pos: mid }
   if (penetration < 2) return { kind: 'beischlag', pos: mid }
   return { kind: 'kreuzung', pos: mid }
-}
-
-export function isHardwareMember(m: Member): boolean {
-  return catalogItem(m.catalogId)?.kind === 'beschlag'
 }

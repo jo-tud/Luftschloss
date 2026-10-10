@@ -6,8 +6,9 @@ import type { Member } from '../model/types'
 import { T } from './camera'
 
 /**
- * Beschläge als Instanz-Matrizen (Meter, three-Koordinaten): Schlossschrauben (Kopf, Scheibe,
- * Mutter) und Bleche für Winkel und Balkenschuhe. Reine Rechnung, damit sie testbar ist.
+ * Beschläge als Instanz-Matrizen (Meter, three-Koordinaten): Schloss- und Bettschrauben (Kopf,
+ * Scheibe, Mutter bzw. Quermutter in Tasche), Bleche für Winkel und Balkenschuhe, Köpfe von
+ * Holzschrauben, Holznägel, Dübel und Muttern an Gewindestangen. Reine Rechnung, damit testbar.
  */
 export const BOLT_TYPES = new Set(['schlossschraube', 'bettschraube'])
 

@@ -43,11 +43,6 @@ export function wallFrame(room: Room, id: WallId): WallFrame {
   }
 }
 
-/** Punkt aus Wandkoordinaten: s entlang der Wand, z Höhe, d Abstand in den Raum */
-export function wallPoint(f: WallFrame, s: number, z: number, d = 0): Vec3 {
-  return v(f.start.x + f.u.x * s + f.n.x * d, f.start.y + f.u.y * s + f.n.y * d, z)
-}
-
 /** Orientierter Quader */
 export interface OBB {
   center: Vec3

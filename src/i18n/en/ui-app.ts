@@ -107,7 +107,7 @@ const en: Record<string, string> = {
   'Bauplan mit Ansichten, Teileliste, Verbindungen und Montage – druckbar': 'Build plan with views, parts list, joints and assembly – printable',
   Bauplan: 'Build plan',
   'Stückliste, Zuschnitt und Kosten': 'Materials list, cutting and costs',
-  Material: 'Materials',
+  'Material': 'Material',
   'Weitere Funktionen': 'More functions',
   'Aufbau-Animation': 'Assembly animation',
   'Auf dem Tablet öffnen': 'Open on tablet',
@@ -152,7 +152,6 @@ const en: Record<string, string> = {
   'Als Datei speichern': 'Save as file',
   Beispielzimmer: 'Example room',
   'zum Ausprobieren. Maße und Bett lassen sich direkt anpassen.': 'to try things out. Dimensions and bed can be adjusted right away.',
-  'Eigenes Zimmer anlegen': 'Create your own room',
   'Beispiel ansehen': 'Explore example',
 
   // Tablet-Abgleich
@@ -195,9 +194,9 @@ const en: Record<string, string> = {
   // Statik
   Bauteil: 'Part',
   Stabilität: 'Stability',
-  steif: 'stiff',
-  spürbar: 'noticeable',
-  wackelt: 'wobbly',
+  'steif': 'rigid',
+  'spürbar': 'noticeable sway',
+  'wackelt': 'wobbly',
   '{name}: Statik {pct} ausgelastet': '{name}: structure {pct} utilised',
   'Maßgebend: {gov}. Größeren Querschnitt wählen (Teil anklicken → „Querschnitte vergleichen“) oder zusätzlich unterstützen.':
     'Governing: {gov}. Choose a larger cross-section (click the part → “Compare cross-sections”) or add extra support.',

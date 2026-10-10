@@ -1858,7 +1858,7 @@ button.primary:disabled {
 .toolbar summary {
   white-space: nowrap;
 }
-@media (max-width: 1000px) {
+@media (max-width: 1180px) {
   .toolbar .wide-only {
     display: none;
   }
@@ -2115,4 +2115,38 @@ button.wide {
   .wiz-side {
     position: static;
   }
+}
+/* Werkzeugleiste: Platz für Sprache und Hilfe */
+@media (max-width: 1599px) {
+  .toolbar .lbl-xl {
+    display: none;
+  }
+}
+.toolbar .menu-lang {
+  display: none;
+}
+@media (max-width: 1180px) {
+  .toolbar .menu-lang {
+    display: block;
+    padding: 4px 0;
+  }
+}
+/* mittlere Breiten: Werkzeug-Beschriftungen weglassen, Symbole bleiben (Titel als Tooltip) */
+@media (max-width: 1460px) {
+  .toolbar .lbl {
+    display: none;
+  }
+  .toolbar .project-menu .proj {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.field.stacked {
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+.field.stacked > span:first-child {
+  font-size: 12px;
+  color: var(--muted);
 }

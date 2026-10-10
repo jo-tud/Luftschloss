@@ -48,7 +48,7 @@ describe('Stabwerkslöser', () => {
   })
 })
 
-describe('Statik Testzimmer', () => {
+describe('Statik Beispielzimmer', () => {
   it('rechnet das Gestell durch und liefert plausible Werte', () => {
     const p = testProject()
     const t0 = performance.now()

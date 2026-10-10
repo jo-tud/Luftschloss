@@ -106,7 +106,7 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     steps.push({ title, text, memberIds: ids, panelIds, tools: toolsFor(ids) })
   }
   const isLadder = (m: Member) => !!m.partKey?.startsWith('leiter-')
-  const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && !isLadder(m)) || (m.role === 'pfosten' && Math.min(m.start.z, m.end.z) >= 5) || m.name?.startsWith('Geländerpfosten') === true // i18n-ok – Name nur noch als Rückfall (übersetzt)
+  const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && !isLadder(m)) || (m.role === 'pfosten' && Math.min(m.start.z, m.end.z) >= 5)
   const ceilingWarn = r.members.some((m) => m.role === 'pfosten' && Math.max(m.start.z, m.end.z) > p.room.height - 60)
 
   push(t('Wandbalken anbringen'), t('Wandbalken waagrecht ausrichten (Wasserwaage), anzeichnen, bohren und mit Schwerlastdübeln oder Betonschrauben ca. alle 40 cm befestigen.'), take((m) => m.role === 'wandriegel'))
