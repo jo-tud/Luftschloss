@@ -497,7 +497,7 @@ function FurnitureTab() {
         </ul>
         <div className="add-row">
           {FURN.map(([k, n, s]) => (
-            <button key={k} onClick={() => add(k, tr(n), s)}>
+            <button key={k} onClick={() => add(k, n, s)}>
               + {tr(n)}
             </button>
           ))}

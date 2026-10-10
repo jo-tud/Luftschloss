@@ -9,6 +9,8 @@ import type { BedGroup, Member, Project } from './types'
 
 /** Fasst freie Teile zu einem Bett zusammen und gibt dessen ID zurück */
 export function createGroup(d: Project, ids: string[]): string {
+  // nur aus vorhandenen freien Teilen – sonst entstünde ein leeres Bett
+  if (!d.members.some((m) => ids.includes(m.id) && !m.groupId) && !d.panels.some((x) => ids.includes(x.id) && !x.groupId)) return ''
   const id = uid('eigenbett')
   d.groups.push({ id, name: tk('Eigenes Bett') })
   for (const m of d.members) if (ids.includes(m.id) && !m.groupId) m.groupId = id

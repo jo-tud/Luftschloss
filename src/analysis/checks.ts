@@ -1,4 +1,4 @@
-import { locale, t, tk, tr } from '../i18n'
+import { locale, t, tk, tn, tr } from '../i18n'
 import { catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { LOADS, NET_SAG, netEdgePull } from './statics'
@@ -308,7 +308,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
     if (P.type === 'freistehend' && !P.braces && wallFix.length === 0) add({ id: `wackeln:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Freistehendes Gestell ohne Aussteifung'), detail: t('Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).'), targets: [a.id] })
     if (P.type === 'abgehaengt') add({ id: `abgehaengt:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Abgehängte Konstruktion: besondere Sorgfalt'), detail: t('Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.'), targets: [a.id] })
     if (P.type === 'deckenhoch' && room.ceiling === 'holzbalken') add({ id: `decke-holz:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Verspannung gegen Holzbalkendecke'), detail: t('Pfosten möglichst unter einem Deckenbalken verspannen und mit Lastverteilbrett arbeiten; Stuck nicht berühren.'), targets: [a.id] })
-    if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: CAT.raum, title: t('{n} Bohrungen in der Wand', { n: wallFix.reduce((s, f) => s + f.count, 0) }), detail: t('Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.'), targets: [a.id] })
+    if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: CAT.raum, title: tn(wallFix.reduce((s, f) => s + f.count, 0), tk('1 Bohrung in der Wand'), tk('{n} Bohrungen in der Wand')), detail: t('Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.'), targets: [a.id] })
     const weak = new Set(['porenbeton', 'lochziegel', 'trockenbau', 'leichtbau'])
     const hangers = r.members.filter((m) => m.assemblyId === a.id && m.catalogId === 'gewindestange-m10')
     if (hangers.length) {
@@ -460,7 +460,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
   else if (tc.door && tc.longest > tc.door - 300) add({ id: 'transport', severity: 'hinweis', category: CAT.material, title: t('{name} ({length}) nur schräg durch die Tür', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Türdiagonale ca. {diag} – lange Teile schräg tragen, Flurecken vorher ausmessen.', { diag: fmtM(tc.door) }), targets: [] })
 
   // --- Projekt ------------------------------------------------------------------------
-  if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: CAT.raum, title: t('{n} Maße sind nur geschätzt', { n: p.estimated.length }), detail: t('Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.'), targets: [] })
+  if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: CAT.raum, title: tn(p.estimated.length, tk('1 Maß ist nur geschätzt'), tk('{n} Maße sind nur geschätzt')), detail: t('Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.'), targets: [] })
   if (p.assemblies.length || p.groups.length) add({ id: 'rauchmelder', severity: 'hinweis', category: CAT.sicherheit, title: t('Rauchmelder über der Schlafebene'), detail: t('Rauch staut sich unter der Decke – ein Melder oberhalb der Liegefläche ist sinnvoll.'), targets: [] })
 
   const ack = new Set(p.settings.acknowledged)

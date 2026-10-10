@@ -175,14 +175,14 @@ export function BauplanDialog() {
   const clearance = a ? d.analysis.clearances.find((c) => c.assemblyId === a.id) : undefined
   return (
     <div className="modal-bg plan-bg" onClick={() => set({ showPlan: false })}>
-      <div className="modal plan" onClick={(e) => e.stopPropagation()}>
+      <div className="modal plan" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Bauplan')}>
         <header>
           <h2>
             {t('Bauplan')} · {tr(p.name)}
           </h2>
           <span className="muted">{new Date().toLocaleDateString(locale())}</span>
           <button onClick={() => window.print()}>🖨 {t('Drucken / PDF')}</button>
-          <button className="close" onClick={() => set({ showPlan: false })}>
+          <button className="close" onClick={() => set({ showPlan: false })} aria-label={t('Schließen')}>
             ✕
           </button>
         </header>

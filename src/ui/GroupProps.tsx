@@ -22,7 +22,7 @@ export function MultiProps() {
             onClick={() => {
               let id = ''
               update((d) => void (id = createGroup(d, multi)))
-              useStore.getState().select({ kind: 'group', id })
+              useStore.getState().select(id ? { kind: 'group', id } : null)
             }}
             title={t('Die Teile als ein Bett behandeln: gemeinsam auswählen, verschieben und prüfen')}
           >

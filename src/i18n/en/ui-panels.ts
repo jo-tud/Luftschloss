@@ -364,5 +364,17 @@ const en: Record<string, string> = {
   "Einsetzen": "Insert",
   "„Einsetzen“ stellt ein zusätzliches Bett in die günstigste Ecke. Ecke, Maße, Bauart, Hölzer, Geländer und Leiter änderst du danach rechts in den Eigenschaften.": "“Insert” places an additional bed in the best corner. Change corner, size, type, timber, guard and ladder afterwards in the properties on the right.",
   "Ganzer Raum": "Whole room",
+  '{label} (Entf)': '{label} (Del)',
+  '1 Bohrung in der Wand': '1 hole in the wall',
+  '1 Maß ist nur geschätzt': '1 dimension is only estimated',
+  '1 Fehler': '1 error',
+  '1 Warnung': '1 warning',
+  '{n} Warnungen': '{n} warnings',
+  '1 Hinweis': '1 note',
+  '{n} Hinweise': '{n} notes',
+  '1 Hinweis anzeigen': 'Show 1 note',
+  '1 Teil': '1 part',
+  '1 Quelle': '1 source',
+  '1 Hinweis zum Prüfen': '1 point to check',
 }
 export default en

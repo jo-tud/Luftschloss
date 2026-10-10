@@ -73,6 +73,11 @@ export function t(de: string, vars?: Record<string, string | number>): string {
   return s
 }
 
+/** Einzahl/Mehrzahl: beide Schlüssel mit tk() markieren, z. B. tn(n, tk('1 Hinweis'), tk('{n} Hinweise')) */
+export function tn(n: number, one: string, many: string, vars?: Record<string, string | number>): string {
+  return t(n === 1 ? one : many, { n, ...vars })
+}
+
 /** Wie t(), aber für Texte, die erst zur Laufzeit feststehen (Katalognamen u. Ä.) – ohne Warnung */
 export function tr(de: string): string {
   return current === 'en' ? (en[de] ?? de) : de
