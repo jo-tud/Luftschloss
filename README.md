@@ -71,6 +71,7 @@ Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck,
   - Sicherheitsempfehlungen nach DIN EN 747
   - Stabilität, Material
   - Alles ist eine Empfehlung und lässt sich **quittieren**.
+- **Foto-Abgleich:** ein Foto des Zimmers laden, 4–8 Raumecken und Fensterkanten antippen – das geplante Bett erscheint perspektivisch richtig im Foto. Fenster- und Türmaße werden dabei mitgeschätzt und lassen sich übernehmen. Das Foto verlässt den Browser nicht.
 - **Material:**
   - Einkaufsliste in Hornbach-Handelslängen mit Richtpreisen
   - Zuschnittplan
@@ -82,7 +83,7 @@ Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck,
 
 | Aktion | Maus / Taste |
 |---|---|
-| Ansicht wechseln | Leiste oben links oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive |
+| Ansicht wechseln | Leiste oben links oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive, `5` Abwicklung, `6` Foto |
 | Drehen | Ziehen auf leerer Fläche (3D) oder rechte Maustaste – auch aus der Draufsicht heraus |
 | Verschieben | Ziehen auf leerer Fläche (2D), mittlere Maustaste |
 | Zoom | Mausrad, zum Zeiger hin |

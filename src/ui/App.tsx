@@ -169,6 +169,7 @@ function useShortcuts() {
       else if (k === '2') s.setView({ kind: 'elev', wall: s.view.kind === 'elev' ? walls[(walls.indexOf(s.view.wall) + 1) % 4] : 'A' })
       else if (k === '3') s.setView({ kind: '3d' })
       else if (k === '5') s.setView({ kind: 'unfold' })
+      else if (k === '6') s.setView({ kind: 'foto' })
       else if (k === '0') s.setView({ kind: '3d' })
       else if (k === '4') s.setView({ kind: 'person', preset: s.view.kind === 'person' ? presets[(presets.indexOf(s.view.preset) + 1) % 4] : 'tuer' })
       else if (k === 'v' || k === 'escape') s.set({ tool: 'select' })
