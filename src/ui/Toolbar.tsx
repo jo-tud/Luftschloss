@@ -54,8 +54,9 @@ export function Toolbar() {
       </div>
       <div className="group wide-only">
         <details className="dropdown">
-          <summary title="Ebenen ein-/ausblenden">Ebenen ▾</summary>
+          <summary title="Ebenen ein-/ausblenden, Tageslicht">Ebenen ▾</summary>
           <div className="menu">
+            <SunControl />
             {(Object.keys(LAYER_LABEL) as (keyof Layers)[]).map((k) => (
               <label key={k} className="check">
                 <input type="checkbox" checked={s.layers[k]} onChange={() => s.toggleLayer(k)} />
@@ -93,6 +94,7 @@ export function Toolbar() {
           <button onClick={() => s.set({ build: s.build ? null : { step: 0, start: performance.now(), auto: true } })}>▶ Aufbau-Animation</button>
           <button onClick={() => s.set({ showPlan: true })}>📐 Bauplan</button>
           <button onClick={() => s.set({ showShare: true })}>📱 Auf dem Tablet öffnen</button>
+          <SunControl />
           <b className="menu-head">Ebenen</b>
           {(Object.keys(LAYER_LABEL) as (keyof Layers)[]).map((k) => (
             <label key={k} className="check" onClick={(e) => e.stopPropagation()}>
@@ -117,5 +119,21 @@ export function Toolbar() {
         ?
       </button>
     </header>
+  )
+}
+
+/** Sonnenlicht ein/aus und Uhrzeit */
+function SunControl() {
+  const hour = useStore((s) => s.sunHour)
+  const set = useStore((s) => s.set)
+  const fmt = (h: number) => `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, '0')} Uhr`
+  return (
+    <div className="sun-control" onClick={(e) => e.stopPropagation()}>
+      <label className="check">
+        <input type="checkbox" checked={hour !== null} onChange={(e) => set({ sunHour: e.target.checked ? 15 : null })} />
+        <span>☀ Sonnenlicht{hour !== null ? ` · ${fmt(hour)}` : ''}</span>
+      </label>
+      {hour !== null && <input type="range" min={6} max={20} step={0.25} value={hour} onChange={(e) => set({ sunHour: Number(e.target.value) })} aria-label="Uhrzeit" />}
+    </div>
   )
 }

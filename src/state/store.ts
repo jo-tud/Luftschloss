@@ -68,6 +68,8 @@ interface State {
   mouseProfile: 'standard' | 'cad'
   /** Darstellungsqualität: hoch (volle Auflösung), normal, einfach (ohne Raumlicht und Beschläge, für ältere Tablets) */
   quality: 'hoch' | 'normal' | 'einfach'
+  /** Sonnenlicht zu dieser Uhrzeit (6–20), null = gleichmäßiges Licht */
+  sunHour: number | null
   /** Geöffnete Detailansicht einer Verbindung */
   jointDetail: string | null
   /** Statik: zuletzt berechnetes Ergebnis (verzögert nach Änderungen) und Anzeige-Einstellungen */
@@ -184,6 +186,7 @@ export const useStore = create<State>((set, get) => ({
       return 'normal'
     }
   })(),
+  sunHour: null,
   jointDetail: null,
   statics: null,
   staticsFor: null,
