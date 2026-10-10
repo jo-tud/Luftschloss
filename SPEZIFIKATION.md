@@ -140,6 +140,7 @@ Parameter sind:
 - Hölzer für Pfosten, Zargen und Querträger
 - Liegefläche: **Latten lose aufgelegt** (Standard), Rollrost, Lattenrost, Platte, Dielen, begehbares Netz
 - Geländer: **Bretter** (Standard), Rundstäbe, Vollfläche, Netz, Seil oder keins; Höhe und Seiten
+- Ecken ohne Pfosten (an der Wand oder abgehängt) schließt der Rahmen selbst, Zarge an Zarge. Endet dort ein Geländer, hält es ein Geländerpfosten, der wie eine Zwischenstütze außen an die Zarge gebolzt ist (an einer Wandseite innen auf der Zarge). Kein kurzes Pfostenstück zwischen den Zargen.
 - Leiter: **Stufenleiter** (Standard), senkrecht, schräg oder Treppe; Seite, Position, Breite, Neigung, Hölzer
 
 ### 5.2 Verbindungstypen ✅

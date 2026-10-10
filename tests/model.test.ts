@@ -4,6 +4,7 @@ import { computeBom, packBars, parsePriceAnswer, pricePrompt } from '../src/anal
 import { testProject, defaultBedParams } from '../src/model/defaults'
 import { memberBoxes, memberOBB, obbOverlap, v } from '../src/model/geometry'
 import { generateLoftBed } from '../src/model/loftbed'
+import { placeBed } from '../src/model/placement'
 import { resolveProject } from '../src/model/resolve'
 import { corniceIntrusion, sashBoxes, windowSashes } from '../src/model/room'
 import type { Assembly, BedType, Member } from '../src/model/types'
@@ -179,5 +180,25 @@ describe('CSV-Einkaufsliste', () => {
     expect(csv).not.toMatch(/"\d+\.\d\d"/)
     const bolt = lines.find((l) => l.includes('Schlossschraube'))
     if (bolt) expect(bolt).toContain('"Stück"')
+  })
+})
+
+describe('Geländerpfosten an Ecken ohne Pfosten', () => {
+  it('Rahmen schließt die Ecke selbst; Geländerpfosten außen an der Zarge verschraubt', () => {
+    for (const type of ['wandseitig', 'eck', 'abgehaengt'] as const) {
+      const p = testProject()
+      p.assemblies[0].params = placeBed(p.room, type, { guard: 'bretter' }, 'AD')
+      const r = resolveProject(p)
+      // keine kurzen Pfostenstücke mehr: jeder Pfosten steht auf dem Boden
+      for (const m of r.members.filter((x) => x.role === 'pfosten')) expect(Math.min(m.start.z, m.end.z)).toBe(0)
+      const gp = r.members.filter((m) => m.id.includes('gelaenderpfosten'))
+      expect(gp.length).toBeGreaterThan(0)
+      // jeder Geländerpfosten hängt an einer Zarge (verschraubt bzw. aufgelegt) und trägt den Handlauf
+      for (const m of gp) {
+        const js = r.joints.filter((j) => j.a === m.id || j.b === m.id)
+        expect(js.some((j) => /zarge|wandriegel/.test(j.a + j.b))).toBe(true)
+        expect(js.some((j) => /handlauf/.test(j.a + j.b))).toBe(true)
+      }
+    }
   })
 })
