@@ -1,6 +1,6 @@
 import { Edges, Environment, Html, Lightformer, Line } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { memo, useLayoutEffect, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
@@ -515,7 +515,7 @@ function corniceGeometry(p: Project, wall: WallId): THREE.BufferGeometry | null 
   return g
 }
 
-export function RoomMeshes({ p, mini, showCeiling, wallShadows = false }: { p: Project; mini?: boolean; showCeiling: boolean; wallShadows?: boolean }) {
+export function RoomMeshes({ p, mini, showCeiling, wallShadows = false, hideCeilingItems }: { p: Project; mini?: boolean; showCeiling: boolean; wallShadows?: boolean; hideCeilingItems?: boolean }) {
   const r = p.room
   const wallRefs = useRef<Partial<Record<WallId, THREE.Group>>>({})
   const walls = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, wallPieces(p, w)])) as Record<WallId, OBB[]>, [p.room, p.wallObjects])
@@ -562,7 +562,7 @@ export function RoomMeshes({ p, mini, showCeiling, wallShadows = false }: { p: P
           {!mini && <WallLabel p={p} wall={id} labelRef={(el) => void (labelRefs.current[id] = el ?? undefined)} />}
         </group>
       ))}
-      <Rosettes p={p} />
+      {!hideCeilingItems && <Rosettes p={p} />}
     </group>
   )
 }
@@ -922,7 +922,7 @@ export function FootprintShadows({ d }: { d: Derived }) {
   )
 }
 
-export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Derived; mini?: boolean; showCeiling: boolean }) {
+export function SceneContent({ p, d, mini, showCeiling, hideCeilingItems }: { p: Project; d: Derived; mini?: boolean; showCeiling: boolean; hideCeilingItems?: boolean }) {
   const quality = useStore((s) => s.quality)
   const sun = useStore((s) => s.sunHour)
   const rich = !mini && quality !== 'einfach'
@@ -930,7 +930,7 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
     <>
       <ambientLight intensity={mini ? 0.55 : sun ? 0.3 : 0.4} />
       <hemisphereLight args={['#fffaf0', '#b9a58a', mini ? 0.55 : 0.4]} />
-      {rich && <RoomLight p={p} />}
+      {rich && <RoomLight room={p.room} wallObjects={p.wallObjects} />}
       {sun && !mini ? (
         <SunLight p={p} hour={sun} quality={quality} />
       ) : (
@@ -949,7 +949,7 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
           shadow-normalBias={0.004}
         />
       )}
-      <RoomMeshes p={p} mini={mini} showCeiling={showCeiling} wallShadows={!!sun && !mini} />
+      <RoomMeshes p={p} mini={mini} showCeiling={showCeiling} wallShadows={!!sun && !mini} hideCeilingItems={hideCeilingItems} />
       <MemberMeshes members={d.resolved.members} mini={mini} joints={rich ? d.resolved.joints : undefined} />
       <PanelMeshes panels={d.resolved.panels} mini={mini} />
       <FurnitureMeshes items={p.furniture} mini={mini} />
@@ -968,11 +968,16 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
  * Weiches Raumlicht ohne Download: eine kleine, lokal erzeugte Umgebung mit hellen Flächen an den
  * Fenstern (kühles Tageslicht) und an der Lampe (warm). Sorgt für Glanzlichter und weiche Übergänge.
  */
-function RoomLight({ p }: { p: Project }) {
-  const r = p.room
-  const windows = p.wallObjects.filter((o): o is WindowObj => o.kind === 'fenster')
+/**
+ * Umgebungslicht aus Fenstern und Decke. Nur bei geändertem Raum neu (nicht bei jedem Ziehschritt), und
+ * ohne Schnittebenen gerendert: sonst schnitten Schnittbox bzw. Draufsicht die Lichtquellen weg.
+ */
+const RoomLight = memo(function RoomLight({ room: r, wallObjects }: { room: Project['room']; wallObjects: Project['wallObjects'] }) {
+  const windows = wallObjects.filter((o): o is WindowObj => o.kind === 'fenster')
   return (
-    <Environment resolution={64} frames={1} environmentIntensity={0.55}>
+    <>
+      <ClipPause on={false} />
+      <Environment resolution={64} frames={1} environmentIntensity={0.55}>
       <color attach="background" args={['#3a3631']} />
       {windows.map((w) => {
         const f = wallFrame(r, w.wall)
@@ -983,8 +988,24 @@ function RoomLight({ p }: { p: Project }) {
       })}
       <Lightformer form="circle" intensity={1.4} color="#ffe2b8" position={T(r.length / 2, r.width / 2, r.height - 200)} scale={[0.6, 0.6, 1]} rotation={[Math.PI / 2, 0, 0]} />
       <Lightformer form="rect" intensity={0.5} color="#f3ede4" position={T(r.length / 2, r.width / 2, r.height + 300)} scale={[r.length / 1000, r.width / 1000, 1]} rotation={[Math.PI / 2, 0, 0]} />
-    </Environment>
+      </Environment>
+      <ClipPause on />
+    </>
   )
+})
+
+/** Layout-Effekte laufen in Geschwisterreihenfolge: vor dem Environment Schnittebenen aus, danach wieder an */
+const pausedPlanes: { planes: THREE.Plane[] } = { planes: [] }
+function ClipPause({ on }: { on?: boolean }) {
+  const gl = useThree((s) => s.gl)
+  useLayoutEffect(() => {
+    if (on) gl.clippingPlanes = pausedPlanes.planes
+    else {
+      pausedPlanes.planes = gl.clippingPlanes
+      gl.clippingPlanes = []
+    }
+  })
+  return null
 }
 
 /**

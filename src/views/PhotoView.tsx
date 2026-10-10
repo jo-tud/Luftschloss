@@ -19,13 +19,19 @@ interface StoredPhoto {
   obs: { id: string; u: number; v: number }[]
 }
 
+let db: Promise<IDBDatabase> | null = null
+/** Eine Verbindung für alle Zugriffe (nicht bei jedem Speichern neu öffnen) */
 function idb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  db ??= new Promise((resolve, reject) => {
     const req = indexedDB.open('luftschloss', 1)
     req.onupgradeneeded = () => req.result.createObjectStore('fotos')
     req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
+    req.onerror = () => {
+      db = null
+      reject(req.error)
+    }
   })
+  return db
 }
 async function loadPhoto(): Promise<StoredPhoto | undefined> {
   try {
@@ -135,13 +141,21 @@ export function PhotoView() {
     return () => URL.revokeObjectURL(u)
   }, [photo?.blob])
 
-  const store = (ph: StoredPhoto) => {
+  // beim Ziehen nur anzeigen, gespeichert wird beim Loslassen (sonst je Mausbewegung das ganze Foto)
+  const store = (ph: StoredPhoto, persist = true) => {
     setPhoto(ph)
-    void savePhoto(ph)
+    if (persist) void savePhoto(ph)
+  }
+  const endDrag = () => {
+    if (!dragId) return
+    setDragId(null)
+    if (photo) void savePhoto(photo)
   }
   const onFile = async (file: File) => {
     const bmp = await createImageBitmap(file)
-    store({ blob: file, w: bmp.width, h: bmp.height, obs: [] })
+    const size = { w: bmp.width, h: bmp.height }
+    bmp.close()
+    store({ blob: file, ...size, obs: [] })
     setActive(refs[0]?.id ?? null)
   }
   const obsFull = useMemo(() => (photo ? photo.obs.map((o) => ({ ...o, ref: refs.find((r) => r.id === o.id) })).filter((o) => o.ref) : []), [photo, refs])
@@ -168,7 +182,7 @@ export function PhotoView() {
     const r = boxRef.current!.getBoundingClientRect()
     return { u: ((e.clientX - r.left) / r.width) * photo!.w, v: ((e.clientY - r.top) / r.height) * photo!.h }
   }
-  const setObs = (id: string, u: number, v: number) => store({ ...photo!, obs: [...photo!.obs.filter((o) => o.id !== id), { id, u, v }] })
+  const setObs = (id: string, u: number, v: number, persist = true) => store({ ...photo!, obs: [...photo!.obs.filter((o) => o.id !== id), { id, u, v }] }, persist)
 
   if (!photo || !url)
     return (
@@ -298,9 +312,10 @@ export function PhotoView() {
           onPointerMove={(e) => {
             if (!dragId) return
             const q = toImage(e)
-            setObs(dragId, q.u, q.v)
+            setObs(dragId, q.u, q.v, false)
           }}
-          onPointerUp={() => setDragId(null)}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
         >
           <img src={url} alt={t('Zimmerfoto')} draggable={false} />
           {solution && (
@@ -331,6 +346,8 @@ export function PhotoView() {
                 style={{ left: `${(o.u / photo.w) * 100}%`, top: `${(o.v / photo.h) * 100}%` }}
                 onPointerDown={(e) => {
                   e.stopPropagation()
+                  // Zeiger festhalten: auch beim Loslassen außerhalb des Fotos endet das Ziehen
+                  boxRef.current?.setPointerCapture(e.pointerId)
                   setActive(o.id)
                   setDragId(o.id)
                 }}
