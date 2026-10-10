@@ -197,7 +197,7 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 | Ausklinkung zu tief | ✅ |
 | Hinweis auf geschätzte Maße, Rauchmelder | ✅ |
 | **Statik des Gestells** (Stabwerk, Lastfälle, Durchbiegung und Ausnutzung, Seitensteifigkeit) | ✅ |
-| Aufrichtbarkeit (Diagonale vs. Raumhöhe), Einbringen durch die Tür, Montagereihenfolge | ◻ |
+| Einbringen durch die Tür, Montagereihenfolge mit Hinweis auf das Aufrichten deckenhoher Pfosten | ✅ |
 | Begehbares Netz mit Durchhang und Randkräften | ◻ (Expertenmodus) |
 
 ### 7.1 Statik (umgesetzt)
@@ -273,7 +273,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M3 Verbindungen & Material | Verbindungskatalog, automatische Erkennung, Einkaufsliste, Zuschnitt, Preis-Prompt | ✅ Prototyp |
 | M4 Bedienung verfeinern | Griffe an Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Bett spiegeln, Abwicklung (Wandobjekte ziehen), Schnittbox, „Ansicht zurücksetzen“, Kamera nicht unter den Boden, Mausprofil CAD, 3D-Detail je Verbindung (Explosion mit Beschlägen). Statt Ansichtswürfel: Übersichtskarte und Ansichtsleiste. Panini-Projektion zurückgestellt. | ✅ |
 | M5 Statik des Gestells | 3D-Stabwerk (Skyline-Löser) mit Verbindungsfedern je Verbindungsart, Lastfälle Eigengewicht/Nutzlast (Lastprofil Bett 1,0 bzw. Hochebene 2,0 kN/m²), Toben 2 kN auf 50 × 50 cm, Seitenlast längs/quer, Geländer; EC5-Nachweise (Biegung + Normalkraft mit Knicken, Schub mit k_cr, Durchbiegung L/300 bzw. L/200 mit Kriechen, Restquerschnitt an Verbindungen), Verbindungskräfte, Wackeln; Einfärbung, Verformungsfigur, Wackel-Animation, Querschnittsvergleich, Befunde in der Prüfliste | ✅ |
-| M6 Bauplan | PDF mit Maßen, Teilenummern, Verbindungsdetails, Plattenzuschnitt, Montagereihenfolge | ◻ |
+| M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Werkstattskizzen je Verbindungsart, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
 | M6b Tablet | Finger- und Stiftbedienung, Tablet-Layout, WLAN-/Tailscale-Freigabe mit Projekt-Sync, Offline (PWA) | ◻ |
 | M7 Erweiterungen | Weitere Bauarten (Halbhoch, Etagenbett, auf Regal, Galerie), begehbares Netz, Raum als Polygon, Dachschräge, Preis-Agent | ◻ |
 

@@ -4,6 +4,7 @@ import { cornice, corniceIntrusion, roomObstacles } from '../model/room'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project, Side, Vec3 } from '../model/types'
 import { analyzeDoors, analyzeWindows, type DoorResult, type SwingResult } from './openings'
+import { transportCheck } from './assembly'
 
 export type Severity = 'fehler' | 'warnung' | 'hinweis'
 
@@ -250,6 +251,10 @@ export function analyze(p: Project, r: Resolved): Analysis {
   for (const j of r.joints) {
     if (j.kind === 'kreuzung' && j.typeId !== 'ueberblattung') add({ id: `kreuzung:${j.key}`, severity: 'warnung', category: 'Kollision', title: 'Bauteile durchdringen sich', detail: 'Überblattung wählen oder Bauteile versetzen.', targets: [j.a, j.b], pos: j.pos })
   }
+
+  const tr = transportCheck(p, r)
+  if (tr.door && tr.longest > tr.door) add({ id: 'transport', severity: 'warnung', category: 'Material', title: `${tr.name} (${fmtM(tr.longest)}) passt nicht durch die Tür`, detail: `Türdiagonale ca. ${fmtM(tr.door)}. Holz erst im Zimmer zuschneiden oder das Teil teilen (Stoß über einem Auflager). Auch Flur und Treppenhaus bedenken.`, targets: [] })
+  else if (tr.door && tr.longest > tr.door - 300) add({ id: 'transport', severity: 'hinweis', category: 'Material', title: `${tr.name} (${fmtM(tr.longest)}) nur schräg durch die Tür`, detail: `Türdiagonale ca. ${fmtM(tr.door)} – lange Teile schräg tragen, Flurecken vorher ausmessen.`, targets: [] })
 
   // --- Projekt ------------------------------------------------------------------------
   if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: 'Raum', title: `${p.estimated.length} Maße sind nur geschätzt`, detail: 'Raumhöhe, Fenster, Heizkörper, Stuck usw. bitte nachmessen und unter „Raum“ eintragen.', targets: [] })

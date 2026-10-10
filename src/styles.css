@@ -1071,3 +1071,162 @@ table.compare td {
   padding: 3px 2px;
   border-bottom: 1px solid #f0f1f3;
 }
+
+.build-player {
+  position: absolute;
+  left: 10px;
+  bottom: 12px;
+  width: min(560px, calc(100% - 220px));
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+.build-player p {
+  margin: 4px 0;
+}
+.bp-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.bp-head .link {
+  margin-left: auto;
+}
+.bp-dots {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+.bp-dots span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #dfe3e8;
+  cursor: pointer;
+}
+.bp-dots span.done {
+  background: #e9c99e;
+}
+.bp-dots span.on {
+  background: var(--accent);
+}
+.modal.plan {
+  width: min(1200px, 96vw);
+  max-height: 94vh;
+}
+.plan-body h3 {
+  margin-top: 22px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.pl-head {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+  align-items: start;
+}
+.pl-snap {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.kvt th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  padding: 3px 12px 3px 0;
+  vertical-align: top;
+}
+.pl-views {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1.3fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.pl-view {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+}
+.pl-view figcaption {
+  font-weight: 600;
+  font-size: 12px;
+}
+.pl-view svg {
+  width: 100%;
+  height: 300px;
+}
+.pl-part {
+  stroke: #6b5136;
+  stroke-width: 4;
+}
+.pl-floor {
+  stroke: #888;
+  stroke-width: 6;
+}
+.pl-bubble {
+  fill: #fff;
+  stroke: #c8752e;
+  stroke-width: 8;
+}
+.pl-no {
+  font-size: 70px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  fill: #8a4a12;
+}
+.pl-dim line {
+  stroke: #2a6fdb;
+  stroke-width: 4;
+}
+.pl-dim text {
+  fill: #2a6fdb;
+  font-size: 80px;
+  text-anchor: middle;
+}
+.pl-joints {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 10px;
+}
+.pl-joint {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  break-inside: avoid;
+}
+.pl-sketch {
+  width: 260px;
+  height: 170px;
+  background: #fbfaf7;
+  border-radius: 6px;
+}
+.pl-steps li {
+  margin-bottom: 8px;
+}
+.pl-steps p {
+  margin: 2px 0;
+}
+@media print {
+  .modal.plan {
+    width: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+  .plan-body {
+    overflow: visible;
+  }
+  .modal.plan header button {
+    display: none;
+  }
+  .pl-views {
+    grid-template-columns: 1fr 1fr;
+  }
+}

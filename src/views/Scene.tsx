@@ -1,6 +1,6 @@
 import { Edges, Html, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, useState, type ReactElement } from 'react'
+import { useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
@@ -8,7 +8,8 @@ import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../mode
 import { cornice, doorGeom, furnitureBox, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
-import { useStore, type Derived } from '../state/store'
+import { buildSteps } from '../analysis/assembly'
+import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
 
 const COLORS = {
@@ -98,10 +99,67 @@ export function MemberMeshes({ members, mini }: { members: Member[]; mini?: bool
           color = c ? UTIL_COLOR(c.util) : '#c9c9c9'
           if (highlight && !isSelected(sel, m)) highlight = undefined
         }
-        return boxes.map((o, i) => <Box key={`${m.id}-${i}`} o={o} color={color} pick={{ kind: 'member', id: m.id }} edges={!m.round} round={m.round} highlight={highlight} opacity={!mini && staticsMode ? 0.85 : 1} />)
+        return (
+          <BuildAnimated key={m.id} id={m.id} enabled={!mini}>
+            {boxes.map((o, i) => (
+              <Box key={i} o={o} color={color} pick={{ kind: 'member', id: m.id }} edges={!m.round} round={m.round} highlight={highlight} opacity={!mini && staticsMode ? 0.85 : 1} />
+            ))}
+          </BuildAnimated>
+        )
       })}
     </group>
   )
+}
+
+/** Schrittnummer je Bauteil für die Aufbau-Animation */
+const buildIndexCache = new WeakMap<object, Map<string, { step: number; order: number }>>()
+function useBuildIndex(): Map<string, { step: number; order: number }> {
+  const project = useStore((s) => s.project)
+  let map = buildIndexCache.get(project)
+  if (!map) {
+    const d = derive(project)
+    const m = new Map<string, { step: number; order: number }>()
+    buildSteps(project, d.resolved).forEach((st, i) => {
+      st.memberIds.forEach((id, k) => m.set(id, { step: i, order: k }))
+      st.panelIds.forEach((id, k) => m.set(id, { step: i, order: st.memberIds.length + k }))
+    })
+    buildIndexCache.set(project, m)
+    map = m
+  }
+  return map
+}
+
+/** Blendet Teile je nach Aufbauschritt ein; Teile des aktuellen Schritts fliegen von oben ein. */
+function BuildAnimated({ id, enabled, children }: { id: string; enabled: boolean; children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null)
+  const index = useBuildIndex()
+  useFrame(() => {
+    const g = ref.current
+    if (!g) return
+    const b = enabled ? useStore.getState().build : null
+    if (!b) {
+      g.visible = true
+      g.position.y = 0
+      return
+    }
+    const info = index.get(id)
+    if (!info) {
+      g.visible = false
+      return
+    }
+    if (info.step < b.step) {
+      g.visible = true
+      g.position.y = 0
+    } else if (info.step > b.step) g.visible = false
+    else {
+      const t = (performance.now() - b.start) / 1000 - info.order * 0.12
+      const k = Math.max(0, Math.min(1, t / 0.7))
+      g.visible = t > 0
+      const e = 1 - Math.pow(1 - k, 3)
+      g.position.y = (1 - e) * 0.9
+    }
+  })
+  return <group ref={ref}>{children}</group>
 }
 
 /** Verformungsfigur der Statik als Linien; beim Wackeln schwingt sie hin und her */
@@ -171,13 +229,17 @@ export function PanelMeshes({ panels, mini }: { panels: Panel[]; mini?: boolean 
     <group>
       {panels.map((pa) => {
         const highlight = !mini && isSelected(sel, pa) ? COLORS.select : undefined
+        let el: ReactElement
         if (pa.vertical) {
           const o = panelOBB(pa)
-          if (pa.kind === 'netz') return <NetPanel key={pa.id} o={o} id={pa.id} />
-          return <Box key={pa.id} o={o} color={COLORS.woodLight} pick={{ kind: 'panel', id: pa.id }} edges highlight={highlight} />
-        }
-        if (pa.kind === 'matratze') return <Mattress key={pa.id} pa={pa} />
-        return <FlatPanel key={pa.id} pa={pa} highlight={highlight} />
+          el = pa.kind === 'netz' ? <NetPanel o={o} id={pa.id} /> : <Box o={o} color={COLORS.woodLight} pick={{ kind: 'panel', id: pa.id }} edges highlight={highlight} />
+        } else if (pa.kind === 'matratze') el = <Mattress pa={pa} />
+        else el = <FlatPanel pa={pa} highlight={highlight} />
+        return (
+          <BuildAnimated key={pa.id} id={pa.id} enabled={!mini}>
+            {el}
+          </BuildAnimated>
+        )
       })}
     </group>
   )

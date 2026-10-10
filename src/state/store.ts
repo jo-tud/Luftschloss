@@ -72,6 +72,9 @@ interface State {
   staticsCase: 'gq' | 'jump' | 'hx' | 'hy'
   staticsScale: number
   wobble: boolean
+  /** Aufbau-Animation: aktueller Schritt und Startzeit (performance.now) */
+  build: { step: number; start: number; auto: boolean } | null
+  showPlan: boolean
   /** Änderung am Projekt; coalesce fasst viele Schritte (z. B. Ziehen) zu einem Undo-Schritt zusammen */
   update: (recipe: (d: Project) => void, coalesce?: string) => void
   /** Wie update, aber ausgehend von einem festen Ausgangsstand (für Ziehen ohne Rundungsfehler) */
@@ -164,6 +167,8 @@ export const useStore = create<State>((set, get) => ({
   staticsCase: 'gq',
   staticsScale: 30,
   wobble: false,
+  build: null,
+  showPlan: false,
   update: (recipe, coalesce) => {
     const { project, past, coalesce: current } = get()
     const next = produce(project, recipe)
