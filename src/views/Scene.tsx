@@ -778,15 +778,20 @@ function PersonFigure({ fu, highlight }: { fu: Furniture; highlight?: string }) 
 /** Schwenkbögen der Fensterflügel: grün bis zum freien Winkel, rot bis 90° */
 export function SwingArcs({ p, d }: { p: Project; d: Derived }) {
   const show = useStore((s) => s.layers.swing)
+  // Draufsicht: Bögen knapp unter die Schnitthöhe und obenauf, sonst schneidet der Schnitt die Bögen hoher
+  // Fenster weg und Stuck oder Bett verdecken sie
+  const plan = useStore((s) => s.view.kind === 'plan')
+  const cut = useStore((s) => Math.min(s.planCut, s.project.room.height) - 30)
   if (!show) return null
   const out: ReactElement[] = []
+  const over = plan ? { depthTest: false, renderOrder: 11 } : {}
   for (const w of p.wallObjects) {
     if (w.kind !== 'fenster') continue
     windowSashes(p.room, w).forEach((g, i) => {
       if (g.opening === 'fest' || g.opening === 'kipp') return
       const res = d.analysis.windows.find((x) => x.windowId === w.id && x.sashIndex === i)
       const max = Math.min(90, res?.maxAngle ?? 90)
-      const z = g.hinge.z + g.height - 20
+      const z = plan ? Math.min(g.hinge.z + g.height - 20, cut) : g.hinge.z + g.height - 20
       const arc = (a0: number, a1: number) => {
         const pts: THREE.Vector3[] = [T(g.hinge.x, g.hinge.y, z)]
         for (let a = a0; a <= a1 + 0.01; a += 3) {
@@ -796,8 +801,8 @@ export function SwingArcs({ p, d }: { p: Project; d: Derived }) {
         pts.push(T(g.hinge.x, g.hinge.y, z))
         return pts
       }
-      out.push(<Line key={`${w.id}-${i}-ok`} points={arc(0, max)} color="#2f9e5b" lineWidth={2} />)
-      if (max < 90) out.push(<Line key={`${w.id}-${i}-no`} points={arc(max, 90)} color="#d64545" lineWidth={2} dashed dashSize={0.04} gapSize={0.03} />)
+      out.push(<Line key={`${w.id}-${i}-ok`} points={arc(0, max)} color="#2f9e5b" lineWidth={2} {...over} />)
+      if (max < 90) out.push(<Line key={`${w.id}-${i}-no`} points={arc(max, 90)} color="#d64545" lineWidth={2} dashed dashSize={0.04} gapSize={0.03} {...over} />)
     })
   }
   return <group>{out}</group>
