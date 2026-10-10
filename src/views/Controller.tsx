@@ -36,6 +36,7 @@ export function Controller() {
   const [preview, setPreview] = useState<Member | null>(null)
   const drawStart = useRef<Vec3 | null>(null)
   const clipPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, -1, 0), 2.6), [])
+  const boxPlanes = useMemo(() => Array.from({ length: 5 }, () => new THREE.Plane()), [])
 
   const view = useStore((s) => s.view)
   const viewNonce = useStore((s) => s.viewNonce)
@@ -96,12 +97,28 @@ export function Controller() {
       c.target.z = THREE.MathUtils.clamp(c.target.z, -r.width / 1000 + 0.15, -0.15)
       c.target.y = THREE.MathUtils.clamp(c.target.y, 0.2, r.height / 1000 - 0.1)
     }
+    // Kamera nicht unter den Boden fahren lassen
+    if (!isOrtho(cam.current) && st.view.kind !== 'person' && !anim.current) {
+      const c = cam.current
+      const dist = camDistance(c)
+      const maxSin = (c.target.y - 0.15) / dist
+      const maxPitch = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(maxSin, -1, 1)))
+      if (c.pitch > maxPitch) c.pitch = maxPitch
+    }
     applyCam(camera as THREE.PerspectiveCamera, cam.current)
     mainCam.state = cam.current
     // Draufsicht: oberhalb der Schnitthöhe abschneiden, damit Lampe und Stuck nicht verdecken
     if (cam.current.pitch < -80 && isOrtho(cam.current)) {
       clipPlane.constant = st.planCut / 1000
       gl.clippingPlanes = [clipPlane]
+    } else if (st.sectionBox && !isOrtho(cam.current)) {
+      const b = st.sectionBox
+      boxPlanes[0].set(new THREE.Vector3(1, 0, 0), -b.x0 / 1000)
+      boxPlanes[1].set(new THREE.Vector3(-1, 0, 0), b.x1 / 1000)
+      boxPlanes[2].set(new THREE.Vector3(0, 0, -1), -b.y0 / 1000)
+      boxPlanes[3].set(new THREE.Vector3(0, 0, 1), b.y1 / 1000)
+      boxPlanes[4].set(new THREE.Vector3(0, -1, 0), b.z1 / 1000)
+      gl.clippingPlanes = boxPlanes
     } else gl.clippingPlanes = []
   })
 
@@ -152,12 +169,13 @@ export function Controller() {
       anim.current = null
       const base: DragState = { kind: 'nav-pan', startX: e.clientX, startY: e.clientY, moved: false, cam0: cloneCam(c) }
       const person = st.view.kind === 'person'
+      const cad = st.mouseProfile === 'cad'
       if (e.button === 2 || (e.button === 0 && e.altKey)) {
-        drag.current = { ...base, kind: person ? 'nav-look' : 'nav-orbit' }
+        drag.current = { ...base, kind: person ? 'nav-look' : cad ? 'nav-pan' : 'nav-orbit' }
         return
       }
       if (e.button === 1) {
-        drag.current = { ...base, kind: person ? 'nav-look' : 'nav-pan' }
+        drag.current = { ...base, kind: person ? 'nav-look' : cad && !e.shiftKey ? 'nav-orbit' : 'nav-pan' }
         return
       }
       if (e.button !== 0) return
@@ -166,6 +184,35 @@ export function Controller() {
         return
       }
       const hit = pick(e)
+      if (hit?.data.kind === 'joint') {
+        st.set({ jointDetail: hit.data.id })
+        return
+      }
+      if (hit?.data.kind === 'handle') {
+        const plane = viewPlaneThrough(hit.point)
+        const m = st.project.members.find((x) => x.id === hit.data.id)
+        const end = hit.data.end!
+        if (m) {
+          const p0 = m[end]
+          const elev = st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45)
+          drag.current = {
+            ...base,
+            kind: 'object',
+            plane,
+            hit0: hit.point.clone(),
+            pick: hit.data,
+            coalesce: `griff-${Date.now()}`,
+            snapshot: st.project,
+            apply: (delta, d) => {
+              const dm = d.members.find((x) => x.id === m.id)!
+              let q = { x: p0.x + delta.x, y: p0.y + delta.y, z: p0.z + (elev ? delta.z : 0) }
+              if (st.snap) q = snapPoint(q, { ...d, members: d.members.filter((x) => x.id !== m.id) } as Project, st.grid, worldPerPixel() * 12 * 1000)
+              dm[end] = { x: Math.round(q.x), y: Math.round(q.y), z: Math.round(elev ? q.z : p0.z) }
+            },
+          }
+        }
+        return
+      }
       if (hit) {
         const sel = selectionFor(st.project, hit.data.id)
         st.select(sel)
@@ -176,7 +223,7 @@ export function Controller() {
           return
         }
       }
-      drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) ? 'nav-pan' : 'nav-orbit', pick: undefined }
+      drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: undefined }
     }
 
     const onPointerMove = (e: PointerEvent) => {

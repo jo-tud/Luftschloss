@@ -6,6 +6,7 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     x: 0,
     y: 0,
     rotation: 0,
+    mirror: false,
     mattressLength: 2000,
     mattressWidth: 1000,
     mattressThickness: 160,

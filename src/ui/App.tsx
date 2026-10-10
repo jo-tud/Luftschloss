@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
+import { JointDetailDialog } from '../views/JointDetail'
 import { Viewport } from '../views/Viewport'
 import { Checks } from './Checks'
 import { Num } from './fields'
@@ -26,6 +27,7 @@ export function App() {
         <Checks />
       </aside>
       <MaterialDialog />
+      <JointDetailDialog />
       <Help />
     </div>
   )
@@ -97,10 +99,13 @@ function Help() {
           </p>
           <ul>
             <li>
-              <kbd>1</kbd> Draufsicht · <kbd>2</kbd> Seitenansicht (nochmal drücken: nächste Wand) · <kbd>3</kbd> 3D · <kbd>4</kbd> Ich-Perspektive (nochmal: nächster Standpunkt)
+              <kbd>1</kbd> Draufsicht · <kbd>2</kbd> Seitenansicht (nochmal drücken: nächste Wand) · <kbd>3</kbd> 3D · <kbd>4</kbd> Ich-Perspektive (nochmal: nächster Standpunkt) · <kbd>5</kbd> Abwicklung · <kbd>0</kbd> Ansicht zurücksetzen
             </li>
             <li>Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen</li>
             <li>Doppelklick auf ein Teil: Ansicht darauf zentrieren · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort</li>
+            <li>„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen</li>
+            <li>Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen</li>
+            <li>Mausbelegung „CAD“ (unter Raum → Einstellungen): mittlere Taste dreht, Shift+Mitte verschiebt, links nur Auswahl</li>
             <li>In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).</li>
             <li>Ich-Perspektive: Ziehen = umsehen, <kbd>W</kbd>
               <kbd>A</kbd>
@@ -110,6 +115,8 @@ function Help() {
           <h3>Bearbeiten</h3>
           <ul>
             <li>Bett ziehen: in Draufsicht/3D verschieben (rastet an Wänden ein), in der Seitenansicht hoch/runter = Liegehöhe</li>
+            <li>Frei gezeichnete Balken: orange Griffe an den Enden ziehen, Länge im Etikett anklicken und eintippen</li>
+            <li>Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen</li>
             <li>Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen</li>
             <li>
               <kbd>V</kbd> Auswahl · <kbd>B</kbd> Balken (zwei Klicks, <kbd>Shift</kbd> gerade, <kbd>Strg</kbd> weiterzeichnen) · <kbd>P</kbd> Pfosten · <kbd>Esc</kbd> abbrechen
@@ -150,6 +157,8 @@ function useShortcuts() {
       if (k === '1') s.setView({ kind: 'plan' })
       else if (k === '2') s.setView({ kind: 'elev', wall: s.view.kind === 'elev' ? walls[(walls.indexOf(s.view.wall) + 1) % 4] : 'A' })
       else if (k === '3') s.setView({ kind: '3d' })
+      else if (k === '5') s.setView({ kind: 'unfold' })
+      else if (k === '0') s.setView({ kind: '3d' })
       else if (k === '4') s.setView({ kind: 'person', preset: s.view.kind === 'person' ? presets[(presets.indexOf(s.view.preset) + 1) % 4] : 'tuer' })
       else if (k === 'v' || k === 'escape') s.set({ tool: 'select' })
       else if (k === 'b') s.set({ tool: 'balken' })

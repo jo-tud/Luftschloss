@@ -234,6 +234,8 @@ export interface LoftBedParams {
   x: Mm
   y: Mm
   rotation: 0 | 90 | 180 | 270
+  /** Spiegeln entlang der Bettlänge (links ↔ rechts), vor der Drehung */
+  mirror: boolean
   mattressLength: Mm
   mattressWidth: Mm
   mattressThickness: Mm
