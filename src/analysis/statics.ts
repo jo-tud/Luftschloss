@@ -2,6 +2,7 @@ import { locale, t, tr } from '../i18n'
 import { STRENGTH, catalogItem, type StrengthClass } from '../model/catalog'
 import { add, dot, memberAxes, memberLength, scale, sub, v } from '../model/geometry'
 import { jointType } from '../model/joints'
+import { inWallOpening, memberWall } from '../model/room'
 import type { Resolved } from '../model/resolve'
 import type { Member, Panel, Project, Vec3 } from '../model/types'
 import { solveFrame, type FrameElement, type FrameLink, type FrameModel, type FrameResult, type FrameSupport, type LoadCase } from './frame'
@@ -182,7 +183,8 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
     const kr = jt?.stiffness === 'steif' ? 3e8 : jt?.stiffness === 'halbsteif' ? 3e7 : 2e6
     // Schraubanschlüsse geben nach (Verschiebungsmodul einiger Holzbauschrauben ca. 5 kN/mm);
     // so tragen angeschraubte Geländerbretter nicht unfreiwillig als Unterzug mit
-    const kt = j.typeId === 'holzbauschraube' ? 5e3 : 2e6
+    // ebenso lose aufgelegte Latten (eine Schraube gegen Verrutschen): sie steifen das Gestell nicht aus
+    const kt = j.typeId === 'holzbauschraube' || j.typeId === 'lose' ? 5e3 : 2e6
     links.push({ n1: nodeAt(j.a, axisT(byId.get(j.a)!, j.pos)), n2: nodeAt(j.b, axisT(byId.get(j.b)!, j.pos)), kt, kr, tag: j.key })
     linkJoint.push(j.key)
   }
@@ -202,7 +204,15 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
     if (!m) continue
     const st = stations.get(id)!
     for (const f of fs) {
-      if (f.target === 'wand' && m.role === 'wandriegel') for (const s of st) supports.push({ node: s.node, fix: T3 })
+      if (f.target === 'wand' && m.role === 'wandriegel') {
+        // trägt nur, wo der Balken wirklich an der Wand liegt – nicht mit Abstand und nicht über Fenster oder Tür
+        const { wall, gap } = memberWall(m, p.room)
+        if (gap > 20) continue
+        for (const s of st) {
+          const q = nodes[s.node].p
+          if (!inWallOpening(p, wall, v(q[0], q[1], q[2]), 50)) supports.push({ node: s.node, fix: T3 })
+        }
+      }
       else if (f.target === 'wand' && m.role === 'pfosten') {
         const zTop = Math.max(m.start.z, m.end.z)
         const zFix = Math.min(zTop - 100, deckLevel(r, m) ?? zTop - 300)
@@ -244,7 +254,9 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
     addLoad(G, e.n2, [0, 0, -w / 2, 0, 0, 0])
   })
   // Flächenlasten auf Träger verteilen (Einzugsbreite)
-  const carrierNodes: number[] = []
+  // Knoten der Liegeflächen je Bett (bzw. eigenem Bett/freien Teilen): jedes bekommt die volle Seitenlast
+  const carrierNodes = new Map<string, Set<number>>()
+  const ownerOf = (m: Member) => m.assemblyId ?? m.groupId ?? ''
   for (const s of surfaces) {
     const area = (s.x1 - s.x0) * (s.y1 - s.y0)
     const gArea = (LOADS.mattress + (s.panelWeight ?? 0)) / Math.max(1, area)
@@ -258,7 +270,9 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
           addLoad(c, st[i + 1].node, [0, 0, -f / 2, 0, 0, 0])
         }
       }
-      for (const x of st) carrierNodes.push(x.node)
+      const own = carrierNodes.get(ownerOf(m)) ?? new Set<number>()
+      for (const x of st) own.add(x.node)
+      carrierNodes.set(ownerOf(m), own)
       if (s.net) {
         // Netz spannt quer zum Träger: Randzug nach innen, Richtung Flächenmitte
         const ax = memberAxes(m)[0]
@@ -297,14 +311,21 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
       }
     } else for (const pc of patch) addLoad(J, nodeAt(pc.m.id, pc.t), [0, 0, -LOADS.jump / patch.length, 0, 0, 0])
   }
-  const uniq = [...new Set(carrierNodes)]
-  for (const n of uniq) {
-    addLoad(HX, n, [LOADS.lateral / uniq.length, 0, 0, 0, 0, 0])
-    addLoad(HY, n, [0, LOADS.lateral / uniq.length, 0, 0, 0, 0])
+  // Seitenlast je Bett: getrennte Gestelle wackeln unabhängig, jedes muss die volle Last aufnehmen
+  for (const own of carrierNodes.values()) {
+    for (const n of own) {
+      addLoad(HX, n, [LOADS.lateral / own.size, 0, 0, 0, 0, 0])
+      addLoad(HY, n, [0, LOADS.lateral / own.size, 0, 0, 0, 0])
+    }
   }
-  // Geländer: Handlauf vorne nach außen drücken
-  const rail = members.find((m) => m.partKey?.startsWith('handlauf-vorne')) ?? members.find((m) => m.partKey?.startsWith('handlauf')) // i18n-ok
-  if (rail) {
+  // Geländer: je Bett das längste Handlauffeld nach außen drücken (kurze Stücke neben der Leiter sagen nichts)
+  const rails = new Map<string, Member>()
+  for (const m of members) {
+    if (!m.partKey?.startsWith('handlauf')) continue // i18n-ok
+    const cur = rails.get(ownerOf(m))
+    if (!cur || memberLength(m) > memberLength(cur)) rails.set(ownerOf(m), m)
+  }
+  for (const rail of rails.values()) {
     const asm = r.beds.get(rail.assemblyId ?? '')
     const mid = v((rail.start.x + rail.end.x) / 2, (rail.start.y + rail.end.y) / 2, rail.start.z)
     // senkrecht zum Handlauf nach außen drücken (nicht schräg aus der Bettmitte – sonst bekäme ein
@@ -452,12 +473,23 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
   if (results.length) {
     joints.forEach((j, i) => {
       const cap = jointType(j.typeId)?.capacityKN ?? 3
+      // Lose aufgelegt: Druck auf die Auflage trägt das Holz (Pressung), die Schraube nur Schub und Abheben
+      const bearing = j.typeId === 'lose'
+      const a = byId.get(j.a)!
+      const b = byId.get(j.b)!
+      // Kraftvektor wirkt am Knoten von b; liegt b unten, ist +z Druck auf b
+      const down = (a.start.z + a.end.z) / 2 >= (b.start.z + b.end.z) / 2 ? 1 : -1
       let worst = 0
       let force = 0
       for (const c of ulsCombos) {
         let F = 0
+        if (bearing) {
+          const vec = [0, 0, 0]
+          for (const [res, k] of c.links) if (res) res.links[i].vec.forEach((x, n) => (vec[n] += k * x))
+          F = Math.hypot(vec[0], vec[1], vec[2] * down > 0 ? 0 : vec[2])
+        }
         // Federkräfte überlagern (Betrag der Summe ≈ Summe der Beträge, konservativ)
-        for (const [res, k] of c.links) if (res) F += Math.abs(k) * res.links[i].force
+        else for (const [res, k] of c.links) if (res) F += Math.abs(k) * res.links[i].force
         const rd = (cap * c.kmod) / GAMMA_M
         const u = F / 1000 / rd
         if (u > worst) {
@@ -470,8 +502,15 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
   }
 
   // --- Wackeln -------------------------------------------------------------------------------
-  const swayOf = (res: FrameResult | undefined, c: number) => (res ? Math.max(0, ...uniq.map((n) => Math.abs(res.u[n * 6 + c]))) : 0)
+  const allCarriers = [...carrierNodes.values()].flatMap((x) => [...x])
+  const swayOf = (res: FrameResult | undefined, c: number) => (res ? Math.max(0, ...allCarriers.map((n) => Math.abs(res.u[n * 6 + c]))) : 0)
   const sway = { x: swayOf(rHX, 0), y: swayOf(rHY, 1) }
+  // Verschiebung im Meterbereich: das Gestell ist kinematisch (z. B. Wandbalken ohne Wand dahinter)
+  if (Math.max(sway.x, sway.y) > 1000) {
+    warnings.push(t('Das Gestell hat so keinen Halt: Es würde kippen oder wegrutschen. Bauart und Lage prüfen.'))
+    sway.x = Math.min(sway.x, 999)
+    sway.y = Math.min(sway.y, 999)
+  }
   const sMax = Math.max(sway.x, sway.y)
   // Schlüssel für die Logik (Anzeige mit tr())
   const swayClass = sMax <= 5 ? 'steif' : sMax <= 15 ? 'spürbar' : 'wackelt' // i18n-ok
