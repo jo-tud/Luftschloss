@@ -3,7 +3,8 @@ import { t, tr } from '../i18n'
 import { MemberStatics } from './Statics'
 import { GROUP_LABEL, SHEETS, TIMBER, catalogItem, maxLength, timber, type TimberGroup } from '../model/catalog'
 import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
-import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
+import { JOINT_KIND_LABEL, jointType } from '../model/joints'
+import { JointTypeSelect } from './JointTypeSelect'
 import { BED_TYPE_LABEL } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
 import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, Project, Side, WallId, WallObject } from '../model/types'
@@ -524,15 +525,7 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
                   {t('3D-Detail')}
                 </button>
               </div>
-              <select value={j.typeId} onChange={(e) => update((dd) => setJoint(dd, j.key, e.target.value))}>
-                {typesForKind(j.kind).map((jt2) => (
-                  <option key={jt2.id} value={jt2.id}>
-                    {'●'.repeat(jt2.difficulty)} {tr(jt2.name)}
-                    {jt2.removable ? ` · ${t('zerlegbar')}` : ''}
-                  </option>
-                ))}
-                {!typesForKind(j.kind).some((x) => x.id === j.typeId) && <option value={j.typeId}>{jt ? tr(jt.name) : j.typeId}</option>}
-              </select>
+              <JointTypeSelect j={j} byId={byId} onChange={(v) => update((dd) => setJoint(dd, j.key, v))} />
               {jt && (
                 <p className="hint">
                   {tr(jt.note)} <br />

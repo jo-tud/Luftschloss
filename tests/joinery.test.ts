@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { testProject } from '../src/model/defaults'
-import { memberBoxes, memberLength, obbOverlap } from '../src/model/geometry'
-import { cutLengths, cutMemberBoxes, jointCuts, prismCorners } from '../src/model/joinery'
+import { memberAxes, memberBoxes, memberLength, obbOverlap } from '../src/model/geometry'
+import { assemblyDir, cutLengths, cutMemberBoxes, jointCuts, jointFrame, prismCorners } from '../src/model/joinery'
 import { partTypes } from '../src/analysis/assembly'
 import { resolveProject } from '../src/model/resolve'
 import type { Project } from '../src/model/types'
@@ -119,5 +119,39 @@ describe('Holzverbindungen als Geometrie', () => {
     const c = jointCuts(j, new Map(rv.members.map((m) => [m.id, m])))!
     expect(c.members.get('bett-1:pfosten-BL')!.sub).toHaveLength(1)
     expect(c.members.get(braces[0].id)!.prisms).toHaveLength(1)
+  })
+
+  it('Fügerichtung: jede Verbindung lässt sich in ihrer Richtung auseinanderziehen, ohne dass Holz durch Holz geht', () => {
+    for (const t of ['zapfen', 'ueberblattung', 'ausklinkung']) {
+      const { j, A, B, a, b } = cutsFor(t)
+      const F = jointFrame(j, A, B)!
+      const d = assemblyDir(j, F)
+      const [eBoxes, tBoxes] = F.E === A ? [a, b] : [b, a]
+      const moved = (k: number) => eBoxes.map((o) => ({ ...o, center: { x: o.center.x + d.x * k, y: o.center.y + d.y * k, z: o.center.z + d.z * k } }))
+      for (let k = 0; k <= 200; k += 5) noClash(moved(k), tBoxes)
+      // in Gegenrichtung ginge es nicht (sonst sagt der Test nichts)
+      const back = eBoxes.map((o) => ({ ...o, center: { x: o.center.x - d.x * 30, y: o.center.y - d.y * 30, z: o.center.z - d.z * 30 } }))
+      expect(back.some((x) => tBoxes.some((y) => obbOverlap(x, y) > 0.6))).toBe(true)
+    }
+    // Gratnut und Schwalbenschwanz: quer zur Stabachse, entlang der Nut bzw. zur offenen Seite
+    for (const t of ['gratnut', 'schwalbenschwanz']) {
+      const { j, A, B } = cutsFor(t)
+      const F = jointFrame(j, A, B)!
+      const d = assemblyDir(j, F)
+      expect(Math.abs(d.x * F.into.x + d.y * F.into.y + d.z * F.into.z)).toBeLessThan(0.01)
+      expect(Math.abs(d.x * F.across.x + d.y * F.across.y + d.z * F.across.z)).toBeCloseTo(1, 3)
+      // der Sitz in T ist zu dieser Seite hin offen
+      const [Tm, cut] = [F.T, cutsFor(t).c.members.get(F.T.id)!]
+      const ax = memberAxes(Tm)
+      const dd = (q: { x: number; y: number; z: number }) => q.x * d.x + q.y * d.y + q.z * d.z
+      const housing = dd(Tm.start) + cut.sub[0].reduce((s2, r, i) => s2 + Math.max(r[0] * dd(ax[i]), r[1] * dd(ax[i])), 0)
+      const surface = Math.max(...memberBoxes(Tm).map((o) => dd(o.center) + o.axes.reduce((s2, a, i) => s2 + Math.abs(dd(a)) * o.half[i], 0)))
+      expect(housing).toBeGreaterThanOrEqual(surface - 0.5)
+    }
+    // Balkenschuh: von oben eingelegt
+    const r = resolveProject(withJoint(T_STOSS, 'balkenschuh'))
+    const j = r.joints.find((x) => x.key === T_STOSS)!
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    expect(assemblyDir(j, jointFrame(j, byId.get(j.a)!, byId.get(j.b)!)!).z).toBe(1)
   })
 })
