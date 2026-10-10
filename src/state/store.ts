@@ -75,6 +75,13 @@ interface State {
   /** Aufbau-Animation: aktueller Schritt und Startzeit (performance.now) */
   build: { step: number; start: number; auto: boolean } | null
   showPlan: boolean
+  showShare: boolean
+  /** Abgleich-Server im WLAN (npm run lan), sonst null */
+  server: { ips: string[]; port: number; status: 'verbunden' | 'getrennt'; lastSync: number } | null
+  toast: string | null
+  /** Seitenleisten auf schmalen Bildschirmen (Tablet) */
+  leftOpen: boolean
+  rightOpen: boolean
   /** Änderung am Projekt; coalesce fasst viele Schritte (z. B. Ziehen) zu einem Undo-Schritt zusammen */
   update: (recipe: (d: Project) => void, coalesce?: string) => void
   /** Wie update, aber ausgehend von einem festen Ausgangsstand (für Ziehen ohne Rundungsfehler) */
@@ -169,6 +176,11 @@ export const useStore = create<State>((set, get) => ({
   wobble: false,
   build: null,
   showPlan: false,
+  showShare: false,
+  server: null,
+  toast: null,
+  leftOpen: false,
+  rightOpen: false,
   update: (recipe, coalesce) => {
     const { project, past, coalesce: current } = get()
     const next = produce(project, recipe)

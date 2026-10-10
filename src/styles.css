@@ -1230,3 +1230,132 @@ table.compare td {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.narrow-only,
+.drawer-scrim {
+  display: none;
+}
+.sync.verbunden {
+  border-color: var(--ok);
+}
+.sync.getrennt {
+  border-color: var(--err);
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 60px;
+  transform: translateX(-50%);
+  background: #1f2328;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  z-index: 200;
+}
+.modal.share {
+  width: min(640px, 94vw);
+}
+.qr-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.qr svg {
+  width: 180px;
+  height: 180px;
+}
+
+/* Tablet und schmale Fenster: Seitenleisten als ausklappbare Schubladen */
+@media (max-width: 1279px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'top' 'center';
+  }
+  .narrow-only {
+    display: inline-block;
+  }
+  .sidebar,
+  .right {
+    position: fixed;
+    top: 46px;
+    bottom: 0;
+    width: min(360px, 88vw);
+    z-index: 60;
+    transition: transform 0.25s ease;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
+  }
+  .sidebar {
+    left: 0;
+    transform: translateX(-105%);
+  }
+  .right {
+    right: 0;
+    transform: translateX(105%);
+  }
+  .app.left-open .sidebar,
+  .app.right-open .right {
+    transform: none;
+  }
+  .app.left-open .drawer-scrim,
+  .app.right-open .drawer-scrim {
+    display: block;
+    position: fixed;
+    inset: 46px 0 0 0;
+    background: rgba(0, 0, 0, 0.15);
+    z-index: 55;
+  }
+  .toolbar {
+    overflow-x: auto;
+    gap: 6px;
+  }
+  .toolbar .proj {
+    display: none;
+  }
+  .statusbar .hint {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .toolbar .lbl {
+    display: none;
+  }
+  .minis {
+    display: none;
+  }
+  .view-switcher .view-name {
+    display: none;
+  }
+}
+/* Finger- und Stiftbedienung: größere Ziele (≥ 40 px) */
+@media (pointer: coarse) {
+  :root {
+    font-size: 15px;
+  }
+  button,
+  select,
+  input:not([type='checkbox']):not([type='range']) {
+    min-height: 40px;
+  }
+  .view-switcher button {
+    min-width: 40px;
+  }
+  input[type='checkbox'] {
+    width: 22px;
+    height: 22px;
+  }
+  input[type='range'] {
+    height: 32px;
+  }
+  .list li {
+    padding: 10px 8px;
+  }
+  .checks li .title {
+    padding: 10px 12px;
+  }
+}

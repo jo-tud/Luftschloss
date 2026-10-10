@@ -16,6 +16,9 @@ export function Toolbar() {
   const d = useDerived()
   return (
     <header className="toolbar">
+      <button className="narrow-only" onClick={() => s.set({ leftOpen: !s.leftOpen, rightOpen: false })} title="Raum, Ausstattung, Vorlagen">
+        ☰
+      </button>
       <div className="brand" title="Luftschloss – Hochbettplaner">
         <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden>
           <rect x="4" y="6" width="4" height="22" fill="#b07a3b" />
@@ -36,13 +39,13 @@ export function Toolbar() {
       </div>
       <div className="group">
         <button className={s.tool === 'select' ? 'on' : ''} onClick={() => s.set({ tool: 'select' })} title="Auswählen und verschieben (V)">
-          ➤ Auswahl
+          ➤<span className="lbl"> Auswahl</span>
         </button>
         <button className={s.tool === 'balken' ? 'on' : ''} onClick={() => s.set({ tool: 'balken' })} title="Balken zeichnen: zwei Klicks, Shift = gerade, Strg = weiterzeichnen (B)">
-          ▬ Balken
+          ▬<span className="lbl"> Balken</span>
         </button>
         <button className={s.tool === 'pfosten' ? 'on' : ''} onClick={() => s.set({ tool: 'pfosten' })} title="Pfosten setzen: ein Klick (P)">
-          ▮ Pfosten
+          ▮<span className="lbl"> Pfosten</span>
         </button>
         {s.tool !== 'select' && (
           <select value={s.toolCatalogId} onChange={(e) => s.set({ toolCatalogId: e.target.value })} title="Querschnitt für neue Bauteile">
@@ -73,20 +76,26 @@ export function Toolbar() {
       </div>
       <div className="group">
         <button className={s.staticsMode ? 'on' : ''} onClick={() => s.set({ staticsMode: !s.staticsMode, wobble: false })} title="Statik des Gestells: Ausnutzung, Verformung, Wackeln">
-          ⚖ Statik{s.statics ? ` ${Math.round(s.statics.maxUtil * 100)} %` : ''}
+          ⚖<span className="lbl"> Statik</span>{s.statics ? ` ${Math.round(s.statics.maxUtil * 100)} %` : ''}
         </button>
       </div>
       <div className="group">
         <button className={s.build ? 'on' : ''} onClick={() => s.set({ build: s.build ? null : { step: 0, start: performance.now(), auto: true } })} title="Aufbau Schritt für Schritt als Animation">
-          ▶ Aufbau
+          ▶<span className="lbl"> Aufbau</span>
         </button>
         <button onClick={() => s.set({ showPlan: true })} title="Bauplan mit Ansichten, Teileliste, Verbindungen und Montage – druckbar">
-          📐 Bauplan
+          📐<span className="lbl"> Bauplan</span>
         </button>
       </div>
       <div className="spacer" />
       <button className="cost" onClick={() => s.set({ showMaterial: true })} title="Stückliste, Zuschnitt und Kosten">
-        🧾 Material · {eur(d.bom.total)}
+        🧾<span className="lbl"> Material ·</span> {eur(d.bom.total)}
+      </button>
+      <button className={`sync ${s.server ? s.server.status : ''}`} onClick={() => s.set({ showShare: true })} title={s.server ? `Abgleich im WLAN: ${s.server.status}` : 'Auf dem Tablet öffnen'}>
+        📱<span className="lbl"> Tablet</span>
+      </button>
+      <button className="narrow-only" onClick={() => s.set({ rightOpen: !s.rightOpen, leftOpen: false })} title="Eigenschaften und Prüfung">
+        ⓘ
       </button>
       <button onClick={() => s.set({ showHelp: true })} title="Bedienung (?)">
         ?
