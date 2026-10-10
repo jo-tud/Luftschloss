@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
-import { cornice, doorGeom, furnitureBox, sashBoxes, windowSashes } from '../model/room'
+import { cornice, doorGeom, furnitureBox, lampShadeHeight, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { buildSteps } from '../analysis/assembly'
@@ -64,9 +64,22 @@ function Box({ o, color, pick, opacity = 1, edges = false, round = false, cast =
   const t = useMemo(() => obbTransform(o, round), [o, round])
   const shared = wood && !round ? woodMaterial(wood, highlight ?? color, { emissive: highlight, opacity }) : plaster ? plasterMaterial(color, { opacity }) : undefined
   return (
-    <mesh position={t.position} quaternion={t.quaternion} userData={pick ? { pick } : {}} castShadow={cast} receiveShadow material={shared}>
+    <mesh position={t.position} quaternion={t.quaternion} userData={pick ? { pick } : {}} castShadow={cast} receiveShadow={opacity >= 0.5} material={shared}>
       {round ? <cylinderGeometry args={[t.size[0] / 2, t.size[0] / 2, t.size[1], 20]} /> : <boxGeometry args={t.size} />}
-      {!shared && <meshStandardMaterial color={highlight ?? color} transparent={opacity < 1} opacity={opacity} roughness={0.8} emissive={highlight ? highlight : '#000000'} emissiveIntensity={highlight ? 0.25 : 0} />}
+      {/* Fast durchsichtige Teile (Glas, reine Kantenkörper) schreiben keine Tiefe – sonst flackern sie
+          je nach Sortierreihenfolge gegeneinander und gegen den Blick nach draußen */}
+      {!shared && (
+        <meshStandardMaterial
+          color={highlight ?? color}
+          transparent={opacity < 1}
+          opacity={opacity}
+          depthWrite={opacity >= 0.5}
+          visible={opacity > 0}
+          roughness={0.8}
+          emissive={highlight ? highlight : '#000000'}
+          emissiveIntensity={highlight ? 0.25 : 0}
+        />
+      )}
       {edges && !round && <Edges color={wood ? '#7a5a3a' : '#6b5136'} threshold={20} transparent opacity={wood ? 0.35 : 1} />}
     </mesh>
   )
@@ -544,18 +557,39 @@ function Rosettes({ p }: { p: Project }) {
           <mesh position={T(ro.x, ro.y, r.height)} userData={{ pick: { kind: 'rosette', id: ro.id } }} geometry={rosetteGeometry(ro.diameter, ro.depth)}>
             <meshStandardMaterial color={COLORS.stuck} emissive="#cfc9bf" emissiveIntensity={0.4} roughness={0.8} />
           </mesh>
-          {ro.lampDrop > 0 && (
-            <>
-              <Line points={[T(ro.x, ro.y, r.height), T(ro.x, ro.y, r.height - ro.lampDrop + Math.min(ro.lampDrop, ro.lampDiameter))]} color="#222" lineWidth={1} />
-              <mesh position={T(ro.x, ro.y, r.height - ro.lampDrop + Math.min(ro.lampDrop, ro.lampDiameter) / 2)} userData={{ pick: { kind: 'rosette', id: ro.id } }} castShadow>
-                <cylinderGeometry args={[ro.lampDiameter / 2000, ro.lampDiameter / 2000, Math.min(ro.lampDrop, ro.lampDiameter) / 1000, 32, 1, true]} />
-                <meshStandardMaterial color="#3b2f28" side={THREE.DoubleSide} roughness={0.9} />
-              </mesh>
-            </>
-          )}
+          {ro.lampDrop > 0 && <Pendant r={r} ro={ro} />}
         </group>
       ))}
     </group>
+  )
+}
+
+/** Pendelleuchte: Kabel, heller Kegelschirm, warm leuchtende Birne */
+function Pendant({ r, ro }: { r: Project['room']; ro: Project['room']['rosettes'][number] }) {
+  const h = lampShadeHeight(ro)
+  const bottom = r.height - ro.lampDrop
+  const R = ro.lampDiameter / 2000
+  const geo = useMemo(() => {
+    // leicht gewölbter Schirm von schmaler Kappe zur breiten Unterkante
+    const pts: THREE.Vector2[] = []
+    for (let i = 0; i <= 12; i++) {
+      const t = i / 12
+      pts.push(new THREE.Vector2(R * (0.16 + 0.84 * Math.sin((t * Math.PI) / 2)), (h / 1000) * (1 - t)))
+    }
+    return new THREE.LatheGeometry(pts, 40)
+  }, [R, h])
+  const pick = { pick: { kind: 'rosette', id: ro.id } }
+  return (
+    <>
+      <Line points={[T(ro.x, ro.y, r.height), T(ro.x, ro.y, bottom + h)]} color="#d8d4cc" lineWidth={1.2} />
+      <mesh position={T(ro.x, ro.y, bottom)} geometry={geo} userData={pick} castShadow>
+        <meshStandardMaterial color="#f3efe6" side={THREE.DoubleSide} roughness={0.75} emissive="#ffe2b0" emissiveIntensity={0.18} />
+      </mesh>
+      <mesh position={T(ro.x, ro.y, bottom + h * 0.45)} userData={pick}>
+        <sphereGeometry args={[Math.min(0.035, R * 0.3), 16, 12]} />
+        <meshStandardMaterial color="#fff6e0" emissive="#ffe6b8" emissiveIntensity={1.6} toneMapped={false} />
+      </mesh>
+    </>
   )
 }
 
@@ -923,6 +957,8 @@ function OutsideView({ p, w }: { p: Project; w: WindowObj }) {
     return { position: pos, quaternion: o.quaternion.clone() }
   }, [f.start.x, f.start.y, f.u.x, f.u.y, f.n.x, f.n.y, w.offset, w.width, w.sillHeight, w.height, w.revealDepth])
   const tex = outsideTexture(w.id)
+  // eigener Stencil-Wert je Fenster, damit jede Kulisse nur in ihrem Fenster erscheint
+  const ref = 1 + (Math.max(0, p.wallObjects.filter((o) => o.kind === 'fenster').findIndex((o) => o.id === w.id)) % 254)
   // Maske in der Fensteröffnung: die Kulisse erscheint nur dort (Stencil), nie über der Wand hinaus
   const mask = useMemo(() => {
     const s = w.offset + w.width / 2
@@ -936,26 +972,61 @@ function OutsideView({ p, w }: { p: Project; w: WindowObj }) {
   }, [f.start.x, f.start.y, f.u.x, f.u.y, f.n.x, f.n.y, w.offset, w.width, w.sillHeight, w.height, w.revealDepth])
   return (
     <>
-      <mesh position={mask.position} quaternion={mask.quaternion} raycast={() => null} renderOrder={10} material={STENCIL_MASK}>
+      <mesh position={mask.position} quaternion={mask.quaternion} raycast={() => null} renderOrder={10} material={stencilMask(ref)}>
         <planeGeometry args={[w.width / 1000, w.height / 1000]} />
       </mesh>
-      <mesh position={position} quaternion={quaternion} raycast={() => null} renderOrder={11}>
+      {/* Ohne Tiefentest: was davor steht, hat die Maske schon ausgespart. Mit Tiefentest kämpften die
+          gleich weit entfernten Kulissen zweier Fenster einer Wand um dieselbe Tiefe und flimmerten. */}
+      <mesh position={position} quaternion={quaternion} raycast={() => null} renderOrder={12}>
         <planeGeometry args={[9, 5]} />
-        <meshBasicMaterial map={tex} toneMapped={false} stencilWrite stencilRef={1} stencilFunc={THREE.EqualStencilFunc} stencilZPass={THREE.KeepStencilOp} />
+        <meshBasicMaterial map={tex} toneMapped={false} depthTest={false} depthWrite={false} stencilWrite stencilRef={ref} stencilFunc={THREE.EqualStencilFunc} stencilZPass={THREE.KeepStencilOp} />
+      </mesh>
+      {/* Himmel darüber und Hof darunter, falls man steil durchs Fenster schaut – liegt hinter der Kulisse */}
+      <mesh position={position} quaternion={quaternion} raycast={() => null} renderOrder={11}>
+        <planeGeometry args={[40, 40]} />
+        <meshBasicMaterial map={skyGroundTexture()} toneMapped={false} depthTest={false} depthWrite={false} stencilWrite stencilRef={ref} stencilFunc={THREE.EqualStencilFunc} stencilZPass={THREE.KeepStencilOp} />
       </mesh>
     </>
   )
 }
 
-const STENCIL_MASK = new THREE.MeshBasicMaterial({
-  colorWrite: false,
-  depthWrite: false,
-  side: THREE.DoubleSide,
-  stencilWrite: true,
-  stencilRef: 1,
-  stencilFunc: THREE.AlwaysStencilFunc,
-  stencilZPass: THREE.ReplaceStencilOp,
-})
+const stencilMasks = new Map<number, THREE.MeshBasicMaterial>()
+function stencilMask(ref: number): THREE.MeshBasicMaterial {
+  let m = stencilMasks.get(ref)
+  if (!m) {
+    m = new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      stencilWrite: true,
+      stencilRef: ref,
+      stencilFunc: THREE.AlwaysStencilFunc,
+      stencilZPass: THREE.ReplaceStencilOp,
+    })
+    stencilMasks.set(ref, m)
+  }
+  return m
+}
+
+let skyGround: THREE.CanvasTexture | undefined
+/** Großer Hintergrund hinter der Kulisse: oben Himmel, unten Hof (Kulisse 5 m hoch, Mitte bei 20 m) */
+function skyGroundTexture(): THREE.CanvasTexture {
+  if (skyGround) return skyGround
+  const c = document.createElement('canvas')
+  c.width = 4
+  c.height = 256
+  const g = c.getContext('2d')!
+  const sky = g.createLinearGradient(0, 0, 0, 128)
+  sky.addColorStop(0, '#6fa3dc')
+  sky.addColorStop(1, '#8fbbe6')
+  g.fillStyle = sky
+  g.fillRect(0, 0, 4, 128)
+  g.fillStyle = '#3f6332'
+  g.fillRect(0, 128, 4, 128)
+  skyGround = new THREE.CanvasTexture(c)
+  skyGround.colorSpace = THREE.SRGBColorSpace
+  return skyGround
+}
 
 const outsideCache = new Map<string, THREE.CanvasTexture>()
 function outsideTexture(seedKey: string): THREE.CanvasTexture {
@@ -1029,11 +1100,13 @@ function outsideTexture(seedKey: string): THREE.CanvasTexture {
   g.fillRect(0, H * 0.94, W, H * 0.06)
   const tex = new THREE.CanvasTexture(c)
   tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 8
   outsideCache.set(seedKey, tex)
   return tex
 }
 
 const metal = new THREE.MeshStandardMaterial({ color: '#d9dcdf', metalness: 0.55, roughness: 0.42 })
+const pocketMat = new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 1 })
 const headGeo = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2)
 const washerGeo = new THREE.CylinderGeometry(1, 1, 1, 20)
 const nutGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
@@ -1043,15 +1116,15 @@ const plateGeo = new THREE.BoxGeometry(1, 1, 1)
 function BoltHardware({ d }: { d: Derived }) {
   const meshes = useMemo(() => {
     const h = hardwareInstances(d.resolved)
-    const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[]) => {
+    const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material = metal) => {
       if (!list.length) return null
-      const im = new THREE.InstancedMesh(geo, metal, list.length)
+      const im = new THREE.InstancedMesh(geo, mat, list.length)
       list.forEach((m, i) => im.setMatrixAt(i, m))
       im.castShadow = true
       im.raycast = () => {}
       return im
     }
-    return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates)].filter(Boolean) as THREE.InstancedMesh[]
+    return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates), make(washerGeo, h.pockets, pocketMat)].filter(Boolean) as THREE.InstancedMesh[]
   }, [d])
   return (
     <group>

@@ -65,27 +65,31 @@ export function wallSides(p: LoftBedParams): Side[] {
 }
 
 /** Anzahl Matratzen und ob sie nebeneinander liegen */
-export function mattressSetup(p: LoftBedParams): { n: number; side: boolean } {
-  return { n: Math.max(1, Math.min(3, Math.round(p.mattressCount ?? 1))), side: (p.mattressLayout ?? 'nebeneinander') === 'nebeneinander' }
+export function mattressSetup(p: LoftBedParams): { n: number; side: boolean; spacing: Mm } {
+  return {
+    n: Math.max(1, Math.min(3, Math.round(p.mattressCount ?? 1))),
+    side: (p.mattressLayout ?? 'nebeneinander') === 'nebeneinander',
+    spacing: Math.max(0, p.mattressSpacing ?? p.mattressGap),
+  }
 }
 
 /** Matratzen im lokalen System (x längs, y quer), ab der Innenkante der Pfosten */
 export function mattressRects(p: LoftBedParams, postB: Mm): { x0: Mm; y0: Mm; x1: Mm; y1: Mm }[] {
-  const { n, side } = mattressSetup(p)
+  const { n, side, spacing } = mattressSetup(p)
   const g = p.mattressGap
   return Array.from({ length: n }, (_, i) => {
-    const x0 = postB + g + (side ? 0 : i * (p.mattressLength + g))
-    const y0 = postB + g + (side ? i * (p.mattressWidth + g) : 0)
+    const x0 = postB + g + (side ? 0 : i * (p.mattressLength + spacing))
+    const y0 = postB + g + (side ? i * (p.mattressWidth + spacing) : 0)
     return { x0, y0, x1: x0 + p.mattressLength, y1: y0 + p.mattressWidth }
   })
 }
 
 export function bedOuterSize(p: LoftBedParams): { length: Mm; width: Mm } {
-  const { n, side } = mattressSetup(p)
+  const { n, side, spacing } = mattressSetup(p)
   const post = timber(p.postCatalogId)
   return {
-    length: (side ? 1 : n) * p.mattressLength + ((side ? 1 : n) + 1) * p.mattressGap + 2 * post.b,
-    width: (side ? n : 1) * p.mattressWidth + ((side ? n : 1) + 1) * p.mattressGap + 2 * post.b,
+    length: (side ? 1 : n) * p.mattressLength + 2 * p.mattressGap + (side ? 0 : n - 1) * spacing + 2 * post.b,
+    width: (side ? n : 1) * p.mattressWidth + 2 * p.mattressGap + (side ? n - 1 : 0) * spacing + 2 * post.b,
   }
 }
 
@@ -258,8 +262,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   // Fugen zwischen mehreren Matratzen (nebeneinander: längs laufend bei y, hintereinander: quer bei x)
   const { n: nMat, side: matSide } = mattressSetup(P)
   const mats = mattressRects(P, p)
-  const seamYs = matSide ? mats.slice(1).map((m) => m.y0 - P.mattressGap / 2) : []
-  const seamXs = matSide ? [] : mats.slice(1).map((m) => m.x0 - P.mattressGap / 2)
+  const matSpacing = mattressSetup(P).spacing
+  const seamYs = matSide ? mats.slice(1).map((m) => m.y0 - matSpacing / 2) : []
+  const seamXs = matSide ? [] : mats.slice(1).map((m) => m.x0 - matSpacing / 2)
   // Mittelträger längs: unter Matratzenfugen (Latten, Roste) bzw. bei breiter Lattung in der Mitte
   const rost = P.deck === 'rollrost' || P.deck === 'lattenrost'
   const midYs = carriersLR || !(P.deck === 'latten' || rost) ? [] : seamYs.length ? seamYs : P.deck === 'latten' && Wo - 2 * rb > 1250 ? [Wo / 2] : []

@@ -194,7 +194,7 @@ export function roomObstacles(p: Project): Obstacle[] {
     out.push({ id: `${r.id}:rosette`, ownerId: r.id, label: 'Deckenrosette', kind: 'rosette', box: aabbOBB(v(r.x - rr, r.y - rr, room.height - r.depth), v(r.x + rr, r.y + rr, room.height)) })
     if (r.lampDrop > 0) {
       const lr = r.lampDiameter / 2
-      const lampH = Math.min(r.lampDrop, r.lampDiameter)
+      const lampH = lampShadeHeight(r)
       out.push({
         id: `${r.id}:lampe`,
         ownerId: r.id,
@@ -231,4 +231,9 @@ export function corniceIntrusion(room: Room, q: Vec3): { depth: number; wall: Wa
     }
   }
   return best
+}
+
+/** Höhe des Lampenschirms: typischer Pendelschirm, etwa halb so hoch wie breit */
+export function lampShadeHeight(r: { lampDrop: number; lampDiameter: number }): number {
+  return Math.min(r.lampDrop, r.lampDiameter * 0.5)
 }

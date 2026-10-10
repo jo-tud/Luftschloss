@@ -1,5 +1,5 @@
 import { GROUP_LABEL, TIMBER } from '../model/catalog'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
 import { JointDetailDialog } from '../views/JointDetail'
@@ -21,8 +21,14 @@ export function App() {
   useDialogFocus()
   const leftOpen = useStore((s) => s.leftOpen)
   const rightOpen = useStore((s) => s.rightOpen)
+  const [panels, setPanels] = usePanelSizes()
+  const style = {
+    '--left-w': `${panels.left}px`,
+    '--right-w': `${panels.right}px`,
+    ...(panels.checks ? { '--checks-h': `${panels.checks}px` } : {}),
+  } as React.CSSProperties
   return (
-    <div className={`app${leftOpen ? ' left-open' : ''}${rightOpen ? ' right-open' : ''}`}>
+    <div className={`app${leftOpen ? ' left-open' : ''}${rightOpen ? ' right-open' : ''}`} style={style}>
       <Toolbar />
       <ExampleBanner />
       <Sidebar />
@@ -35,7 +41,35 @@ export function App() {
           <Properties />
         </div>
         <Checks />
+        <Splitter
+          dir="h"
+          style={{ bottom: panels.checks ? panels.checks - 4 : 'calc(38% - 4px)' }}
+          title="Ziehen: Prüfliste höher oder niedriger · Doppelklick: zurücksetzen"
+          onDrag={(_dx, dy, start) => {
+            const h = (start.checks ?? 260) - dy
+            const max = window.innerHeight - 46 - 160
+            setPanels({ checks: Math.round(Math.max(120, Math.min(max, h))) })
+          }}
+          onReset={() => setPanels({ checks: null })}
+          panels={panels}
+        />
       </aside>
+      <Splitter
+        dir="v"
+        style={{ left: panels.left - 5 }}
+        title="Ziehen: Seitenleiste breiter oder schmaler · Doppelklick: zurücksetzen"
+        onDrag={(dx, _dy, start) => setPanels({ left: clampW(start.left + dx, start.right) })}
+        onReset={() => setPanels({ left: PANEL_DEFAULT.left })}
+        panels={panels}
+      />
+      <Splitter
+        dir="v"
+        style={{ right: panels.right - 4 }}
+        title="Ziehen: Eigenschaften breiter oder schmaler · Doppelklick: zurücksetzen"
+        onDrag={(dx, _dy, start) => setPanels({ right: clampW(start.right - dx, start.left) })}
+        onReset={() => setPanels({ right: PANEL_DEFAULT.right })}
+        panels={panels}
+      />
       <StaticsRunner />
       <ServerSync />
       <ShareDialog />
@@ -46,6 +80,93 @@ export function App() {
       <BauplanDialog />
       <Help />
     </div>
+  )
+}
+
+interface PanelSizes {
+  left: number
+  right: number
+  /** Höhe der Prüfliste in px, null = automatisch */
+  checks: number | null
+}
+const PANEL_DEFAULT: PanelSizes = { left: 290, right: 340, checks: null }
+const PANEL_KEY = 'luftschloss.panels'
+
+/** Seitenleiste zwischen 220 und 640 px, die Mitte behält mindestens 420 px */
+function clampW(w: number, other: number): number {
+  return Math.round(Math.max(220, Math.min(640, window.innerWidth - other - 420, w)))
+}
+
+function usePanelSizes(): [PanelSizes, (patch: Partial<PanelSizes>) => void] {
+  const [sizes, setSizes] = useState<PanelSizes>(() => {
+    try {
+      const raw = localStorage.getItem(PANEL_KEY)
+      if (raw) return { ...PANEL_DEFAULT, ...JSON.parse(raw) }
+    } catch {
+      /* ohne Speicher: Standardgrößen */
+    }
+    return PANEL_DEFAULT
+  })
+  const update = (patch: Partial<PanelSizes>) =>
+    setSizes((old) => {
+      const next = { ...old, ...patch }
+      try {
+        localStorage.setItem(PANEL_KEY, JSON.stringify(next))
+      } catch {
+        /* egal */
+      }
+      return next
+    })
+  return [sizes, update]
+}
+
+/** Ziehleiste: meldet die Verschiebung seit Beginn des Ziehens zusammen mit den Größen beim Start */
+function Splitter({
+  dir,
+  style,
+  title,
+  onDrag,
+  onReset,
+  panels,
+}: {
+  dir: 'v' | 'h'
+  style: React.CSSProperties
+  title: string
+  onDrag: (dx: number, dy: number, start: PanelSizes) => void
+  onReset: () => void
+  panels: PanelSizes
+}) {
+  const drag = useRef<{ x: number; y: number; start: PanelSizes } | null>(null)
+  const [active, setActive] = useState(false)
+  return (
+    <div
+      className={`splitter ${dir}${active ? ' active' : ''}`}
+      style={style}
+      title={title}
+      role="separator"
+      aria-orientation={dir === 'v' ? 'vertical' : 'horizontal'}
+      onPointerDown={(e) => {
+        e.preventDefault()
+        ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+        // Prüfliste ohne feste Höhe: aktuelle Höhe als Startwert messen
+        const checks = panels.checks ?? (document.querySelector('.checks') as HTMLElement | null)?.offsetHeight ?? null
+        drag.current = { x: e.clientX, y: e.clientY, start: { ...panels, checks } }
+        setActive(true)
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current
+        if (d) onDrag(e.clientX - d.x, e.clientY - d.y, d.start)
+      }}
+      onPointerUp={() => {
+        drag.current = null
+        setActive(false)
+      }}
+      onPointerCancel={() => {
+        drag.current = null
+        setActive(false)
+      }}
+      onDoubleClick={onReset}
+    />
   )
 }
 

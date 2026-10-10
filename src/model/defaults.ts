@@ -66,7 +66,7 @@ export function testRoom(): Room {
     corniceOverrides: {},
     skirting: { enabled: true, height: 60, depth: 18 },
     rosettes: [
-      { id: 'rosette-1', x: 2150, y: 2975, diameter: 800, depth: 40, lampDrop: 1150, lampDiameter: 560 },
+      { id: 'rosette-1', x: 2150, y: 2975, diameter: 800, depth: 40, lampDrop: 750, lampDiameter: 380 },
     ],
   }
 }
@@ -95,7 +95,7 @@ export function testProject(): Project {
   }
   return {
     version: 1,
-    name: 'Testzimmer',
+    name: 'Beispielzimmer',
     room,
     wallObjects: [
       {
@@ -197,18 +197,7 @@ export function testProject(): Project {
       loadProfile: 'bett',
       priceOverrides: {},
     },
-    estimated: [
-      'room.height',
-      'room.ceiling',
-      'room.cornice',
-      'room.rosettes',
-      'room.skirting',
-      'wallObjects.fenster-links',
-      'wallObjects.fenster-rechts',
-      'wallObjects.heizung-links',
-      'wallObjects.heizung-rechts',
-      'wallObjects.tuer',
-    ],
+    estimated: [],
   }
 }
 

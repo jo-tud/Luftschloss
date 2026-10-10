@@ -245,6 +245,8 @@ export interface LoftBedParams {
   mattressThickness: Mm
   /** Spiel zwischen Matratze und Geländer bzw. Pfosten je Seite */
   mattressGap: Mm
+  /** Abstand zwischen mehreren Matratzen (z. B. für eine Ablage dazwischen); fehlt = wie mattressGap */
+  mattressSpacing?: Mm
   /** Oberkante der Liegefläche (Matratzenauflage) über dem Boden */
   deckHeight: Mm
   postCatalogId: string
