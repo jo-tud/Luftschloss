@@ -358,6 +358,9 @@ export function Controller() {
       e.preventDefault()
       const c = cam.current
       if (!c) return
+      // Beim Ziehen mit gedrücktem Mausrad melden manche Mäuse kleine Drehungen mit:
+      // solange eine Taste gedrückt ist bzw. gezogen wird, nicht zoomen
+      if (e.buttons !== 0 || drag.current) return
       anim.current = null
       const st = useStore.getState()
       if (st.view.kind === 'person') {
