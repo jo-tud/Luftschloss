@@ -72,7 +72,7 @@ export function Toolbar() {
           title={util === undefined ? 'Statik des Gestells' : `Statik: höchste Ausnutzung ${Math.round(util * 100)} % – ${util > 1 ? 'überlastet' : util > 0.6 ? 'gut, aber nicht viel Reserve' : 'reichlich Reserve'}`}
         >
           ⚖<span className="lbl"> Statik</span>
-          {util !== undefined && (util > 9.99 ? ' überlastet' : ` ${Math.round(util * 100)} %`)}
+          {util !== undefined && <span className="val">{util > 9.99 ? ' überlastet' : ` ${Math.round(util * 100)} %`}</span>}
         </button>
       </div>
       <div className="group wide-only">

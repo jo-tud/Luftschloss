@@ -1832,3 +1832,47 @@ button.primary:disabled {
 .toolbar .more-menu summary {
   padding: 5px 10px;
 }
+.view-switcher button,
+.view-switcher summary {
+  white-space: nowrap;
+}
+.view-switcher .view-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Werkzeugleiste: nichts quetschen; wenn es eng wird, lieber waagrecht scrollen */
+.toolbar > *,
+.toolbar .group > * {
+  flex-shrink: 0;
+}
+@media (max-width: 1000px) {
+  .toolbar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .toolbar .spacer {
+    min-width: 0;
+  }
+  .toolbar .brand svg + b,
+  .toolbar .cost .lbl {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .toolbar .val {
+    display: none;
+  }
+  .toolbar .project-menu .proj {
+    max-width: 70px;
+  }
+}
+@media (max-width: 900px) {
+  .toolbar {
+    gap: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
