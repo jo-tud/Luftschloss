@@ -117,7 +117,8 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
         shadow-normalBias={0.002}
       />
       <directionalLight position={[center.x - 1.5, center.y + 0.5, center.z - 1]} intensity={0.35} />
-      <OrbitControls target={center} makeDefault />
+      {/* wie in der Hauptansicht: mittlere Taste verschiebt, Mausrad zoomt */}
+      <OrbitControls target={center} makeDefault mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN }} />
       {piece(Tm, COLORS.wood)}
       {cuts?.extras.map((o, i) => (
         <Box key={`x${i}`} o={o} color={COLORS.woodLight} edges wood="latte" />
@@ -178,7 +179,7 @@ export function JointDetailDialog() {
               <color attach="background" args={['#f4f5f7']} />
               <DetailScene key={`${j.key}|${j.typeId}`} j={j} ending={ending} through={through} />
             </Canvas>
-            <span className="hint">{t('Ziehen = drehen · Mausrad = zoomen')}</span>
+            <span className="hint">{t('Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen')}</span>
           </div>
           <div className="joint-info">
             <label className="field stacked">
