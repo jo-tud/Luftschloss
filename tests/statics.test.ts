@@ -85,4 +85,14 @@ describe('Statik: Geländer und aufgelegte Querträger', () => {
     // keine Querträger-Pfosten-Verbindung
     expect(r.joints.some((j) => j.key.includes('quertraeger') && j.key.includes('pfosten'))).toBe(false)
   })
+
+  it('Standard-Querträger tragen das Toben auch aufgelegt über die ganze Bettbreite', () => {
+    for (const [deck, deckCatalogId] of [['dielen', 'nf-kiefer-27'], ['platte', 'osb-22'], ['lattenrost', 'lattenrost']])
+      for (const frameStyle of ['zargen', 'aufgelegt']) {
+        const p = testProject()
+        Object.assign(p.assemblies[0].params, { deck, deckCatalogId, frameStyle })
+        const s = computeStatics(p, resolveProject(p))
+        for (const [id, c] of s.members) if (id.includes(':quertraeger')) expect(c.util).toBeLessThan(0.8)
+      }
+  })
 })

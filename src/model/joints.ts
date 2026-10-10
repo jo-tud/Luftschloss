@@ -333,7 +333,8 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
   const round = both.some((m) => m.round)
   const len = Math.hypot(E.end.x - E.start.x, E.end.y - E.start.y, E.end.z - E.start.z) || 1
   const horizontal = Math.abs(E.end.z - E.start.z) / len < 0.3
-  const board = thin(E) <= 45 && Math.max(E.b, E.h) >= 2 * thin(E)
+  // Brett bzw. Stufe: dünn und breit (Geländerbrett 18, Stufe 24 mm); Latten und Kanthölzer nicht
+  const board = thin(E) <= 30 && Math.max(E.b, E.h) >= 3 * thin(E)
   if (typeId === 'seilbefestigung') return rope ? undefined : tk('Nur für Seile.')
   if (typeId === 'gewindestange') return rod ? undefined : tk('Nur für Abhängungen mit Gewindestange.')
   if (rope && typeId !== 'lose' && typeId !== 'auflage') return tk('Ein Seil wird angeknotet, nicht verschraubt oder verzapft.')
