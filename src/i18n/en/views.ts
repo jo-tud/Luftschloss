@@ -29,7 +29,6 @@ const en: Record<string, string> = {
   'Höhe bis': 'Height up to',
   'Schnitt aus': 'Section off',
   'Übersicht – klicken, um Standort bzw. Blickziel zu setzen': 'Overview – click to set your position or look-at point',
-  'Ziehen = drehen · Mausrad = zoomen': 'Drag = rotate · Wheel = zoom',
   'Verbindung': 'Joint',
   'Schwierigkeit:': 'Difficulty:',
   'zerlegbar': 'removable',
@@ -79,5 +78,6 @@ const en: Record<string, string> = {
   'Länge eingeben': 'Enter length',
   'Pfosten': 'Post',
   'Balken': 'Beam',
+  "Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen": "Drag = rotate · middle button = pan · wheel = zoom",
 }
 export default en
