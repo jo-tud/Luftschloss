@@ -165,6 +165,8 @@ export function plasterMaterial(color: string, opts: { opacity?: number; side?: 
       .replace('#include <map_fragment>', `#include <map_fragment>\ndiffuseColor.rgb *= 0.965 + 0.05 * lsFbm(vLsWorld * 3.0) + 0.012 * lsNoise(vLsWorld * 140.0);`)
   }
   m.customProgramCacheKey = () => 'ls-putz'
+  // geschnittene Wand: dunkel wie im Bauplan (siehe sectionCaps.ts)
+  m.userData.capColor = '#5d5850'
   cache.set(key, m)
   return m
 }
