@@ -317,6 +317,9 @@ export function groupOf(p: Project, id: string | undefined): string | undefined 
 export function selectionFor(p: Project, id: string): Selection | null {
   if (p.assemblies.some((a) => a.id === id)) return { kind: 'assembly', id }
   if (p.groups.some((g) => g.id === id)) return { kind: 'group', id }
+  // erzeugte Teile eines eigenen Betts (Matratze) gehören zum Bett
+  const gid = id.split(':')[0]
+  if (id.includes(':') && p.groups.some((g) => g.id === gid)) return { kind: 'group', id: gid }
   if (p.wallObjects.some((o) => o.id === id)) return { kind: 'wallObject', id }
   if (p.furniture.some((f) => f.id === id)) return { kind: 'furniture', id }
   if (p.room.rosettes.some((r) => r.id === id)) return { kind: 'rosette', id }

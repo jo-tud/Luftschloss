@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { analyze } from '../src/analysis/checks'
+import { computeStatics } from '../src/analysis/statics'
 import { computeBom, packBars, parsePriceAnswer, pricePrompt } from '../src/analysis/bom'
 import { testProject, defaultBedParams } from '../src/model/defaults'
 import { memberBoxes, memberOBB, obbOverlap, v } from '../src/model/geometry'
@@ -226,5 +227,47 @@ describe('Eigenes Bett aus freien Teilen', () => {
     p.members = []
     pruneGroups(p)
     expect(p.groups.some((g) => g.id === id3)).toBe(false)
+  })
+})
+
+describe('Eigenes Bett: Liegefläche, Statik und Prüfungen', () => {
+  /** Beispielbett wie mit „In Einzelteile auflösen“ in freie Teile verwandeln */
+  function dissolved() {
+    const p = testProject()
+    const r = resolveProject(p)
+    p.members = r.members.filter((m) => m.assemblyId).map((m) => ({ ...m, id: `f-${m.partKey}`, assemblyId: undefined, partKey: undefined }))
+    p.panels = r.panels.filter((x) => x.assemblyId).map((x) => ({ ...x, id: `f-${x.partKey}`, assemblyId: undefined, partKey: undefined }))
+    p.assemblies = []
+    return { p, mattress: r.panels.find((x) => x.kind === 'matratze')! }
+  }
+
+  it('übernimmt die Matratze bzw. erkennt die Lattenebene als Liegefläche', () => {
+    const { p, mattress } = dissolved()
+    const id = createGroup(p, [...p.members.map((m) => m.id), ...p.panels.map((x) => x.id)])
+    const g = p.groups.find((x) => x.id === id)!
+    expect(g.deck?.z).toBe(mattress.z)
+    expect(p.panels.some((x) => x.kind === 'matratze')).toBe(false)
+    // ohne Matratze: Ebene mit den meisten waagrechten Hölzern = Latten
+    const { p: q } = dissolved()
+    q.panels = q.panels.filter((x) => x.kind !== 'matratze')
+    const id2 = createGroup(q, q.members.map((m) => m.id))
+    expect(q.groups.find((x) => x.id === id2)!.deck?.z).toBe(mattress.z)
+  })
+
+  it('Liegefläche bringt Last in die Statik; Prüfungen erkennen Kopfraum und offene Seiten', () => {
+    const { p } = dissolved()
+    const id = createGroup(p, [...p.members.map((m) => m.id), ...p.panels.map((x) => x.id)])
+    const withDeck = computeStatics(p, resolveProject(p)).maxUtil
+    const bare = structuredClone(p)
+    delete bare.groups[0].deck
+    expect(withDeck).toBeGreaterThan(computeStatics(bare, resolveProject(bare)).maxUtil + 0.1)
+    const ids = (q: typeof p) => analyze(q, resolveProject(q)).findings.map((f) => f.id)
+    expect(ids(p)).toContain(`frei:${id}`)
+    expect(ids(p).some((x) => x.startsWith(`offen:${id}`))).toBe(false)
+    expect(ids(bare)).toContain(`liegeflaeche:${id}`)
+    // Geländer vorne entfernen → offene Seite
+    const open = structuredClone(p)
+    open.members = open.members.filter((m) => !/handlauf-vorne|brett-vorne|stab-vorne|unterholm-vorne/.test(m.id))
+    expect(ids(open).some((x) => x.startsWith(`offen:${id}`))).toBe(true)
   })
 })

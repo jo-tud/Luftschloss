@@ -1,7 +1,8 @@
 import { t, tr } from '../i18n'
-import { createGroup, groupParts, ungroup } from '../model/groups'
+import { createGroup, detectDeck, groupParts, ungroup } from '../model/groups'
+import type { BedGroup } from '../model/types'
 import { useStore } from '../state/store'
-import { Section } from './fields'
+import { Num, Section } from './fields'
 
 /** Mehrere freie Teile ausgewählt (Shift-Klick) */
 export function MultiProps() {
@@ -57,6 +58,50 @@ export function GroupProps({ id, nested }: { id: string; nested?: boolean }) {
           {t('Zusammenfassung lösen')}
         </button>
       </div>
+      <DeckProps g={g} />
     </Section>
+  )
+}
+
+/** Liegefläche des eigenen Betts: liefert die Last für die Statik und den Bezug für die Prüfungen */
+function DeckProps({ g }: { g: BedGroup }) {
+  const update = useStore((s) => s.update)
+  const D = g.deck
+  const detect = () =>
+    update((dd) => {
+      const x = dd.groups.find((y) => y.id === g.id)
+      if (x) x.deck = detectDeck(dd, g.id)
+    })
+  const setD = (patch: Partial<NonNullable<BedGroup['deck']>>) =>
+    update((dd) => {
+      const x = dd.groups.find((y) => y.id === g.id)
+      if (x?.deck) Object.assign(x.deck, patch)
+    }, `deck-${g.id}-${Object.keys(patch)[0]}`)
+  return (
+    <>
+      <h4>{t('Liegefläche')}</h4>
+      {!D && (
+        <>
+          <p className="hint">{t('Noch keine Liegefläche: ohne sie fehlen die Lasten für die Statik und die Prüfungen für Kopfraum und Absturzsicherung.')}</p>
+          <button className="primary" onClick={detect}>
+            {t('Liegefläche erkennen')}
+          </button>
+        </>
+      )}
+      {D && (
+        <>
+          <Num label={t('Länge')} value={D.length} onChange={(v) => setD({ length: Math.max(500, v) })} />
+          <Num label={t('Breite')} value={D.width} onChange={(v) => setD({ width: Math.max(500, v) })} />
+          <Num label={t('Höhe (Unterkante Matratze)')} value={D.z} onChange={(v) => setD({ z: Math.max(0, v) })} />
+          <Num label={t('Matratzendicke')} value={D.thickness} onChange={(v) => setD({ thickness: Math.max(20, v) })} />
+          <Num label={t('Lage x')} value={D.x} onChange={(v) => setD({ x: v })} title={t('Ecke der Matratze, gemessen von Wand B')} />
+          <Num label={t('Lage y')} value={D.y} onChange={(v) => setD({ y: v })} title={t('Ecke der Matratze, gemessen von Wand A')} />
+          <div className="stack">
+            <button onClick={detect}>{t('Neu erkennen')}</button>
+            <button onClick={() => update((dd) => void delete dd.groups.find((y) => y.id === g.id)!.deck)}>{t('Liegefläche entfernen')}</button>
+          </div>
+        </>
+      )}
+    </>
   )
 }

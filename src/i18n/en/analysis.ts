@@ -169,5 +169,8 @@ const en: Record<string, string> = {
   '{name} oben rechts (Wandkante)': '{name} top right (wall edge)',
   '{name} unten links (Wandkante)': '{name} bottom left (wall edge)',
   '{name} unten rechts (Wandkante)': '{name} bottom right (wall edge)',
+  "{name}: Liegefläche fehlt": "{name}: no sleeping surface",
+  "Ohne Liegefläche fehlen die Lasten für die Statik und die Prüfungen für Kopfraum und Absturzsicherung. Bett auswählen → „Liegefläche erkennen“.": "Without a sleeping surface the statics has no loads, and headroom and fall protection are not checked. Select the bed → “Detect sleeping surface”.",
+  "Geländer mindestens 16 cm über der Matratze vorsehen.": "Plan a guard rail at least 16 cm above the mattress.",
 }
 export default en
