@@ -76,6 +76,14 @@ export function Toolbar() {
           ⚖ Statik{s.statics ? ` ${Math.round(s.statics.maxUtil * 100)} %` : ''}
         </button>
       </div>
+      <div className="group">
+        <button className={s.build ? 'on' : ''} onClick={() => s.set({ build: s.build ? null : { step: 0, start: performance.now(), auto: true } })} title="Aufbau Schritt für Schritt als Animation">
+          ▶ Aufbau
+        </button>
+        <button onClick={() => s.set({ showPlan: true })} title="Bauplan mit Ansichten, Teileliste, Verbindungen und Montage – druckbar">
+          📐 Bauplan
+        </button>
+      </div>
       <div className="spacer" />
       <button className="cost" onClick={() => s.set({ showMaterial: true })} title="Stückliste, Zuschnitt und Kosten">
         🧾 Material · {eur(d.bom.total)}

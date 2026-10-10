@@ -161,7 +161,7 @@ function ShoppingList({ bom, overrides }: { bom: Bom; overrides: Record<string, 
   )
 }
 
-function CutPlan({ bom }: { bom: Bom }) {
+export function CutPlan({ bom }: { bom: Bom }) {
   return (
     <div className="cutplan">
       <p className="hint">

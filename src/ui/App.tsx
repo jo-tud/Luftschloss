@@ -9,6 +9,7 @@ import { MaterialDialog } from './Material'
 import { Properties } from './Properties'
 import { Sidebar } from './Sidebar'
 import { StaticsRunner } from './Statics'
+import { BauplanDialog } from './Bauplan'
 import { Toolbar } from './Toolbar'
 
 export function App() {
@@ -30,6 +31,7 @@ export function App() {
       <StaticsRunner />
       <MaterialDialog />
       <JointDetailDialog />
+      <BauplanDialog />
       <Help />
     </div>
   )

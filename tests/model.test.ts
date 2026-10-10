@@ -148,3 +148,18 @@ describe('Wandbalken-Bauweise', () => {
     expect(findings.some((f) => f.id.startsWith('decke-haengen'))).toBe(true)
   })
 })
+
+describe('Bauplan und Montage', () => {
+  it('nummeriert gleiche Teile gleich und ordnet jedes Teil einem Schritt zu', async () => {
+    const { partTypes, buildSteps } = await import('../src/analysis/assembly')
+    const p = testProject()
+    const r = resolveProject(p)
+    const { parts, byMember } = partTypes(r)
+    expect(byMember.size).toBe(r.members.length)
+    expect(parts.reduce((s, x) => s + x.count, 0)).toBe(r.members.length)
+    const steps = buildSteps(p, r)
+    const inSteps = new Set(steps.flatMap((s) => s.memberIds))
+    expect(inSteps.size).toBe(r.members.length)
+    expect(steps[0].title).toBe('Pfosten stellen')
+  })
+})
