@@ -25,7 +25,6 @@ export function importProject() {
     if (!file) return
     try {
       const data = JSON.parse(await file.text()) as Project
-      if (data.version !== 1 || !data.room) throw new Error(t('kein Luftschloss-Projekt'))
       useStore.getState().replaceProject(migrate(data))
     } catch (err) {
       alert(t('Datei konnte nicht gelesen werden: {msg}', { msg: (err as Error).message }))

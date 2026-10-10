@@ -224,6 +224,10 @@ export function Controller() {
     }
 
     const onPointerDown = (e: PointerEvent) => {
+      // Ein Eingabefeld zuerst übernehmen lassen: sonst wechselt die Auswahl vor dem Blur und der getippte
+      // Wert landet am neu gewählten Objekt
+      const ae = document.activeElement as HTMLElement | null
+      if (ae && ae !== el && (ae.tagName === 'INPUT' || ae.tagName === 'SELECT' || ae.tagName === 'TEXTAREA')) ae.blur()
       el.setPointerCapture(e.pointerId)
       const st = useStore.getState()
       const c = cam.current

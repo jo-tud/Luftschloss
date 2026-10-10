@@ -137,6 +137,11 @@ const en: Record<string, string> = {
   // Projekt
   'kein Luftschloss-Projekt': 'not a Luftschloss project',
   'Datei konnte nicht gelesen werden: {msg}': 'Could not read the file: {msg}',
+  'Da ist etwas schiefgegangen': 'Something went wrong',
+  'Luftschloss konnte dieses Projekt nicht darstellen. Sichere den Stand als Datei, bevor du neu anfängst – so geht nichts verloren.': 'Luftschloss could not display this project. Save it as a file before starting over, so nothing is lost.',
+  'Stand als Datei sichern': 'Save as file',
+  'Mit dem Beispielzimmer neu starten': 'Start over with the example room',
+  'Neu laden': 'Reload',
   'Aktuellen Plan verwerfen und mit einem leeren Zimmer beginnen? (Rückgängig ist möglich.)': 'Discard the current plan and start with an empty room? (You can undo this.)',
   'Aktuellen Plan durch das Beispielzimmer ersetzen? (Rückgängig ist möglich.)': 'Replace the current plan with the example room? (You can undo this.)',
   Name: 'Name',
@@ -156,6 +161,7 @@ const en: Record<string, string> = {
 
   // Tablet-Abgleich
   'Vom anderen Gerät aktualisiert': 'Updated from the other device',
+  'Auch auf dem anderen Gerät wurde geändert. Dieser Stand gilt – der andere ist mit Rückgängig erreichbar.': 'The other device changed the project too. This version wins – the other one is available via Undo.',
   'Tablet ins selbe WLAN, QR-Code scannen. Laptop und Tablet arbeiten dann am': 'Connect the tablet to the same Wi-Fi and scan the QR code. Laptop and tablet then work on the',
   'selben Projekt': 'same project',
   'Änderungen gleichen sich alle paar Sekunden ab.': 'changes sync every few seconds.',

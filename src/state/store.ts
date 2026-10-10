@@ -1,9 +1,9 @@
 import { produce } from 'immer'
 import { create } from 'zustand'
-import { getLang, loadLangSetting, resolveLang, setLang, storeLangSetting, type Lang, type LangSetting } from '../i18n'
+import { getLang, loadLangSetting, resolveLang, setLang, storeLangSetting, t, type Lang, type LangSetting } from '../i18n'
 import { analyze, type Analysis } from '../analysis/checks'
 import { computeBom, type Bom } from '../analysis/bom'
-import { testProject } from '../model/defaults'
+import { defaultBedParams, emptyProject, testProject } from '../model/defaults'
 import { resolveProject, type Resolved } from '../model/resolve'
 import type { StaticsResult } from '../analysis/statics'
 import type { Project, Vec3, WallId } from '../model/types'
@@ -118,14 +118,14 @@ interface State {
   focus: (id: string) => void
 }
 
-const STORAGE_KEY = 'luftschloss.projekt.v1'
+export const STORAGE_KEY = 'luftschloss.projekt.v1'
 
 function loadProject(): Project {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const p = JSON.parse(raw) as Project
-      if (p && p.version === 1 && p.room) return migrate(p)
+      if (p) return migrate(p)
     }
   } catch {
     // ohne gespeicherten Stand mit dem Beispielzimmer starten
@@ -133,15 +133,39 @@ function loadProject(): Project {
   return testProject()
 }
 
-/** Ergänzt Felder, die in älteren gespeicherten Projekten fehlen. */
+/**
+ * Prüft ein geladenes Projekt (Datei, Speicher, Abgleich) und ergänzt Felder, die in älteren Ständen fehlen.
+ * Wirft bei Daten, die kein Luftschloss-Projekt sind – lieber eine Meldung als ein Absturz, der beim
+ * nächsten Start wieder aus dem Speicher geladen würde.
+ */
 export function migrate(p: Project): Project {
-  const base = testProject()
+  const r = p?.room
+  if (!p || typeof p !== 'object' || p.version !== 1 || !r || typeof r !== 'object' || ![r.length, r.width, r.height].every((x) => typeof x === 'number' && x > 0))
+    throw new Error(t('kein Luftschloss-Projekt'))
+  const arr = <T,>(x: T[] | undefined): T[] => (Array.isArray(x) ? x : [])
+  // Fehlendes neutral ergänzen, nicht mit Fenstern und Möbeln des Beispielzimmers
+  const base = emptyProject(r.length, r.width, r.height)
   return {
     ...base,
     ...p,
+    room: {
+      ...base.room,
+      ...r,
+      walls: { ...base.room.walls, ...r.walls },
+      cornice: { ...base.room.cornice, ...r.cornice },
+      corniceOverrides: r.corniceOverrides ?? {},
+      skirting: { ...base.room.skirting, ...r.skirting },
+      rosettes: arr(r.rosettes),
+    },
+    wallObjects: arr(p.wallObjects),
+    furniture: arr(p.furniture),
+    members: arr(p.members),
+    panels: arr(p.panels),
+    groups: arr(p.groups),
+    joints: arr(p.joints),
     settings: { ...base.settings, ...p.settings },
-    estimated: p.estimated ?? [],
-    assemblies: p.assemblies.map((a) => ({ ...a, params: { ...base.assemblies[0].params, ...a.params } })),
+    estimated: arr(p.estimated),
+    assemblies: arr(p.assemblies).map((a) => ({ ...a, detached: arr(a.detached), params: { ...defaultBedParams(), ...a.params } })),
   }
 }
 
