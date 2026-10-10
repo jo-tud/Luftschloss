@@ -47,7 +47,7 @@ describe('Beschläge', () => {
     const winkel = r.joints.filter((j) => j.typeId === 'winkel' && j.ending)
     const schuhe = r.joints.filter((j) => j.typeId === 'balkenschuh' && j.ending)
     expect(winkel.length + schuhe.length).toBeGreaterThan(0)
-    expect(h.plates.length).toBe(2 * winkel.length + 5 * schuhe.length)
+    expect(h.plates.length).toBe(4 * winkel.length + 5 * schuhe.length)
     // jedes Blech höchstens 25 cm von einer Verbindung entfernt
     const js = [...winkel, ...schuhe].map((j) => new THREE.Vector3(j.pos.x / 1000, j.pos.z / 1000, -j.pos.y / 1000))
     for (const m of h.plates) expect(Math.min(...js.map((j) => j.distanceTo(pos(m))))).toBeLessThan(0.25)

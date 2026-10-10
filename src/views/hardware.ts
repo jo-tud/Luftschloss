@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { memberAxes, memberBoxes } from '../model/geometry'
+import { jointCuts, jointFrame, lapRange } from '../model/joinery'
 import type { Resolved } from '../model/resolve'
 import type { Member } from '../model/types'
 import { T } from './camera'
@@ -10,8 +11,40 @@ import { T } from './camera'
  */
 export const BOLT_TYPES = new Set(['schlossschraube', 'bettschraube'])
 
-export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washers: THREE.Matrix4[]; nuts: THREE.Matrix4[]; plates: THREE.Matrix4[]; pockets: THREE.Matrix4[] } {
+export interface HardwareLists {
+  heads: THREE.Matrix4[]
+  washers: THREE.Matrix4[]
+  nuts: THREE.Matrix4[]
+  plates: THREE.Matrix4[]
+  pockets: THREE.Matrix4[]
+  /** Köpfe von Holzschrauben (flache Scheiben) */
+  screws: THREE.Matrix4[]
+  /** Holznägel und Holzdübel, deren Stirnseite sichtbar ist */
+  pins: THREE.Matrix4[]
+  /** verdeckte Holzdübel im Stoß (nur im Verbindungsdetail sichtbar) */
+  dowels: THREE.Matrix4[]
+  /** Schäfte von Bolzen und Schrauben (nur im Verbindungsdetail) */
+  rods: THREE.Matrix4[]
+}
+
+/**
+ * opts.only: nur diese Verbindung (Verbindungsdetail). opts.rods: auch Schäfte, die im Holz stecken.
+ */
+export function hardwareInstances(r: Resolved, opts: { only?: string; rods?: boolean } = {}): HardwareLists {
   const byId = new Map(r.members.map((m) => [m.id, m]))
+  const joints = opts.only ? r.joints.filter((j) => j.key === opts.only) : r.joints
+  const rods: THREE.Matrix4[] = []
+  /** Schaft von a nach b, Radius in mm */
+  const rod = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }, radius: number, list = rods) => {
+    if (list === rods && !opts.rods) return
+    const pa = T(a.x, a.y, a.z)
+    const pb = T(b.x, b.y, b.z)
+    const d = pb.clone().sub(pa)
+    const L = d.length()
+    if (L < 1e-6) return
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize())
+    list.push(new THREE.Matrix4().compose(pa.clone().lerp(pb, 0.5), q, new THREE.Vector3(radius / 1000, L, radius / 1000)))
+  }
   const heads: THREE.Matrix4[] = []
   const washers: THREE.Matrix4[] = []
   const nuts: THREE.Matrix4[] = []
@@ -47,7 +80,7 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
     return { x: bed.footprint.reduce((s2, q) => s2 + q.x, 0) / bed.footprint.length, y: bed.footprint.reduce((s2, q) => s2 + q.y, 0) / bed.footprint.length, z: 0 }
   }
   const toThree = (d: V) => new THREE.Vector3(d.x, d.z, -d.y)
-  for (const j of r.joints) {
+  for (const j of joints) {
     if (!BOLT_TYPES.has(j.typeId)) continue
     const A = byId.get(j.a)
     const B = byId.get(j.b)
@@ -76,6 +109,7 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
       if (!Number.isNaN(tNut)) {
         put(washers, at(tNut - 1), inDir, [0.0105, 0.002, 0.0105])
         put(nuts, at(tNut - 6), inDir, [0.0095, 0.008, 0.0095])
+        rod(at(tHead), at(tNut - 12), j.typeId === 'bettschraube' ? 4 : 5)
       }
     }
     if (o1[1] - o1[0] > 25 && o2[1] - o2[0] > 25 && j.typeId === 'schlossschraube') {
@@ -127,6 +161,9 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
     for (const k of [-0.25, 0.25]) {
       const base = addv(pE, [hDir, (k + shift) * E.h])
       bolt(base, out, tHead, NaN)
+      rod(addv(base, [out, tHead]), addv(base, [into, nutDepth + 10]), j.typeId === 'bettschraube' ? 4 : 5)
+      // Quermutter in der Tasche
+      rod(addv(base, [into, nutDepth], [sideDir, E.b / 2]), addv(base, [into, nutDepth], [sideDir, -E.b * 0.1]), 6.5)
       // sichtbare Tasche mit Mutter auf der Innenseite
       const pocket = addv(base, [into, nutDepth], [sideDir, E.b / 2 + 0.3])
       put(pockets, pocket, toThree(sideDir), [0.011, 0.001, 0.011])
@@ -147,8 +184,35 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
   }
   const extent = (m: { b: number; h: number }, axes: [ReturnType<typeof memberAxes>[0], ReturnType<typeof memberAxes>[0], ReturnType<typeof memberAxes>[0]], d: { x: number; y: number; z: number }) =>
     Math.abs(axes[1].x * d.x + axes[1].y * d.y + axes[1].z * d.z) * (m.b / 2) + Math.abs(axes[2].x * d.x + axes[2].y * d.y + axes[2].z * d.z) * (m.h / 2)
-  for (const j of r.joints) {
+  for (const j of joints) {
     if (j.typeId !== 'winkel' && j.typeId !== 'balkenschuh') continue
+    if (j.typeId === 'winkel' && (j.kind === 'auflage' || j.kind === 'beischlag')) {
+      const A = byId.get(j.a)
+      const B = byId.get(j.b)
+      const F = A && B ? jointFrame(j, A, B) : undefined
+      if (!F || F.E.round || F.T.round) continue
+      const E = F.E
+      const Tm = F.T
+      const aE = memberAxes(E)[0]
+      // aufliegend: senkrechter Schenkel an der Seite von E, waagerechter auf T, beiderseits
+      const sd = normv(crossv(F.out, aE))
+      const [s0, s1] = range(E, sd)
+      const tTop = range(Tm, F.into)[1]
+      const onT = range(Tm, aE)
+      const c = (onT[0] + onT[1]) / 2
+      const wd = Math.min(65, onT[1] - onT[0] - 4)
+      for (const [edge, k] of [
+        [s1, 1],
+        [s0, -1],
+      ] as const) {
+        const o = { x: sd.x * k, y: sd.y * k, z: sd.z * k }
+        const corner = addv({ x: 0, y: 0, z: 0 }, [aE, c], [sd, edge], [F.into, tTop])
+        const p0 = addv(corner, [aE, -dotv(corner, aE) + c])
+        plate(addv(p0, [F.into, 45], [o, 1.25]), F.into, o, aE, 90, wd)
+        plate(addv(p0, [o, 45], [F.into, 1.25]), o, F.into, aE, 90, wd)
+      }
+      continue
+    }
     if (!j.ending) continue
     const E = byId.get(j.ending)
     const Tm = byId.get(j.ending === j.a ? j.b : j.a)
@@ -171,13 +235,16 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
     const axOff = (j.pos.x - pE.x) * ax.x + (j.pos.y - pE.y) * ax.y + (j.pos.z - pE.z) * ax.z
     const base = at(pE, [ax, axOff])
     if (j.typeId === 'winkel') {
-      // Innenecke unten (bzw. auf der Seite mit negativem z), Schenkel 90 mm, Breite 65 mm
-      const s2 = aT.z > 0.5 ? -1 : aT.z < -0.5 ? 1 : 1
+      // zwei Winkel in den Innenecken beiderseits des Stabs (am Pfosten: unter und über der Zarge),
+      // Schenkel 90 mm, Breite 65 mm bzw. Holzbreite
       const h = extent(E, axesE, aT)
-      const corner = at(base, [aT, s2 * h])
-      const tDir = { x: aT.x * s2, y: aT.y * s2, z: aT.z * s2 }
-      plate(at(corner, [into, 45], [tDir, 1.25]), into, tDir, ax, 90, 65)
-      plate(at(corner, [tDir, 45], [into, 1.25]), tDir, into, ax, 90, 65)
+      const wd = Math.min(65, 2 * extent(E, axesE, ax) - 4)
+      for (const s2 of [-1, 1]) {
+        const corner = at(base, [aT, s2 * h])
+        const tDir = { x: aT.x * s2, y: aT.y * s2, z: aT.z * s2 }
+        plate(at(corner, [into, 45], [tDir, 1.25]), into, tDir, ax, 90, wd)
+        plate(at(corner, [tDir, 45], [into, 1.25]), tDir, into, ax, 90, wd)
+      }
     } else {
       // Balkenschuh: Boden unter dem Trägerende, zwei Seiten, zwei Laschen am Hauptträger
       const down = { x: -axesE[2].x, y: -axesE[2].y, z: -axesE[2].z }
@@ -193,5 +260,109 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
       }
     }
   }
-  return { heads, washers, nuts, plates, pockets }
+  // Holzschrauben, Holznägel, Dübel, Gewindestangen
+  const screws: THREE.Matrix4[] = []
+  const pins: THREE.Matrix4[] = []
+  const dowels: THREE.Matrix4[] = []
+  const screw = (head: V, dir: V, L: number, r = 4) => {
+    put(screws, head, toThree({ x: -dir.x, y: -dir.y, z: -dir.z }), [r * 1.9 / 1000, 0.0015, r * 1.9 / 1000])
+    rod(head, addv(head, [dir, L]), r * 0.75)
+  }
+  for (const j of joints) {
+    const A = byId.get(j.a)
+    const B = byId.get(j.b)
+    if (!A || !B) continue
+    const F = jointFrame(j, A, B)
+    if (!F) continue
+    const { E, T: Tm, out, into, across, side } = F
+    const eA = range(E, across)
+    const eS = range(E, side)
+    const tA = range(Tm, across)
+    const overlap = (a: [number, number], b: [number, number]): [number, number] => [Math.max(a[0], b[0]), Math.min(a[1], b[1])]
+    const mid = (r2: [number, number]) => (r2[0] + r2[1]) / 2
+    const pt = (o: number, a: number, sd: number): V => addv({ x: 0, y: 0, z: 0 }, [out, o], [across, a], [side, sd])
+    const type = j.typeId
+    if (type === 'holzbauschraube' || type === 'auflage' || type === 'kopfband' || type === 'ausklinkung' || type === 'gratnut') {
+      if (E.round || Tm.round) continue
+      const n = type === 'holzbauschraube' && F.pE ? 3 : 2
+      const L = type === 'gratnut' ? 50 : 160
+      const r0 = type === 'gratnut' ? 2.5 : 4
+      const oS = overlap(eS, range(Tm, side))
+      const oA = overlap(eA, tA)
+      if (F.pE && type !== 'kopfband') {
+        // durch T ins Hirnholz von E: Kopf auf der Außenseite von T
+        const far = F.face + F.depth
+        for (let i = 0; i < n; i++) {
+          const f = 0.25 + (0.5 * i) / (n - 1)
+          screw(pt(far, mid(eA), eS[0] + (eS[1] - eS[0]) * f), into, L, r0)
+        }
+      } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10) {
+        // aufliegend bzw. angelegt: durch E in T, Kopf auf E
+        const e0 = range(E, out)[0]
+        const longS = oS[1] - oS[0] >= oA[1] - oA[0]
+        for (const k of [-0.25, 0.25]) {
+          const sd = longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS)
+          const ac = longS ? mid(oA) : mid(oA) + (oA[1] - oA[0]) * k
+          screw(pt(e0, ac, sd), out, L, r0)
+        }
+      } else {
+        // Kopfband u. Ä.: quer durch die Überdeckung
+        const o0 = overlap(range(E, out), range(Tm, out))
+        for (const k of [-0.2, 0.2]) screw(pt(mid(o0), eA[1], mid(eS) + (eS[1] - eS[0]) * k), { x: -across.x, y: -across.y, z: -across.z }, L, r0)
+      }
+    } else if (type === 'ueberblattung') {
+      // zwei Schrauben quer durch das Blatt, diagonal versetzt
+      const c = jointCuts(j, byId)
+      const subA = c?.members.get(A.id)?.sub[0]
+      if (!subA) continue
+      const axesA = memberAxes(A)
+      const cr = normv(crossv(axesA[0], memberAxes(B)[0]))
+      const e2 = normv(crossv(cr, axesA[0]))
+      const lapC = addv(A.start, [axesA[0], (subA[0][0] + subA[0][1]) / 2], [axesA[1], (subA[1][0] + subA[1][1]) / 2], [axesA[2], (subA[2][0] + subA[2][1]) / 2])
+      const ext = (d: V) => [0, 1, 2].reduce((sum, k) => sum + Math.abs(dotv(axesA[k], d)) * (subA[k][1] - subA[k][0]), 0)
+      const top = Math.max(range(A, cr)[1], range(B, cr)[1])
+      const down = { x: -cr.x, y: -cr.y, z: -cr.z }
+      for (const k of [-0.22, 0.22]) {
+        const p0 = addv(lapC, [axesA[0], ext(axesA[0]) * k], [e2, -ext(e2) * k])
+        screw(addv(p0, [cr, top - dotv(p0, cr)]), down, 80)
+      }
+    } else if (type === 'zapfen' && F.pE) {
+      // Holznagel quer durch Zapfenloch und Zapfen, Stirnseiten sichtbar
+      const L = F.depth < 50 ? F.depth : F.depth * 0.75
+      const o = F.face + L * 0.5
+      rod(pt(o, tA[0] - 1.5, mid(eS)), pt(o, tA[1] + 1.5, mid(eS)), 8, pins)
+    } else if (type === 'schwalbenschwanz' && F.pE) {
+      const dd = F.depth * 0.6
+      // zwei Holznägel durch das Blatt, Stirnseite außen sichtbar
+      const lr = lapRange(eA, tA)
+      const outer = Math.abs(lr[0] - mid(eA)) > Math.abs(lr[1] - mid(eA)) ? lr[0] - 1.5 : lr[1] + 1.5
+      for (const k of [-0.18, 0.18]) rod(pt(F.face + dd * 0.5, outer, mid(eS) + (eS[1] - eS[0]) * k), pt(F.face + dd * 0.5, mid(eA) + (mid(eA) - outer) * 0.3, mid(eS) + (eS[1] - eS[0]) * k), 5, pins)
+    } else if (type === 'holzduebel' && F.pE) {
+      for (const k of [-0.25, 0.25]) rod(pt(F.face - 40, mid(eA), mid(eS) + (eS[1] - eS[0]) * k), pt(F.face + 40, mid(eA), mid(eS) + (eS[1] - eS[0]) * k), 5, dowels)
+    } else if (type === 'auflagerleiste') {
+      const c = jointCuts(j, byId)
+      const lst = c?.extras[0]
+      if (!lst) continue
+      for (const k of [-0.35, 0, 0.35])
+        screw(addv(lst.center, [lst.axes[0], -lst.half[0]], [lst.axes[1], lst.half[1] * 2 * k]), lst.axes[0], 50, 2.5)
+    } else if (type === 'gewindestange') {
+      // Mutter und Scheibe auf beiden Seiten des Holzes, das die Stange hält
+      const rodM = E.catalogId.startsWith('gewindestange') ? E : Tm.catalogId.startsWith('gewindestange') ? Tm : undefined
+      const wood = rodM === E ? Tm : E
+      if (!rodM) continue
+      const ra = memberAxes(rodM)[0]
+      const [w0, w1] = range(wood, ra)
+      const p0 = dotv(j.pos, ra)
+      const base = addv(j.pos, [ra, -p0])
+      for (const [t, d] of [
+        [w0, -1],
+        [w1, 1],
+      ] as const) {
+        const dir = toThree({ x: ra.x * d, y: ra.y * d, z: ra.z * d })
+        put(washers, addv(base, [ra, t + d * 1]), dir, [0.015, 0.002, 0.015])
+        put(nuts, addv(base, [ra, t + d * 6]), dir, [0.0095, 0.008, 0.0095])
+      }
+    }
+  }
+  return { heads, washers, nuts, plates, pockets, screws, pins, dowels, rods }
 }
