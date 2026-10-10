@@ -38,7 +38,7 @@ function PropertiesBody() {
         <p>
           <b>Nichts ausgewählt.</b>
         </p>
-        <p>Klicke ein Bauteil, Fenster oder Möbel an. Doppelklick zentriert die Ansicht darauf.</p>
+        <p>Klicke ein Bauteil, Fenster oder Möbel an. Doppelklick fliegt zu dieser Stelle heran, jeder weitere geht näher.</p>
         <p>Links unter „Bett“ setzt du eine Vorlage ein, unter „Raum“ trägst du Maße, Stuck und Sockelleiste ein.</p>
       </div>
     )

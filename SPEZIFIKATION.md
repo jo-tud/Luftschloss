@@ -276,7 +276,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Werkstattskizzen je Verbindungsart, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
 | M6b Tablet | Finger/Stift (antippen = auswählen, ausgewählt ziehen = verschieben, Pinch-Zoom, zwei Finger verschieben/drehen, Doppeltipp = Fokus), Seitenleisten als Schubladen unter 1280 px, große Bedienflächen bei Fingerbedienung, `npm run lan` mit Projekt-Abgleich über /api/projekt und QR-Code, Tailscale-Anleitung, PWA (installierbar, offline über HTTPS/localhost) | ✅ |
 | M7 Erweiterungen | Vorlagen Halbhoch, **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). Offen: auf Regal, Raum als Polygon, Dachschräge, Plattenzuschnitt 2D. | ◐ |
-| M8 Visuelle Qualität | Letzter Schritt nach der ersten zufriedenstellenden Version, siehe Kapitel 13 | ◻ |
+| M8 Visuelle Qualität | Erster Durchgang: prozedurale Holzmaserung (Faser, Jahresringe, Hirnholz, OSB-Späne), Dielenboden, Putz, weiches Fensterlicht ohne Download, Außenansicht durch die Fenster (Stencil-Maske), Schlossschrauben als Modelle, Doppelklick-Heranfliegen, Qualitätsstufen. Offen siehe Kapitel 13 | ◐ |
 
 ---
 
@@ -311,12 +311,12 @@ Gesammelt und laufend ergänzt:
 
 ## 13. Visuelle Qualität (später, als letzter Schritt)
 
-Die App ist funktional vollständig; die Darstellung ist bewusst schlicht. Wenn die erste Version passt, folgt ein eigener Schritt für die Optik. Gesammelte Ideen (vor dem Umsetzen im Netz nach aktuellen Techniken für three.js/R3F recherchieren):
+Recherche: [docs/recherche/visuelle-qualitaet.md](docs/recherche/visuelle-qualitaet.md). Umgesetzt (✅) bzw. offen (◻):
 
-1. **Holz:** Maserung richtig darstellen – entlang der Stabachse ausgerichtet, Hirnholz an den Stirnseiten mit Jahresringen, leichte Farbvariation je Bauteil, Fasen/gebrochene Kanten. KVH, Leimholz, OSB, Dielen und Latten unterscheidbar.
-2. **Verbindungen:** Beschläge sichtbar und plausibel modellieren (Schlossschrauben mit Kopf und Mutter, Winkel mit Sicke und Löchern, Balkenschuhe, Bettschrauben), Ausklinkungen, Überblattungen und Zapfen in der Geometrie zeigen.
-3. **Zoom auf interessante Stellen per Klick:** Verbindung, Ausklinkung am Stuck, Fensterflügel-Anschlag usw. anklicken → Kamera fährt weich heran (mit Rücksprung).
-4. **Zimmer:** Wände mit Putzstruktur, Dielenboden mit Maserung, Stuckprofil und Rosette plastisch, Sockelleisten, Heizkörperrippen, Steckdosen, Fensterrahmen mit Profil; weiches Licht, Umgebungsverdeckung (SSAO/AO), Kontaktschatten.
-5. **Blick durch die Fenster:** Außenansicht statt leerem Hintergrund (Himmel, Bäume/Straße als Panorama oder HDRI), Tageslicht durch die Fenster, Tageszeit wählbar.
-6. **Allgemein:** Kantenglättung, ruhige Materialpalette, ggf. Umgebungslicht aus HDRI; Leistung auf dem Tablet im Blick behalten (Qualitätsstufen).
+1. ✅ **Holz:** Maserung richtig darstellen – entlang der Stabachse ausgerichtet, Hirnholz an den Stirnseiten mit Jahresringen, leichte Farbvariation je Bauteil, Fasen/gebrochene Kanten. KVH, Leimholz, OSB, Dielen und Latten unterscheidbar.
+2. ◐ **Verbindungen:** Schlossschrauben (Kopf, Scheibe, Mutter) umgesetzt; Winkel, Balkenschuhe, Ausklinkungen in der Geometrie offen. Beschläge sichtbar und plausibel modellieren (Schlossschrauben mit Kopf und Mutter, Winkel mit Sicke und Löchern, Balkenschuhe, Bettschrauben), Ausklinkungen, Überblattungen und Zapfen in der Geometrie zeigen.
+3. ✅ **Zoom auf interessante Stellen per Klick** (Doppelklick, schrittweise): Verbindung, Ausklinkung am Stuck, Fensterflügel-Anschlag usw. anklicken → Kamera fährt weich heran (mit Rücksprung).
+4. ◐ **Zimmer** (Dielen, Putz, weiches Licht umgesetzt; Umgebungsverdeckung getestet und wegen Stencil-Konflikt und iPad-Kosten verworfen; Stuck/Rosette plastischer offen): Wände mit Putzstruktur, Dielenboden mit Maserung, Stuckprofil und Rosette plastisch, Sockelleisten, Heizkörperrippen, Steckdosen, Fensterrahmen mit Profil; weiches Licht, Umgebungsverdeckung (SSAO/AO), Kontaktschatten.
+5. ✅ **Blick durch die Fenster** (prozedurale Kulisse, nur in der Fensteröffnung sichtbar; Tageszeit offen): Außenansicht statt leerem Hintergrund (Himmel, Bäume/Straße als Panorama oder HDRI), Tageslicht durch die Fenster, Tageszeit wählbar.
+6. ◐ **Allgemein** (Qualitätsstufen hoch/normal/einfach unter Raum → Einstellungen): Kantenglättung, ruhige Materialpalette, ggf. Umgebungslicht aus HDRI; Leistung auf dem Tablet im Blick behalten (Qualitätsstufen).
 

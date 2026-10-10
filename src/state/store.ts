@@ -66,6 +66,8 @@ interface State {
   sectionBox: { x0: number; x1: number; y0: number; y1: number; z1: number } | null
   /** Mausbelegung: standard = links ziehen dreht; cad = mittlere Taste dreht, links nur Auswahl */
   mouseProfile: 'standard' | 'cad'
+  /** Darstellungsqualität: hoch (volle Auflösung), normal, einfach (ohne Raumlicht und Beschläge, für ältere Tablets) */
+  quality: 'hoch' | 'normal' | 'einfach'
   /** Geöffnete Detailansicht einer Verbindung */
   jointDetail: string | null
   /** Statik: zuletzt berechnetes Ergebnis (verzögert nach Änderungen) und Anzeige-Einstellungen */
@@ -171,6 +173,15 @@ export const useStore = create<State>((set, get) => ({
       return localStorage.getItem('luftschloss.maus') === 'cad' ? 'cad' : 'standard'
     } catch {
       return 'standard'
+    }
+  })(),
+  quality: (() => {
+    try {
+      const q = localStorage.getItem('luftschloss.qualitaet')
+      if (q === 'hoch' || q === 'normal' || q === 'einfach') return q
+      return window.matchMedia?.('(pointer: coarse)').matches ? 'normal' : 'hoch'
+    } catch {
+      return 'normal'
     }
   })(),
   jointDetail: null,

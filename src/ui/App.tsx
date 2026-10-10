@@ -136,7 +136,7 @@ function Help() {
               <kbd>1</kbd> Draufsicht · <kbd>2</kbd> Seitenansicht (nochmal drücken: nächste Wand) · <kbd>3</kbd> 3D · <kbd>4</kbd> Ich-Perspektive (nochmal: nächster Standpunkt) · <kbd>5</kbd> Abwicklung · <kbd>0</kbd> Ansicht zurücksetzen
             </li>
             <li>Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen</li>
-            <li>Doppelklick auf ein Teil: Ansicht darauf zentrieren · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort</li>
+            <li>Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort</li>
             <li>„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen</li>
             <li>Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen</li>
             <li>Mausbelegung „CAD“ (unter Raum → Einstellungen): mittlere Taste dreht, Shift+Mitte verschiebt, links nur Auswahl</li>

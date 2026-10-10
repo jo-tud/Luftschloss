@@ -376,7 +376,14 @@ export function Controller() {
       if (hit) {
         const sel = selectionFor(st.project, hit.data.id)
         st.select(sel)
-        st.focus(sel?.kind === 'member' && hit.data.id.includes(':') ? hit.data.id.split(':')[0] : hit.data.id)
+        // Heranholen: weich zum angeklickten Punkt fliegen, jeder weitere Doppelklick geht näher heran
+        const c = cam.current
+        if (c && st.view.kind !== 'person') {
+          const to = cloneCam(c)
+          to.target = hit.point.clone()
+          to.viewH = Math.max(0.35, c.viewH * 0.45)
+          anim.current = { from: cloneCam(c), to, t0: performance.now(), dur: 650 }
+        } else st.focus(sel?.kind === 'member' && hit.data.id.includes(':') ? hit.data.id.split(':')[0] : hit.data.id)
       }
     }
 
