@@ -1,3 +1,4 @@
+import { locale, t, tr } from '../i18n'
 import { STRENGTH, catalogItem, type StrengthClass } from '../model/catalog'
 import { add, dot, memberAxes, memberLength, scale, sub, v } from '../model/geometry'
 import { jointType } from '../model/joints'
@@ -166,7 +167,7 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
       elements.push({ n1: st[i].node, n2: st[i + 1].node, E: mat.E, G: mat.G, A: sp.A, Iy: sp.Iy, Iz: sp.Iz, J: sp.J, yAxis: toV3(hb), tag: m.id })
       elementMember.push(m.id)
     }
-    if (L < 1) warnings.push(`${m.name ?? m.id}: Länge 0`)
+    if (L < 1) warnings.push(t('{name}: Länge 0', { name: m.name ? tr(m.name) : m.id }))
   }
   const nodeAt = (id: string, t: number) => {
     const st = stations.get(id)!
@@ -215,7 +216,7 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
       }
     }
   }
-  if (!supports.length) warnings.push('Keine Auflager gefunden')
+  if (!supports.length) warnings.push(t('Keine Auflager gefunden'))
 
   const model: FrameModel = { nodes, elements, links, supports }
 
@@ -304,7 +305,7 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
     addLoad(HY, n, [0, LOADS.lateral / uniq.length, 0, 0, 0, 0])
   }
   // Geländer: Handlauf vorne nach außen drücken
-  const rail = members.find((m) => m.partKey?.startsWith('handlauf-vorne')) ?? members.find((m) => m.partKey?.startsWith('handlauf'))
+  const rail = members.find((m) => m.partKey?.startsWith('handlauf-vorne')) ?? members.find((m) => m.partKey?.startsWith('handlauf')) // i18n-ok
   if (rail) {
     const asm = r.beds.get(rail.assemblyId ?? '')
     const mid = v((rail.start.x + rail.end.x) / 2, (rail.start.y + rail.end.y) / 2, rail.start.z)
@@ -323,7 +324,7 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
   try {
     results = solveFrame(model, [G, Q, J, HX, HY, GU])
   } catch (e) {
-    warnings.push(`Berechnung fehlgeschlagen: ${(e as Error).message}`)
+    warnings.push(t('Berechnung fehlgeschlagen: {error}', { error: (e as Error).message }))
     results = []
   }
   const [rG, rQ, rJ, rHX, rHY, rGU] = results
@@ -338,11 +339,11 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
     return { f1, f2 }
   }
   const ulsCombos: { name: string; kmod: number; f: (i: number) => { f1: number[]; f2: number[] }; links: [FrameResult | undefined, number][] }[] = [
-    { name: 'Liegen, Eigengewicht', kmod: 0.8, f: combo([[rG, 1.35], [rQ, 1.5]]), links: [[rG, 1.35], [rQ, 1.5]] },
-    { name: 'Toben, Springen (≈ 200 kg Stoß)', kmod: 1.1, f: combo([[rG, 1.35], [rJ, 1.0]]), links: [[rG, 1.35], [rJ, 1.0]] },
-    { name: 'Seitlich schieben, längs', kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]] },
-    { name: 'Seitlich schieben, quer', kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]] },
-    { name: 'Gegen das Geländer drücken', kmod: 0.9, f: combo([[rG, 1.35], [rGU, 1.5]]), links: [[rG, 1.35], [rGU, 1.5]] },
+    { name: t('Liegen, Eigengewicht'), kmod: 0.8, f: combo([[rG, 1.35], [rQ, 1.5]]), links: [[rG, 1.35], [rQ, 1.5]] },
+    { name: t('Toben, Springen (≈ 200 kg Stoß)'), kmod: 1.1, f: combo([[rG, 1.35], [rJ, 1.0]]), links: [[rG, 1.35], [rJ, 1.0]] },
+    { name: t('Seitlich schieben, längs'), kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]] },
+    { name: t('Seitlich schieben, quer'), kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]] },
+    { name: t('Gegen das Geländer drücken'), kmod: 0.9, f: combo([[rG, 1.35], [rGU, 1.5]]), links: [[rG, 1.35], [rGU, 1.5]] },
   ]
 
   // --- Nachweise je Stab ---------------------------------------------------------------------
@@ -437,7 +438,12 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
         deflection: util,
         w: wMax,
         span,
-        governing: total === util ? `Durchbiegung ${wMax.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm auf ${Math.round(span / 10)} cm` : total === shear ? 'Schub' : `Biegung beim Lastfall „${gov}“`,
+        governing:
+          total === util
+            ? t('Durchbiegung {w} mm auf {span} cm', { w: wMax.toLocaleString(locale(), { maximumFractionDigits: 1 }), span: Math.round(span / 10) })
+            : total === shear
+              ? t('Schub')
+              : t('Biegung beim Lastfall „{loadCase}“', { loadCase: gov }),
       })
     }
   }
@@ -468,7 +474,8 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
   const swayOf = (res: FrameResult | undefined, c: number) => (res ? Math.max(0, ...uniq.map((n) => Math.abs(res.u[n * 6 + c]))) : 0)
   const sway = { x: swayOf(rHX, 0), y: swayOf(rHY, 1) }
   const sMax = Math.max(sway.x, sway.y)
-  const swayClass = sMax <= 5 ? 'steif' : sMax <= 15 ? 'spürbar' : 'wackelt'
+  // Schlüssel für die Logik (Anzeige mit tr())
+  const swayClass = sMax <= 5 ? 'steif' : sMax <= 15 ? 'spürbar' : 'wackelt' // i18n-ok
 
   // --- Verformungsfiguren --------------------------------------------------------------------
   const shape = (parts: [FrameResult | undefined, number][]) => {

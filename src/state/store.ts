@@ -1,5 +1,6 @@
 import { produce } from 'immer'
 import { create } from 'zustand'
+import { getLang, loadLangSetting, resolveLang, setLang, storeLangSetting, type Lang, type LangSetting } from '../i18n'
 import { analyze, type Analysis } from '../analysis/checks'
 import { computeBom, type Bom } from '../analysis/bom'
 import { testProject } from '../model/defaults'
@@ -68,6 +69,10 @@ interface State {
   mouseProfile: 'standard' | 'cad'
   /** Darstellungsqualität: hoch (volle Auflösung), normal, einfach (ohne Raumlicht und Beschläge, für ältere Tablets) */
   quality: 'hoch' | 'normal' | 'einfach'
+  /** Sprache: auto = Browsersprache (Deutsch, sonst Englisch) */
+  langSetting: LangSetting
+  lang: Lang
+  setLangSetting: (s: LangSetting) => void
   /** Sonnenlicht zu dieser Uhrzeit (6–20), null = gleichmäßiges Licht */
   sunHour: number | null
   /** Geöffnete Detailansicht einer Verbindung */
@@ -240,6 +245,14 @@ export const useStore = create<State>((set, get) => ({
   setHover: (hover) => (get().hover === hover ? undefined : set({ hover })),
   setView: (view) => set({ view, viewNonce: get().viewNonce + 1 }),
   set: (partial) => set(partial),
+  langSetting: loadLangSetting(),
+  lang: getLang(),
+  setLangSetting: (ls) => {
+    storeLangSetting(ls)
+    const l = resolveLang(ls)
+    setLang(l)
+    set({ langSetting: ls, lang: l })
+  },
   toggleLayer: (k) => set({ layers: { ...get().layers, [k]: !get().layers[k] } }),
   focus: (id) => set({ focusRequest: { id, nonce: (get().focusRequest?.nonce ?? 0) + 1 } }),
 }))
@@ -251,15 +264,18 @@ export interface Derived {
 }
 
 let cacheKey: Project | null = null
+let cacheLang: Lang | null = null
 let cacheValue: Derived | null = null
 
 /** Abgeleitete Daten (Bauteile, Prüfungen, Stückliste), einmal je Projektstand berechnet. */
 export function derive(p: Project): Derived {
-  if (cacheKey === p && cacheValue) return cacheValue
+  // Texte (Bauteilnamen, Prüfungen) hängen an der Sprache
+  if (cacheKey === p && cacheLang === getLang() && cacheValue) return cacheValue
   const resolved = resolveProject(p)
   const analysis = analyze(p, resolved)
   const bom = computeBom(p, resolved)
   cacheKey = p
+  cacheLang = getLang()
   cacheValue = { resolved, analysis, bom }
   return cacheValue
 }

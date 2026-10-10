@@ -9,6 +9,7 @@ import { JOINT_KIND_LABEL, jointType, typesForKind } from '../model/joints'
 import type { DetectedJoint } from '../model/resolve'
 import type { Member } from '../model/types'
 import { useDerived, useStore } from '../state/store'
+import { t, tr } from '../i18n'
 import { hardwareInstances } from './hardware'
 import { woodKindFor } from './materials'
 import { Box, COLORS, HoleDisc, PrismMesh, headGeo, metal, nutGeo, pinMat, plateGeo, pocketMat, washerGeo } from './Scene'
@@ -106,6 +107,10 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
   )
 }
 
+function stiffnessLabel(s: 'gelenkig' | 'halbsteif' | 'steif'): string {
+  return s === 'gelenkig' ? t('gelenkig') : s === 'halbsteif' ? t('halbsteif') : t('steif')
+}
+
 export function JointDetailDialog() {
   const key = useStore((s) => s.jointDetail)
   const set = useStore((s) => s.set)
@@ -130,7 +135,7 @@ export function JointDetailDialog() {
       <div className="modal joint-modal" onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>
-            {JOINT_KIND_LABEL[j.kind]}: {ending?.name} ↔ {through?.name}
+            {tr(JOINT_KIND_LABEL[j.kind])}: {tr(ending?.name ?? '')} ↔ {tr(through?.name ?? '')}
           </h2>
           <button className="close" onClick={() => set({ jointDetail: null })}>
             ✕
@@ -142,11 +147,11 @@ export function JointDetailDialog() {
               <color attach="background" args={['#f4f5f7']} />
               <DetailScene key={`${j.key}|${j.typeId}`} j={j} ending={ending} through={through} />
             </Canvas>
-            <span className="hint">Ziehen = drehen · Mausrad = zoomen</span>
+            <span className="hint">{t('Ziehen = drehen · Mausrad = zoomen')}</span>
           </div>
           <div className="joint-info">
             <label className="field">
-              <span>Verbindung</span>
+              <span>{t('Verbindung')}</span>
               <select
                 value={j.typeId}
                 onChange={(e) =>
@@ -157,38 +162,38 @@ export function JointDetailDialog() {
                   })
                 }
               >
-                {typesForKind(j.kind).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
+                {typesForKind(j.kind).map((ty) => (
+                  <option key={ty.id} value={ty.id}>
+                    {tr(ty.name)}
                   </option>
                 ))}
-                {!typesForKind(j.kind).some((t) => t.id === j.typeId) && <option value={j.typeId}>{jt?.name ?? j.typeId}</option>}
+                {!typesForKind(j.kind).some((ty) => ty.id === j.typeId) && <option value={j.typeId}>{jt ? tr(jt.name) : j.typeId}</option>}
               </select>
             </label>
             {jt && (
               <>
-                <p>{jt.note}</p>
+                <p>{tr(jt.note)}</p>
                 <p>
-                  <b>Schwierigkeit:</b> {'●'.repeat(jt.difficulty)}
-                  {'○'.repeat(3 - jt.difficulty)} · {jt.removable ? 'zerlegbar' : 'fest'} · wirkt {jt.stiffness}
+                  <b>{t('Schwierigkeit:')}</b> {'●'.repeat(jt.difficulty)}
+                  {'○'.repeat(3 - jt.difficulty)} · {jt.removable ? t('zerlegbar') : t('fest')} · {t('wirkt {s}', { s: stiffnessLabel(jt.stiffness) })}
                 </p>
                 <p>
-                  <b>Werkzeug:</b> {jt.tools.join(', ')}
+                  <b>{t('Werkzeug:')}</b> {jt.tools.map((x) => tr(x)).join(', ')}
                 </p>
                 {jt.hardware.length > 0 && (
                   <p>
-                    <b>Material je Verbindung:</b> {jt.hardware.map((h) => `${h.qty} × ${catalogItem(h.id)?.name ?? h.id}`).join(', ')}
+                    <b>{t('Material je Verbindung:')}</b> {jt.hardware.map((h) => `${h.qty} × ${tr(catalogItem(h.id)?.name ?? h.id)}`).join(', ')}
                   </p>
                 )}
-                {jt.residualSection < 1 && <p className="hint">Restquerschnitt an der Verbindung ca. {Math.round(jt.residualSection * 100)} %.</p>}
+                {jt.residualSection < 1 && <p className="hint">{t('Restquerschnitt an der Verbindung ca. {p} %.', { p: Math.round(jt.residualSection * 100) })}</p>}
               </>
             )}
             <p className="hint">
-              {ending?.name}: {ending ? `${catalogItem(ending.catalogId)?.name ?? ''}, Länge ${fmtCm(memberLength(ending))}` : ''}
+              {tr(ending?.name ?? '')}: {ending ? t('{item}, Länge {len}', { item: tr(catalogItem(ending.catalogId)?.name ?? ''), len: fmtCm(memberLength(ending)) }) : ''}
               <br />
-              {through?.name}: {through ? `${catalogItem(through.catalogId)?.name ?? ''}, Länge ${fmtCm(memberLength(through))}` : ''}
+              {tr(through?.name ?? '')}: {through ? t('{item}, Länge {len}', { item: tr(catalogItem(through.catalogId)?.name ?? ''), len: fmtCm(memberLength(through)) }) : ''}
             </p>
-            <p className="hint">Die Werkstattskizze mit Maßen steht im Bauplan unter „Verbindungen“.</p>
+            <p className="hint">{t('Die Werkstattskizze mit Maßen steht im Bauplan unter „Verbindungen“.')}</p>
           </div>
         </div>
       </div>

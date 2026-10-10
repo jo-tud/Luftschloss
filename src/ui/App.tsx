@@ -1,4 +1,5 @@
 import { GROUP_LABEL, TIMBER } from '../model/catalog'
+import { t, tr } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
@@ -44,7 +45,7 @@ export function App() {
         <Splitter
           dir="h"
           style={{ bottom: panels.checks ? panels.checks - 4 : 'calc(38% - 4px)' }}
-          title="Ziehen: Prüfliste höher oder niedriger · Doppelklick: zurücksetzen"
+          title={t('Ziehen: Prüfliste höher oder niedriger · Doppelklick: zurücksetzen')}
           onDrag={(_dx, dy, start) => {
             const h = (start.checks ?? 260) - dy
             const max = window.innerHeight - 46 - 160
@@ -57,7 +58,7 @@ export function App() {
       <Splitter
         dir="v"
         style={{ left: panels.left - 5 }}
-        title="Ziehen: Seitenleiste breiter oder schmaler · Doppelklick: zurücksetzen"
+        title={t('Ziehen: Seitenleiste breiter oder schmaler · Doppelklick: zurücksetzen')}
         onDrag={(dx, _dy, start) => setPanels({ left: clampW(start.left + dx, start.right) })}
         onReset={() => setPanels({ left: PANEL_DEFAULT.left })}
         panels={panels}
@@ -65,7 +66,7 @@ export function App() {
       <Splitter
         dir="v"
         style={{ right: panels.right - 4 }}
-        title="Ziehen: Eigenschaften breiter oder schmaler · Doppelklick: zurücksetzen"
+        title={t('Ziehen: Eigenschaften breiter oder schmaler · Doppelklick: zurücksetzen')}
         onDrag={(dx, _dy, start) => setPanels({ right: clampW(start.right - dx, start.left) })}
         onReset={() => setPanels({ right: PANEL_DEFAULT.right })}
         panels={panels}
@@ -175,25 +176,25 @@ function StatusBar() {
   const c = s.cursor
   const hint =
     s.tool === 'balken'
-      ? 'Balken: Startpunkt klicken, dann Endpunkt. Shift = gerade, Strg = weiterzeichnen, Esc = abbrechen. Höhe = Oberkante.'
+      ? t('Balken: Startpunkt klicken, dann Endpunkt. Shift = gerade, Strg = weiterzeichnen, Esc = abbrechen. Höhe = Oberkante.')
       : s.tool === 'pfosten'
-        ? 'Pfosten: in Draufsicht oder 3D auf den Boden klicken. Höhe = Arbeitshöhe.'
+        ? t('Pfosten: in Draufsicht oder 3D auf den Boden klicken. Höhe = Arbeitshöhe.')
         : s.view.kind === 'person'
-          ? 'Ich-Perspektive: Ziehen = umsehen, W/A/S/D = gehen, Q/E = runter/hoch, Mausrad = Blickwinkel.'
-          : 'Ziehen = drehen (3D) bzw. verschieben (2D) · Ausgewähltes ziehen = verschieben · Rechte Maustaste = drehen · Mittlere Maustaste = verschieben · Mausrad = Zoom · Doppelklick = heranholen'
+          ? t('Ich-Perspektive: Ziehen = umsehen, W/A/S/D = gehen, Q/E = runter/hoch, Mausrad = Blickwinkel.')
+          : t('Ziehen = drehen (3D) bzw. verschieben (2D) · Ausgewähltes ziehen = verschieben · Rechte Maustaste = drehen · Mittlere Maustaste = verschieben · Mausrad = Zoom · Doppelklick = heranholen')
   return (
     <footer className="statusbar">
       <span className="coords">{c ? `x ${fmtCm(c.x)} · y ${fmtCm(c.y)} · z ${fmtCm(c.z)}` : '–'}</span>
       {s.tool !== 'select' && (
         <span className="ctl">
           <label className="field compact">
-            <span>Querschnitt</span>
-            <select value={s.toolCatalogId} onChange={(e) => s.set({ toolCatalogId: e.target.value })} title="Querschnitt für neue Bauteile">
+            <span>{t('Querschnitt')}</span>
+            <select value={s.toolCatalogId} onChange={(e) => s.set({ toolCatalogId: e.target.value })} title={t('Querschnitt für neue Bauteile')}>
               {Object.entries(GROUP_LABEL).map(([g, label]) => (
-                <optgroup key={g} label={label}>
+                <optgroup key={g} label={tr(label)}>
                   {TIMBER.filter((t) => t.group === g).map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.round ? `Ø ${t.b}` : `${t.b}×${t.h}`} – {t.name}
+                      {t.round ? `Ø ${t.b}` : `${t.b}×${t.h}`} – {tr(t.name)}
                     </option>
                   ))}
                 </optgroup>
@@ -203,25 +204,25 @@ function StatusBar() {
         </span>
       )}
       <span className="ctl">
-        <Num label="Arbeitshöhe" value={s.workingHeight} onChange={(v) => s.set({ workingHeight: v })} />
+        <Num label={t('Arbeitshöhe')} value={s.workingHeight} onChange={(v) => s.set({ workingHeight: v })} />
       </span>
       {s.view.kind === 'elev' && (
         <span className="ctl">
-          <Num label="Abstand zur Wand" value={s.workingDepth} onChange={(v) => s.set({ workingDepth: v })} />
+          <Num label={t('Abstand zur Wand')} value={s.workingDepth} onChange={(v) => s.set({ workingDepth: v })} />
         </span>
       )}
       {s.view.kind === 'plan' && (
         <span className="ctl range">
-          <span>Schnitt bei {fmtCm(s.planCut, 0)}</span>
+          <span>{t('Schnitt bei {h}', { h: fmtCm(s.planCut, 0) })}</span>
           <input type="range" min={300} max={s.project.room.height} step={50} value={s.planCut} onChange={(e) => s.set({ planCut: Number(e.target.value) })} />
         </span>
       )}
       <span className="ctl">
         <label className="check small">
           <input type="checkbox" checked={s.snap} onChange={(e) => s.set({ snap: e.target.checked })} />
-          <span>Fang</span>
+          <span>{t('Fang')}</span>
         </label>
-        <select value={s.grid} onChange={(e) => s.set({ grid: Number(e.target.value) })} title="Raster">
+        <select value={s.grid} onChange={(e) => s.set({ grid: Number(e.target.value) })} title={t('Raster')}>
           {[1, 5, 10, 50, 100].map((g) => (
             <option key={g} value={g}>
               {g < 10 ? `${g} mm` : `${g / 10} cm`}
@@ -242,47 +243,51 @@ function Help() {
     <div className="modal-bg" onClick={() => set({ showHelp: false })}>
       <div className="modal help" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h2>Bedienung</h2>
-          <button className="close" onClick={() => set({ showHelp: false })}>
+          <h2>{t('Bedienung')}</h2>
+          <button className="close" onClick={() => set({ showHelp: false })} aria-label={t('Schließen')}>
             ✕
           </button>
         </header>
         <div className="modal-body">
-          <h3>Ansichten</h3>
+          <h3>{t('Ansichten')}</h3>
           <p>
-            Draufsicht, Seitenansicht (auf Wand A–D), 3D und Ich-Perspektive sind <b>eine</b> Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit der rechten Maustaste ziehen kippt direkt in 3D.
+            {t('Draufsicht, Seitenansicht (auf Wand A–D), 3D und Ich-Perspektive sind')} <b>{t('eine')}</b> {t('Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit der rechten Maustaste ziehen kippt direkt in 3D.')}
           </p>
           <ul>
             <li>
-              <kbd>1</kbd> Draufsicht · <kbd>2</kbd> Seitenansicht (nochmal drücken: nächste Wand) · <kbd>3</kbd> 3D · <kbd>4</kbd> Ich-Perspektive (nochmal: nächster Standpunkt) · <kbd>5</kbd> Abwicklung · <kbd>0</kbd> Ansicht zurücksetzen
+              <kbd>1</kbd> {t('Draufsicht')} · <kbd>2</kbd> {t('Seitenansicht (nochmal drücken: nächste Wand)')} · <kbd>3</kbd> 3D · <kbd>4</kbd> {t('Ich-Perspektive (nochmal: nächster Standpunkt)')} · <kbd>5</kbd> {t('Abwicklung')} · <kbd>0</kbd> {t('Ansicht zurücksetzen')}
             </li>
-            <li>Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen</li>
-            <li>Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort</li>
-            <li>„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen</li>
-            <li>Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen</li>
-            <li>Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen und mittlere Taste verschieben, Shift + mittlere Taste dreht</li>
-            <li>In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).</li>
-            <li>Ich-Perspektive: Ziehen = umsehen, <kbd>W</kbd>
+            <li>{t('Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen')}</li>
+            <li>{t('Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort')}</li>
+            <li>{t('„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen')}</li>
+            <li>{t('Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen')}</li>
+            <li>{t('Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen und mittlere Taste verschieben, Shift + mittlere Taste dreht')}</li>
+            <li>{t('In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).')}</li>
+            <li>
+              {t('Ich-Perspektive: Ziehen = umsehen,')} <kbd>W</kbd>
               <kbd>A</kbd>
               <kbd>S</kbd>
-              <kbd>D</kbd> gehen, <kbd>Q</kbd>/<kbd>E</kbd> runter/hoch, Mausrad = Blickwinkel</li>
+              <kbd>D</kbd> {t('gehen,')} <kbd>Q</kbd>/<kbd>E</kbd> {t('runter/hoch, Mausrad = Blickwinkel')}
+            </li>
           </ul>
-          <h3>Bearbeiten</h3>
+          <h3>{t('Bearbeiten')}</h3>
           <ul>
-            <li>Bett verschieben: erst anklicken bzw. antippen, dann ziehen (rastet an Wänden ein und hält dort an); in der Seitenansicht hoch/runter = Liegehöhe. Genau geht es rechts unter „Lage im Raum“: Abstand zu jeder Wand, Schieben in Schritten, „In Ecke schieben“.</li>
-            <li>Tablet: antippen = auswählen, Ausgewähltes mit einem Finger ziehen, leere Fläche mit einem Finger = drehen, zwei Finger = zoomen und verschieben, Doppeltipp = heranholen. ☰ öffnet Raum und Vorlagen, ⓘ Eigenschaften und Prüfung.</li>
-            <li>Frei gezeichnete Balken: orange Griffe an den Enden ziehen, Länge im Etikett anklicken und eintippen</li>
-            <li>Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen</li>
-            <li>Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen</li>
+            <li>{t('Bett verschieben: erst anklicken bzw. antippen, dann ziehen (rastet an Wänden ein und hält dort an); in der Seitenansicht hoch/runter = Liegehöhe. Genau geht es rechts unter „Lage im Raum“: Abstand zu jeder Wand, Schieben in Schritten, „In Ecke schieben“.')}</li>
+            <li>{t('Tablet: antippen = auswählen, Ausgewähltes mit einem Finger ziehen, leere Fläche mit einem Finger = drehen, zwei Finger = zoomen und verschieben, Doppeltipp = heranholen. ☰ öffnet Raum und Vorlagen, ⓘ Eigenschaften und Prüfung.')}</li>
+            <li>{t('Frei gezeichnete Balken: orange Griffe an den Enden ziehen, Länge im Etikett anklicken und eintippen')}</li>
+            <li>{t('Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen')}</li>
+            <li>{t('Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen')}</li>
             <li>
-              <kbd>V</kbd> Auswahl · <kbd>B</kbd> Balken (zwei Klicks, <kbd>Shift</kbd> gerade, <kbd>Strg</kbd> weiterzeichnen) · <kbd>P</kbd> Pfosten · <kbd>Esc</kbd> abbrechen
+              <kbd>V</kbd> {t('Auswahl')} · <kbd>B</kbd> {t('Balken (zwei Klicks,')} <kbd>{'Shift'}</kbd> {t('gerade,')} <kbd>{t('Strg')}</kbd> {t('weiterzeichnen)')} · <kbd>P</kbd> {t('Pfosten')} · <kbd>{'Esc'}</kbd> {t('abbrechen')}
             </li>
             <li>
-              <kbd>Entf</kbd> löschen · <kbd>Strg</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> rückgängig/wiederholen · <kbd>R</kbd> Querschnitt drehen · <kbd>F</kbd> Fokus
+              <kbd>{t('Entf')}</kbd> {t('löschen')} · <kbd>{t('Strg')}</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> {t('rückgängig/wiederholen')} · <kbd>R</kbd> {t('Querschnitt drehen')} · <kbd>F</kbd> {t('Fokus')}
             </li>
           </ul>
-          <h3>Prüfung</h3>
-          <p>Rechts unten stehen alle Befunde: Kollisionen (auch mit Stuck und Sockelleiste), Fensteröffnung, Freiraum, Sicherheitsempfehlungen. Alles sind Empfehlungen – jeder Punkt lässt sich quittieren.</p>
+          <h3>{t('Prüfung')}</h3>
+          <p>{t('Rechts unten stehen alle Befunde: Kollisionen (auch mit Stuck und Sockelleiste), Fensteröffnung, Freiraum, Sicherheitsempfehlungen. Alles sind Empfehlungen – jeder Punkt lässt sich quittieren.')}</p>
+          <h3>{t('Sprache')}</h3>
+          <p>{t('Die Sprache (English/Deutsch/Auto) lässt sich oben rechts in der Werkzeugleiste umstellen.')}</p>
         </div>
       </div>
     </div>

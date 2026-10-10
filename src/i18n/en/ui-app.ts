@@ -1,0 +1,242 @@
+const en: Record<string, string> = {
+  // App: Ziehleisten, Statusleiste
+  'Ziehen: Prüfliste höher oder niedriger · Doppelklick: zurücksetzen': 'Drag: make checks list taller or shorter · Double-click: reset',
+  'Ziehen: Seitenleiste breiter oder schmaler · Doppelklick: zurücksetzen': 'Drag: make sidebar wider or narrower · Double-click: reset',
+  'Ziehen: Eigenschaften breiter oder schmaler · Doppelklick: zurücksetzen': 'Drag: make properties wider or narrower · Double-click: reset',
+  'Balken: Startpunkt klicken, dann Endpunkt. Shift = gerade, Strg = weiterzeichnen, Esc = abbrechen. Höhe = Oberkante.':
+    'Beam: click the start point, then the end point. Shift = straight, Ctrl = keep drawing, Esc = cancel. Height = top edge.',
+  'Pfosten: in Draufsicht oder 3D auf den Boden klicken. Höhe = Arbeitshöhe.': 'Post: click on the floor in top view or 3D. Height = working height.',
+  'Ich-Perspektive: Ziehen = umsehen, W/A/S/D = gehen, Q/E = runter/hoch, Mausrad = Blickwinkel.':
+    'First-person view: drag = look around, W/A/S/D = walk, Q/E = down/up, mouse wheel = field of view.',
+  'Ziehen = drehen (3D) bzw. verschieben (2D) · Ausgewähltes ziehen = verschieben · Rechte Maustaste = drehen · Mittlere Maustaste = verschieben · Mausrad = Zoom · Doppelklick = heranholen':
+    'Drag = orbit (3D) or pan (2D) · Drag selection = move · Right mouse button = orbit · Middle mouse button = pan · Mouse wheel = zoom · Double-click = zoom in',
+  Querschnitt: 'Cross-section',
+  'Querschnitt für neue Bauteile': 'Cross-section for new parts',
+  Arbeitshöhe: 'Working height',
+  'Abstand zur Wand': 'Distance from wall',
+  'Schnitt bei {h}': 'Cut at {h}',
+  Fang: 'Snap',
+  Raster: 'Grid',
+
+  // App: Hilfe
+  Bedienung: 'How to use',
+  Schließen: 'Close',
+  Ansichten: 'Views',
+  'Draufsicht, Seitenansicht (auf Wand A–D), 3D und Ich-Perspektive sind': 'Top view, elevation (of Wall A–D), 3D and first-person view are',
+  eine: 'one',
+  'Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit der rechten Maustaste ziehen kippt direkt in 3D.':
+    'camera: when you switch, it glides smoothly to the new view. Click one of the small views at the bottom right to swap it with the large one. Dragging with the right mouse button in top view tilts straight into 3D.',
+  Draufsicht: 'Top view',
+  'Seitenansicht (nochmal drücken: nächste Wand)': 'Elevation (press again: next wall)',
+  'Ich-Perspektive (nochmal: nächster Standpunkt)': 'First-person view (again: next viewpoint)',
+  Abwicklung: 'Unfolded walls',
+  'Ansicht zurücksetzen': 'Reset view',
+  'Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen':
+    'Drag on empty space: orbit in 3D, pan in 2D · right mouse button: orbit · middle mouse button: pan · mouse wheel: zoom towards the pointer',
+  'Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort':
+    'Double-click (double-tap): glide smoothly towards that spot, each further double-click goes closer – e.g. to a joint · “⌂ Back” shows the whole room again · Overview map at the top right: click sets the view target or position',
+  '„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen':
+    '“✂ Section” in 3D: trim the room with sliders, e.g. to look under the bed from above',
+  'Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen':
+    'Unfolded walls: the room opened out like a box – drag windows, radiators and sockets directly on the wall',
+  'Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen und mittlere Taste verschieben, Shift + mittlere Taste dreht':
+    'Mouse layout “CAD” (under Room → Settings): left drag and middle button pan, Shift + middle button orbits',
+  'In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).':
+    'In the 3D view, walls in front of the bed are hidden automatically (doll’s house). The top view cuts off above the section height (slider at the bottom).',
+  'Ich-Perspektive: Ziehen = umsehen,': 'First-person view: drag = look around,',
+  'gehen,': 'walk,',
+  'runter/hoch, Mausrad = Blickwinkel': 'down/up, mouse wheel = field of view',
+  Bearbeiten: 'Editing',
+  'Bett verschieben: erst anklicken bzw. antippen, dann ziehen (rastet an Wänden ein und hält dort an); in der Seitenansicht hoch/runter = Liegehöhe. Genau geht es rechts unter „Lage im Raum“: Abstand zu jeder Wand, Schieben in Schritten, „In Ecke schieben“.':
+    'Move the bed: click or tap it first, then drag (it snaps to walls and stops there); in elevation, up/down = deck height. For precision use “Position in room” on the right: distance to each wall, nudging in steps, “Push into corner”.',
+  'Tablet: antippen = auswählen, Ausgewähltes mit einem Finger ziehen, leere Fläche mit einem Finger = drehen, zwei Finger = zoomen und verschieben, Doppeltipp = heranholen. ☰ öffnet Raum und Vorlagen, ⓘ Eigenschaften und Prüfung.':
+    'Tablet: tap = select, drag the selection with one finger, one finger on empty space = orbit, two fingers = zoom and pan, double-tap = zoom in. ☰ opens room and templates, ⓘ properties and checks.',
+  'Frei gezeichnete Balken: orange Griffe an den Enden ziehen, Länge im Etikett anklicken und eintippen':
+    'Freely drawn beams: drag the orange handles at the ends, click the length in the label and type a value',
+  'Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen':
+    'Joints: turn on the “Joints” layer and click a point – shows the joint in 3D with its fasteners',
+  'Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen':
+    'Drag windows, radiators and sockets along the wall and up or down in elevation',
+  Auswahl: 'Select',
+  'Balken (zwei Klicks,': 'Beam (two clicks,',
+  'gerade,': 'straight,',
+  Strg: 'Ctrl',
+  'weiterzeichnen)': 'keep drawing)',
+  abbrechen: 'cancel',
+  Entf: 'Del',
+  löschen: 'delete',
+  'rückgängig/wiederholen': 'undo/redo',
+  'Querschnitt drehen': 'rotate cross-section',
+  Fokus: 'focus',
+  Prüfung: 'Checks',
+  'Rechts unten stehen alle Befunde: Kollisionen (auch mit Stuck und Sockelleiste), Fensteröffnung, Freiraum, Sicherheitsempfehlungen. Alles sind Empfehlungen – jeder Punkt lässt sich quittieren.':
+    'All findings are listed at the bottom right: collisions (including cornice and skirting), window opening, clearance, safety recommendations. Everything is a recommendation – each item can be acknowledged.',
+  Sprache: 'Language',
+  'Die Sprache (English/Deutsch/Auto) lässt sich oben rechts in der Werkzeugleiste umstellen.':
+    'Change the language (English/Deutsch/Auto) with the selector at the top right of the toolbar.',
+
+  // Werkzeugleiste
+  Verbindungen: 'Joints',
+  Hindernisse: 'Obstacles',
+  Personen: 'People',
+  Möbel: 'Furniture',
+  'Beschriftung & Maße': 'Labels & dimensions',
+  'Fenster-Schwenkbögen': 'Window swing arcs',
+  'Raum, Ausstattung, Vorlagen': 'Room, fixtures, templates',
+  'Seitenleiste: Raum, Ausstattung, Vorlagen': 'Sidebar: room, fixtures, templates',
+  'Luftschloss – Hochbettplaner': 'Luftschloss – loft bed planner',
+  'Rückgängig (Strg+Z)': 'Undo (Ctrl+Z)',
+  Rückgängig: 'Undo',
+  'Wiederholen (Strg+Y)': 'Redo (Ctrl+Y)',
+  Wiederholen: 'Redo',
+  'Auswählen und verschieben (V)': 'Select and move (V)',
+  Balken: 'Beam',
+  'Balken zeichnen: zwei Klicks, Shift = gerade, Strg = weiterzeichnen (B)': 'Draw beam: two clicks, Shift = straight, Ctrl = keep drawing (B)',
+  Pfosten: 'Post',
+  'Pfosten setzen: ein Klick (P)': 'Place post: one click (P)',
+  'Ebenen ein-/ausblenden, Tageslicht': 'Show/hide layers, daylight',
+  Ebenen: 'Layers',
+  'Statik des Gestells': 'Structure of the frame',
+  'Statik: höchste Ausnutzung {u} % – {state}': 'Structure: highest utilisation {u} % – {state}',
+  überlastet: 'overloaded',
+  'gut, aber nicht viel Reserve': 'fine, but not much reserve',
+  'reichlich Reserve': 'plenty of reserve',
+  Statik: 'Structure',
+  'Aufbau Schritt für Schritt als Animation': 'Step-by-step assembly animation',
+  Aufbau: 'Assembly',
+  'Bauplan mit Ansichten, Teileliste, Verbindungen und Montage – druckbar': 'Build plan with views, parts list, joints and assembly – printable',
+  Bauplan: 'Build plan',
+  'Stückliste, Zuschnitt und Kosten': 'Materials list, cutting and costs',
+  Material: 'Materials',
+  'Weitere Funktionen': 'More functions',
+  'Aufbau-Animation': 'Assembly animation',
+  'Auf dem Tablet öffnen': 'Open on tablet',
+  'Abgleich im WLAN: {status}': 'Wi-Fi sync: {status}',
+  Tablet: 'Tablet',
+  'Eigenschaften und Prüfung': 'Properties and checks',
+  'Eigenschaften und Prüfung: {e} Fehler, {w} Warnungen': 'Properties and checks: {e} errors, {w} warnings',
+  'Bedienung und Tastenkürzel (?)': 'How to use and keyboard shortcuts (?)',
+  Hilfe: 'Help',
+  '{time} Uhr': '{time}',
+  Sonnenlicht: 'Sunlight',
+  Uhrzeit: 'Time of day',
+
+  // Prüfliste
+  '{e} Fehler, {w} Warnungen, {h} Hinweise': '{e} errors, {w} warnings, {h} notes',
+  Raumhöhe: 'Room height',
+  Deckenart: 'Ceiling type',
+  Stuckleiste: 'Cornice',
+  'Deckenrosette und Lampe': 'Ceiling rose and lamp',
+  Sockelleiste: 'Skirting board',
+  'quittierte zeigen': 'show acknowledged',
+  '{name} → Ausstattung': '{name} → Fixtures',
+  '{name} → Raum': '{name} → Room',
+  'Zur Kenntnis genommen (ausblenden)': 'Acknowledged (hide)',
+  'Keine offenen Punkte.': 'No open items.',
+
+  // Projekt
+  'kein Luftschloss-Projekt': 'not a Luftschloss project',
+  'Datei konnte nicht gelesen werden: {msg}': 'Could not read the file: {msg}',
+  'Aktuellen Plan verwerfen und mit einem leeren Zimmer beginnen? (Rückgängig ist möglich.)': 'Discard the current plan and start with an empty room? (You can undo this.)',
+  'Aktuellen Plan durch das Beispielzimmer ersetzen? (Rückgängig ist möglich.)': 'Replace the current plan with the example room? (You can undo this.)',
+  Name: 'Name',
+  'Projekt speichern als Datei (.json)': 'Save project as file (.json)',
+  'Projektdatei öffnen…': 'Open project file…',
+  'Beispielzimmer laden': 'Load example room',
+  'Neues, leeres Zimmer': 'New, empty room',
+  'nicht gespeichert – bitte als Datei sichern': 'not saved – please save as a file',
+  'automatisch im Browser gespeichert': 'saved automatically in the browser',
+  'Projekt: {name} · {status}': 'Project: {name} · {status}',
+  'Neues Zimmer': 'New room',
+  'Öffnen…': 'Open…',
+  'Als Datei speichern': 'Save as file',
+  Beispielzimmer: 'Example room',
+  'zum Ausprobieren. Maße und Bett lassen sich direkt anpassen.': 'to try things out. Dimensions and bed can be adjusted right away.',
+  'Eigenes Zimmer anlegen': 'Create your own room',
+  'Beispiel ansehen': 'Explore example',
+
+  // Tablet-Abgleich
+  'Vom anderen Gerät aktualisiert': 'Updated from the other device',
+  'Tablet ins selbe WLAN, QR-Code scannen. Laptop und Tablet arbeiten dann am': 'Connect the tablet to the same Wi-Fi and scan the QR code. Laptop and tablet then work on the',
+  'selben Projekt': 'same project',
+  'Änderungen gleichen sich alle paar Sekunden ab.': 'changes sync every few seconds.',
+  kopiert: 'copied',
+  'Abgleich: {status}.': 'Sync: {status}.',
+  verbunden: 'connected',
+  getrennt: 'disconnected',
+  'Unterwegs ohne gemeinsames WLAN? (für Fortgeschrittene)': 'On the go without a shared Wi-Fi? (advanced)',
+  'Mit der App Tailscale auf Laptop und Tablet entsteht ein privates Netz. Dann die Tailscale-Adresse des Laptops mit Port {port} öffnen. Mit':
+    'The Tailscale app on laptop and tablet creates a private network. Then open the laptop’s Tailscale address with port {port}. With',
+  'gibt es eine HTTPS-Adresse, über die sich Luftschloss auf dem Tablet installieren lässt und offline läuft.':
+    'you get an HTTPS address from which Luftschloss can be installed on the tablet and runs offline.',
+  'Diese Online-Version direkt auf dem Tablet öffnen – QR-Code scannen, dann im Browser „Zum Home-Bildschirm“ wählen, damit Luftschloss wie eine App startet und auch offline läuft.':
+    'Open this online version directly on the tablet – scan the QR code, then choose “Add to Home Screen” in the browser so Luftschloss starts like an app and also works offline.',
+  'Jedes Gerät speichert sein eigenes Projekt. Zum Übertragen im Projektmenü „Als Datei speichern“ und auf dem anderen Gerät „Öffnen…“.':
+    'Each device stores its own project. To transfer it, use “Save as file” in the project menu and “Open…” on the other device.',
+  'Laptop und Tablet gleichzeitig am selben Projekt': 'Laptop and tablet on the same project at once',
+  'Diese Seite läuft ohne Abgleich-Server. So geht es auf dem Tablet:': 'This page is running without a sync server. To use it on the tablet:',
+  'Auf dem Laptop im Projektordner': 'On the laptop, in the project folder, run',
+  'starten.': 'to start the server.',
+  'Diese Seite über die angezeigte Netzwerk-Adresse öffnen – dann erscheint hier ein QR-Code für das Tablet.':
+    'Open this page via the network address shown – a QR code for the tablet will then appear here.',
+  'Alternativ: Im Projektmenü oben links „Als Datei speichern“ und die Datei auf dem Tablet mit „Öffnen…“ laden.':
+    'Alternatively: use “Save as file” in the project menu at the top left and load the file on the tablet with “Open…”.',
+  'Mit Tailscale klappt das auch ohne gemeinsames WLAN, z. B. auf der Baustelle.': 'With Tailscale this also works without a shared Wi-Fi, e.g. on site.',
+
+  // Aufbau-Abspieler
+  'Aufbau · Schritt {n}/{total}: {title}': 'Assembly · Step {n}/{total}: {title}',
+  beenden: 'exit',
+  'Werkzeug: {tools}': 'Tools: {tools}',
+  'Schritt zurück': 'Previous step',
+  Pause: 'Pause',
+  Abspielen: 'Play',
+  'Nächster Schritt': 'Next step',
+
+  // Statik
+  Bauteil: 'Part',
+  Stabilität: 'Stability',
+  steif: 'stiff',
+  spürbar: 'noticeable',
+  wackelt: 'wobbly',
+  '{name}: Statik {pct} ausgelastet': '{name}: structure {pct} utilised',
+  'Maßgebend: {gov}. Größeren Querschnitt wählen (Teil anklicken → „Querschnitte vergleichen“) oder zusätzlich unterstützen.':
+    'Governing: {gov}. Choose a larger cross-section (click the part → “Compare cross-sections”) or add extra support.',
+  'Verbindung {name}: {pct} ausgelastet': 'Joint {name}: {pct} utilised',
+  'Kraft ca. {f} kN, Verbindung trägt grob {cap} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.':
+    'Force approx. {f} kN, joint carries roughly {cap} kN (characteristic). Choose a stronger joint, e.g. carriage bolts or a bearing support.',
+  'Gestell wackelt ({mm} mm bei 0,5 kN Seitenlast)': 'Frame sways ({mm} mm under 0.5 kN lateral load)',
+  'Gestell gibt spürbar nach ({mm} mm bei 0,5 kN)': 'Frame gives noticeably ({mm} mm under 0.5 kN)',
+  'Kopfbänder oder Diagonalen einbauen, zwei Pfosten an der Wand befestigen oder steifere Verbindungen wählen. In der Statik-Ansicht „Wackeln“ abspielen.':
+    'Add knee braces or diagonals, fix two posts to the wall or choose stiffer joints. Play “Sway” in the structure view.',
+  'Statik-Abschätzung: höchste Ausnutzung {pct}': 'Structural estimate: highest utilisation {pct}',
+  'Vereinfachte Rechnung des ganzen Gestells nach Eurocode 5; die Belastung (Bett oder Spiel-Hochebene) lässt sich unter Raum → Einstellungen wählen. Keine Tragwerksplanung.':
+    'Simplified calculation of the whole frame to Eurocode 5; the load (bed or play platform) can be chosen under Room → Settings. Not a structural design.',
+  'rechnet…': 'calculating…',
+  schließen: 'close',
+  'Wird berechnet…': 'Calculating…',
+  'höchste Ausnutzung': 'highest utilisation',
+  'Wackeln ({cls})': 'Sway ({cls})',
+  'Verformung zeigen': 'Show deformation',
+  'Liegen, Eigengewicht': 'Lying, self-weight',
+  'Toben, Springen (≈ 200 kg)': 'Romping, jumping (≈ 200 kg)',
+  'Seitlich schieben, längs (≈ 50 kg)': 'Pushing sideways, lengthwise (≈ 50 kg)',
+  'Seitlich schieben, quer (≈ 50 kg)': 'Pushing sideways, crosswise (≈ 50 kg)',
+  'Verformung {n}-fach vergrößert': 'Deformation magnified {n}×',
+  'Wackeln stoppen': 'Stop sway',
+  'Wackeln abspielen': 'Play sway',
+  'Vereinfachte Abschätzung für das ganze Gestell nach den Holzbau-Regeln (Eurocode 5). Ersetzt keine Tragwerksplanung.':
+    'Simplified estimate for the whole frame according to timber design rules (Eurocode 5). Does not replace a structural design.',
+  'Biegung/Normalkraft': 'Bending/axial force',
+  Schub: 'Shear',
+  Durchbiegung: 'Deflection',
+  'Durchbiegung im Endzustand {w} mm auf {span} (Grenze L/200).': 'Final deflection {w} mm over {span} (limit L/200).',
+  'Querschnitte vergleichen': 'Compare cross-sections',
+  nehmen: 'use',
+  'Gilt für alle gleichartigen Teile der Vorlage.': 'Applies to all parts of the same kind in the template.',
+
+  // Aktionen
+  'Bett löschen': 'Delete bed',
+  'Teil entfernen': 'Remove part',
+  Entfernen: 'Remove',
+}
+export default en

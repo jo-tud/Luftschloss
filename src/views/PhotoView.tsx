@@ -3,7 +3,8 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { applyOpeningFits, camBasis, projectPoint, referencePoints, solvePhotoCam, solvePhotoCamWithOpenings, verticalFov, type OpeningFit, type PhotoCam } from '../analysis/photo'
-import { fmtCm } from '../model/geometry'
+import { fmtCm, fmtM } from '../model/geometry'
+import { locale, t, tr } from '../i18n'
 import { wallFrame } from '../model/geometry'
 import type { Project } from '../model/types'
 import { useDerived, useStore } from '../state/store'
@@ -173,30 +174,30 @@ export function PhotoView() {
     return (
       <div className="photo-view empty">
         <div className="photo-intro">
-          <h2>📷 Dein Hochbett im Foto deines Zimmers</h2>
-          <p>Fotografiere das Zimmer so, dass ein paar Raumecken und Fensterkanten gut zu sehen sind. Dann tippst du 4–6 dieser Punkte an – Luftschloss errechnet daraus den Kamerastandort und setzt das geplante Bett perspektivisch richtig ins Foto.</p>
+          <h2>📷 {t('Dein Hochbett im Foto deines Zimmers')}</h2>
+          <p>{t('Fotografiere das Zimmer so, dass ein paar Raumecken und Fensterkanten gut zu sehen sind. Dann tippst du 4–6 dieser Punkte an – Luftschloss errechnet daraus den Kamerastandort und setzt das geplante Bett perspektivisch richtig ins Foto.')}</p>
           <label className="file-btn">
-            Foto wählen oder aufnehmen
+            {t('Foto wählen oder aufnehmen')}
             <input type="file" accept="image/*" capture="environment" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
           </label>
-          <p className="hint">Das Foto bleibt in diesem Browser und wird nirgendwohin hochgeladen.</p>
+          <p className="hint">{t('Das Foto bleibt in diesem Browser und wird nirgendwohin hochgeladen.')}</p>
         </div>
       </div>
     )
 
-  const quality = !solution ? null : solution.rms < 6 ? 'sehr gut' : solution.rms < 15 ? 'gut' : solution.rms < 35 ? 'ungefähr – Maße prüfen' : 'passt nicht – Punkte prüfen'
+  const quality = !solution ? null : solution.rms < 6 ? t('sehr gut') : solution.rms < 15 ? t('gut') : solution.rms < 35 ? t('ungefähr – Maße prüfen') : t('passt nicht – Punkte prüfen')
   return (
     <div className="photo-view">
       <aside className="photo-side">
-        <b>Punkte zuordnen</b>
-        <p className="hint">Punkt wählen, dann im Foto antippen. Mindestens 4, besser 6 Punkte, verteilt über das Bild. Marker lassen sich verschieben.</p>
+        <b>{t('Punkte zuordnen')}</b>
+        <p className="hint">{t('Punkt wählen, dann im Foto antippen. Mindestens 4, besser 6 Punkte, verteilt über das Bild. Marker lassen sich verschieben.')}</p>
         <ul>
           {refs.map((r) => {
             const o = photo.obs.find((x) => x.id === r.id)
             return (
               <li key={r.id} className={`${active === r.id ? 'on' : ''}${o ? ' set' : ''}`} onClick={() => setActive(r.id)}>
                 <span className="mark">{o ? '●' : '○'}</span>
-                {r.label}
+                {tr(r.label)}
                 {o && (
                   <button
                     className="link"
@@ -215,57 +216,57 @@ export function PhotoView() {
         <div className="photo-status">
           {solution ? (
             <>
-              <b>Abgleich {quality}</b>
+              <b>{t('Abgleich {q}', { q: quality ?? '' })}</b>
               <span className="hint">
-                Abweichung ⌀ {solution.rms.toFixed(1)} px · Kamera {(solution.cam.z / 1000).toFixed(2).replace('.', ',')} m hoch
+                {t('Abweichung ⌀ {px} px · Kamera {h} hoch', { px: solution.rms.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }), h: fmtM(solution.cam.z) })}
               </span>
             </>
           ) : (
-            <span className="hint">Noch {Math.max(0, 4 - obsFull.length)} Punkt(e) für den Abgleich.</span>
+            <span className="hint">{t('Noch {n} Punkt(e) für den Abgleich.', { n: Math.max(0, 4 - obsFull.length) })}</span>
           )}
-          {solution && solution.rms >= 15 && <p className="hint">Liegen die grünen Raumkanten neben dem Foto, stimmen Raummaße oder Fensterlage noch nicht – ein guter Anlass, nachzumessen.</p>}
+          {solution && solution.rms >= 15 && <p className="hint">{t('Liegen die grünen Raumkanten neben dem Foto, stimmen Raummaße oder Fensterlage noch nicht – ein guter Anlass, nachzumessen.')}</p>}
         </div>
         <label className="check">
           <input type="checkbox" checked={fitOpenings} onChange={(e) => setFitOpenings(e.target.checked)} />
-          <span>Fenster- und Türmaße mitschätzen</span>
+          <span>{t('Fenster- und Türmaße mitschätzen')}</span>
         </label>
         {fitOpenings && changed.length > 0 && (
           <div className="photo-fit">
-            <b>Laut Foto eher so</b>
+            <b>{t('Laut Foto eher so')}</b>
             <table>
               <tbody>
                 {changed.map((o) => (
                   <tr key={o.id}>
-                    <td>{o.name}</td>
+                    <td>{tr(o.name)}</td>
                     <td>
                       {fmtCm(o.width, 0)} × {fmtCm(o.height, 0)}
                       <small>
-                        ab {fmtCm(o.offset, 0)}, {o.bottom > 0 ? `Brüstung ${fmtCm(o.bottom, 0)}` : 'ab Boden'}
+                        {t('ab {x}', { x: fmtCm(o.offset, 0) })}, {o.bottom > 0 ? t('Brüstung {h}', { h: fmtCm(o.bottom, 0) }) : t('ab Boden')}
                       </small>
                       <small className="muted">
-                        bisher {fmtCm(o.before.width, 0)} × {fmtCm(o.before.height, 0)}, ab {fmtCm(o.before.offset, 0)}
-                        {o.before.bottom > 0 && `, Brüstung ${fmtCm(o.before.bottom, 0)}`}
+                        {t('bisher {w} × {h}, ab {x}', { w: fmtCm(o.before.width, 0), h: fmtCm(o.before.height, 0), x: fmtCm(o.before.offset, 0) })}
+                        {o.before.bottom > 0 && `, ${t('Brüstung {h}', { h: fmtCm(o.before.bottom, 0) })}`}
                       </small>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <button onClick={adopt}>Übernehmen</button>
-            <p className="hint">Schätzung aus einem Foto: gut genug zum Planen, für den Zuschnitt aber nachmessen.</p>
+            <button onClick={adopt}>{t('Übernehmen')}</button>
+            <p className="hint">{t('Schätzung aus einem Foto: gut genug zum Planen, für den Zuschnitt aber nachmessen.')}</p>
           </div>
         )}
         <label className="field">
-          <span>Bett-Deckkraft</span>
+          <span>{t('Bett-Deckkraft')}</span>
           <input type="range" min={0.2} max={1} step={0.05} value={opacity} onChange={(e) => setOpacity(Number(e.target.value))} />
         </label>
         <label className="check">
           <input type="checkbox" checked={showEdges} onChange={(e) => setShowEdges(e.target.checked)} />
-          <span>Raumkanten zeigen</span>
+          <span>{t('Raumkanten zeigen')}</span>
         </label>
         <div className="row">
           <label className="file-btn small">
-            Anderes Foto
+            {t('Anderes Foto')}
             <input type="file" accept="image/*" capture="environment" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
           </label>
           <button
@@ -276,7 +277,7 @@ export function PhotoView() {
               void savePhoto(null)
             }}
           >
-            Foto entfernen
+            {t('Foto entfernen')}
           </button>
         </div>
       </aside>
@@ -301,7 +302,7 @@ export function PhotoView() {
           }}
           onPointerUp={() => setDragId(null)}
         >
-          <img src={url} alt="Zimmerfoto" draggable={false} />
+          <img src={url} alt={t('Zimmerfoto')} draggable={false} />
           {solution && (
             <div className="photo-overlay" style={{ opacity }}>
               <Canvas gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }} camera={{ fov: 50 }} style={{ pointerEvents: 'none' }}>
@@ -318,7 +319,7 @@ export function PhotoView() {
             fittedRefs.map((r) => {
               const q = projectPoint(solution.cam, r.p, photo.w, photo.h)
               if (q.depth < 0 || q.u < 0 || q.v < 0 || q.u > photo.w || q.v > photo.h) return null
-              return <span key={`p-${r.id}`} className="proj-dot" style={{ left: `${(q.u / photo.w) * 100}%`, top: `${(q.v / photo.h) * 100}%` }} title={r.label} />
+              return <span key={`p-${r.id}`} className="proj-dot" style={{ left: `${(q.u / photo.w) * 100}%`, top: `${(q.v / photo.h) * 100}%` }} title={tr(r.label)} />
             })}
           {photo.obs.map((o) => {
             const r = refs.find((x) => x.id === o.id)
@@ -333,14 +334,14 @@ export function PhotoView() {
                   setActive(o.id)
                   setDragId(o.id)
                 }}
-                title={r.label}
+                title={tr(r.label)}
               >
-                {active === o.id && <i>{r.label.replace(/\(Wandkante\)/, '')}</i>}
+                {active === o.id && <i>{tr(r.label).replace(/\s*\([^)]*\)$/, '')}</i>}
               </span>
             )
           })}
         </div>
-        {active && <div className="photo-hint">Tippe im Foto auf: {refs.find((r) => r.id === active)?.label}</div>}
+        {active && <div className="photo-hint">{t('Tippe im Foto auf: {point}', { point: tr(refs.find((r) => r.id === active)?.label ?? '') })}</div>}
       </div>
     </div>
   )

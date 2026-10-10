@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { aabbOBB, add, cross, norm, scale, v, wallFrame, type OBB, type WallFrame } from './geometry'
 import type { CorniceProfile, DoorObj, Furniture, Project, Room, Vec3, WallId, WindowObj } from './types'
 import { WALL_IDS } from './types'
@@ -148,13 +149,13 @@ export function roomObstacles(p: Project): Obstacle[] {
     const f = wallFrame(room, o.wall)
     if (o.kind === 'fenster') {
       // Laibungswände links und rechts in der Nische (begrenzen den Flügel bei großen Winkeln)
-      out.push({ id: `${o.id}:laibung-l`, ownerId: o.id, label: `${o.name}: Laibung`, kind: 'laibung', box: wallBox(f, o.offset - 300, o.offset, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
-      out.push({ id: `${o.id}:laibung-r`, ownerId: o.id, label: `${o.name}: Laibung`, kind: 'laibung', box: wallBox(f, o.offset + o.width, o.offset + o.width + 300, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
+      out.push({ id: `${o.id}:laibung-l`, ownerId: o.id, label: t('{name}: Laibung', { name: o.name }), kind: 'laibung', box: wallBox(f, o.offset - 300, o.offset, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
+      out.push({ id: `${o.id}:laibung-r`, ownerId: o.id, label: t('{name}: Laibung', { name: o.name }), kind: 'laibung', box: wallBox(f, o.offset + o.width, o.offset + o.width + 300, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
       if (o.sill.enabled) {
         out.push({
           id: `${o.id}:fensterbank`,
           ownerId: o.id,
-          label: `${o.name}: Fensterbank`,
+          label: t('{name}: Fensterbank', { name: o.name }),
           kind: 'fensterbank',
           box: wallBox(f, o.offset - o.sill.sideOverhang, o.offset + o.width + o.sill.sideOverhang, -o.revealDepth, o.sill.projection, o.sillHeight - o.sill.thickness, o.sillHeight),
         })
@@ -164,7 +165,7 @@ export function roomObstacles(p: Project): Obstacle[] {
       out.push({
         id: `${o.id}:konvektion`,
         ownerId: o.id,
-        label: `${o.name}: Konvektionsraum`,
+        label: t('{name}: Konvektionsraum', { name: o.name }),
         kind: 'konvektion',
         box: wallBox(f, o.offset, o.offset + o.width, 0, o.wallGap + o.depth, o.bottom + o.height, o.bottom + o.height + o.convectionClearance),
       })
@@ -185,20 +186,20 @@ export function roomObstacles(p: Project): Obstacle[] {
       }
       if (s < f.length) spans.push([s, f.length])
       spans.forEach(([a, b], i) =>
-        out.push({ id: `sockel-${id}-${i}`, ownerId: `sockel-${id}`, label: `Sockelleiste Wand ${id}`, kind: 'sockelleiste', box: wallBox(f, a, b, 0, room.skirting.depth, 0, room.skirting.height) }),
+        out.push({ id: `sockel-${id}-${i}`, ownerId: `sockel-${id}`, label: t('Sockelleiste Wand {id}', { id }), kind: 'sockelleiste', box: wallBox(f, a, b, 0, room.skirting.depth, 0, room.skirting.height) }),
       )
     }
   }
   for (const r of room.rosettes) {
     const rr = r.diameter / 2
-    out.push({ id: `${r.id}:rosette`, ownerId: r.id, label: 'Deckenrosette', kind: 'rosette', box: aabbOBB(v(r.x - rr, r.y - rr, room.height - r.depth), v(r.x + rr, r.y + rr, room.height)) })
+    out.push({ id: `${r.id}:rosette`, ownerId: r.id, label: t('Deckenrosette'), kind: 'rosette', box: aabbOBB(v(r.x - rr, r.y - rr, room.height - r.depth), v(r.x + rr, r.y + rr, room.height)) })
     if (r.lampDrop > 0) {
       const lr = r.lampDiameter / 2
       const lampH = lampShadeHeight(r)
       out.push({
         id: `${r.id}:lampe`,
         ownerId: r.id,
-        label: 'Lampe',
+        label: t('Lampe'),
         kind: 'lampe',
         box: aabbOBB(v(r.x - lr, r.y - lr, room.height - r.lampDrop), v(r.x + lr, r.y + lr, room.height - r.lampDrop + lampH)),
       })

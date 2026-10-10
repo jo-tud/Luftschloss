@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import type { Project, WallId } from '../model/types'
 import type { PersonPreset, ViewMode } from '../state/store'
 import type { Derived } from '../state/store'
+import { tk } from '../i18n'
 
 /** Modell (mm, z oben) → three.js (m, y oben). Modell-y zeigt in three nach -z. */
 export function T(x: number, y: number, z: number): THREE.Vector3 {
@@ -119,10 +120,10 @@ function footprintCenter(fp: { x: number; y: number }[], z: number): THREE.Vecto
 }
 
 export const PERSON_LABEL: Record<PersonPreset, string> = {
-  tuer: 'An der Tür stehen',
-  unter: 'Unter dem Bett sitzen',
-  matratze: 'Auf der Matratze sitzen',
-  liegen: 'Im Bett liegen',
+  tuer: tk('An der Tür stehen'),
+  unter: tk('Unter dem Bett sitzen'),
+  matratze: tk('Auf der Matratze sitzen'),
+  liegen: tk('Im Bett liegen'),
 }
 
 /** Augpunkt und Blickrichtung für die Ich-Perspektive */

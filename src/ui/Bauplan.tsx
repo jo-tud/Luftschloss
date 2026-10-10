@@ -1,3 +1,4 @@
+import { locale, t, tr } from '../i18n'
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { buildSteps, partTypes, transportCheck } from '../analysis/assembly'
 import { catalogItem } from '../model/catalog'
@@ -103,12 +104,12 @@ function PlanView({ view, members, origin, ex, ey, numbers, labelNos, title }: {
   dims.push(dim(x0, y1, x1, y1, 200, fmtCm(x1 - x0, 1), 'w'))
   if (view === 'top') dims.push(dim(x1, y0, x1, y1, 200, fmtCm(y1 - y0, 1), 'h'))
   else {
-    dims.push(dim(x1, 0, x1, y0, 200, `${fmtCm(-y0, 1)} gesamt`, 'h'))
+    dims.push(dim(x1, 0, x1, y0, 200, t('{len} gesamt', { len: fmtCm(-y0, 1) }), 'h'))
     // Oberkante Liegefläche (höchste Latte bzw. Platte)
     const deck = members.filter((m) => m.role === 'leiste' || m.role === 'quertraeger' || m.role === 'zarge')
     if (deck.length) {
       const zTop = Math.max(...deck.map((m) => Math.max(m.start.z, m.end.z) + m.h / 2))
-      dims.push(dim(x0, 0, x0, -zTop, -200, `${fmtCm(zTop, 1)} Liegefläche`, 'd'))
+      dims.push(dim(x0, 0, x0, -zTop, -200, t('{len} Liegefläche', { len: fmtCm(zTop, 1) }), 'd'))
     }
   }
   return (
@@ -173,9 +174,11 @@ export function BauplanDialog() {
     <div className="modal-bg plan-bg" onClick={() => set({ showPlan: false })}>
       <div className="modal plan" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h2>Bauplan · {p.name}</h2>
-          <span className="muted">{new Date().toLocaleDateString('de-DE')}</span>
-          <button onClick={() => window.print()}>🖨 Drucken / PDF</button>
+          <h2>
+            {t('Bauplan')} · {p.name}
+          </h2>
+          <span className="muted">{new Date().toLocaleDateString(locale())}</span>
+          <button onClick={() => window.print()}>🖨 {t('Drucken / PDF')}</button>
           <button className="close" onClick={() => set({ showPlan: false })}>
             ✕
           </button>
@@ -187,76 +190,85 @@ export function BauplanDialog() {
                 <table className="kvt">
                   <tbody>
                     <tr>
-                      <th>Bauart</th>
+                      <th>{t('Bauart')}</th>
                       <td>
-                        {BED_TYPE_LABEL[a.params.type]}
-                        {a.params.frameStyle === 'aufgelegt' ? ', aufgelegt' : ''}
+                        {tr(BED_TYPE_LABEL[a.params.type])}
+                        {a.params.frameStyle === 'aufgelegt' ? `, ${t('aufgelegt')}` : ''}
                       </td>
                     </tr>
                     <tr>
-                      <th>Matratze</th>
+                      <th>{t('Matratze')}</th>
                       <td>
                         {(a.params.mattressCount ?? 1) > 1 ? `${a.params.mattressCount} × ` : ''}
-                        {fmtCm(a.params.mattressWidth, 0)} × {fmtCm(a.params.mattressLength, 0)}, {fmtCm(a.params.mattressThickness, 0)} dick
-                        {(a.params.mattressCount ?? 1) > 1 ? `, ${a.params.mattressLayout ?? 'nebeneinander'}` : ''}
+                        {fmtCm(a.params.mattressWidth, 0)} × {fmtCm(a.params.mattressLength, 0)}, {t('{len} dick', { len: fmtCm(a.params.mattressThickness, 0) })}
+                        {(a.params.mattressCount ?? 1) > 1 ? `, ${tr(a.params.mattressLayout ?? 'nebeneinander')}` : ''}
                       </td>
                     </tr>
                     {info && (
                       <tr>
-                        <th>Außenmaß</th>
+                        <th>{t('Außenmaß')}</th>
                         <td>
-                          Gestell {fmtCm(info.outerLength, 0)} × {fmtCm(info.outerWidth, 0)}
-                          {(info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && ` · mit Leiter ${fmtCm(info.standLength, 0)} × ${fmtCm(info.standWidth, 0)}`}, Liegefläche {fmtCm(info.deckTop, 0)} hoch
+                          {t('Gestell {l} × {w}', { l: fmtCm(info.outerLength, 0), w: fmtCm(info.outerWidth, 0) })}
+                          {(info.standLength > info.outerLength + 5 || info.standWidth > info.outerWidth + 5) && ` · ${t('mit Leiter {l} × {w}', { l: fmtCm(info.standLength, 0), w: fmtCm(info.standWidth, 0) })}`},{' '}
+                          {t('Liegefläche {h} hoch', { h: fmtCm(info.deckTop, 0) })}
                         </td>
                       </tr>
                     )}
                     {clearance && (
                       <tr>
-                        <th>Freiraum</th>
+                        <th>{t('Freiraum')}</th>
                         <td>
-                          {fmtM(clearance.underside)} darunter, {fmtM(clearance.headroom)} über der Matratze
+                          {t('{below} darunter, {above} über der Matratze', { below: fmtM(clearance.underside), above: fmtM(clearance.headroom) })}
                         </td>
                       </tr>
                     )}
                     <tr>
-                      <th>Material</th>
+                      <th>{t('Material')}</th>
                       <td>
-                        ca. {eur(d.bom.total)} ({d.bom.priceStand})
+                        {t('ca. {sum}', { sum: eur(d.bom.total) })} ({tr(d.bom.priceStand)})
                       </td>
                     </tr>
                     {statics && (
                       <tr>
-                        <th>Statik</th>
+                        <th>{t('Statik')}</th>
                         <td>
-                          höchste Ausnutzung {Math.round(statics.maxUtil * 100)} %, Gestell {statics.swayClass} ({Math.max(statics.sway.x, statics.sway.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm)
+                          {t('höchste Ausnutzung {n} %, Gestell {sway} ({mm} mm)', {
+                            n: Math.round(statics.maxUtil * 100),
+                            sway: tr(statics.swayClass),
+                            mm: Math.max(statics.sway.x, statics.sway.y).toLocaleString(locale(), { maximumFractionDigits: 1 }),
+                          })}
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               )}
-              {transport.door && transport.longest > transport.door && <p className="warn">Längstes Teil {fmtM(transport.longest)} ({transport.name}) passt nicht durch die Tür (Diagonale {fmtM(transport.door)}). Im Zimmer zuschneiden oder teilen.</p>}
+              {transport.door && transport.longest > transport.door && (
+                <p className="warn">
+                  {t('Längstes Teil {len} ({name}) passt nicht durch die Tür (Diagonale {door}). Im Zimmer zuschneiden oder teilen.', { len: fmtM(transport.longest), name: tr(transport.name), door: fmtM(transport.door) })}
+                </p>
+              )}
             </div>
-            {snapshot && <img src={snapshot} alt="3D-Ansicht" className="pl-snap" />}
+            {snapshot && <img src={snapshot} alt={t('3D-Ansicht')} className="pl-snap" />}
           </section>
 
           <section className="pl-views">
-            <PlanView view="front" title="Ansicht von vorne" members={members} origin={origin} ex={ex} ey={ey} numbers={data.byMember} labelNos={vertical} />
-            <PlanView view="side" title="Ansicht von der Seite" members={members} origin={origin} ex={ex} ey={ey} numbers={data.byMember} labelNos={vertical} />
-            <PlanView view="top" title="Draufsicht" members={members} origin={origin} ex={ex} ey={ey} numbers={data.byMember} labelNos={horizontal} />
+            <PlanView view="front" title={t('Ansicht von vorne')} members={members} origin={origin} ex={ex} ey={ey} numbers={data.byMember} labelNos={vertical} />
+            <PlanView view="side" title={t('Ansicht von der Seite')} members={members} origin={origin} ex={ex} ey={ey} numbers={data.byMember} labelNos={vertical} />
+            <PlanView view="top" title={t('Draufsicht')} members={members} origin={origin} ex={ex} ey={ey} numbers={data.byMember} labelNos={horizontal} />
           </section>
 
-          <h3>Teileliste</h3>
+          <h3>{t('Teileliste')}</h3>
           <table className="bom">
             <thead>
               <tr>
-                <th>Nr.</th>
-                <th>Anz.</th>
-                <th>Teil</th>
-                <th>Querschnitt</th>
-                <th>Länge</th>
-                <th>Material</th>
-                <th>Bearbeitung</th>
+                <th>{t('Nr.')}</th>
+                <th>{t('Anz.')}</th>
+                <th>{t('Teil')}</th>
+                <th>{t('Querschnitt')}</th>
+                <th>{t('Länge')}</th>
+                <th>{t('Material')}</th>
+                <th>{t('Bearbeitung')}</th>
               </tr>
             </thead>
             <tbody>
@@ -266,17 +278,19 @@ export function BauplanDialog() {
                     <b>{pt.no}</b>
                   </td>
                   <td>{pt.count}×</td>
-                  <td>{pt.name}</td>
+                  <td>{tr(pt.name)}</td>
                   <td>{pt.round ? `Ø ${pt.b}` : `${pt.b} × ${pt.h}`}</td>
                   <td>{fmtCm(pt.length)}</td>
-                  <td className="muted">{catalogItem(pt.catalogId)?.name ?? pt.catalogId}</td>
-                  <td>{[...pt.notches.map((n) => `${n.reason}: ${fmtCm(n.length)} lang, ${fmtCm(n.depth)} tief ausklinken`), ...pt.joinery].join('; ') || '–'}</td>
+                  <td className="muted">{tr(catalogItem(pt.catalogId)?.name ?? pt.catalogId)}</td>
+                  <td>
+                    {[...pt.notches.map((n) => t('{reason}: {len} lang, {depth} tief ausklinken', { reason: tr(n.reason), len: fmtCm(n.length), depth: fmtCm(n.depth) })), ...pt.joinery.map(tr)].join('; ') || '–'}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <h3>Verbindungen</h3>
+          <h3>{t('Verbindungen')}</h3>
           <div className="pl-joints">
             {[...jointsByType.entries()].map(([groupKey, list]) => {
               const typeId = list[0].typeId
@@ -287,46 +301,59 @@ export function BauplanDialog() {
                   <JointIso j={sample} resolved={d.resolved} />
                   <div>
                     <b>
-                      {list.length}× {jt?.name ?? typeId}
+                      {list.length}× {tr(jt?.name ?? typeId)}
                     </b>
                     <p>{jointSketchNote(sample, d.resolved)}</p>
-                    <p className="hint">{jt?.note}</p>
-                    {jt?.tools.length ? <p className="hint">Werkzeug: {jt.tools.join(', ')}</p> : null}
+                    <p className="hint">{jt?.note ? tr(jt.note) : null}</p>
+                    {jt?.tools.length ? (
+                      <p className="hint">
+                        {t('Werkzeug:')} {jt.tools.map(tr).join(', ')}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               )
             })}
           </div>
-          <p className="hint">Alle Verbindungstypen: {JOINT_TYPES.length}. Typ je Verbindung in der App änderbar (Teil anklicken → Verbindungen).</p>
+          <p className="hint">{t('Alle Verbindungstypen: {n}. Typ je Verbindung in der App änderbar (Teil anklicken → Verbindungen).', { n: JOINT_TYPES.length })}</p>
 
-          <h3>Montage</h3>
+          <h3>{t('Montage')}</h3>
           <ol className="pl-steps">
             {data.steps.map((s, i) => (
               <li key={i}>
                 <b>{s.title}</b>
-                {s.memberIds.length > 0 && <span className="muted"> · Teile {[...new Set(s.memberIds.map((id) => data.byMember.get(id)))].sort((x, y) => (x ?? 0) - (y ?? 0)).join(', ')}</span>}
+                {s.memberIds.length > 0 && (
+                  <span className="muted">
+                    {' · '}
+                    {t('Teile {list}', { list: [...new Set(s.memberIds.map((id) => data.byMember.get(id)))].sort((x, y) => (x ?? 0) - (y ?? 0)).join(', ') })}
+                  </span>
+                )}
                 <p>{s.text}</p>
-                {s.tools.length > 0 && <p className="hint">Werkzeug: {s.tools.join(', ')}</p>}
+                {s.tools.length > 0 && (
+                  <p className="hint">
+                    {t('Werkzeug:')} {s.tools.map(tr).join(', ')}
+                  </p>
+                )}
               </li>
             ))}
           </ol>
 
-          <h3>Zuschnitt</h3>
+          <h3>{t('Zuschnitt')}</h3>
           <CutPlan bom={d.bom} />
 
           {open.length > 0 && (
             <>
-              <h3>Offene Punkte aus der Prüfung</h3>
+              <h3>{t('Offene Punkte aus der Prüfung')}</h3>
               <ul>
                 {open.map((f) => (
                   <li key={f.id}>
-                    {f.severity === 'fehler' ? '⛔' : '⚠️'} {f.title}
+                    {f.severity === 'fehler' ? '⛔' : '⚠️'} {tr(f.title)}
                   </li>
                 ))}
               </ul>
             </>
           )}
-          <p className="hint">Erstellt mit Luftschloss. Planungshilfe ohne Gewähr – ersetzt keine Tragwerksplanung. Maße vor dem Zuschnitt am Bau prüfen.</p>
+          <p className="hint">{t('Erstellt mit Luftschloss. Planungshilfe ohne Gewähr – ersetzt keine Tragwerksplanung. Maße vor dem Zuschnitt am Bau prüfen.')}</p>
         </div>
       </div>
     </div>

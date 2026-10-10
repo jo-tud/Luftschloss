@@ -1,3 +1,4 @@
+import { t, tk } from '../i18n'
 import { HARDWARE, catalogItem, sheet, timber } from './catalog'
 import { rotate2, v } from './geometry'
 import type { Assembly, LoftBedParams, Member, MemberRole, Mm, Panel, Side, Vec3 } from './types'
@@ -54,11 +55,11 @@ export function wallSides(p: LoftBedParams): Side[] {
   switch (p.type) {
     case 'wandseitig':
     case 'abgehaengt':
-      return ['hinten']
+      return ['hinten'] // i18n-ok
     case 'eck':
-      return ['hinten', p.wallEnd]
+      return ['hinten', p.wallEnd] // i18n-ok
     case 'nische':
-      return ['links', 'rechts']
+      return ['links', 'rechts'] // i18n-ok
     default:
       return []
   }
@@ -111,17 +112,17 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const rh = rail.h
   const { length: Lo, width: Wo } = bedOuterSize(P)
   const H = P.deckHeight
-  const t = slat ? slat.b : deckSheet!.thickness
+  const deckT = slat ? slat.b : deckSheet!.thickness
   const walls = wallSides(P)
   const isWall = (s: Side) => walls.includes(s)
   // Aufgelegte Bauweise: Träger laufen vorne/hinten (bei Wand-zu-Wand links/rechts an den Wänden),
   // Querträger bzw. Latten liegen oben drauf.
   // Ein begehbares Netz braucht ringsum Zargen, an denen es gespannt wird
   const aufgelegt = P.frameStyle === 'aufgelegt' && !netDeck
-  const carriersLR = isWall('links') && isWall('rechts')
-  const carrierSides: Side[] = carriersLR ? ['links', 'rechts'] : ['hinten', 'vorne']
+  const carriersLR = isWall('links') && isWall('rechts') // i18n-ok
+  const carrierSides: Side[] = carriersLR ? ['links', 'rechts'] : ['hinten', 'vorne'] // i18n-ok
   const needsJoists = P.deck === 'platte' || P.deck === 'dielen' || P.deck === 'lattenrost' || (P.deck === 'latten' && carriersLR)
-  const deckTopOfFrame = H - t
+  const deckTopOfFrame = H - deckT
   const railTop = aufgelegt && needsJoists ? deckTopOfFrame - joist.h : deckTopOfFrame
   const railBottom = railTop - rh
   const guardTop = H + P.guardHeight
@@ -220,10 +221,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
 
   const guardOn = (s: Side) => P.guard !== 'keins' && P.guardSides[s] && !isWall(s)
   const cornerSides: Record<Corner, [Side, Side]> = {
-    BL: ['hinten', 'links'],
-    BR: ['hinten', 'rechts'],
-    FL: ['vorne', 'links'],
-    FR: ['vorne', 'rechts'],
+    BL: ['hinten', 'links'], // i18n-ok
+    BR: ['hinten', 'rechts'], // i18n-ok
+    FL: ['vorne', 'links'], // i18n-ok
+    FR: ['vorne', 'rechts'], // i18n-ok
   }
   const shortPost: Record<Corner, boolean> = { BL: false, BR: false, FL: false, FR: false }
   for (const c of Object.keys(cornerSides) as Corner[]) {
@@ -244,18 +245,18 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const cy = y + p / 2
     const z0 = fullPost[c] ? 0 : railBottom
     const m = add(`pfosten-${c}`, 'pfosten', P.postCatalogId, v(cx, cy, z0), v(cx, cy, fullPost[c] ? postTop : guardTop), post.b, post.h, {
-      name: fullPost[c] ? `Pfosten ${cornerLabel(c)}` : `Geländerpfosten ${cornerLabel(c)}`,
+      name: fullPost[c] ? t('Pfosten {c}', { c: cornerLabel(c) }) : t('Geländerpfosten {c}', { c: cornerLabel(c) }),
     })
     if (m && ceilingHigh && fullPost[c]) {
-      fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'stellfuss-m16', count: 1, note: 'Pfosten gegen die Decke verspannen (Stellfuß/Spindel)' })
+      fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'stellfuss-m16', count: 1, note: t('Pfosten gegen die Decke verspannen (Stellfuß/Spindel)') })
     }
   }
 
   // --- Zargen und Wandriegel -----------------------------------------------------------
-  const xStart = (s: Side) => (hasPost(s === 'hinten' ? 'BL' : 'FL') ? p : isWall('links') && !isWall(s) ? rb : 0)
-  const xEnd = (s: Side) => Lo - (hasPost(s === 'hinten' ? 'BR' : 'FR') ? p : isWall('rechts') && !isWall(s) ? rb : 0)
-  const yStart = (s: Side) => (hasPost(s === 'links' ? 'BL' : 'BR') ? p : isWall('hinten') || !isWall(s) ? rb : 0)
-  const yEnd = (s: Side) => Wo - (hasPost(s === 'links' ? 'FL' : 'FR') ? p : isWall('vorne') || !isWall(s) ? rb : 0)
+  const xStart = (s: Side) => (hasPost(s === 'hinten' ? 'BL' : 'FL') ? p : isWall('links') && !isWall(s) ? rb : 0) // i18n-ok
+  const xEnd = (s: Side) => Lo - (hasPost(s === 'hinten' ? 'BR' : 'FR') ? p : isWall('rechts') && !isWall(s) ? rb : 0) // i18n-ok
+  const yStart = (s: Side) => (hasPost(s === 'links' ? 'BL' : 'BR') ? p : isWall('hinten') || !isWall(s) ? rb : 0) // i18n-ok
+  const yEnd = (s: Side) => Wo - (hasPost(s === 'links' ? 'FL' : 'FR') ? p : isWall('vorne') || !isWall(s) ? rb : 0) // i18n-ok
   const zc = railBottom + rh / 2
 
   // Breite Liegeflächen mit Latten brauchen einen Mittelträger, der auf den Querzargen liegt
@@ -275,7 +276,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const y = s === 'hinten' ? rb / 2 : Wo - rb / 2
     const wall = isWall(s)
     const m = add(`zarge-${s}`, wall ? 'wandriegel' : 'zarge', P.railCatalogId, v(xStart(s), y, zc), v(xEnd(s), y, zc), rb, rh, {
-      name: wall ? `Wandriegel ${s}` : `Längszarge ${s}`,
+      name: wall ? t('Wandriegel {s}', { s: sideLabel(s) }) : t('Längszarge {s}', { s: sideLabel(s) }),
     })
     if (m && wall) wallFixing(m, xEnd(s) - xStart(s))
   }
@@ -284,7 +285,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const x = s === 'links' ? rb / 2 : Lo - rb / 2
     const wall = isWall(s)
     const m = add(`zarge-${s}`, wall ? 'wandriegel' : 'zarge', P.railCatalogId, v(x, yStart(s), zc), v(x, yEnd(s), zc), rb, rh, {
-      name: wall ? `Wandriegel ${s}` : `Querzarge ${s}`,
+      name: wall ? t('Wandriegel {s}', { s: sideLabel(s) }) : t('Querzarge {s}', { s: sideLabel(s) }),
     })
     if (m && wall) wallFixing(m, yEnd(s) - yStart(s))
   }
@@ -295,7 +296,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       target: 'wand',
       hardwareId: 'rahmenduebel-10',
       count: Math.max(3, Math.ceil(length / 400) + 1),
-      note: 'Wandriegel mit Rahmendübeln/Holzbauschrauben, Abstand ca. 40 cm',
+      note: t('Wandriegel mit Rahmendübeln/Holzbauschrauben, Abstand ca. 40 cm'),
     })
   }
 
@@ -309,7 +310,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   for (const s of midSides) {
     const y = s === 'hinten' ? p / 2 : Wo - p / 2
     midX(mids).forEach((x, i) => {
-      add(`stuetze-${s}-${i + 1}`, 'pfosten', P.postCatalogId, v(x, y, 0), v(x, y, railBottom), post.b, post.h, { name: `Mittelstütze ${s} ${i + 1}` })
+      add(`stuetze-${s}-${i + 1}`, 'pfosten', P.postCatalogId, v(x, y, 0), v(x, y, railBottom), post.b, post.h, { name: t('Mittelstütze {s} {n}', { s: sideLabel(s), n: i + 1 }) })
     })
   }
 
@@ -325,12 +326,12 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const xs = [p, ...(midSides.includes(s) ? midX(mids).flatMap((x) => [x - p / 2, x + p / 2]) : []), Lo - p]
       for (let i = 0; i < xs.length; i += 2) {
         const seg = xs.length > 2 ? `-${i / 2 + 1}` : ''
-        add(`unten-zarge-${s}${seg}`, 'zarge', P.railCatalogId, v(xs[i], y, zl), v(xs[i + 1], y, zl), rb, rh, { name: `Untere Längszarge ${s}` })
+        add(`unten-zarge-${s}${seg}`, 'zarge', P.railCatalogId, v(xs[i], y, zl), v(xs[i + 1], y, zl), rb, rh, { name: t('Untere Längszarge {s}', { s: sideLabel(s) }) }) // i18n-ok
       }
     }
     for (const s of ['links', 'rechts'] as Side[]) {
       const x = s === 'links' ? rb / 2 : Lo - rb / 2
-      add(`unten-zarge-${s}`, 'zarge', P.railCatalogId, v(x, p, zl), v(x, Wo - p, zl), rb, rh, { name: `Untere Querzarge ${s}` })
+      add(`unten-zarge-${s}`, 'zarge', P.railCatalogId, v(x, p, zl), v(x, Wo - p, zl), rb, rh, { name: t('Untere Querzarge {s}', { s: sideLabel(s) }) }) // i18n-ok
     }
     const w = lowerSlat.h
     const tl = lowerSlat.b
@@ -342,16 +343,19 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     for (let i = 0; i < n; i++) {
       const x = p + 5 + w / 2 + i * (w + gap)
       if (blocked(x)) continue
-      add(`unten-latte-${i}`, 'leiste', lowerSlat.id, v(x, 5, lowerRailTop + tl / 2), v(x, Wo - 5, lowerRailTop + tl / 2), w, tl, { name: `Untere Latte ${i + 1}` })
+      add(`unten-latte-${i}`, 'leiste', lowerSlat.id, v(x, 5, lowerRailTop + tl / 2), v(x, Wo - 5, lowerRailTop + tl / 2), w, tl, { name: t('Untere Latte {n}', { n: i + 1 }) }) // i18n-ok
     }
     const lowerMids = seamYs.length ? seamYs : Wo - 2 * rb > 1250 ? [Wo / 2] : []
     for (const [k, my] of lowerMids.entries()) {
-      add(k ? `unten-mitteltraeger-${k + 1}` : 'unten-mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, my, lowerRailTop - joist.h / 2), v(Lo - rb, my, lowerRailTop - joist.h / 2), joist.b, joist.h, { name: 'Unterer Mittelträger' })
+      add(k ? `unten-mitteltraeger-${k + 1}` : 'unten-mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, my, lowerRailTop - joist.h / 2), v(Lo - rb, my, lowerRailTop - joist.h / 2), joist.b, joist.h, { name: t('Unterer Mittelträger') }) // i18n-ok
     }
     mats.forEach((m, i) =>
-      addPanel(i ? `matratze-unten-${i + 1}` : 'matratze-unten', {
+      addPanel(i ? `matratze-unten-${i + 1}` : 'matratze-unten', { // i18n-ok
         kind: 'matratze',
-        name: `Untere Matratze${nMat > 1 ? ` ${i + 1}` : ''} ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
+        name:
+          nMat > 1
+            ? t('Untere Matratze {n} {w}×{l}', { n: i + 1, w: P.mattressWidth / 10, l: P.mattressLength / 10 })
+            : t('Untere Matratze {w}×{l}', { w: P.mattressWidth / 10, l: P.mattressLength / 10 }),
         outline: rect(m.x0, m.y0, m.x1, m.y1).map((q) => to2(q.x, q.y)),
         z: lowerRailTop + tl,
         thickness: P.mattressThickness,
@@ -365,9 +369,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const y = c[0] === 'F' ? Wo - rb / 2 : rb / 2
     const m = add(`haenger-${c}`, 'sonstiges', 'gewindestange-m10', v(x, y, railBottom - 30), v(x, y, ceilingHeight), 10, 10, {
       round: true,
-      name: `Gewindestange ${cornerLabel(c)}`,
+      name: t('Gewindestange {c}', { c: cornerLabel(c) }),
     })
-    if (m) fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'rahmenduebel-10', count: 2, note: 'Deckenanker für Gewindestange – nur in tragfähige Decke' })
+    if (m) fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'rahmenduebel-10', count: 2, note: t('Deckenanker für Gewindestange – nur in tragfähige Decke') })
   }
 
   // --- Querträger ----------------------------------------------------------------------
@@ -385,7 +389,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const a = a0 + ((a1 - a0) * i) / (n - 1)
       const zc2 = deckTopOfFrame - joist.h / 2
       const [s0, e0] = carriersLR ? [v(0, a, zc2), v(Lo, a, zc2)] : [v(a, 0, zc2), v(a, Wo, zc2)]
-      add(`quertraeger-${i + 1}`, 'quertraeger', P.joistCatalogId, s0, e0, joist.b, joist.h, { name: `Querträger ${i + 1} (aufgelegt)` })
+      add(`quertraeger-${i + 1}`, 'quertraeger', P.joistCatalogId, s0, e0, joist.b, joist.h, { name: t('Querträger {n} (aufgelegt)', { n: i + 1 }) })
     }
   } else if (P.deck === 'platte' || P.deck === 'dielen') {
     const spacing = Math.max(200, Math.min(P.joistSpacing, deckSheet?.maxSpan ?? P.joistSpacing))
@@ -400,7 +404,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   joistXs.forEach((x, k) => {
     const i = k + 1
     add(`quertraeger-${i}`, 'quertraeger', P.joistCatalogId, v(x, rb, railTop - joist.h / 2), v(x, Wo - rb, railTop - joist.h / 2), joist.b, joist.h, {
-      name: `Querträger ${i}`,
+      name: t('Querträger {n}', { n: i }),
     })
   })
 
@@ -417,14 +421,14 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const xFace = right ? x + p : x
       const dx = right ? len : -len
       add(`kopfband-${c}-x`, 'strebe', P.guardCatalogId, v(xFace, yPlane, railBottom - len), v(xFace + dx, yPlane, railBottom), guard.b, guard.h, {
-        name: `Kopfband ${cornerLabel(c)} längs`,
+        name: t('Kopfband {c} längs', { c: cornerLabel(c) }),
       })
-      if (!keepRail(c[1] === 'L' ? 'links' : 'rechts')) continue
+      if (!keepRail(c[1] === 'L' ? 'links' : 'rechts')) continue // i18n-ok
       const xPlane = c[1] === 'L' ? rb / 2 : Lo - rb / 2
       const yFace = front ? y + p : y
       const dy = front ? len : -len
       add(`kopfband-${c}-y`, 'strebe', P.guardCatalogId, v(xPlane, yFace, railBottom - len), v(xPlane, yFace + dy, railBottom), guard.b, guard.h, {
-        name: `Kopfband ${cornerLabel(c)} quer`,
+        name: t('Kopfband {c} quer', { c: cornerLabel(c) }),
       })
     }
   }
@@ -442,16 +446,16 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const x = p + 5 + w / 2 + i * (w + gap)
       // 5 mm vor der Außenkante enden, damit außen angeschraubte Geländerstützen frei bleiben
       slatXs.push(x)
-      add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, railTop + t / 2), v(x, Wo - 5, railTop + t / 2), w, t, { name: `Latte ${i + 1}` })
+      add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, railTop + deckT / 2), v(x, Wo - 5, railTop + deckT / 2), w, deckT, { name: t('Latte {n}', { n: i + 1 }) })
     }
     addMidCarriers()
   } else if (netDeck) {
     addPanel('liegeflaeche', {
       kind: 'netz',
-      name: 'Begehbares Netz',
+      name: t('Begehbares Netz'),
       outline: rect(rb, rb, Lo - rb, Wo - rb).map((q) => to2(q.x, q.y)),
       z: railTop,
-      thickness: t,
+      thickness: deckT,
       catalogId: 'netz-begehbar',
       direction: P.rotation,
     })
@@ -469,10 +473,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const clean = outline.filter((q, i) => i === 0 || q.x !== outline[i - 1].x || q.y !== outline[i - 1].y)
     addPanel('liegeflaeche', {
       kind: P.deck,
-      name: P.deck === 'platte' ? 'Liegefläche (Platte)' : 'Liegefläche (Dielen)',
+      name: P.deck === 'platte' ? t('Liegefläche (Platte)') : t('Liegefläche (Dielen)'),
       outline: clean.map((q) => to2(q.x, q.y)),
       z: railTop,
-      thickness: t,
+      thickness: deckT,
       catalogId: P.deckCatalogId,
       direction: P.rotation,
     })
@@ -485,10 +489,17 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const [ay0, ay1] = matSide ? [ys[i], ys[i + 1]] : [p, Wo - p]
       addPanel(i ? `liegeflaeche-${i + 1}` : 'liegeflaeche', {
         kind: P.deck === 'rollrost' ? 'rollrost' : 'lattenrost',
-        name: `${P.deck === 'rollrost' ? 'Rollrost' : 'Lattenrost'}${nMat > 1 ? ` ${i + 1}` : ''}`,
+        name:
+          P.deck === 'rollrost'
+            ? nMat > 1
+              ? t('Rollrost {n}', { n: i + 1 })
+              : t('Rollrost')
+            : nMat > 1
+              ? t('Lattenrost {n}', { n: i + 1 })
+              : t('Lattenrost'),
         outline: rect(ax0, ay0, ax1, ay1).map((q) => to2(q.x, q.y)),
         z: railTop,
-        thickness: t,
+        thickness: deckT,
         catalogId: P.deckCatalogId,
         direction: P.rotation,
       })
@@ -499,7 +510,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     mats.forEach((m, i) =>
       addPanel(i ? `matratze-${i + 1}` : 'matratze', {
         kind: 'matratze',
-        name: `Matratze${nMat > 1 ? ` ${i + 1}` : ''} ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
+        name:
+          nMat > 1
+            ? t('Matratze {n} {w}×{l}', { n: i + 1, w: P.mattressWidth / 10, l: P.mattressLength / 10 })
+            : t('Matratze {w}×{l}', { w: P.mattressWidth / 10, l: P.mattressLength / 10 }),
         outline: rect(m.x0, m.y0, m.x1, m.y1).map((q) => to2(q.x, q.y)),
         z: H,
         thickness: P.mattressThickness,
@@ -509,7 +523,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   function addMidCarriers() {
     midYs.forEach((y, i) =>
       add(i ? `mitteltraeger-${i + 1}` : 'mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, y, railTop - joist.h / 2), v(Lo - rb, y, railTop - joist.h / 2), joist.b, joist.h, {
-        name: midYs.length > 1 ? `Mittelträger ${i + 1}` : 'Mittelträger',
+        name: midYs.length > 1 ? t('Mittelträger {n}', { n: i + 1 }) : t('Mittelträger'),
       }),
     )
   }
@@ -540,16 +554,16 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       if (angle >= 89.9) {
         const [bx, by] = alongSide(side, sb, sh)
         add(`leiter-holm-${i}`, 'holm', P.ladderCatalogId, pt(a, sh / 2, 0), pt(a, sh / 2, guardTop), bx, by, {
-          name: `Leiterholm ${i + 1}`,
+          name: t('Leiterholm {n}', { n: i + 1 }),
         })
       } else {
         add(`leiter-holm-${i}`, 'holm', P.ladderCatalogId, pt(a, run + sh / 2, 0), pt(a, sh / 2, H), sb, sh, {
-          name: `Treppenwange ${i + 1}`,
+          name: t('Treppenwange {n}', { n: i + 1 }),
         })
         // senkrechte Haltegriffe an der Öffnung
         const [gx, gy] = alongSide(side, guard.b, guard.h)
         add(`leiter-griff-${i}`, 'holm', P.guardCatalogId, pt(a, guard.h / 2, railTop), pt(a, guard.h / 2, guardTop + 150), gx, gy, {
-          name: `Haltegriff ${i + 1}`,
+          name: t('Haltegriff {n}', { n: i + 1 }),
         })
       }
     }
@@ -562,13 +576,13 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const out = run * (1 - z / H) + sh / 2
       if (P.ladder === 'senkrecht' || P.ladder === 'schraeg') {
         add(`leiter-sprosse-${i}`, 'sprosse', P.rungCatalogId, pt(a0 + sb, out, z), pt(a1 - sb, out, z), rung.b, rung.h, {
-          name: `Sprosse ${i}`,
+          name: t('Sprosse {n}', { n: i }),
         })
       } else {
         const depth = P.ladder === 'treppe' ? 2 : 1
         for (let k = 0; k < depth; k++) {
           add(`leiter-stufe-${i}-${k}`, 'stufe', 'geh-24x94', pt(a0 + sb, out + (k - (depth - 1) / 2) * 96, z - 12), pt(a1 - sb, out + (k - (depth - 1) / 2) * 96, z - 12), 94, 24, {
-            name: `Stufe ${i}`,
+            name: t('Stufe {n}', { n: i }),
           })
         }
       }
@@ -624,16 +638,16 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
           const z0 = inside ? (P.deck === 'latten' || netDeck ? railTop : H) : railBottom
           // innen endet die Stütze unter dem Handlauf, der auf ihr aufliegt
           const z1 = inside ? guardTop - gh : guardTop
-          add(`gelaenderstuetze-${key}-${i}`, 'holm', P.guardCatalogId, pt(a, z0, out), pt(a, z1, out), sx, sy, { name: `Geländerstütze ${s}` })
+          add(`gelaenderstuetze-${key}-${i}`, 'holm', P.guardCatalogId, pt(a, z0, out), pt(a, z1, out), sx, sy, { name: t('Geländerstütze {s}', { s: sideLabel(s) }) })
         }
         // Handlauf
-        add(`handlauf-${key}`, 'holm', P.guardCatalogId, pt(s0, guardTop - gh / 2), pt(s1, guardTop - gh / 2), gb, gh, { name: `Handlauf ${s}` })
+        add(`handlauf-${key}`, 'holm', P.guardCatalogId, pt(s0, guardTop - gh / 2), pt(s1, guardTop - gh / 2), gb, gh, { name: t('Handlauf {s}', { s: sideLabel(s) }) })
         // Die Öffnungskanten halten die Leiterholme bzw. Haltegriffe.
         const innerTop = guardTop - gh
         const lowTop = H + gh
         switch (P.guard) {
           case 'staebe': {
-            add(`unterholm-${key}`, 'holm', P.guardCatalogId, pt(s0, H + gh / 2), pt(s1, H + gh / 2), gb, gh, { name: `Unterholm ${s}` })
+            add(`unterholm-${key}`, 'holm', P.guardCatalogId, pt(s0, H + gh / 2), pt(s1, H + gh / 2), gb, gh, { name: t('Unterholm {s}', { s: sideLabel(s) }) })
             const d = 25
             const maxGap = 70
             const span = s1 - s0
@@ -642,7 +656,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
             rodGap = rodGap === undefined ? gap : Math.max(rodGap, gap)
             for (let i = 0; i < n; i++) {
               const a = s0 + gap * (i + 1) + d * i + d / 2
-              add(`stab-${key}-${i}`, 'stab', 'rund-buche-25', pt(a, lowTop), pt(a, innerTop), d, d, { round: true, name: `Geländerstab ${s}` })
+              add(`stab-${key}-${i}`, 'stab', 'rund-buche-25', pt(a, lowTop), pt(a, innerTop), d, d, { round: true, name: t('Geländerstab {s}', { s: sideLabel(s) }) })
             }
             break
           }
@@ -654,19 +668,19 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
             for (let i = 0; i < n; i++) {
               const zc2 = H + gap + i * (board + gap) + board / 2
               if (zc2 + board / 2 > innerTop) break
-              add(`brett-${key}-${i}`, 'holm', 'leimholz-fi-18x200', pt(s0, zc2, -9), pt(s1, zc2, -9), 18, board, { name: `Geländerbrett ${s}` })
+              add(`brett-${key}-${i}`, 'holm', 'leimholz-fi-18x200', pt(s0, zc2, -9), pt(s1, zc2, -9), 18, board, { name: t('Geländerbrett {s}', { s: sideLabel(s) }) })
             }
             rodGap = gap
             break
           }
           case 'platte':
           case 'netz': {
-            add(`unterholm-${key}`, 'holm', P.guardCatalogId, pt(s0, H + gh / 2), pt(s1, H + gh / 2), gb, gh, { name: `Unterholm ${s}` })
+            add(`unterholm-${key}`, 'holm', P.guardCatalogId, pt(s0, H + gh / 2), pt(s1, H + gh / 2), gb, gh, { name: t('Unterholm {s}', { s: sideLabel(s) }) })
             const a = frame.at(s0, -inPlane)
             const b = frame.at(s1, -inPlane)
             addPanel(`fuellung-${key}`, {
               kind: P.guard === 'netz' ? 'netz' : 'platte',
-              name: P.guard === 'netz' ? `Netz ${s}` : `Geländerplatte ${s}`,
+              name: P.guard === 'netz' ? t('Netz {s}', { s: sideLabel(s) }) : t('Geländerplatte {s}', { s: sideLabel(s) }),
               outline: [],
               z: lowTop,
               thickness: P.guard === 'netz' ? 6 : 18,
@@ -679,7 +693,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
           case 'seil': {
             for (const [i, f] of [1 / 3, 2 / 3].entries()) {
               const z = H + (innerTop - H) * f
-              add(`seil-${key}-${i}`, 'sonstiges', 'seil-12', pt(s0, z), pt(s1, z), 12, 12, { round: true, name: `Seil ${s}` })
+              add(`seil-${key}-${i}`, 'sonstiges', 'seil-12', pt(s0, z), pt(s1, z), 12, 12, { round: true, name: t('Seil {s}', { s: sideLabel(s) }) })
             }
             rodGap = Math.round((innerTop - H) / 3)
             break
@@ -690,7 +704,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   }
 
   const undersides = members
-    .filter((m) => (m.role === 'zarge' || m.role === 'quertraeger' || m.role === 'wandriegel') && !m.partKey?.startsWith('unten-'))
+    .filter((m) => (m.role === 'zarge' || m.role === 'quertraeger' || m.role === 'wandriegel') && !m.partKey?.startsWith('unten-')) // i18n-ok
     .map((m) => Math.min(m.start.z, m.end.z) - m.h / 2)
   const underside = undersides.length ? Math.min(...undersides) : railBottom
 
@@ -752,16 +766,41 @@ function rect(x0: number, y0: number, x1: number, y1: number) {
 }
 
 function cornerLabel(c: string): string {
-  return { BL: 'hinten links', BR: 'hinten rechts', FL: 'vorne links', FR: 'vorne rechts' }[c] ?? c
+  switch (c) {
+    case 'BL':
+      return t('hinten links')
+    case 'BR':
+      return t('hinten rechts')
+    case 'FL':
+      return t('vorne links')
+    case 'FR':
+      return t('vorne rechts')
+    default:
+      return c
+  }
+}
+
+/** Bezeichnung einer Bettseite für Bauteilnamen */
+function sideLabel(s: Side): string {
+  switch (s) {
+    case 'vorne':
+      return t('vorne')
+    case 'hinten':
+      return t('hinten')
+    case 'links':
+      return t('links')
+    case 'rechts':
+      return t('rechts')
+  }
 }
 
 export const BED_TYPE_LABEL: Record<LoftBedParams['type'], string> = {
-  freistehend: 'Freistehend, 4 Pfosten',
-  deckenhoch: 'Deckenhoch verspannt, 4 Pfosten',
-  wandseitig: 'Wandseitig, 2 Pfosten',
-  eck: 'Eckhochbett, 1 Pfosten',
-  nische: 'Hochebene Wand zu Wand',
-  abgehaengt: 'Abgehängt (Wand + Decke)',
+  freistehend: tk('Freistehend, 4 Pfosten'),
+  deckenhoch: tk('Deckenhoch verspannt, 4 Pfosten'),
+  wandseitig: tk('Wandseitig, 2 Pfosten'),
+  eck: tk('Eckhochbett, 1 Pfosten'),
+  nische: tk('Hochebene Wand zu Wand'),
+  abgehaengt: tk('Abgehängt (Wand + Decke)'),
 }
 
 export const HARDWARE_IDS = new Set(HARDWARE.map((h) => h.id))

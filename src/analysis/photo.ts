@@ -1,3 +1,4 @@
+import { t, tr } from '../i18n'
 import { wallFrame } from '../model/geometry'
 import { cornice } from '../model/room'
 import type { Project, Vec3, WallId } from '../model/types'
@@ -29,8 +30,9 @@ export function referencePoints(project: Project): RefPoint[] {
   for (const [name, x, y] of corners) {
     const walls = name.split('') as WallId[]
     const ch = Math.max(...walls.map((w) => (cornice(r, w).enabled ? cornice(r, w).height : 0)))
-    out.push({ id: `boden-${name}`, label: `Bodenecke ${name[0]}/${name[1]}`, p: { x, y, z: 0 }, group: 'Raumecken' })
-    out.push({ id: `decke-${name}`, label: ch > 0 ? `Ecke ${name[0]}/${name[1]} unter dem Stuck` : `Deckenecke ${name[0]}/${name[1]}`, p: { x, y, z: r.height - ch }, group: 'Raumecken' })
+    const corner = { a: name[0], b: name[1] }
+    out.push({ id: `boden-${name}`, label: t('Bodenecke {a}/{b}', corner), p: { x, y, z: 0 }, group: t('Raumecken') })
+    out.push({ id: `decke-${name}`, label: ch > 0 ? t('Ecke {a}/{b} unter dem Stuck', corner) : t('Deckenecke {a}/{b}', corner), p: { x, y, z: r.height - ch }, group: t('Raumecken') })
   }
   for (const o of project.wallObjects) {
     if (o.kind !== 'fenster' && o.kind !== 'tuer') continue
@@ -39,14 +41,14 @@ export function referencePoints(project: Project): RefPoint[] {
     const z1 = o.kind === 'fenster' ? o.sillHeight + o.height : o.height
     const at = (s: number, z: number) => ({ x: f.start.x + f.u.x * s, y: f.start.y + f.u.y * s, z })
     const pts: [string, string, number, number][] = [
-      ['ol', 'oben links', o.offset, z1],
-      ['or', 'oben rechts', o.offset + o.width, z1],
-      ['ul', 'unten links', o.offset, z0],
-      ['ur', 'unten rechts', o.offset + o.width, z0],
+      ['ol', t('{name} oben links (Wandkante)', { name: tr(o.name) }), o.offset, z1],
+      ['or', t('{name} oben rechts (Wandkante)', { name: tr(o.name) }), o.offset + o.width, z1],
+      ['ul', t('{name} unten links (Wandkante)', { name: tr(o.name) }), o.offset, z0],
+      ['ur', t('{name} unten rechts (Wandkante)', { name: tr(o.name) }), o.offset + o.width, z0],
     ]
     for (const [k, l, s, z] of pts) {
       if (o.kind === 'tuer' && k.startsWith('u')) continue
-      out.push({ id: `${o.id}-${k}`, label: `${o.name} ${l} (Wandkante)`, p: at(s, z), group: o.name })
+      out.push({ id: `${o.id}-${k}`, label: l, p: at(s, z), group: o.name })
     }
   }
   void WALL_IDS

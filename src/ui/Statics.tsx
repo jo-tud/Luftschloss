@@ -1,3 +1,4 @@
+import { locale, t, tr } from '../i18n'
 import { useEffect, useMemo, useState } from 'react'
 import type { Finding } from '../analysis/checks'
 import { computeStatics, UTIL_COLOR, type StaticsResult } from '../analysis/statics'
@@ -26,27 +27,29 @@ export function StaticsRunner() {
 }
 
 const pct = (u: number) => `${Math.round(u * 100)} %`
+const STAB = 'Stabilität' as const // i18n-ok: Kategorie (Wert), angezeigt mit tr()
+const num1 = (x: number) => x.toLocaleString(locale(), { maximumFractionDigits: 1 })
 
 /** Befunde aus der Statik für die Prüfliste */
 export function staticsFindings(p: Project, s: StaticsResult | null): Finding[] {
   if (!s) return []
   const d = derive(p)
-  const names = new Map(d.resolved.members.map((m) => [m.id, m.name ?? 'Bauteil']))
+  const names = new Map(d.resolved.members.map((m) => [m.id, m.name ? tr(m.name) : t('Bauteil')]))
   const out: Finding[] = []
   for (const c of s.members.values()) {
     if (c.util <= 1) continue
-    out.push({ id: `statik:${c.memberId}`, severity: c.util > 1.5 ? 'fehler' : 'warnung', category: 'Stabilität', title: `${names.get(c.memberId)}: Statik ${pct(c.util)} ausgelastet`, detail: `Maßgebend: ${c.governing}. Größeren Querschnitt wählen (Teil anklicken → „Querschnitte vergleichen“) oder zusätzlich unterstützen.`, targets: [c.memberId] })
+    out.push({ id: `statik:${c.memberId}`, severity: c.util > 1.5 ? 'fehler' : 'warnung', category: STAB, title: t('{name}: Statik {pct} ausgelastet', { name: names.get(c.memberId) ?? '', pct: pct(c.util) }), detail: t('Maßgebend: {gov}. Größeren Querschnitt wählen (Teil anklicken → „Querschnitte vergleichen“) oder zusätzlich unterstützen.', { gov: tr(c.governing) }), targets: [c.memberId] })
   }
   const jointNames = new Map(d.resolved.joints.map((j) => [j.key, `${names.get(j.a)} ↔ ${names.get(j.b)}`]))
   for (const c of s.joints.values()) {
     if (c.util <= 1) continue
     const j = d.resolved.joints.find((x) => x.key === c.key)
-    out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: 'Stabilität', title: `Verbindung ${jointNames.get(c.key)}: ${pct(c.util)} ausgelastet`, detail: `Kraft ca. ${c.forceKN.toLocaleString('de-DE', { maximumFractionDigits: 1 })} kN, Verbindung trägt grob ${c.capacityKN} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.`, targets: j ? [j.a, j.b] : [], pos: j?.pos })
+    out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: STAB, title: t('Verbindung {name}: {pct} ausgelastet', { name: jointNames.get(c.key) ?? '', pct: pct(c.util) }), detail: t('Kraft ca. {f} kN, Verbindung trägt grob {cap} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.', { f: num1(c.forceKN), cap: num1(c.capacityKN) }), targets: j ? [j.a, j.b] : [], pos: j?.pos })
   }
   const sMax = Math.max(s.sway.x, s.sway.y)
   if (s.swayClass !== 'steif')
-    out.push({ id: 'statik-wackeln', severity: s.swayClass === 'wackelt' ? 'warnung' : 'hinweis', category: 'Stabilität', title: s.swayClass === 'wackelt' ? `Gestell wackelt (${sMax.toFixed(0)} mm bei 0,5 kN Seitenlast)` : `Gestell gibt spürbar nach (${sMax.toFixed(0)} mm bei 0,5 kN)`, detail: 'Kopfbänder oder Diagonalen einbauen, zwei Pfosten an der Wand befestigen oder steifere Verbindungen wählen. In der Statik-Ansicht „Wackeln“ abspielen.', targets: [] })
-  out.push({ id: 'statik-info', severity: 'hinweis', category: 'Stabilität', title: `Statik-Abschätzung: höchste Ausnutzung ${pct(s.maxUtil)}`, detail: 'Vereinfachte Rechnung des ganzen Gestells nach Eurocode 5; die Belastung (Bett oder Spiel-Hochebene) lässt sich unter Raum → Einstellungen wählen. Keine Tragwerksplanung.', targets: [] })
+    out.push({ id: 'statik-wackeln', severity: s.swayClass === 'wackelt' ? 'warnung' : 'hinweis', category: STAB, title: s.swayClass === 'wackelt' ? t('Gestell wackelt ({mm} mm bei 0,5 kN Seitenlast)', { mm: sMax.toFixed(0) }) : t('Gestell gibt spürbar nach ({mm} mm bei 0,5 kN)', { mm: sMax.toFixed(0) }), detail: t('Kopfbänder oder Diagonalen einbauen, zwei Pfosten an der Wand befestigen oder steifere Verbindungen wählen. In der Statik-Ansicht „Wackeln“ abspielen.'), targets: [] })
+  out.push({ id: 'statik-info', severity: 'hinweis', category: STAB, title: t('Statik-Abschätzung: höchste Ausnutzung {pct}', { pct: pct(s.maxUtil) }), detail: t('Vereinfachte Rechnung des ganzen Gestells nach Eurocode 5; die Belastung (Bett oder Spiel-Hochebene) lässt sich unter Raum → Einstellungen wählen. Keine Tragwerksplanung.'), targets: [] })
   return out
 }
 
@@ -61,40 +64,40 @@ export function StaticsPanel() {
   return (
     <div className="statics-panel">
       <header>
-        <b>Statik</b>
-        {stale && <span className="muted"> · rechnet…</span>}
+        <b>{t('Statik')}</b>
+        {stale && <span className="muted"> · {t('rechnet…')}</span>}
         <button className="link" onClick={() => s.set({ staticsMode: false, wobble: false })}>
-          schließen
+          {t('schließen')}
         </button>
       </header>
-      {!st && <p className="hint">Wird berechnet…</p>}
+      {!st && <p className="hint">{t('Wird berechnet…')}</p>}
       {st && (
         <>
           <div className="summary">
             <div>
               <b style={{ color: UTIL_COLOR(st.maxUtil) }}>{pct(st.maxUtil)}</b>
-              <span>höchste Ausnutzung</span>
+              <span>{t('höchste Ausnutzung')}</span>
             </div>
             <div>
-              <b style={{ color: st.swayClass === 'steif' ? '#2f9e5b' : st.swayClass === 'spürbar' ? '#e0a400' : '#d64545' }}>{Math.max(st.sway.x, st.sway.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm</b>
-              <span>Wackeln ({st.swayClass})</span>
+              <b style={{ color: st.swayClass === 'steif' ? '#2f9e5b' : st.swayClass === 'spürbar' ? '#e0a400' : '#d64545' }}>{num1(Math.max(st.sway.x, st.sway.y))} mm</b>
+              <span>{t('Wackeln ({cls})', { cls: tr(st.swayClass) })}</span>
             </div>
           </div>
           <label className="field">
-            <span>Verformung zeigen</span>
+            <span>{t('Verformung zeigen')}</span>
             <select value={s.staticsCase} onChange={(e) => s.set({ staticsCase: e.target.value as typeof s.staticsCase })}>
-              <option value="gq">Liegen, Eigengewicht</option>
-              <option value="jump">Toben, Springen (≈ 200 kg)</option>
-              <option value="hx">Seitlich schieben, längs (≈ 50 kg)</option>
-              <option value="hy">Seitlich schieben, quer (≈ 50 kg)</option>
+              <option value="gq">{t('Liegen, Eigengewicht')}</option>
+              <option value="jump">{t('Toben, Springen (≈ 200 kg)')}</option>
+              <option value="hx">{t('Seitlich schieben, längs (≈ 50 kg)')}</option>
+              <option value="hy">{t('Seitlich schieben, quer (≈ 50 kg)')}</option>
             </select>
           </label>
           <label className="field">
-            <span>Verformung {s.staticsScale}-fach vergrößert</span>
+            <span>{t('Verformung {n}-fach vergrößert', { n: s.staticsScale })}</span>
             <input type="range" min={1} max={100} value={s.staticsScale} onChange={(e) => s.set({ staticsScale: Number(e.target.value) })} />
           </label>
           <button className={s.wobble ? 'on' : ''} onClick={() => s.set({ wobble: !s.wobble, staticsCase: s.staticsCase === 'gq' || s.staticsCase === 'jump' ? (st.sway.y > st.sway.x ? 'hy' : 'hx') : s.staticsCase })}>
-            {s.wobble ? '⏸ Wackeln stoppen' : '▶ Wackeln abspielen'}
+            {s.wobble ? `⏸ ${t('Wackeln stoppen')}` : `▶ ${t('Wackeln abspielen')}`}
           </button>
           <div className="legend">
             <span style={{ background: '#2f9e5b' }} /> ≤ 60 % <span style={{ background: '#e0a400' }} /> ≤ 100 % <span style={{ background: '#d64545' }} /> &gt; 100 %
@@ -109,12 +112,12 @@ export function StaticsPanel() {
                 }}
               >
                 <span className="dot" style={{ background: UTIL_COLOR(c.util) }} />
-                {names.get(c.memberId)?.name ?? 'Bauteil'} <b>{pct(c.util)}</b>
-                <small>{c.governing}</small>
+                {tr(names.get(c.memberId)?.name ?? t('Bauteil'))} <b>{pct(c.util)}</b>
+                <small>{tr(c.governing)}</small>
               </li>
             ))}
           </ul>
-          <p className="hint">Vereinfachte Abschätzung für das ganze Gestell nach den Holzbau-Regeln (Eurocode 5). Ersetzt keine Tragwerksplanung.</p>
+          <p className="hint">{t('Vereinfachte Abschätzung für das ganze Gestell nach den Holzbau-Regeln (Eurocode 5). Ersetzt keine Tragwerksplanung.')}</p>
         </>
       )}
     </div>
@@ -165,9 +168,9 @@ export function MemberStatics({ m }: { m: Member }) {
       <div className="bars">
         {(
           [
-            ['Biegung/Normalkraft', c.bending],
-            ['Schub', c.shear],
-            ['Durchbiegung', c.deflection],
+            [t('Biegung/Normalkraft'), c.bending],
+            [t('Schub'), c.shear],
+            [t('Durchbiegung'), c.deflection],
           ] as const
         ).map(([l, u]) => (
           <div key={l} className="bar-row">
@@ -179,20 +182,20 @@ export function MemberStatics({ m }: { m: Member }) {
           </div>
         ))}
       </div>
-      {c.span > 0 && <p className="hint">Durchbiegung im Endzustand {c.w.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm auf {fmtCm(c.span, 0)} (Grenze L/200).</p>}
+      {c.span > 0 && <p className="hint">{t('Durchbiegung im Endzustand {w} mm auf {span} (Grenze L/200).', { w: num1(c.w), span: fmtCm(c.span, 0) })}</p>}
       {!compare ? (
-        <button onClick={() => setCompare(true)}>Querschnitte vergleichen</button>
+        <button onClick={() => setCompare(true)}>{t('Querschnitte vergleichen')}</button>
       ) : (
         <table className="compare">
           <tbody>
             {options.map((o) => (
               <tr key={o.t.id}>
-                <td>{o.t.name.replace(/, gehobelt/, '')}</td>
+                <td>{tr(o.t.name).replace(/, (gehobelt|planed)\b/i, '')}</td>
                 <td style={{ color: UTIL_COLOR(o.util) }}>{pct(o.util)}</td>
                 <td>{eur(o.t.pricePerM)}/m</td>
                 <td>
                   <button className="link" onClick={() => apply(o.t.id)}>
-                    nehmen
+                    {t('nehmen')}
                   </button>
                 </td>
               </tr>
@@ -200,7 +203,7 @@ export function MemberStatics({ m }: { m: Member }) {
           </tbody>
         </table>
       )}
-      {m.assemblyId && compare && <p className="hint">Gilt für alle gleichartigen Teile der Vorlage.</p>}
+      {m.assemblyId && compare && <p className="hint">{t('Gilt für alle gleichartigen Teile der Vorlage.')}</p>}
     </div>
   )
 }

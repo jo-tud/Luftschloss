@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useStore, type Selection } from '../state/store'
 
 /** Entfernt die Auswahl; Teile einer Vorlage werden herausgelöst (lassen sich wieder erzeugen) */
@@ -20,8 +21,8 @@ export function deleteSelection(sel: Selection | null = useStore.getState().sele
 }
 
 export function deleteLabel(sel: Selection): string | null {
-  if (sel.kind === 'assembly') return 'Bett löschen'
-  if ((sel.kind === 'member' || sel.kind === 'panel') && sel.id.includes(':')) return 'Teil entfernen'
-  if (sel.kind === 'member' || sel.kind === 'panel' || sel.kind === 'wallObject' || sel.kind === 'furniture') return 'Entfernen'
+  if (sel.kind === 'assembly') return t('Bett löschen')
+  if ((sel.kind === 'member' || sel.kind === 'panel') && sel.id.includes(':')) return t('Teil entfernen')
+  if (sel.kind === 'member' || sel.kind === 'panel' || sel.kind === 'wallObject' || sel.kind === 'furniture') return t('Entfernen')
   return null
 }
