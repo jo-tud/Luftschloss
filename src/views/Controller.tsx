@@ -7,7 +7,7 @@ import { bedOuterSize } from '../model/loftbed'
 import type { Member, Project, Vec3 } from '../model/types'
 import { derive, groupOf, isFreePart, selectionFor, useStore } from '../state/store'
 import { groupParts } from '../model/groups'
-import { setSectionCaps } from './sectionCaps'
+import { drawSectionCaps } from './sectionCaps'
 import { applyCam, camDir, camDistance, cloneCam, easeInOut, fromT, goalFor, isOrtho, lerpCam, ORTHO_FOV, T, type CamState } from './camera'
 import type { PickData } from './Scene'
 import { tk } from '../i18n'
@@ -31,7 +31,6 @@ export const mainCam: { state: CamState | null } = { state: null }
 
 export function Controller() {
   const { camera, gl, scene, size } = useThree()
-  const capFrame = useRef(0)
   const cam = useRef<CamState | null>(null)
   const anim = useRef<{ from: CamState; to: CamState; t0: number; dur: number } | null>(null)
   const drag = useRef<DragState | null>(null)
@@ -112,13 +111,15 @@ export function Controller() {
     applyCam(camera as THREE.PerspectiveCamera, cam.current)
     mainCam.state = cam.current
     // Draufsicht: oberhalb der Schnitthöhe abschneiden, damit Lampe und Stuck nicht verdecken
-    if (cam.current.pitch < -80 && isOrtho(cam.current)) {
-      clipPlane.constant = st.planCut / 1000
+    const planClip = cam.current.pitch < -80 && isOrtho(cam.current)
+    const boxClip = !!st.sectionBox && !isOrtho(cam.current)
+    if (planClip) {
+      // 1 mm unter der Wandkrone: läge die Ebene genau auf ihr (Schnitt = Raumhöhe), entschiede die
+      // Rechengenauigkeit je Pixel, ob die helle Krone oder der dunkle Wandschnitt zu sehen ist (Streifen)
+      clipPlane.constant = (Math.min(st.planCut, st.project.room.height) - 1) / 1000
       gl.clippingPlanes = [clipPlane]
-    } else if (st.sectionBox && !isOrtho(cam.current)) {
-      // Schnittflächen füllen; regelmäßig nachziehen, damit auch neu erzeugte Materialien sie bekommen
-      if (capFrame.current++ % 20 === 0) setSectionCaps(scene, true)
-      const b = st.sectionBox
+    } else if (boxClip) {
+      const b = st.sectionBox!
       // 3 mm nach außen: liegt eine Ebene genau auf einer Wandfläche (Anfangszustand = Raummaße),
       // entscheidet sonst die Rechengenauigkeit je Pixel, und die Wand wirkt gegrisselt
       const e = 3
@@ -129,11 +130,13 @@ export function Controller() {
       boxPlanes[4].set(new THREE.Vector3(0, -1, 0), (b.z1 + e) / 1000)
       gl.clippingPlanes = boxPlanes
     } else gl.clippingPlanes = []
-    if (!(st.sectionBox && !isOrtho(cam.current)) && capFrame.current) {
-      capFrame.current = 0
-      setSectionCaps(scene, false)
-    }
   })
+
+  // Bild selbst zeichnen, danach die Schnittflächen (Priorität 1: läuft nach allen anderen useFrame)
+  useFrame(({ gl, scene, camera }) => {
+    gl.render(scene, camera)
+    drawSectionCaps(gl, scene, camera)
+  }, 1)
 
   useEffect(() => {
     const el = gl.domElement

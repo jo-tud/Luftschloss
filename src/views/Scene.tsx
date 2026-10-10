@@ -563,24 +563,6 @@ export function RoomMeshes({ p, mini, showCeiling, wallShadows = false }: { p: P
         </group>
       ))}
       <Rosettes p={p} />
-      {!mini && <PlanPoche p={p} walls={walls} />}
-    </group>
-  )
-}
-
-/** Draufsicht: geschnittene Wände als dunkle Fläche auf Schnitthöhe */
-function PlanPoche({ p, walls }: { p: Project; walls: Record<WallId, OBB[]> }) {
-  const view = useStore((s) => s.view)
-  const cut = useStore((s) => s.planCut)
-  if (view.kind !== 'plan') return null
-  const z = Math.min(cut, p.room.height) - 2
-  return (
-    <group>
-      {WALL_IDS.flatMap((id) =>
-        walls[id]
-          .filter((o) => o.center.z - o.half[2] <= z && o.center.z + o.half[2] >= z)
-          .map((o, i) => <Box key={`${id}-${i}`} o={{ ...o, center: { ...o.center, z: z - 1 }, half: [o.half[0], o.half[1], 1] }} color="#5d5850" cast={false} />),
-      )}
     </group>
   )
 }
