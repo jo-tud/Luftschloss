@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type ComponentRef } from 'react'
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
@@ -62,6 +62,7 @@ function Pieces({ m, boxes, prisms, color }: { m: Member; boxes: OBB[]; prisms: 
 function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member; through?: Member }) {
   const d = useDerived()
   const moving = useRef<THREE.Group>(null)
+  const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
   const t0 = useRef(performance.now())
   const byId = useMemo(() => new Map(d.resolved.members.map((m) => [m.id, m])), [d])
   const A = byId.get(j.a)
@@ -118,7 +119,15 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
       />
       <directionalLight position={[center.x - 1.5, center.y + 0.5, center.z - 1]} intensity={0.35} />
       {/* wie in der Hauptansicht: mittlere Taste verschiebt, Mausrad zoomt */}
-      <OrbitControls target={center} makeDefault mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN }} />
+      <OrbitControls
+        ref={controls}
+        target={center}
+        makeDefault
+        mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN }}
+        // während des Ziehens nicht zoomen: manche Mäuse drehen beim Drücken des Rads mit
+        onStart={() => controls.current && (controls.current.enableZoom = false)}
+        onEnd={() => controls.current && (controls.current.enableZoom = true)}
+      />
       {piece(Tm, COLORS.wood)}
       {cuts?.extras.map((o, i) => (
         <Box key={`x${i}`} o={o} color={COLORS.woodLight} edges wood="latte" />
