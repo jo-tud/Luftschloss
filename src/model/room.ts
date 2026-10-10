@@ -148,9 +148,14 @@ export function roomObstacles(p: Project): Obstacle[] {
   for (const o of p.wallObjects) {
     const f = wallFrame(room, o.wall)
     if (o.kind === 'fenster') {
-      // Laibungswände links und rechts in der Nische (begrenzen den Flügel bei großen Winkeln)
-      out.push({ id: `${o.id}:laibung-l`, ownerId: o.id, label: t('{name}: Laibung', { name: tr(o.name) }), kind: 'laibung', box: wallBox(f, o.offset - 300, o.offset, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
-      out.push({ id: `${o.id}:laibung-r`, ownerId: o.id, label: t('{name}: Laibung', { name: tr(o.name) }), kind: 'laibung', box: wallBox(f, o.offset + o.width, o.offset + o.width + 300, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
+      // Laibungswände links und rechts in der Nische (begrenzen den Flügel bei großen Winkeln). Sie reichen
+      // höchstens bis zur nächsten Öffnung derselben Wand – sonst läge die Laibung im Nachbarfenster und
+      // dessen Flügel gälten schon ab 0° als blockiert
+      const others = p.wallObjects.filter((x) => x.id !== o.id && x.wall === o.wall && (x.kind === 'fenster' || x.kind === 'tuer'))
+      const l0 = Math.max(o.offset - 300, ...others.filter((x) => x.offset + x.width <= o.offset + 1).map((x) => x.offset + x.width))
+      const r1 = Math.min(o.offset + o.width + 300, ...others.filter((x) => x.offset >= o.offset + o.width - 1).map((x) => x.offset))
+      if (o.offset - l0 > 1) out.push({ id: `${o.id}:laibung-l`, ownerId: o.id, label: t('{name}: Laibung', { name: tr(o.name) }), kind: 'laibung', box: wallBox(f, l0, o.offset, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
+      if (r1 - (o.offset + o.width) > 1) out.push({ id: `${o.id}:laibung-r`, ownerId: o.id, label: t('{name}: Laibung', { name: tr(o.name) }), kind: 'laibung', box: wallBox(f, o.offset + o.width, r1, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
       if (o.sill.enabled) {
         out.push({
           id: `${o.id}:fensterbank`,

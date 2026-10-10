@@ -271,3 +271,19 @@ describe('Eigenes Bett: Liegefläche, Statik und Prüfungen', () => {
     expect(ids(open).some((x) => x.startsWith(`offen:${id}`))).toBe(true)
   })
 })
+
+describe('Fenster nebeneinander', () => {
+  it('die Laibung eines Fensters blockiert nicht die Flügel des Nachbarfensters', async () => {
+    const { analyzeWindows } = await import('../src/analysis/openings')
+    const p = testProject()
+    p.assemblies = []
+    p.furniture = []
+    const wins = p.wallObjects.filter((o) => o.kind === 'fenster' && o.wall === 'A')
+    expect(wins.length).toBeGreaterThanOrEqual(2)
+    const [a, b] = wins as Extract<(typeof wins)[number], { kind: 'fenster' }>[]
+    // direkt aneinander, wie ein mehrteiliges Fensterband
+    b.offset = a.offset + a.width
+    const res = analyzeWindows(p, resolveProject(p))
+    for (const w of res.filter((x) => x.windowId === a.id || x.windowId === b.id)) expect(w.maxAngle, `${w.windowId}/${w.sashIndex}`).toBeGreaterThanOrEqual(90)
+  })
+})
