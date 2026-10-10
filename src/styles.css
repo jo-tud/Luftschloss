@@ -1876,3 +1876,14 @@ button.primary:disabled {
     padding-right: 6px;
   }
 }
+.sun-control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.sun-control input[type='range'] {
+  width: 100%;
+}

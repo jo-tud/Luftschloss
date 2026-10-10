@@ -1,16 +1,17 @@
 import { Edges, Environment, Html, Lightformer, Line } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
-import { fmtCm, fmtM, memberAxes, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
+import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { cornice, doorGeom, furnitureBox, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { buildSteps } from '../analysis/assembly'
 import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
+import { hardwareInstances } from './hardware'
 import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
 
 const COLORS = {
@@ -407,10 +408,30 @@ function corniceGeometry(p: Project, wall: WallId): THREE.BufferGeometry | null 
   shape.moveTo(0, 0)
   shape.lineTo(a, 0)
   if (c.shape === 'kehle') {
-    for (let i = 1; i <= 12; i++) {
-      const t = (i / 12) * (Math.PI / 2)
-      shape.lineTo(a - a * Math.sin(t), -h + h * Math.cos(t))
+    // Altbau-Profil: Plättchen, Rundstab, große Hohlkehle, kleiner Rundstab, Plättchen
+    const arc = (cx: number, cy: number, r: number, a0: number, a1: number, n = 8) => {
+      for (let i = 1; i <= n; i++) {
+        const t = a0 + ((a1 - a0) * i) / n
+        shape.lineTo(cx + r * Math.cos(t), cy + r * Math.sin(t))
+      }
     }
+    shape.lineTo(a, -0.05 * h)
+    shape.lineTo(0.93 * a, -0.05 * h)
+    // Rundstab (konvex) oben
+    arc(0.93 * a, -0.11 * h, 0.06 * h, Math.PI / 2, -Math.PI / 2, 8)
+    shape.lineTo(0.88 * a, -0.17 * h)
+    // große Hohlkehle (konkav)
+    const r = Math.min(0.66 * a, 0.62 * h)
+    const cx = 0.88 * a - r
+    const cy = -0.17 * h - 0 * r
+    arc(cx + r, cy - r, r, Math.PI / 2, Math.PI, 16)
+    shape.lineTo(Math.max(0.12 * a, cx + r - r), -0.17 * h - r)
+    shape.lineTo(0.12 * a, -0.84 * h)
+    // kleiner Rundstab unten
+    arc(0.12 * a, -0.89 * h, 0.05 * h, Math.PI / 2, -Math.PI / 2, 6)
+    shape.lineTo(0.05 * a, -0.94 * h)
+    shape.lineTo(0.05 * a, -h)
+    shape.lineTo(0, -h)
   } else if (c.shape === 'schraege') shape.lineTo(0, -h)
   else {
     shape.lineTo(a, -h)
@@ -426,7 +447,7 @@ function corniceGeometry(p: Project, wall: WallId): THREE.BufferGeometry | null 
   return g
 }
 
-export function RoomMeshes({ p, mini, showCeiling }: { p: Project; mini?: boolean; showCeiling: boolean }) {
+export function RoomMeshes({ p, mini, showCeiling, wallShadows = false }: { p: Project; mini?: boolean; showCeiling: boolean; wallShadows?: boolean }) {
   const r = p.room
   const wallRefs = useRef<Partial<Record<WallId, THREE.Group>>>({})
   const walls = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, wallPieces(p, w)])) as Record<WallId, OBB[]>, [p.room, p.wallObjects])
@@ -454,17 +475,17 @@ export function RoomMeshes({ p, mini, showCeiling }: { p: Project; mini?: boolea
       {showCeiling && (
         <mesh position={T(r.length / 2, r.width / 2, r.height)} rotation={[Math.PI / 2, 0, 0]}>
           <planeGeometry args={[r.length / 1000, r.width / 1000]} />
-          <meshStandardMaterial color={COLORS.ceiling} side={THREE.DoubleSide} />
+          <meshStandardMaterial color={COLORS.ceiling} side={THREE.DoubleSide} emissive="#cfc9bf" emissiveIntensity={0.45} roughness={0.95} />
         </mesh>
       )}
       {WALL_IDS.map((id) => (
         <group key={id} ref={(g) => void (wallRefs.current[id] = g ?? undefined)}>
           {walls[id].map((o, i) => (
-            <Box key={i} o={o} color={COLORS.wall} cast={false} plaster />
+            <Box key={i} o={o} color={COLORS.wall} cast={wallShadows} plaster />
           ))}
           {cornices[id] && (
             <mesh geometry={cornices[id]!}>
-              <meshStandardMaterial color={COLORS.stuck} side={THREE.DoubleSide} roughness={0.6} emissive="#9a968e" emissiveIntensity={0.35} />
+              <meshStandardMaterial color={COLORS.stuck} side={THREE.DoubleSide} roughness={0.7} emissive="#b8b2a8" emissiveIntensity={0.25} />
             </mesh>
           )}
           {r.skirting.enabled && <Skirting p={p} wall={id} />}
@@ -520,9 +541,8 @@ function Rosettes({ p }: { p: Project }) {
     <group>
       {r.rosettes.map((ro) => (
         <group key={ro.id} userData={{ pick: { kind: 'rosette', id: ro.id } }}>
-          <mesh position={T(ro.x, ro.y, r.height - ro.depth / 2)} userData={{ pick: { kind: 'rosette', id: ro.id } }}>
-            <cylinderGeometry args={[ro.diameter / 2000, ro.diameter / 2000, ro.depth / 1000, 48]} />
-            <meshStandardMaterial color={COLORS.stuck} />
+          <mesh position={T(ro.x, ro.y, r.height)} userData={{ pick: { kind: 'rosette', id: ro.id } }} geometry={rosetteGeometry(ro.diameter, ro.depth)}>
+            <meshStandardMaterial color={COLORS.stuck} emissive="#cfc9bf" emissiveIntensity={0.4} roughness={0.8} />
           </mesh>
           {ro.lampDrop > 0 && (
             <>
@@ -826,24 +846,29 @@ export function FootprintShadows({ d }: { d: Derived }) {
 
 export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Derived; mini?: boolean; showCeiling: boolean }) {
   const quality = useStore((s) => s.quality)
+  const sun = useStore((s) => s.sunHour)
   const rich = !mini && quality !== 'einfach'
   return (
     <>
-      <ambientLight intensity={mini ? 0.55 : 0.32} />
+      <ambientLight intensity={mini ? 0.55 : sun ? 0.3 : 0.4} />
       <hemisphereLight args={['#fffaf0', '#b9a58a', mini ? 0.55 : 0.4]} />
       {rich && <RoomLight p={p} />}
-      <directionalLight
-        position={T(p.room.length * 0.2, -p.room.width * 0.3, p.room.height * 2.2)}
-        intensity={1.25}
-        castShadow={!mini}
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-6}
-        shadow-camera-right={6}
-        shadow-camera-top={6}
-        shadow-camera-bottom={-6}
-        shadow-bias={-0.0005}
-      />
-      <RoomMeshes p={p} mini={mini} showCeiling={showCeiling} />
+      {sun && !mini ? (
+        <SunLight p={p} hour={sun} quality={quality} />
+      ) : (
+        <directionalLight
+          position={T(p.room.length * 0.2, -p.room.width * 0.3, p.room.height * 2.2)}
+          intensity={1.25}
+          castShadow={!mini}
+          shadow-mapSize={[2048, 2048]}
+          shadow-camera-left={-6}
+          shadow-camera-right={6}
+          shadow-camera-top={6}
+          shadow-camera-bottom={-6}
+          shadow-bias={-0.0005}
+        />
+      )}
+      <RoomMeshes p={p} mini={mini} showCeiling={showCeiling} wallShadows={!!sun && !mini} />
       <MemberMeshes members={d.resolved.members} mini={mini} />
       <PanelMeshes panels={d.resolved.panels} mini={mini} />
       <FurnitureMeshes items={p.furniture} mini={mini} />
@@ -1008,77 +1033,16 @@ function outsideTexture(seedKey: string): THREE.CanvasTexture {
   return tex
 }
 
-const BOLT_TYPES = new Set(['schlossschraube', 'bettschraube'])
 const metal = new THREE.MeshStandardMaterial({ color: '#d9dcdf', metalness: 0.55, roughness: 0.42 })
 const headGeo = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2)
 const washerGeo = new THREE.CylinderGeometry(1, 1, 1, 20)
 const nutGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+const plateGeo = new THREE.BoxGeometry(1, 1, 1)
 
-/**
- * Schlossschrauben (DIN 603) sichtbar machen: flacher Rundkopf außen, Scheibe und Sechskantmutter
- * innen, zwei je Verbindung. Gleiche Teile als InstancedMesh – wenige Draw Calls.
- */
+/** Schlossschrauben, Winkel und Balkenschuhe als InstancedMesh – wenige Draw Calls */
 function BoltHardware({ d }: { d: Derived }) {
   const meshes = useMemo(() => {
-    const byId = new Map(d.resolved.members.map((m) => [m.id, m]))
-    const heads: THREE.Matrix4[] = []
-    const washers: THREE.Matrix4[] = []
-    const nuts: THREE.Matrix4[] = []
-    const up = new THREE.Vector3(0, 1, 0)
-    const put = (list: THREE.Matrix4[], at: { x: number; y: number; z: number }, dir: THREE.Vector3, scale: [number, number, number]) => {
-      const q = new THREE.Quaternion().setFromUnitVectors(up, dir)
-      list.push(new THREE.Matrix4().compose(T(at.x, at.y, at.z), q, new THREE.Vector3(...scale)))
-    }
-    for (const j of d.resolved.joints) {
-      if (!BOLT_TYPES.has(j.typeId)) continue
-      const A = byId.get(j.a)
-      const B = byId.get(j.b)
-      if (!A || !B || A.round || B.round) continue
-      const aA = memberAxes(A)[0]
-      const aB = memberAxes(B)[0]
-      let ax = { x: aA.y * aB.z - aA.z * aB.y, y: aA.z * aB.x - aA.x * aB.z, z: aA.x * aB.y - aA.y * aB.x }
-      let len = Math.hypot(ax.x, ax.y, ax.z)
-      if (len < 0.3) continue
-      ax = { x: ax.x / len, y: ax.y / len, z: ax.z / len }
-      // Durchgang durch beide Hölzer entlang der Bolzenachse
-      let lo = Infinity
-      let hi = -Infinity
-      for (const m of [A, B]) {
-        for (const o of memberBoxes(m)) {
-          const c = o.center.x * ax.x + o.center.y * ax.y + o.center.z * ax.z
-          const e = o.axes.reduce((s2, a, i) => s2 + Math.abs(a.x * ax.x + a.y * ax.y + a.z * ax.z) * o.half[i], 0)
-          lo = Math.min(lo, c - e)
-          hi = Math.max(hi, c + e)
-        }
-      }
-      const p0 = j.pos.x * ax.x + j.pos.y * ax.y + j.pos.z * ax.z
-      // Kopf nach außen: weg von der Bettmitte
-      const bed = A.assemblyId ? d.resolved.beds.get(A.assemblyId) : undefined
-      let sign = 1
-      if (bed) {
-        const cx = bed.footprint.reduce((s2, q) => s2 + q.x, 0) / bed.footprint.length
-        const cy = bed.footprint.reduce((s2, q) => s2 + q.y, 0) / bed.footprint.length
-        const toC = (cx - j.pos.x) * ax.x + (cy - j.pos.y) * ax.y
-        sign = toC > 0 ? -1 : 1
-      }
-      const tHead = (sign > 0 ? hi : lo) - p0
-      const tNut = (sign > 0 ? lo : hi) - p0
-      // zwei Bolzen quer zur Achse versetzt, entlang des waagrechten Stabs bzw. der Höhe
-      const horiz = Math.abs(aA.z) < 0.5 ? aA : aB
-      let off = { x: ax.y * horiz.z - ax.z * horiz.y, y: ax.z * horiz.x - ax.x * horiz.z, z: ax.x * horiz.y - ax.y * horiz.x }
-      len = Math.hypot(off.x, off.y, off.z) || 1
-      off = { x: off.x / len, y: off.y / len, z: off.z / len }
-      const spread = Math.min(A.h, B.h, A.b, B.b) * 0.28
-      const outDir = new THREE.Vector3(ax.x * sign, ax.z * sign, -ax.y * sign)
-      const inDir = outDir.clone().negate()
-      for (const k of [-1, 1]) {
-        const base = { x: j.pos.x + off.x * spread * k, y: j.pos.y + off.y * spread * k, z: j.pos.z + off.z * spread * k }
-        const at = (t: number) => ({ x: base.x + ax.x * t, y: base.y + ax.y * t, z: base.z + ax.z * t })
-        put(heads, at(tHead), outDir, [0.0125, 0.006, 0.0125])
-        put(washers, at(tNut + sign * -1), inDir, [0.0105, 0.002, 0.0105])
-        put(nuts, at(tNut - sign * 6), inDir, [0.0095, 0.008, 0.0095])
-      }
-    }
+    const h = hardwareInstances(d.resolved)
     const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[]) => {
       if (!list.length) return null
       const im = new THREE.InstancedMesh(geo, metal, list.length)
@@ -1087,7 +1051,7 @@ function BoltHardware({ d }: { d: Derived }) {
       im.raycast = () => {}
       return im
     }
-    return [make(headGeo, heads), make(washerGeo, washers), make(nutGeo, nuts)].filter(Boolean) as THREE.InstancedMesh[]
+    return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates)].filter(Boolean) as THREE.InstancedMesh[]
   }, [d])
   return (
     <group>
@@ -1095,5 +1059,98 @@ function BoltHardware({ d }: { d: Derived }) {
         <primitive key={i} object={m} />
       ))}
     </group>
+  )
+}
+
+/** Stuckrosette als Drehkörper: Ringe aus Rundstäben und Kehlen, zur Mitte hin gewölbt */
+const rosetteCache = new Map<string, THREE.LatheGeometry>()
+function rosetteGeometry(diameter: number, depth: number): THREE.LatheGeometry {
+  const key = `${diameter}|${depth}`
+  const hit = rosetteCache.get(key)
+  if (hit) return hit
+  const R = diameter / 2000
+  const D = depth / 1000
+  const pts: THREE.Vector2[] = []
+  // von außen (an der Decke) nach innen; y = Abstand unter der Decke (negativ)
+  const prof: [number, number][] = [
+    [1.0, 0],
+    [0.98, -0.25],
+    [0.93, -0.32],
+    [0.88, -0.22],
+    [0.8, -0.4],
+    [0.72, -0.55],
+    [0.66, -0.5],
+    [0.6, -0.62],
+    [0.5, -0.78],
+    [0.42, -0.72],
+    [0.34, -0.85],
+    [0.22, -1.0],
+    [0.12, -0.92],
+    [0.0, -0.95],
+  ]
+  for (let i = 0; i < prof.length - 1; i++) {
+    const [r0, y0] = prof[i]
+    const [r1, y1] = prof[i + 1]
+    for (let k = 0; k < 4; k++) {
+      const t = k / 4
+      // weiche Übergänge (Kosinus-Interpolation)
+      const tt = (1 - Math.cos(t * Math.PI)) / 2
+      pts.push(new THREE.Vector2((r0 + (r1 - r0) * t) * R, (y0 + (y1 - y0) * tt) * D))
+    }
+  }
+  pts.push(new THREE.Vector2(0, -0.95 * D))
+  const g = new THREE.LatheGeometry(pts.reverse(), 64)
+  g.computeVertexNormals()
+  rosetteCache.set(key, g)
+  return g
+}
+
+/**
+ * Sonnenlicht zur gewählten Uhrzeit: kommt von außen durch die Fensterwand, steigt bis mittags und
+ * wandert von links nach rechts; morgens und abends wärmer. Wände werfen dann Schatten, so dass
+ * nur durch die Fenster Licht fällt (Lichtflecken mit Fensterkreuz).
+ */
+function SunLight({ p, hour, quality }: { p: Project; hour: number; quality: string }) {
+  const ref = useRef<THREE.DirectionalLight>(null)
+  const r = p.room
+  // Wand mit den meisten Fenstern
+  const counts = WALL_IDS.map((w) => [w, p.wallObjects.filter((o) => o.kind === 'fenster' && o.wall === w).length] as const)
+  const wall = [...counts].sort((a, b) => b[1] - a[1])[0][0]
+  const f = wallFrame(r, wall)
+  const t = Math.min(1, Math.max(0, (hour - 6) / 14))
+  const elev = Math.max(0.08, Math.sin(t * Math.PI)) * (55 * Math.PI) / 180
+  const az = (t - 0.5) * 1.6
+  const out = { x: -f.n.x, y: -f.n.y }
+  const dir = { x: out.x * Math.cos(az) - out.y * Math.sin(az), y: out.x * Math.sin(az) + out.y * Math.cos(az) }
+  const D = 9000
+  const cx = r.length / 2
+  const cy = r.width / 2
+  const pos = T(cx + dir.x * D * Math.cos(elev), cy + dir.y * D * Math.cos(elev), D * Math.sin(elev))
+  const target = T(cx, cy, 0)
+  const warm = 1 - Math.sin(t * Math.PI)
+  const color = new THREE.Color('#fff4e0').lerp(new THREE.Color('#ffb46b'), warm * 0.8)
+  useEffect(() => {
+    const l = ref.current
+    if (!l) return
+    l.target.position.copy(target)
+    l.target.updateMatrixWorld()
+  })
+  const size = quality === 'einfach' ? 1024 : 2048
+  return (
+    <directionalLight
+      ref={ref}
+      position={pos}
+      color={color}
+      intensity={2.6 * Math.max(0.3, Math.sin(t * Math.PI))}
+      castShadow
+      shadow-mapSize={[size, size]}
+      shadow-camera-left={-5}
+      shadow-camera-right={5}
+      shadow-camera-top={5}
+      shadow-camera-bottom={-5}
+      shadow-camera-far={30}
+      shadow-bias={-0.0004}
+      shadow-normalBias={0.02}
+    />
   )
 }
