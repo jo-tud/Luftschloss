@@ -1,5 +1,7 @@
 /** Bauplan, Material/Zuschnitt, Preis-Agent, Verbindungsskizzen, Stückliste, Montageschritte */
 const en: Record<string, string> = {
+  'Kopfband 350 mm, beide Enden auf 45° gesägt, satt angelegt; je Ende 2 Schrauben vom Rand des Kopfbands in Pfosten bzw. Zarge, vorbohren.': 'Knee brace 350 mm, both ends cut at 45° and fitted tight; 2 screws per end from the edge of the brace into the post or rail, pre-drilled.',
+  'Kopfbandende {d} mm tief einlassen: Sitz mit Japansäge anreißen und einsägen, mit dem Stechbeitel ausstemmen, Kopfband einsetzen, je Ende 1 Schraube.': 'House the brace ends {d} mm deep: mark the seat, saw the cheeks with a Japanese saw, chisel out, fit the brace, 1 screw per end.',
   // Holzverbindungen je Teil (assembly.ts)
   'Blatt': 'Lap',
   'Zapfen bzw. Zapfenloch': 'Tenon or mortise',
@@ -122,7 +124,6 @@ const en: Record<string, string> = {
   'Leiste 40 × 60 mm unter das Ende an das durchlaufende Holz, 3 Schrauben 5 × 50, darauf auflegen.':
     'Batten 40 × 60 mm on the continuous timber below the end, 3 screws 5 × 50; rest the part on it.',
   'Gewindestange M10 mit großen Unterlegscheiben und Muttern beiderseits des Holzes, Kontermutter.': 'M10 threaded rod with large washers and nuts on both sides of the timber, lock nut.',
-  'Kopfband 45°, je Ende 2 Schrauben 8 × 160.': 'Knee brace 45°, 2 screws 8 × 160 at each end.',
   'Seil durch Bohrung bzw. Augschraube, mit Achtknoten sichern.': 'Rope through a hole or eye bolt, secured with a figure-eight knot.',
 
   // Material & Kosten (Material.tsx)

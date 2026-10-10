@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { t } from '../i18n'
-import { add, cross, dot, memberBoxes, norm, scale, sub, v, type OBB } from '../model/geometry'
-import { clipBoxesNear, cutMemberBoxes, jointCuts, jointFrame, jointViewDir, prismCorners, type JointCuts, type Prism } from '../model/joinery'
+import { add, cross, dot, norm, scale, sub, v, type OBB } from '../model/geometry'
+import { clipBoxesNear, memberSolids, jointCuts, jointFrame, jointViewDir, prismCorners, type JointCuts, type Prism } from '../model/joinery'
 import type { DetectedJoint, Resolved } from '../model/resolve'
 import type { Member, Vec3 } from '../model/types'
 import { hardwareInstances } from '../views/hardware'
@@ -127,13 +127,13 @@ export function JointIso({ j, resolved, width = 260, height = 190 }: { j: Detect
   const shift = (o: OBB): OBB => ({ ...o, center: add(o.center, explode) })
   const solids: Solid[] = []
   const pieces = (m: Member, color: [number, number, number], moved: boolean, group: number) => {
-    const mc = cuts?.members.get(m.id)
-    const boxes = clipBoxesNear(mc ? cutMemberBoxes(m, mc) : memberBoxes(m), j.pos, 170)
+    const sol = memberSolids(m, cuts?.members.get(m.id))
+    const boxes = clipBoxesNear(sol.boxes, j.pos, 170)
     for (const o of boxes) {
       const oo = moved ? shift(o) : o
       solids.push({ faces: boxFaces(oo), center: oo.center, color, group })
     }
-    for (const p of mc?.prisms ?? []) {
+    for (const p of sol.prisms) {
       const pp = moved ? { ...p, origin: add(p.origin, explode) } : p
       const fs = prismFaces(pp)
       const c = scale(fs.flatMap((f) => f.pts).reduce((s, q) => add(s, q), v(0, 0, 0)), 1 / fs.flatMap((f) => f.pts).length)
@@ -292,7 +292,9 @@ export function jointSketchNote(j: DetectedJoint, resolved: Resolved): string {
     case 'gewindestange':
       return t('Gewindestange M10 mit großen Unterlegscheiben und Muttern beiderseits des Holzes, Kontermutter.')
     case 'kopfband':
-      return t('Kopfband 45°, je Ende 2 Schrauben 8 × 160.')
+      return t('Kopfband 350 mm, beide Enden auf 45° gesägt, satt angelegt; je Ende 2 Schrauben vom Rand des Kopfbands in Pfosten bzw. Zarge, vorbohren.')
+    case 'versatz':
+      return t('Kopfbandende {d} mm tief einlassen: Sitz mit Japansäge anreißen und einsägen, mit dem Stechbeitel ausstemmen, Kopfband einsetzen, je Ende 1 Schraube.', { d: d.tiefe ?? 15 })
     case 'seilbefestigung':
       return t('Seil durch Bohrung bzw. Augschraube, mit Achtknoten sichern.')
   }

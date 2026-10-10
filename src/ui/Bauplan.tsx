@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { buildSteps, partTypes, transportCheck } from '../analysis/assembly'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, obbCorners } from '../model/geometry'
+import { prismCorners } from '../model/joinery'
 import { JOINT_TYPES, jointType } from '../model/joints'
 import { BED_TYPE_LABEL } from '../model/loftbed'
 import type { Member, Vec3 } from '../model/types'
@@ -43,9 +44,9 @@ function PlanView({ view, members, origin, ex, ey, numbers, labelNos, title }: {
     return { x: u, y: v, depth: q.z }
   }
   const shapes = members.flatMap((m) =>
-    memberBoxes(m).map((o) => {
-      const pts = obbCorners(o).map(proj)
-      return { m, poly: hull(pts.map((q) => [q.x, q.y])), depth: Math.max(...pts.map((q) => q.depth)), cx: pts.reduce((s, q) => s + q.x, 0) / 8, cy: pts.reduce((s, q) => s + q.y, 0) / 8 }
+    (m.shape ? [(() => { const c = prismCorners(m.shape); return [...c.bottom, ...c.top] })()] : memberBoxes(m).map(obbCorners)).map((corners) => {
+      const pts = corners.map(proj)
+      return { m, poly: hull(pts.map((q) => [q.x, q.y])), depth: Math.max(...pts.map((q) => q.depth)), cx: pts.reduce((s, q) => s + q.x, 0) / pts.length, cy: pts.reduce((s, q) => s + q.y, 0) / pts.length }
     }),
   )
   if (!shapes.length) return null

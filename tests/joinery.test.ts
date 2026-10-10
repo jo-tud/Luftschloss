@@ -90,4 +90,34 @@ describe('Holzverbindungen als Geometrie', () => {
     const { parts, byMember } = partTypes(r)
     expect(parts[byMember.get(zarge.id)! - 1].joinery).toContain('Zapfen bzw. Zapfenloch')
   })
+
+  it('Kopfbänder: auf Gehrung, ragen nicht in Pfosten oder Zarge; eingelassen mit Sitz', () => {
+    const p = testProject()
+    p.assemblies[0].params.braces = true
+    const r = resolveProject(p)
+    const braces = r.members.filter((m) => m.role === 'strebe')
+    expect(braces.length).toBeGreaterThan(0)
+    const solid = r.members.filter((m) => m.role === 'pfosten' || m.role === 'zarge')
+    for (const b of braces) {
+      expect(b.shape).toBeDefined()
+      const c = prismCorners(b.shape!)
+      for (const q of [...c.bottom, ...c.top])
+        for (const m of solid)
+          for (const o of memberBoxes(m)) {
+            const d = { x: q.x - o.center.x, y: q.y - o.center.y, z: q.z - o.center.z }
+            const inside = o.axes.every((a, i) => Math.abs(a.x * d.x + a.y * d.y + a.z * d.z) < o.half[i] - 0.5)
+            expect(inside).toBe(false)
+          }
+    }
+    const key = `${braces[0].id}|bett-1:pfosten-BL`
+    const pv = testProject()
+    pv.assemblies[0].params.braces = true
+    pv.joints = [{ key, typeId: 'versatz' }]
+    const rv = resolveProject(pv)
+    const j = rv.joints.find((x) => x.key === key)!
+    expect(j.kind).toBe('strebe')
+    const c = jointCuts(j, new Map(rv.members.map((m) => [m.id, m])))!
+    expect(c.members.get('bett-1:pfosten-BL')!.sub).toHaveLength(1)
+    expect(c.members.get(braces[0].id)!.prisms).toHaveLength(1)
+  })
 })

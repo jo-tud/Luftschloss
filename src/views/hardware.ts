@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { memberAxes, memberBoxes } from '../model/geometry'
-import { jointCuts, jointFrame, lapRange } from '../model/joinery'
+import { braceEnd, jointCuts, jointFrame, lapRange } from '../model/joinery'
 import type { Resolved } from '../model/resolve'
 import type { Member } from '../model/types'
 import { T } from './camera'
@@ -282,6 +282,43 @@ export function hardwareInstances(r: Resolved, opts: { only?: string; rods?: boo
     const mid = (r2: [number, number]) => (r2[0] + r2[1]) / 2
     const pt = (o: number, a: number, sd: number): V => addv({ x: 0, y: 0, z: 0 }, [out, o], [across, a], [side, sd])
     const type = j.typeId
+    const be = j.kind === 'strebe' ? braceEnd(F) : undefined
+    if (be && (type === 'kopfband' || type === 'holzbauschraube' || type === 'versatz' || type === 'holzduebel')) {
+      // Kopfband: Schrauben vom Rand des Kopfbands waagrecht bzw. senkrecht in Pfosten/Zarge,
+      // Dübel quer durch die Stoßfläche
+      const { shape, n, face, A, B } = be
+      const n2: [number, number] = [-dotv(n, shape.eu), -dotv(n, shape.ev)]
+      const world = (q: [number, number]): V => addv(shape.origin, [shape.eu, q[0]], [shape.ev, q[1]])
+      const exit = (p0: [number, number]): [number, number] => {
+        let best = Infinity
+        const poly = shape.poly
+        for (let i = 0; i < poly.length; i++) {
+          const a = poly[i]
+          const b = poly[(i + 1) % poly.length]
+          const ex = b[0] - a[0]
+          const ey = b[1] - a[1]
+          const den = n2[0] * ey - n2[1] * ex
+          if (Math.abs(den) < 1e-9) continue
+          const tt = ((a[0] - p0[0]) * ey - (a[1] - p0[1]) * ex) / den
+          const u = ((a[0] - p0[0]) * n2[1] - (a[1] - p0[1]) * n2[0]) / den
+          if (tt > 1e-6 && u >= -1e-6 && u <= 1 + 1e-6) best = Math.min(best, tt)
+        }
+        return Number.isFinite(best) ? [p0[0] + n2[0] * best, p0[1] + n2[1] * best] : p0
+      }
+      const fr = type === 'kopfband' ? [1 / 3, 2 / 3] : [0.5]
+      for (const f of type === 'holzduebel' ? [] : fr) {
+        const p0: [number, number] = [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f]
+        const head = world(exit(p0))
+        const toFace = face - dotv(head, n)
+        screw(head, n, toFace + Math.min(90, F.depth * 0.8), type === 'kopfband' ? 3 : 4)
+      }
+      if (type === 'holzduebel')
+        for (const f of [0.3, 0.7]) {
+          const c = world([A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f])
+          rod(addv(c, [n, -35]), addv(c, [n, 35]), 5, dowels)
+        }
+      continue
+    }
     if (type === 'holzbauschraube' || type === 'auflage' || type === 'kopfband' || type === 'ausklinkung' || type === 'gratnut') {
       if (E.round || Tm.round) continue
       const n = type === 'holzbauschraube' && F.pE ? 3 : 2

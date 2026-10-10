@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode
 import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
-import { fmtCm, fmtM, memberBoxes, memberOBB, panelOBB, wallFrame, type OBB } from '../model/geometry'
-import { allCuts, cutMemberBoxes, type Prism } from '../model/joinery'
+import { fmtCm, fmtM, memberOBB, panelOBB, wallFrame, type OBB } from '../model/geometry'
+import { allCuts, memberSolids, type Prism } from '../model/joinery'
 import type { DetectedJoint } from '../model/resolve'
 import { cornice, doorGeom, furnitureBox, lampShadeHeight, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, Vec3, WallId, WindowObj } from '../model/types'
@@ -113,8 +113,7 @@ export function MemberMeshes({ members, mini, joints }: { members: Member[]; min
   return (
     <group>
       {members.map((m) => {
-        const mc = cuts?.members.get(m.id)
-        const boxes = mc ? cutMemberBoxes(m, mc) : memberBoxes(m)
+        const { boxes, prisms } = memberSolids(m, cuts?.members.get(m.id))
         let highlight = mini ? undefined : isSelected(sel, m) ? COLORS.select : hover && (hover === m.id || hover === m.assemblyId) ? COLORS.hover : undefined
         let color = memberColor(m)
         if (!mini && staticsMode && statics) {
@@ -137,7 +136,7 @@ export function MemberMeshes({ members, mini, joints }: { members: Member[]; min
                 wood={catalogItem(m.catalogId)?.kind === 'beschlag' ? undefined : woodKindFor(m.catalogId)}
               />
             ))}
-            {mc?.prisms.map((pr, i) => (
+            {prisms.map((pr, i) => (
               <PrismMesh key={`p${i}`} m={m} prism={pr} color={highlight ?? color} highlight={highlight} pick={{ kind: 'member', id: m.id }} />
             ))}
           </BuildAnimated>

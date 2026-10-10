@@ -179,8 +179,22 @@ export interface Member {
   roll: number
   /** Ausklinkungen, z. B. für Sockelleiste oder Stuck */
   notches?: Notch[]
+  /**
+   * Abweichende Körperform für die Darstellung, z. B. Kopfband mit Gehrungsschnitten: Vieleck in
+   * (eu, ev) ab origin, extrudiert entlang en über range. Statik und Kollision nutzen weiter den Quader.
+   */
+  shape?: MemberShape
   assemblyId?: string
   partKey?: string
+}
+
+export interface MemberShape {
+  origin: Vec3
+  eu: Vec3
+  ev: Vec3
+  en: Vec3
+  poly: [number, number][]
+  range: [number, number]
 }
 
 /**
@@ -262,6 +276,8 @@ export interface LoftBedParams {
   guardHeight: Mm // über Oberkante Liegefläche
   guardSides: Record<Side, boolean>
   guardCatalogId: string
+  /** Kopfbänder; fehlt = Geländerholz, wenn es ein Kantholz ist, sonst 54×74 gehobelt */
+  braceCatalogId?: string
   ladder: LadderType
   ladderSide: Side
   /** Bei Eckbett: Ende, das an der Wand liegt */

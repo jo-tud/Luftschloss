@@ -1,4 +1,8 @@
 const en: Record<string, string> = {
+  Japansäge: 'Japanese saw',
+  'Enden auf 45° sägen, satt anlegen und je Ende 2 Schrauben durch das Kopfband in Pfosten bzw. Zarge. Steift die Ecke aus – möglichst in beiden Richtungen anordnen.': 'Cut both ends at 45°, fit them tight and drive 2 screws per end through the brace into the post or rail. Stiffens the corner – ideally fit braces in both directions.',
+  'Kopfband eingelassen (einfacher Versatz)': 'Knee brace housed (simple birdsmouth)',
+  'Kopfbandende 15 mm tief in Pfosten und Zarge eingelassen: Der Druck geht Holz auf Holz, je eine Schraube sichert nur. Mit Säge und Stechbeitel gut machbar, trägt deutlich mehr als nur verschraubt.': 'Brace ends housed 15 mm deep in post and rail: the thrust goes wood to wood, one screw per end only secures it. Easy with saw and chisel, and much stronger than screws alone.',
   // --- Bettseiten und Ecken (Bauteilnamen) ---
   vorne: 'front',
   hinten: 'back',

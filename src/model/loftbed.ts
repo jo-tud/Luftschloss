@@ -1,7 +1,7 @@
 import { t, tk } from '../i18n'
 import { HARDWARE, catalogItem, sheet, timber } from './catalog'
 import { rotate2, v } from './geometry'
-import type { Assembly, LoftBedParams, Member, MemberRole, Mm, Panel, Side, Vec3 } from './types'
+import type { Assembly, LoftBedParams, Member, MemberRole, MemberShape, Mm, Panel, Side, Vec3 } from './types'
 
 /**
  * Erzeugt aus den Parametern einer Hochbett-Baugruppe alle Stäbe und Flächen.
@@ -408,28 +408,53 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     })
   })
 
-  // Kopfbänder unter den Zargen, je Pfosten in beiden Richtungen
+  // Kopfbänder unter den Zargen, je Pfosten in beiden Richtungen. Beide Enden auf Gehrung (45°)
+  // geschnitten: liegt satt an Pfosten und Zargenunterkante, nichts ragt hinein.
   if (P.braces && (P.type === 'freistehend' || P.type === 'deckenhoch' || P.type === 'wandseitig' || P.type === 'eck')) {
-    const len = 350
-    for (const c of Object.keys(cornerPos) as Corner[]) {
-      if (!fullPost[c]) continue
-      const { x, y } = cornerPos[c]
-      const right = c === 'BL' || c === 'FL'
-      const front = c === 'BL' || c === 'BR'
+    const L = 350
+    // Kopfband aus Kantholz – ein dünnes Geländerbrett taugt dafür nicht
+    const braceId = P.braceCatalogId ?? (guard.b >= 40 && guard.h <= 100 ? P.guardCatalogId : 'geh-54x74')
+    const bt = timber(braceId)
+    const w = bt.h
+    const band = w * Math.SQRT2
+    const c = L - w / Math.SQRT2
+    const dirW = (d: Vec3) => {
+      const o = toWorld(v(0, 0, 0))
+      const q = toWorld(v(d.x * 1000, d.y * 1000, d.z * 1000))
+      return v((q.x - o.x) / 1000, (q.y - o.y) / 1000, (q.z - o.z) / 1000)
+    }
+    const brace = (key: string, name: string, corner: Vec3, along: Vec3, across: Vec3) => {
+      const down = v(0, 0, -1)
+      const s0 = v(corner.x + down.x * c, corner.y + down.y * c, corner.z + down.z * c)
+      const e0 = v(corner.x + along.x * c, corner.y + along.y * c, corner.z)
+      const shape: MemberShape = {
+        origin: toWorld(corner),
+        eu: dirW(along),
+        ev: dirW(down),
+        en: dirW(across),
+        poly: [
+          [0, L],
+          [L, 0],
+          [L - band, 0],
+          [0, L - band],
+        ],
+        range: [-bt.b / 2, bt.b / 2],
+      }
+      add(key, 'strebe', braceId, s0, e0, bt.b, bt.h, { name, shape })
+    }
+    for (const cn of Object.keys(cornerPos) as Corner[]) {
+      if (!fullPost[cn]) continue
+      const { x, y } = cornerPos[cn]
+      const right = cn === 'BL' || cn === 'FL'
+      const front = cn === 'BL' || cn === 'BR'
       // Strebe in der Ebene der Längszarge
-      const yPlane = c[0] === 'B' ? rb / 2 : Wo - rb / 2
+      const yPlane = cn[0] === 'B' ? rb / 2 : Wo - rb / 2
       const xFace = right ? x + p : x
-      const dx = right ? len : -len
-      add(`kopfband-${c}-x`, 'strebe', P.guardCatalogId, v(xFace, yPlane, railBottom - len), v(xFace + dx, yPlane, railBottom), guard.b, guard.h, {
-        name: t('Kopfband {c} längs', { c: cornerLabel(c) }),
-      })
-      if (!keepRail(c[1] === 'L' ? 'links' : 'rechts')) continue // i18n-ok
-      const xPlane = c[1] === 'L' ? rb / 2 : Lo - rb / 2
+      brace(`kopfband-${cn}-x`, t('Kopfband {c} längs', { c: cornerLabel(cn) }), v(xFace, yPlane, railBottom), v(right ? 1 : -1, 0, 0), v(0, 1, 0))
+      if (!keepRail(cn[1] === 'L' ? 'links' : 'rechts')) continue // i18n-ok
+      const xPlane = cn[1] === 'L' ? rb / 2 : Lo - rb / 2
       const yFace = front ? y + p : y
-      const dy = front ? len : -len
-      add(`kopfband-${c}-y`, 'strebe', P.guardCatalogId, v(xPlane, yFace, railBottom - len), v(xPlane, yFace + dy, railBottom), guard.b, guard.h, {
-        name: t('Kopfband {c} quer', { c: cornerLabel(c) }),
-      })
+      brace(`kopfband-${cn}-y`, t('Kopfband {c} quer', { c: cornerLabel(cn) }), v(xPlane, yFace, railBottom), v(0, front ? 1 : -1, 0), v(1, 0, 0))
     }
   }
 

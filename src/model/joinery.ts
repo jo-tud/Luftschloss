@@ -1,6 +1,6 @@
 import { add, cross, dot, len, memberAxes, memberBoxes, memberLength, norm, scale, sub, v, type OBB } from './geometry'
 import type { DetectedJoint } from './resolve'
-import type { Member, Vec3 } from './types'
+import type { Member, MemberShape, Vec3 } from './types'
 
 /**
  * Zimmermannsmäßige Verbindungen als Geometrie: was an einem Stab angesetzt (Zapfen, Blatt) und
@@ -15,14 +15,7 @@ export type Range = [number, number]
 export type LocalBox = [Range, Range, Range]
 
 /** Gerades Prisma in Weltkoordinaten: Vieleck in (eu, ev), extrudiert entlang en */
-export interface Prism {
-  origin: Vec3
-  eu: Vec3
-  ev: Vec3
-  en: Vec3
-  poly: [number, number][]
-  range: Range
-}
+export type Prism = MemberShape
 
 export interface MemberCut {
   add: LocalBox[]
@@ -42,7 +35,7 @@ export interface JointCuts {
 }
 
 /** Verbindungen, die das Holz selbst verändern */
-export const CARPENTRY = new Set(['ueberblattung', 'zapfen', 'schwalbenschwanz', 'gratnut', 'ausklinkung', 'stecken', 'auflagerleiste'])
+export const CARPENTRY = new Set(['ueberblattung', 'zapfen', 'schwalbenschwanz', 'gratnut', 'ausklinkung', 'stecken', 'auflagerleiste', 'versatz'])
 
 const EPS = 0.5
 
@@ -123,6 +116,7 @@ export function jointFrame(j: DetectedJoint, A: Member, B: Member): JointFrame |
       return rangeAlong(Y, o)[1] - dot(pt, o)
     }
     if (j.ending) E = j.ending === A.id ? A : B
+    else if (j.kind === 'strebe' && (A.role === 'strebe') !== (B.role === 'strebe')) E = A.role === 'strebe' ? A : B
     else E = reach(A, B) >= reach(B, A) ? A : B
     T = E === A ? B : A
     const e = endAt(E, j.pos)
@@ -275,6 +269,39 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       cutOf(out.members, E).add.push(extension(E, pt === E.start, dd))
       out.holes.push({ at: add(F.pE, scale(F.out, -0.2)), normal: F.into, r: Math.min(E.b, E.h) / 2 + 0.5 })
       if (!E.round) cutOf(out.members, T).sub.push(toLocal(T, frameBox(frame, [[F.face, F.face + dd], eAcross, eSide])))
+      return out
+    }
+    case 'versatz': {
+      // Kopfbandende 15 mm tief in T eingelassen: Ende verlängert, Sitz in T ausgenommen,
+      // die Zwickel neben dem schrägen Ende wieder aufgefüllt
+      const be = braceEnd(F)
+      if (!be) return undefined
+      const dd = Math.min(15, Math.max(6, F.depth / 4))
+      const { shape, n, s: sd, face, A, B } = be
+      const k = dd / Math.max(0.2, dot(F.out, n))
+      const d2: [number, number] = [dot(F.out, shape.eu) * k, dot(F.out, shape.ev) * k]
+      const A2: [number, number] = [A[0] + d2[0], A[1] + d2[1]]
+      const B2: [number, number] = [B[0] + d2[0], B[1] + d2[1]]
+      const world = (q: [number, number]) => add(add(shape.origin, scale(shape.eu, q[0])), scale(shape.ev, q[1]))
+      const sOf = (q: [number, number]) => dot(world(q), sd)
+      const [P, Q, P2, Q2] = sOf(A) <= sOf(B) ? [A, B, A2, B2] : [B, A, B2, A2]
+      out.members.set(E.id, { add: [], sub: [], prisms: [{ ...shape, poly: [P, Q, Q2, P2] }] })
+      const enC = dot(shape.origin, shape.en)
+      const sMin = Math.min(sOf(P), sOf(P2))
+      const sMax = Math.max(sOf(Q), sOf(Q2))
+      const box = frameBox([n, sd, shape.en], [[face, face + dd], [sMin, sMax], [enC + shape.range[0], enC + shape.range[1]]])
+      const toUV = (nv: number, sv: number): [number, number] => {
+        const w = add(add(scale(n, nv), scale(sd, sv)), scale(shape.en, enC))
+        const rel = sub(w, shape.origin)
+        return [dot(rel, shape.eu), dot(rel, shape.ev)]
+      }
+      const fill: [number, number][][] = []
+      if (sOf(P2) < sOf(P) - 0.5) fill.push([P, toUV(face, sOf(P2)), P2])
+      else if (sOf(P2) > sOf(P) + 0.5) fill.push([P, P2, toUV(face + dd, sOf(P))])
+      if (sOf(Q2) > sOf(Q) + 0.5) fill.push([Q, Q2, toUV(face, sOf(Q2))])
+      else if (sOf(Q2) < sOf(Q) - 0.5) fill.push([Q, toUV(face + dd, sOf(Q)), Q2])
+      out.members.set(T.id, { add: [], sub: [toLocal(T, box)], prisms: fill.map((poly) => ({ ...shape, poly })) })
+      out.dims = { tiefe: Math.round(dd) }
       return out
     }
     case 'auflagerleiste': {
@@ -516,4 +543,29 @@ export function cutLengths(joints: DetectedJoint[], members: Member[]): Map<stri
     out.set(m.id, hi - lo)
   }
   return out
+}
+
+/** Darstellungskörper eines Stabs: Quader (mit Verbindungen) und Prismen; eigene Form (Kopfband) zuerst */
+export function memberSolids(m: Member, mc: MemberCut | undefined): { boxes: OBB[]; prisms: Prism[] } {
+  if (m.shape) return { boxes: [], prisms: [m.shape, ...(mc?.prisms ?? [])] }
+  return { boxes: mc ? cutMemberBoxes(m, mc) : memberBoxes(m), prisms: mc?.prisms ?? [] }
+}
+
+/**
+ * Ende eines Kopfbands (Stab mit eigener Form) an T: Flächennormale n von T (zeigt in T hinein),
+ * Lage der Fläche, Richtung s entlang der Fläche in der Kopfbandebene und die beiden Ecken A, B des
+ * Umrisses, die auf der Fläche liegen (in Koordinaten der Form).
+ */
+export function braceEnd(F: JointFrame): { shape: MemberShape; n: Vec3; s: Vec3; face: number; A: [number, number]; B: [number, number] } | undefined {
+  const shape = F.E.shape
+  if (!shape) return undefined
+  const axesT = memberAxes(F.T)
+  const cand = [axesT[1], axesT[2]].map((a) => (dot(a, F.out) >= 0 ? a : scale(a, -1)))
+  const n = dot(cand[0], F.out) >= dot(cand[1], F.out) ? cand[0] : cand[1]
+  const face = rangeAlong(F.T, n)[0]
+  const s = norm(cross(n, shape.en))
+  const world = (q: [number, number]) => add(add(shape.origin, scale(shape.eu, q[0])), scale(shape.ev, q[1]))
+  const on = shape.poly.filter((q) => Math.abs(dot(world(q), n) - face) < 1.5)
+  if (on.length < 2) return undefined
+  return { shape, n, s, face, A: on[0], B: on[1] }
 }

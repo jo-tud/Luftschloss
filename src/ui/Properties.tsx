@@ -277,6 +277,14 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           />
         )}
         <Check label={t('Kopfbänder (Aussteifung)')} value={P.braces} onChange={(v) => setP({ braces: v })} />
+        {P.braces && (
+          <Sel
+            label={t('Kopfbänder aus')}
+            value={P.braceCatalogId ?? 'auto'}
+            options={[['auto', t('automatisch (Kantholz)')], ...catalogOptions((x) => !x.round && x.b >= 40 && x.h <= 120)]}
+            onChange={(v) => setP({ braceCatalogId: v === 'auto' ? undefined : v })}
+          />
+        )}
         {P.type !== 'nische' && P.type !== 'abgehaengt' && (
           <Sel
             label={t('Mittelstützen je freier Längsseite')}
