@@ -706,16 +706,17 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
             break
           }
           case 'bretter': {
-            const board = 200
-            const gap = 60
+            // So viele Bretter, dass kein Spalt (auch der unter dem Handlauf) über 60 mm liegt, gleichmäßig verteilt
+            const maxGap = 60
             const space = innerTop - H
-            const n = Math.max(1, Math.floor((space + gap) / (board + gap)))
+            const n = Math.max(1, Math.ceil((space - maxGap) / (200 + maxGap)))
+            const board = Math.min(200, Math.max(40, space - 2 * 10))
+            const gap = Math.max(0, (space - n * board) / (n + 1))
             for (let i = 0; i < n; i++) {
-              const zc2 = H + gap + i * (board + gap) + board / 2
-              if (zc2 + board / 2 > innerTop) break
+              const zc2 = H + gap * (i + 1) + board * i + board / 2
               add(`brett-${key}-${i}`, 'holm', 'leimholz-fi-18x200', pt(s0, zc2, -9), pt(s1, zc2, -9), 18, board, { name: t('Geländerbrett {s}', { s: sideLabel(s) }) })
             }
-            rodGap = gap
+            rodGap = rodGap === undefined ? gap : Math.max(rodGap, gap)
             break
           }
           case 'platte':
