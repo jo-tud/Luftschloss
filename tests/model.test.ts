@@ -123,3 +123,28 @@ describe('Zuschnitt', () => {
     expect(rows).toEqual([{ id: 'kvh-80x80', price: 6.49, name: 'KVH 80x80', url: 'https://x' }])
   })
 })
+
+describe('Wandbalken-Bauweise', () => {
+  it('legt Querträger oben auf Wand- und Frontbalken', () => {
+    const a: Assembly = { id: 'b', kind: 'hochbett', name: 'B', detached: [], params: defaultBedParams({ type: 'wandseitig', frameStyle: 'aufgelegt', deck: 'platte', deckCatalogId: 'osb-22', x: 500, y: 0 }) }
+    const g = generateLoftBed(a, 2600)
+    const back = g.members.find((m) => m.partKey === 'zarge-hinten')!
+    const joists = g.members.filter((m) => m.role === 'quertraeger')
+    expect(back.role).toBe('wandriegel')
+    expect(joists.length).toBeGreaterThan(2)
+    expect(g.members.some((m) => m.partKey === 'zarge-links')).toBe(false)
+    for (const j of joists) expect(j.start.z - j.h / 2).toBeCloseTo(back.start.z + back.h / 2)
+    const r = resolveProject({ ...testProject(), assemblies: [a] })
+    expect(r.joints.some((j) => j.kind === 'auflage' && (j.a === back.id || j.b === back.id))).toBe(true)
+  })
+
+  it('hängt die freie Ecke ab und warnt bei nicht tragfähiger Decke', () => {
+    const a: Assembly = { id: 'b', kind: 'hochbett', name: 'B', detached: [], params: defaultBedParams({ type: 'eck', frameStyle: 'aufgelegt', cornerSupport: 'decke', x: 2100, y: 0 }) }
+    const g = generateLoftBed(a, 3500)
+    expect(g.members.filter((m) => m.catalogId === 'gewindestange-m10')).toHaveLength(1)
+    expect(g.members.some((m) => m.partKey === 'pfosten-FL' && m.start.z === 0)).toBe(false)
+    const p = { ...testProject(), assemblies: [a] }
+    const findings = analyze(p, resolveProject(p)).findings
+    expect(findings.some((f) => f.id.startsWith('decke-haengen'))).toBe(true)
+  })
+})

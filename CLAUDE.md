@@ -10,3 +10,6 @@
 - Materialien nur aus `src/model/catalog.ts` (Hornbach-Sortiment); neue Werte mit Quelle in
   `docs/recherche/` belegen oder als `priceEstimated` markieren.
 - Spezifikation und Ausbaustufen: `SPEZIFIKATION.md`.
+- Bei jeder Ausbaustufe an ein **Wow-Feature** denken (SPEZIFIKATION.md, Kapitel 12) und Ideen dort ergänzen.
+- Tablet-Bedienung (Finger/Stift) mitdenken: Zeigerereignisse statt Mausereignisse, ausreichend große Bedienflächen.
+- PRs dürfen nach grünem CI selbst gemergt werden.

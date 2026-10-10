@@ -85,11 +85,18 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const { length: Lo, width: Wo } = bedOuterSize(P)
   const H = P.deckHeight
   const t = slat ? slat.b : deckSheet!.thickness
-  const railTop = H - t
-  const railBottom = railTop - rh
-  const guardTop = H + P.guardHeight
   const walls = wallSides(P)
   const isWall = (s: Side) => walls.includes(s)
+  // Aufgelegte Bauweise: Träger laufen vorne/hinten (bei Wand-zu-Wand links/rechts an den Wänden),
+  // Querträger bzw. Latten liegen oben drauf.
+  const aufgelegt = P.frameStyle === 'aufgelegt'
+  const carriersLR = isWall('links') && isWall('rechts')
+  const carrierSides: Side[] = carriersLR ? ['links', 'rechts'] : ['hinten', 'vorne']
+  const needsJoists = P.deck === 'platte' || P.deck === 'dielen' || P.deck === 'lattenrost' || (P.deck === 'latten' && carriersLR)
+  const deckTopOfFrame = H - t
+  const railTop = aufgelegt && needsJoists ? deckTopOfFrame - joist.h : deckTopOfFrame
+  const railBottom = railTop - rh
+  const guardTop = H + P.guardHeight
   const detached = new Set(a.detached)
 
   const members: Member[] = []
@@ -151,11 +158,22 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const fullPost: Record<Corner, boolean> = { BL: false, BR: false, FL: false, FR: false }
   if (P.type === 'freistehend' || P.type === 'deckenhoch') {
     fullPost.BL = fullPost.BR = fullPost.FL = fullPost.FR = true
-  } else if (P.type === 'wandseitig') {
+  } else if (P.type === 'wandseitig' || P.type === 'abgehaengt') {
     fullPost.FL = fullPost.FR = true
   } else if (P.type === 'eck') {
     if (P.wallEnd === 'rechts') fullPost.FL = true
     else fullPost.FR = true
+  }
+  // Freie Ecken von der Decke abhängen statt auf Pfosten stellen
+  const hangCorners: Corner[] = []
+  const hang = P.type === 'abgehaengt' || ((P.type === 'wandseitig' || P.type === 'eck') && P.cornerSupport === 'decke')
+  if (hang) {
+    for (const c of ['BL', 'BR', 'FL', 'FR'] as Corner[]) {
+      if (fullPost[c]) {
+        fullPost[c] = false
+        hangCorners.push(c)
+      }
+    }
   }
 
   const guardOn = (s: Side) => P.guard !== 'keins' && P.guardSides[s] && !isWall(s)
@@ -198,7 +216,11 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const yEnd = (s: Side) => Wo - (hasPost(s === 'links' ? 'FL' : 'FR') ? p : isWall('vorne') || !isWall(s) ? rb : 0)
   const zc = railBottom + rh / 2
 
+  // Breite Liegeflächen mit Latten brauchen einen Mittelträger, der auf den Querzargen liegt
+  const wideSlats = P.deck === 'latten' && !carriersLR && Wo - 2 * rb > 1250
+  const keepRail = (s: Side) => !aufgelegt || isWall(s) || carrierSides.includes(s) || ((s === 'links' || s === 'rechts') && wideSlats)
   for (const s of ['hinten', 'vorne'] as Side[]) {
+    if (!keepRail(s)) continue
     const y = s === 'hinten' ? rb / 2 : Wo - rb / 2
     const wall = isWall(s)
     const m = add(`zarge-${s}`, wall ? 'wandriegel' : 'zarge', P.railCatalogId, v(xStart(s), y, zc), v(xEnd(s), y, zc), rb, rh, {
@@ -207,6 +229,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
     if (m && wall) wallFixing(m, xEnd(s) - xStart(s))
   }
   for (const s of ['links', 'rechts'] as Side[]) {
+    if (!keepRail(s)) continue
     const x = s === 'links' ? rb / 2 : Lo - rb / 2
     const wall = isWall(s)
     const m = add(`zarge-${s}`, wall ? 'wandriegel' : 'zarge', P.railCatalogId, v(x, yStart(s), zc), v(x, yEnd(s), zc), rb, rh, {
@@ -225,27 +248,41 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
     })
   }
 
-  // Abgehängt: Gewindestangen von den vorderen Ecken zur Decke
-  if (P.type === 'abgehaengt') {
-    for (const [key, x] of [['FL', rb / 2 + 40], ['FR', Lo - rb / 2 - 40]] as const) {
-      const m = add(`haenger-${key}`, 'sonstiges', 'gewindestange-m10', v(x, Wo - rb / 2, railBottom - 30), v(x, Wo - rb / 2, ceilingHeight), 10, 10, {
-        round: true,
-        name: `Gewindestange ${cornerLabel(key)}`,
-      })
-      if (m) fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'rahmenduebel-10', count: 2, note: 'Deckenanker für Gewindestange – nur in tragfähige Decke' })
-    }
+  // Abhängung: Gewindestangen von den freien Ecken zur Decke, durch die vordere Zarge gebolzt
+  for (const c of hangCorners) {
+    const x = c[1] === 'L' ? p + 40 : Lo - p - 40
+    const y = c[0] === 'F' ? Wo - rb / 2 : rb / 2
+    const m = add(`haenger-${c}`, 'sonstiges', 'gewindestange-m10', v(x, y, railBottom - 30), v(x, y, ceilingHeight), 10, 10, {
+      round: true,
+      name: `Gewindestange ${cornerLabel(c)}`,
+    })
+    if (m) fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'rahmenduebel-10', count: 2, note: 'Deckenanker für Gewindestange – nur in tragfähige Decke' })
   }
 
   // --- Querträger ----------------------------------------------------------------------
   const x0 = rb
   const x1 = Lo - rb
   let joistCount = 0
-  if (P.deck === 'platte' || P.deck === 'dielen') {
+  if (aufgelegt && needsJoists) {
+    // Querträger liegen auf den Trägern, jeweils auch an beiden Enden
+    const spacing = P.deck === 'lattenrost' ? 1000 : Math.max(200, Math.min(P.joistSpacing, deckSheet?.maxSpan ?? P.joistSpacing))
+    const along = carriersLR ? Wo : Lo
+    const a0 = p + joist.b / 2
+    const a1 = along - p - joist.b / 2
+    const n = Math.max(2, Math.ceil((a1 - a0) / spacing) + 1)
+    for (let i = 0; i < n; i++) {
+      const a = a0 + ((a1 - a0) * i) / (n - 1)
+      const zc2 = deckTopOfFrame - joist.h / 2
+      const [s0, e0] = carriersLR ? [v(0, a, zc2), v(Lo, a, zc2)] : [v(a, 0, zc2), v(a, Wo, zc2)]
+      add(`quertraeger-${i + 1}`, 'quertraeger', P.joistCatalogId, s0, e0, joist.b, joist.h, { name: `Querträger ${i + 1} (aufgelegt)` })
+    }
+  } else if (P.deck === 'platte' || P.deck === 'dielen') {
     const spacing = Math.max(200, Math.min(P.joistSpacing, deckSheet?.maxSpan ?? P.joistSpacing))
     joistCount = Math.max(0, Math.ceil((x1 - x0) / spacing) - 1)
   } else if (P.deck === 'lattenrost') {
     joistCount = 1
   }
+  if (aufgelegt) joistCount = 0
   for (let i = 1; i <= joistCount; i++) {
     const x = x0 + ((x1 - x0) * i) / (joistCount + 1)
     add(`quertraeger-${i}`, 'quertraeger', P.joistCatalogId, v(x, rb, railTop - joist.h / 2), v(x, Wo - rb, railTop - joist.h / 2), joist.b, joist.h, {
@@ -268,6 +305,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
       add(`kopfband-${c}-x`, 'strebe', P.guardCatalogId, v(xFace, yPlane, railBottom - len), v(xFace + dx, yPlane, railBottom), guard.b, guard.h, {
         name: `Kopfband ${cornerLabel(c)} längs`,
       })
+      if (!keepRail(c[1] === 'L' ? 'links' : 'rechts')) continue
       const xPlane = c[1] === 'L' ? rb / 2 : Lo - rb / 2
       const yFace = front ? y + p : y
       const dy = front ? len : -len
@@ -288,7 +326,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
       const x = p + w / 2 + i * (w + gap)
       add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 0, railTop + t / 2), v(x, Wo, railTop + t / 2), w, t, { name: `Latte ${i + 1}` })
     }
-    if (Wo - 2 * rb > 1250) {
+    if (wideSlats) {
       add('mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, Wo / 2, railTop - joist.h / 2), v(Lo - rb, Wo / 2, railTop - joist.h / 2), joist.b, joist.h, { name: 'Mittelträger' })
     }
   } else if (P.deck === 'platte' || P.deck === 'dielen') {

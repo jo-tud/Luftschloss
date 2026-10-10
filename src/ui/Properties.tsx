@@ -126,6 +126,10 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
         <Sel label="Pfosten" value={P.postCatalogId} options={catalogOptions((t) => !t.round && t.b === t.h && t.b >= 54)} onChange={(v) => setP({ postCatalogId: v })} />
         <Sel label="Zargen / Riegel" value={P.railCatalogId} options={catalogOptions((t) => !t.round && t.h >= 94)} onChange={(v) => setP({ railCatalogId: v })} />
         <Sel label="Querträger" value={P.joistCatalogId} options={catalogOptions((t) => !t.round && t.h >= 54)} onChange={(v) => setP({ joistCatalogId: v })} />
+        <Sel label="Bauweise" value={P.frameStyle} options={[['zargen', 'Querträger zwischen Zargen'], ['aufgelegt', 'Aufgelegt (Träger + Latten drauf)']]} onChange={(v) => setP({ frameStyle: v })} title="Aufgelegt: Querträger bzw. Latten liegen oben auf Wand- und Frontbalken" />
+        {(P.type === 'wandseitig' || P.type === 'eck') && (
+          <Sel label="Freie Ecke getragen von" value={P.cornerSupport} options={[['pfosten', 'Pfosten'], ['decke', 'Abhängung von der Decke']]} onChange={(v) => setP({ cornerSupport: v })} />
+        )}
         <Check label="Kopfbänder (Aussteifung)" value={P.braces} onChange={(v) => setP({ braces: v })} />
       </Section>
       <Section title="Liegefläche">

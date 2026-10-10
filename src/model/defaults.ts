@@ -30,6 +30,8 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     rungCatalogId: 'rund-buche-30',
     ladderAngle: 70,
     braces: true,
+    frameStyle: 'zargen',
+    cornerSupport: 'pfosten',
     wallFit: 'ausklinken',
     wallEnd: 'rechts',
     ceilingGap: 15,
@@ -44,13 +46,15 @@ export function testRoom(): Room {
     height: 3500,
     wallThickness: 450,
     walls: {
+      // Nur die Fensterwand ist gemauert; die übrigen Wände sind Altbau-Leichtbauwände
       A: { material: 'vollziegel' },
-      B: { material: 'vollziegel' },
-      C: { material: 'vollziegel' },
-      D: { material: 'vollziegel' },
+      B: { material: 'leichtbau' },
+      C: { material: 'leichtbau' },
+      D: { material: 'leichtbau' },
     },
     floor: 'holzdielen',
-    ceiling: 'holzbalken',
+    // Decke im Testzimmer nicht für Abhängungen geeignet
+    ceiling: 'schwach',
     cornice: { enabled: true, height: 200, projection: 280, shape: 'kehle' },
     corniceOverrides: {},
     skirting: { enabled: true, height: 60, depth: 18 },

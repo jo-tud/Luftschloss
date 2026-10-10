@@ -29,6 +29,8 @@ Luftschloss ist ein Planungswerkzeug im Desktop-Browser. Heimwerker passen damit
 - **Kreativität zulassen.** Auch riskante Bauarten werden angeboten, zum Beispiel abgehängte Betten, Seilgeländer und später begehbare Netze. Sie bekommen einen dezenten Warnhinweis.
 - **Vom Foren-Konsens abweichen können.** Die Recherche bestimmt nur die *Vorschlagswerte* (Latten statt Platte, Stufen statt Rundsprossen, Schlossschrauben). Jede Alternative bleibt wählbar.
 - **Baumarkt-Realität.** Querschnitte und Längen kommen aus dem Katalog; Überlängen werden gemeldet. Tragendes Holz ist bei Hornbach **Fichte** (KVH C24); Kiefer gibt es nur bei Leimholz, Dielen, Leisten und Rundstäben.
+- **Immer ein Wow-Feature mitdenken.** An irgendeiner Stelle soll man denken: „Boah, das kann die App?!“ Bei jeder Ausbaustufe fragen, was über das Erwartbare hinausgeht (siehe Kapitel 12).
+- **Auf der Baustelle mit dem Tablet.** Beim Bauen ist eher ein Tablet zur Hand als ein Laptop. Deshalb gibt es Finger- und Stiftbedienung, ein Layout für Tablets, die Freigabe im WLAN bzw. über Tailscale und Offline-Betrieb.
 - **Lokal und privat.** Die App läuft im Browser ohne Konto. Das Projekt wird lokal gespeichert und lässt sich als Datei exportieren.
 
 ### 1.3 Nicht-Ziele
@@ -118,9 +120,12 @@ Beim ersten Start lädt das **Testzimmer**: 4,30 × 5,95 m, zwei Fenster an Wand
 | Eckhochbett, 1 Pfosten | ✅ | Wandriegel an zwei Seiten |
 | Hochebene Wand zu Wand | ✅ | Wandriegel an beiden Enden |
 | Abgehängt | ✅ mit Warnung | Wandriegel und Gewindestangen |
+| **Wandbalken, Latten drauf** | ✅ | Bei massiven Wänden (Ziegel, Beton) sehr effizient: Balken direkt an die Wand, vorne ein Balken auf Pfosten, Querträger bzw. Latten oben **aufgelegt** (Bauweise „aufgelegt“). Warnung, wenn die Wand nicht tragfähig ist. |
+| **Eckbett, Ecke abgehängt** | ✅ | Zwei Wandbalken, die freie Ecke an einer Gewindestange von der Decke. Fehler bei nicht tragfähiger Decke, Warnung bei Holzbalkendecke (nur in einen Balken). |
 | Halbhochbett, Etagenbett, Bett auf Regal, Podest, Galerie mit Mittelpfosten | ◻ | |
 
 Parameter sind:
+- **Bauweise:** Querträger zwischen Zargen oder **aufgelegt**; freie Ecke auf Pfosten oder **von der Decke abgehängt**
 - Matratzenmaß und -dicke, Spiel, Liegehöhe, Lage und Drehung, Wandanschluss
 - Hölzer für Pfosten, Zargen und Querträger
 - Liegefläche: **Latten lose aufgelegt** (Standard), Rollrost, Lattenrost, Platte, Dielen
@@ -269,6 +274,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M4 Bedienung verfeinern | Griffe, Maßketten-Eingabe, Abwicklung, Schnittbox, Ansichtswürfel, Panini, Mausprofile, Detailansicht je Verbindung (3D-Explosion) | ◻ |
 | M5 Statik des Gestells | Stabwerk, Lastfälle, Einfärbung, Querschnittsvergleich, Wackeln | ◻ |
 | M6 Bauplan | PDF mit Maßen, Teilenummern, Verbindungsdetails, Plattenzuschnitt, Montagereihenfolge | ◻ |
+| M6b Tablet | Finger- und Stiftbedienung, Tablet-Layout, WLAN-/Tailscale-Freigabe mit Projekt-Sync, Offline (PWA) | ◻ |
 | M7 Erweiterungen | Weitere Bauarten (Halbhoch, Etagenbett, auf Regal, Galerie), begehbares Netz, Raum als Polygon, Dachschräge, Preis-Agent | ◻ |
 
 ---
@@ -285,6 +291,17 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
    - Heizkörper
    - Tür
    - Sockelleiste (6 × 1,8 cm)
-2. **Wandbaustoff und Deckenart** im Testzimmer: angenommen Vollziegel und Holzbalkendecke.
+2. **Wandbaustoff und Deckenart** im Testzimmer: Nur die Fensterwand A ist gemauert; B, C und D sind als Leichtbau eingetragen. Die Decke ist als nicht tragfähig eingetragen, also keine Abhängung.
 3. **DIN EN 747:2024:** Werte gegen den Normtext prüfen, sobald er vorliegt.
 4. Soll der **Preis-Agent** später direkt in der App laufen (eigener Claude-API-Schlüssel im Browser), oder bleibt es beim Prompt?
+
+---
+
+## 12. Wow-Features
+
+Gesammelt und laufend ergänzt:
+
+1. **Dein Hochbett im Foto deines Zimmers.** Ein Foto vom Zimmer laden und ein paar Raumecken anklicken. Die App errechnet daraus Standort und Brennweite der Kamera und blendet das geplante Bett perspektivisch richtig ins Foto ein.
+2. **Aufbau-Animation.** Die Teile fliegen in Montagereihenfolge an ihren Platz, so wie man sie später aufbaut. Jeder Schritt kann einzeln angesehen werden.
+3. **Wackel-Vorschau.** Die Statik zeigt nicht nur Zahlen: Ein Gestell ohne Aussteifung wackelt sichtbar, mit Kopfbändern steht es still.
+4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.

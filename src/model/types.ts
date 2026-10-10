@@ -20,8 +20,9 @@ export type WallMaterial =
   | 'porenbeton'
   | 'trockenbau'
   | 'holzstaender'
+  | 'leichtbau'
 
-export type CeilingMaterial = 'beton' | 'holzbalken' | 'abgehaengt'
+export type CeilingMaterial = 'beton' | 'holzbalken' | 'abgehaengt' | 'schwach'
 export type FloorMaterial = 'estrich' | 'fussbodenheizung' | 'holzdielen'
 
 /** Stuckleiste am Übergang Wand/Decke, vereinfacht als Profil mit Höhe an der Wand und Ausladung an der Decke. */
@@ -265,6 +266,14 @@ export interface LoftBedParams {
   /** Neigung von schrägen Leitern und Treppen in Grad (90 = senkrecht) */
   ladderAngle: number
   braces: boolean
+  /**
+   * zargen: Querträger hängen zwischen den Zargen (Balkenschuh, Winkel).
+   * aufgelegt: Querträger bzw. Latten liegen oben auf Wandbalken und Frontbalken – die
+   * einfachste und tragfähigste Bauweise, besonders an massiven Wänden.
+   */
+  frameStyle: 'zargen' | 'aufgelegt'
+  /** Freie Ecken bei Wand- und Eckbetten: auf Pfosten oder von der Decke abgehängt */
+  cornerSupport: 'pfosten' | 'decke'
   /**
    * Anschluss an Wände mit Sockelleiste: Gestell um die Leistentiefe abrücken oder Pfosten
    * an der Wand ausklinken. Stuck oben wird bei deckenhohen Pfosten immer ausgeklinkt.

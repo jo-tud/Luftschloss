@@ -207,12 +207,24 @@ export function analyze(p: Project, r: Resolved): Analysis {
     if (P.type === 'abgehaengt') add({ id: `abgehaengt:${a.id}`, severity: 'warnung', category: 'Stabilität', title: 'Abgehängte Konstruktion: besondere Sorgfalt', detail: 'Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.', targets: [a.id] })
     if (P.type === 'deckenhoch' && room.ceiling === 'holzbalken') add({ id: `decke-holz:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Verspannung gegen Holzbalkendecke', detail: 'Pfosten möglichst unter einem Deckenbalken verspannen und mit Lastverteilbrett arbeiten; Stuck nicht berühren.', targets: [a.id] })
     if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: 'Raum', title: `${wallFix.reduce((s, f) => s + f.count, 0)} Bohrungen in der Wand`, detail: 'Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.', targets: [a.id] })
-    const weak = new Set(['porenbeton', 'lochziegel', 'trockenbau'])
+    const weak = new Set(['porenbeton', 'lochziegel', 'trockenbau', 'leichtbau'])
+    const hangers = r.members.filter((m) => m.assemblyId === a.id && m.catalogId === 'gewindestange-m10')
+    if (hangers.length) {
+      const c = room.ceiling
+      if (c === 'schwach' || c === 'abgehaengt')
+        add({ id: `decke-haengen:${a.id}`, severity: 'fehler', category: 'Stabilität', title: 'Decke ist nicht für eine Abhängung geeignet', detail: 'Laut Raumangaben trägt die Decke keine Lasten. Freie Ecke besser auf einen Pfosten stellen (Bett → „Freie Ecke getragen von“).', targets: [a.id, ...hangers.map((h) => h.id)] })
+      else if (c === 'holzbalken')
+        add({ id: `decke-balken:${a.id}`, severity: 'warnung', category: 'Stabilität', title: 'Abhängung nur in einen Deckenbalken', detail: 'Balkenlage suchen (Leitungssucher, Probebohrung), Gewindestange mit Stahlplatte oder Schwerlastanker im Balken, Stuck nicht berühren. Redundant auslegen.', targets: [a.id, ...hangers.map((h) => h.id)] })
+    }
+    if (P.frameStyle === 'aufgelegt' && wallFix.length) add({ id: `wandbalken:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Wandbalken-Bauweise', detail: 'Effizient und sehr tragfähig an Ziegel- oder Betonwänden: Wandbalken mit Schwerlastdübeln oder Betonschrauben alle ca. 40 cm, Querträger bzw. Latten oben auflegen und verschrauben.', targets: [a.id] })
     for (const f of wallFix) {
       const m = memberById.get(f.memberId)
       if (!m) continue
       const wall = nearestWallId(m, room)
-      if (weak.has(room.walls[wall].material)) add({ id: `wandmaterial:${f.memberId}`, severity: 'warnung', category: 'Stabilität', title: `Befestigung in ${room.walls[wall].material} (Wand ${wall})`, detail: 'Dübel tragen hier nur 0,15–0,6 kN. Trockenbau: in die Ständer schrauben.', targets: [f.memberId] })
+      if (weak.has(room.walls[wall].material)) {
+        const load = memberById.get(f.memberId)?.role === 'wandriegel'
+        add({ id: `wandmaterial:${f.memberId}`, severity: load ? 'fehler' : 'warnung', category: 'Stabilität', title: load ? `Wandbalken an nicht tragfähiger Wand ${wall} (${room.walls[wall].material})` : `Kippsicherung in ${room.walls[wall].material} (Wand ${wall})`, detail: load ? 'Ein tragender Wandbalken braucht eine massive Wand (Ziegel, Beton, Kalksandstein). Hier besser Pfosten stellen.' : 'Dübel tragen hier nur 0,15–0,6 kN – für eine Kippsicherung reicht das meist; in Trockenbau in die Ständer schrauben.', targets: [f.memberId] })
+      }
     }
     if (room.floor === 'holzdielen') add({ id: `boden:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Holzbalkendecke/Dielenboden', detail: 'Pfosten auf Lastverteilplatten (z. B. 20 × 20 cm Multiplex) stellen, möglichst wandnah.', targets: [a.id] })
     // Heizkörper unter der Liegefläche
