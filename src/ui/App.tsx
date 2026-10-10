@@ -280,7 +280,7 @@ function Help() {
             <li>{t('Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen')}</li>
             <li>{t('Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen')}</li>
             <li>
-              <kbd>V</kbd> {t('Auswahl')} · <kbd>B</kbd> {t('Balken (zwei Klicks,')} <kbd>{'Shift'}</kbd> {t('gerade,')} <kbd>{t('Strg')}</kbd> {t('weiterzeichnen)')} · <kbd>P</kbd> {t('Pfosten')} · <kbd>{'Esc'}</kbd> {t('abbrechen')}
+              <kbd>V</kbd> {t('Auswahl')} · <kbd>B</kbd> {t('Balken (zwei Klicks,')} <kbd>{'Shift'}</kbd> {t('gerade,')} <kbd>{t('Strg')}</kbd> {t('weiterzeichnen)')} · <kbd>P</kbd> {t('Pfosten')} · <kbd>{'Esc'}</kbd> {t('abbrechen bzw. vom Bauteil zum ganzen Bett')}
             </li>
             <li>
               <kbd>{t('Entf')}</kbd> {t('löschen')} · <kbd>{t('Strg')}</kbd>+<kbd>Z</kbd>/<kbd>Y</kbd> {t('rückgängig/wiederholen')} · <kbd>R</kbd> {t('Querschnitt drehen')} · <kbd>F</kbd> {t('Fokus')}
@@ -336,6 +336,9 @@ function useShortcuts() {
       else if (k === '6') s.setView({ kind: 'foto' })
       else if (k === '0') s.setView({ kind: '3d' })
       else if (k === '4') s.setView({ kind: 'person', preset: s.view.kind === 'person' ? presets[(presets.indexOf(s.view.preset) + 1) % 4] : 'tuer' })
+      else if (k === 'escape' && s.tool === 'select' && (s.selection?.kind === 'member' || s.selection?.kind === 'panel') && s.selection.id.includes(':'))
+        // Esc geht vom Einzelteil eines Betts eine Ebene hoch zum ganzen Bett
+        s.select({ kind: 'assembly', id: s.selection.id.split(':')[0] })
       else if (k === 'v' || k === 'escape') s.set({ tool: 'select' })
       else if (k === 'b') s.set({ tool: 'balken' })
       else if (k === 'p') s.set({ tool: 'pfosten' })
