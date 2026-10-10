@@ -131,7 +131,7 @@ function RoomTab() {
             </button>
           </div>
         ))}
-        <button className="add" onClick={() => setRoom((d) => void d.room.rosettes.push({ id: uid('rosette'), x: r.length / 2, y: r.width / 2, diameter: 600, depth: 30, lampDrop: 700, lampDiameter: 400 }))}>
+        <button className="add" onClick={() => setRoom((d) => void d.room.rosettes.push({ id: uid('rosette'), x: r.length / 2, y: r.width / 2, diameter: 600, depth: 30, lampDrop: 700, lampDiameter: 350 }))}>
           + Rosette/Lampe
         </button>
       </Section>

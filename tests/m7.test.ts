@@ -75,6 +75,23 @@ describe('Mehrere Matratzen', () => {
     expect(s.members.get(mid.id)!.util).toBeGreaterThan(0.05)
   })
 
+  it('Abstand zwischen den Matratzen: Gestell wächst um den Abstand, Mittelträger mittig in der Lücke', () => {
+    const base = resolveProject(withBed({ mattressCount: 2, mattressWidth: 900 }))
+    const p = withBed({ mattressCount: 2, mattressWidth: 900, mattressSpacing: 300 })
+    const r = resolveProject(p)
+    const id = p.assemblies[0].id
+    expect(r.beds.get(id)!.outerWidth - base.beds.get(id)!.outerWidth).toBe(300 - p.assemblies[0].params.mattressGap)
+    const ys = r.panels
+      .filter((x) => x.kind === 'matratze')
+      .map((x) => x.outline.map((q) => q.y))
+      .map((qs) => [Math.min(...qs), Math.max(...qs)])
+      .sort((a, b) => a[0] - b[0])
+    expect(Math.round(ys[1][0] - ys[0][1])).toBe(300)
+    const mid = r.members.find((m) => m.partKey === 'mitteltraeger')!
+    expect(Math.abs(mid.start.y - (ys[0][1] + ys[1][0]) / 2)).toBeLessThan(1)
+    expect(computeStatics(p, r).warnings).toEqual([])
+  })
+
   it('Rollroste hintereinander: ein Rost je Matratze und ein Querträger an der Fuge', () => {
     const p = withBed({ mattressCount: 2, mattressLayout: 'hintereinander', deck: 'rollrost', deckCatalogId: 'rollrost' })
     const r = resolveProject(p)

@@ -98,7 +98,7 @@ Mehr Hintergrund: [Spezifikation und Ausbaustufen](SPEZIFIKATION.md), [Recherche
 
 ## Wichtig
 
-Luftschloss ersetzt keine Tragwerksplanung. Die Prüfungen sind Empfehlungen auf Basis von Normen-Richtwerten (z. B. DIN EN 747), Herstellerangaben und Heimwerker-Erfahrung. Gelb markierte Maße sind geschätzt – vor dem Zuschnitt nachmessen.
+Luftschloss ersetzt keine Tragwerksplanung. Die Prüfungen sind Empfehlungen auf Basis von Normen-Richtwerten (z. B. DIN EN 747), Herstellerangaben und Heimwerker-Erfahrung. Vor dem Zuschnitt alle Maße am Bau nachmessen.
 
 ## Lizenz
 

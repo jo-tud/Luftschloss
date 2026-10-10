@@ -143,6 +143,16 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
             <Sel label="Anordnung" value={P.mattressLayout ?? 'nebeneinander'} options={[['nebeneinander', 'nebeneinander'], ['hintereinander', 'hintereinander']]} onChange={(v) => setP({ mattressLayout: v })} />
           )}
         </div>
+        {(P.mattressCount ?? 1) > 1 && (
+          <Num
+            label="Abstand zwischen den Matratzen"
+            value={P.mattressSpacing ?? P.mattressGap}
+            onChange={(v) => setP({ mattressSpacing: v })}
+            min={0}
+            max={1000}
+            title="Platz zwischen den Matratzen, z. B. für eine Ablage, ein Brett als Trennung oder einfach mehr Luft. Das Bett wird entsprechend breiter bzw. länger."
+          />
+        )}
         {(P.type === 'freistehend' || P.type === 'deckenhoch') && (
           <>
             <Check label="Etagenbett (zweites Bett unten)" value={P.lowerBed} onChange={(v) => setP({ lowerBed: v })} />

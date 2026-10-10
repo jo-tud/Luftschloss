@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { memberAxes, memberBoxes } from '../model/geometry'
 import type { Resolved } from '../model/resolve'
+import type { Member } from '../model/types'
 import { T } from './camera'
 
 /**
@@ -9,7 +10,7 @@ import { T } from './camera'
  */
 export const BOLT_TYPES = new Set(['schlossschraube', 'bettschraube'])
 
-export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washers: THREE.Matrix4[]; nuts: THREE.Matrix4[]; plates: THREE.Matrix4[] } {
+export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washers: THREE.Matrix4[]; nuts: THREE.Matrix4[]; plates: THREE.Matrix4[]; pockets: THREE.Matrix4[] } {
   const byId = new Map(r.members.map((m) => [m.id, m]))
   const heads: THREE.Matrix4[] = []
   const washers: THREE.Matrix4[] = []
@@ -19,6 +20,33 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
     const q = new THREE.Quaternion().setFromUnitVectors(up, dir)
     list.push(new THREE.Matrix4().compose(T(at.x, at.y, at.z), q, new THREE.Vector3(...scale)))
   }
+  const pockets: THREE.Matrix4[] = []
+  type V = { x: number; y: number; z: number }
+  const dotv = (a: V, b: V) => a.x * b.x + a.y * b.y + a.z * b.z
+  const crossv = (a: V, b: V): V => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x })
+  const normv = (a: V): V => {
+    const l = Math.hypot(a.x, a.y, a.z) || 1
+    return { x: a.x / l, y: a.y / l, z: a.z / l }
+  }
+  const addv = (base: V, ...terms: [V, number][]): V => terms.reduce((q, [d, k]) => ({ x: q.x + d.x * k, y: q.y + d.y * k, z: q.z + d.z * k }), base)
+  /** Ausdehnung eines Stabs entlang einer Richtung */
+  const range = (m: Member, e: V): [number, number] => {
+    let lo = Infinity
+    let hi = -Infinity
+    for (const o of memberBoxes(m)) {
+      const c = dotv(o.center, e)
+      const r2 = o.axes.reduce((s2, a, i) => s2 + Math.abs(dotv(a, e)) * o.half[i], 0)
+      lo = Math.min(lo, c - r2)
+      hi = Math.max(hi, c + r2)
+    }
+    return [lo, hi]
+  }
+  const bedCentre = (m: Member): V | undefined => {
+    const bed = m.assemblyId ? r.beds.get(m.assemblyId) : undefined
+    if (!bed) return undefined
+    return { x: bed.footprint.reduce((s2, q) => s2 + q.x, 0) / bed.footprint.length, y: bed.footprint.reduce((s2, q) => s2 + q.y, 0) / bed.footprint.length, z: 0 }
+  }
+  const toThree = (d: V) => new THREE.Vector3(d.x, d.z, -d.y)
   for (const j of r.joints) {
     if (!BOLT_TYPES.has(j.typeId)) continue
     const A = byId.get(j.a)
@@ -26,47 +54,83 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
     if (!A || !B || A.round || B.round) continue
     const aA = memberAxes(A)[0]
     const aB = memberAxes(B)[0]
-    let ax = { x: aA.y * aB.z - aA.z * aB.y, y: aA.z * aB.x - aA.x * aB.z, z: aA.x * aB.y - aA.y * aB.x }
-    let len = Math.hypot(ax.x, ax.y, ax.z)
-    if (len < 0.3) continue
-    ax = { x: ax.x / len, y: ax.y / len, z: ax.z / len }
-    // Durchgang durch beide Hölzer entlang der Bolzenachse
-    let lo = Infinity
-    let hi = -Infinity
-    for (const m of [A, B]) {
-      for (const o of memberBoxes(m)) {
-        const c = o.center.x * ax.x + o.center.y * ax.y + o.center.z * ax.z
-        const e = o.axes.reduce((s2, a, i) => s2 + Math.abs(a.x * ax.x + a.y * ax.y + a.z * ax.z) * o.half[i], 0)
-        lo = Math.min(lo, c - e)
-        hi = Math.max(hi, c + e)
+    const c0 = crossv(aA, aB)
+    if (Math.hypot(c0.x, c0.y, c0.z) < 0.3) continue
+    const ax = normv(c0)
+    // Wo liegen beide Hölzer übereinander (quer zur Bolzenachse gesehen)? Nur dort kann durchgebolzt werden.
+    const e1 = aA
+    const e2 = normv(crossv(ax, aA))
+    const ov = (e: V) => {
+      const [a0, a1] = range(A, e)
+      const [b0, b1] = range(B, e)
+      return [Math.max(a0, b0), Math.min(a1, b1)] as [number, number]
+    }
+    const o1 = ov(e1)
+    const o2 = ov(e2)
+    const bolt = (base: V, dir: V, tHead: number, tNut: number) => {
+      // dir zeigt vom Knoten zum Kopf
+      const at = (t: number) => addv(base, [dir, t])
+      const outDir = toThree(dir)
+      const inDir = outDir.clone().negate()
+      put(heads, at(tHead), outDir, [0.0125, 0.006, 0.0125])
+      if (!Number.isNaN(tNut)) {
+        put(washers, at(tNut - 1), inDir, [0.0105, 0.002, 0.0105])
+        put(nuts, at(tNut - 6), inDir, [0.0095, 0.008, 0.0095])
       }
     }
-    const p0 = j.pos.x * ax.x + j.pos.y * ax.y + j.pos.z * ax.z
-    // Kopf nach außen: weg von der Bettmitte
-    const bed = A.assemblyId ? r.beds.get(A.assemblyId) : undefined
-    let sign = 1
-    if (bed) {
-      const cx = bed.footprint.reduce((s2, q) => s2 + q.x, 0) / bed.footprint.length
-      const cy = bed.footprint.reduce((s2, q) => s2 + q.y, 0) / bed.footprint.length
-      const toC = (cx - j.pos.x) * ax.x + (cy - j.pos.y) * ax.y
-      sign = toC > 0 ? -1 : 1
+    if (o1[1] - o1[0] > 25 && o2[1] - o2[0] > 25 && j.typeId === 'schlossschraube') {
+      // Durchgebolzt: Hölzer liegen aneinander (Beischlag, Kreuzung, überlappende Ecke)
+      const [lo, hi] = (() => {
+        const [a0, a1] = range(A, ax)
+        const [b0, b1] = range(B, ax)
+        return [Math.min(a0, b0), Math.max(a1, b1)]
+      })()
+      const p0 = dotv(j.pos, ax)
+      const mid = addv({ x: 0, y: 0, z: 0 }, [e1, (o1[0] + o1[1]) / 2], [e2, (o2[0] + o2[1]) / 2], [ax, p0])
+      // Kopf nach außen, weg von der Bettmitte
+      const bc = bedCentre(A)
+      const sign = bc && dotv({ x: bc.x - j.pos.x, y: bc.y - j.pos.y, z: 0 }, ax) > 0 ? -1 : 1
+      const dir = { x: ax.x * sign, y: ax.y * sign, z: ax.z * sign }
+      const tHead = sign > 0 ? hi - p0 : p0 - lo
+      const tNut = -(sign > 0 ? p0 - lo : hi - p0)
+      // zwei Bolzen entlang der längeren Überdeckung, mit Randabstand
+      const long1 = o1[1] - o1[0] >= o2[1] - o2[0]
+      const e = long1 ? e1 : e2
+      const span = long1 ? o1[1] - o1[0] : o2[1] - o2[0]
+      const spread = Math.min(span * 0.25, 60)
+      for (const k of [-1, 1]) bolt(addv(mid, [e, spread * k]), dir, tHead, tNut)
+      continue
     }
-    const tHead = (sign > 0 ? hi : lo) - p0
-    const tNut = (sign > 0 ? lo : hi) - p0
-    // zwei Bolzen quer zur Achse versetzt, entlang des waagrechten Stabs bzw. der Höhe
-    const horiz = Math.abs(aA.z) < 0.5 ? aA : aB
-    let off = { x: ax.y * horiz.z - ax.z * horiz.y, y: ax.z * horiz.x - ax.x * horiz.z, z: ax.x * horiz.y - ax.y * horiz.x }
-    len = Math.hypot(off.x, off.y, off.z) || 1
-    off = { x: off.x / len, y: off.y / len, z: off.z / len }
-    const spread = Math.min(A.h, B.h, A.b, B.b) * 0.28
-    const outDir = new THREE.Vector3(ax.x * sign, ax.z * sign, -ax.y * sign)
-    const inDir = outDir.clone().negate()
-    for (const k of [-1, 1]) {
-      const base = { x: j.pos.x + off.x * spread * k, y: j.pos.y + off.y * spread * k, z: j.pos.z + off.z * spread * k }
-      const at = (t: number) => ({ x: base.x + ax.x * t, y: base.y + ax.y * t, z: base.z + ax.z * t })
-      put(heads, at(tHead), outDir, [0.0125, 0.006, 0.0125])
-      put(washers, at(tNut + sign * -1), inDir, [0.0105, 0.002, 0.0105])
-      put(nuts, at(tNut - sign * 6), inDir, [0.0095, 0.008, 0.0095])
+    if (!j.ending) continue
+    // Stumpfer Stoß: Bolzen durch das durchlaufende Holz ins Hirnholz des anschließenden,
+    // Mutter in einer Querbohrung (Tasche) auf der Innenseite – Prinzip der Bettschraube
+    const E = byId.get(j.ending)
+    const Tm = E === A ? B : A
+    if (!E) continue
+    const axesE = memberAxes(E)
+    const aE = axesE[0]
+    const dS = Math.hypot(E.start.x - j.pos.x, E.start.y - j.pos.y, E.start.z - j.pos.z)
+    const dEnd = Math.hypot(E.end.x - j.pos.x, E.end.y - j.pos.y, E.end.z - j.pos.z)
+    const pE = dS < dEnd ? E.start : E.end
+    const into = dS < dEnd ? aE : { x: -aE.x, y: -aE.y, z: -aE.z }
+    const out = { x: -into.x, y: -into.y, z: -into.z }
+    const [t0, t1] = range(Tm, out)
+    const tHead = t1 - dotv(pE, out)
+    if (tHead < 5 || t0 - dotv(pE, out) > 5) continue
+    const nutDepth = 70
+    // Bolzen gegeneinander versetzt, damit sich zwei Stöße am selben Pfosten nicht kreuzen
+    const hDir = axesE[2]
+    const shift = Math.abs(aE.x) >= Math.abs(aE.y) ? 0.1 : -0.1
+    const bc = bedCentre(E)
+    const side = bc && dotv({ x: bc.x - pE.x, y: bc.y - pE.y, z: 0 }, axesE[1]) < 0 ? -1 : 1
+    const sideDir = { x: axesE[1].x * side, y: axesE[1].y * side, z: axesE[1].z * side }
+    for (const k of [-0.25, 0.25]) {
+      const base = addv(pE, [hDir, (k + shift) * E.h])
+      bolt(base, out, tHead, NaN)
+      // sichtbare Tasche mit Mutter auf der Innenseite
+      const pocket = addv(base, [into, nutDepth], [sideDir, E.b / 2 + 0.3])
+      put(pockets, pocket, toThree(sideDir), [0.011, 0.001, 0.011])
+      put(washers, addv(pocket, [sideDir, 0.4]), toThree(sideDir), [0.0065, 0.0008, 0.0065])
     }
   }
   // Winkel und Balkenschuhe: verzinkte Bleche (2,5 mm) am Ende des anschließenden Stabs
@@ -129,5 +193,5 @@ export function hardwareInstances(r: Resolved): { heads: THREE.Matrix4[]; washer
       }
     }
   }
-  return { heads, washers, nuts, plates }
+  return { heads, washers, nuts, plates, pockets }
 }

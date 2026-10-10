@@ -86,8 +86,9 @@ kbd {
 }
 
 .app {
+  position: relative;
   display: grid;
-  grid-template-columns: 290px 1fr 340px;
+  grid-template-columns: var(--left-w, 290px) 1fr var(--right-w, 340px);
   grid-template-rows: 46px 1fr;
   grid-template-areas: 'top top top' 'left center right';
   height: 100%;
@@ -417,7 +418,9 @@ kbd {
   position: absolute;
   top: 10px;
   left: 10px;
+  max-width: calc(100% - 20px);
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   background: rgba(255, 255, 255, 0.92);
@@ -563,8 +566,50 @@ kbd {
   background: var(--panel);
   border-left: 1px solid var(--line);
   display: grid;
-  grid-template-rows: 1fr minmax(160px, 38%);
+  grid-template-rows: 1fr var(--checks-h, minmax(160px, 38%));
   min-height: 0;
+  position: relative;
+}
+
+/* Ziehleisten zum Verbreitern der Seitenleisten (nur Desktop) */
+.splitter {
+  position: absolute;
+  z-index: 30;
+  touch-action: none;
+}
+.splitter::after {
+  content: '';
+  position: absolute;
+  background: transparent;
+  transition: background 0.15s;
+}
+.splitter:hover::after,
+.splitter.active::after {
+  background: var(--accent, #2b6cb0);
+}
+.splitter.v {
+  top: 46px;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+}
+.splitter.v::after {
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 3px;
+}
+.splitter.h {
+  left: 0;
+  right: 0;
+  height: 9px;
+  cursor: row-resize;
+}
+.splitter.h::after {
+  left: 0;
+  right: 0;
+  top: 3px;
+  height: 3px;
 }
 .props.empty {
   padding: 14px;
@@ -1283,6 +1328,9 @@ table.compare td {
   }
   .narrow-only {
     display: inline-block;
+  }
+  .splitter {
+    display: none;
   }
   .sidebar,
   .right {
