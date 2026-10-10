@@ -187,16 +187,45 @@ kbd {
   font-weight: 600;
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
   align-items: center;
   list-style: none;
+}
+/* Aufklapp-Pfeil */
+.section > summary::before {
+  content: '▸';
+  color: var(--muted);
+  font-size: 11px;
+  transition: transform 0.15s;
+}
+.section[open] > summary::before {
+  transform: rotate(90deg);
+}
+.section-title {
+  flex: none;
+}
+/* Kurzfassung im zugeklappten Abschnitt */
+.section-sum {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
 }
 .section > summary::-webkit-details-marker {
   display: none;
 }
 .section > summary small {
+  margin-left: auto;
   font-weight: 400;
   color: var(--muted);
+}
+.section-sum + small {
+  margin-left: 0;
 }
 .section-body {
   padding: 0 12px 10px;
@@ -566,9 +595,27 @@ kbd {
   background: var(--panel);
   border-left: 1px solid var(--line);
   display: grid;
-  grid-template-rows: 1fr var(--checks-h, minmax(160px, 38%));
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   position: relative;
+}
+/* Reiter Eigenschaften | Prüfung */
+.right-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.right-tabs button.on {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+}
+.right-tabs .badges {
+  font-weight: 400;
+}
+.right-tabs .b {
+  white-space: nowrap;
 }
 
 /* Ziehleisten zum Verbreitern der Seitenleisten (nur Desktop) */
@@ -653,7 +700,6 @@ kbd {
 }
 
 .checks {
-  border-top: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -667,6 +713,9 @@ kbd {
 }
 .checks header .check {
   margin-left: auto;
+}
+.checks li.notes-toggle .title {
+  color: var(--muted);
 }
 .badges {
   display: flex;
@@ -1780,15 +1829,103 @@ button.primary:hover:not(:disabled) {
 button.primary:disabled {
   opacity: 0.5;
 }
-.props-actions {
+/* Kopfzeile der Eigenschaften: Objekt und Aktionen, bleibt beim Scrollen stehen */
+.obj-head {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   display: flex;
-  justify-content: flex-end;
-  padding: 6px 12px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+}
+.obj-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.obj-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.obj-title b,
+.obj-title small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.obj-title small {
+  color: var(--muted);
+}
+.obj-actions {
+  position: relative;
+  display: flex;
+  gap: 4px;
+}
+.obj-actions button.icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.obj-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.obj-menu button {
+  justify-content: flex-start;
+  text-align: left;
+  border-color: transparent;
+}
+.obj-menu button.danger {
+  color: var(--err);
+}
+/* Befunde zur Auswahl → Prüfliste */
+.findings-hint {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 8px 12px 0;
+  text-align: left;
+  background: #fff7e6;
+  border-color: #f1d9a6;
+  color: #7a5200;
+}
+.findings-hint.err {
+  background: #fdecec;
+  border-color: #f2c2c2;
+  color: #8c1f1f;
+}
+.hint.pad {
+  padding: 0 12px;
+}
+.props.empty .tips {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #444;
+}
+.props.empty .tips li {
+  display: flex;
+  gap: 8px;
 }
 .nudge {
   display: flex;
@@ -2186,4 +2323,9 @@ button.wide {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   pointer-events: none;
   z-index: 5;
+}
+
+/* Kennzahlen des Betts direkt unter der Kopfzeile */
+.props > .summary {
+  margin: 10px 12px 2px;
 }

@@ -43,17 +43,18 @@ export function Checks() {
   const focus = useStore((s) => s.focus)
   const [open, setOpen] = useState<string | null>(null)
   const [showAck, setShowAck] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
   const statics = useStore((s) => s.statics)
   const ack = new Set(p.settings.acknowledged)
   const order: Record<Severity, number> = { fehler: 0, warnung: 1, hinweis: 2 }
   const all = [...d.analysis.findings, ...staticsFindings(p, statics)].sort((a, b) => Number(ack.has(a.id)) - Number(ack.has(b.id)) || order[a.severity] - order[b.severity])
-  const list = all.filter((f) => showAck || !ack.has(f.id))
-  const count = (s: Severity) => all.filter((f) => f.severity === s && !ack.has(f.id)).length
+  const visible = all.filter((f) => showAck || !ack.has(f.id))
+  // Hinweise zusammengeklappt, damit Fehler und Warnungen auffallen
+  const notes = visible.filter((f) => f.severity === 'hinweis')
+  const list = showNotes ? visible : visible.filter((f) => f.severity !== 'hinweis')
   return (
     <section className="checks">
       <header>
-        <b>{t('Prüfung')}</b>
-        <CountBadges c={{ fehler: count('fehler'), warnung: count('warnung'), hinweis: count('hinweis') }} />
         <label className="check small">
           <input type="checkbox" checked={showAck} onChange={(e) => setShowAck(e.target.checked)} />
           <span>{t('quittierte zeigen')}</span>
@@ -73,6 +74,8 @@ export function Checks() {
                   if (t) {
                     select(selectionFor(p, t))
                     focus(t)
+                    // in der Prüfliste bleiben
+                    useStore.setState({ rightTab: 'checks' })
                   }
                 }}
               >
@@ -126,7 +129,15 @@ export function Checks() {
             </li>
           )
         })}
-        {!list.length && <li className="empty">{t('Keine offenen Punkte.')}</li>}
+        {!visible.length && <li className="empty">{t('Keine offenen Punkte.')}</li>}
+        {notes.length > 0 && (
+          <li className="notes-toggle">
+            <button className="title" aria-expanded={showNotes} onClick={() => setShowNotes(!showNotes)}>
+              <span aria-hidden>{showNotes ? '▾' : '▸'}</span>
+              <span>{showNotes ? t('Hinweise ausblenden') : t('{n} Hinweise anzeigen', { n: notes.length })}</span>
+            </button>
+          </li>
+        )}
       </ul>
     </section>
   )
