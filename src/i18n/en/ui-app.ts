@@ -237,5 +237,6 @@ const en: Record<string, string> = {
   'Bett löschen': 'Delete bed',
   'Teil entfernen': 'Remove part',
   Entfernen: 'Remove',
+  "abbrechen bzw. vom Bauteil zum ganzen Bett": "cancel, or go from a part to the whole bed",
 }
 export default en

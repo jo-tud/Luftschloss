@@ -191,6 +191,7 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 - Rückgängig und Wiederholen (200 Schritte; Ziehen zählt als ein Schritt). Tastenkürzel: 1–6, 0, V, B, P, R, F, Entf/Rücktaste, Esc, ?, Strg/Cmd+Z, Strg+Y/Strg+Shift+Z. ✅
 - Griffe an den Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Spiegeln. ✅
 - Seitenleisten und Prüfliste in der Größe veränderbar (Rand ziehen, Doppelklick setzt zurück). ✅
+- Ein angeklicktes Bauteil zeigt oben den Pfad „Bett › Bauteil“; ein Klick auf das Bett oder `Esc` wählt das ganze Bett. ✅
 - Geplant ◻: Maßketten mit direkter Eingabe in der Ansicht.
 
 ---

@@ -2163,3 +2163,17 @@ button.wide {
   font-weight: 600;
   color: var(--accent, #2a6f97);
 }
+
+/* Auswahlpfad: Bett › Bauteil */
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line, #e3e5e8);
+  font-size: 13px;
+}
+.crumbs .link {
+  font-weight: 600;
+}

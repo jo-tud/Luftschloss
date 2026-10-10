@@ -42,6 +42,7 @@ function PropertiesBody() {
         </p>
         <p>{t('Klicke ein Bauteil, Fenster oder Möbel an. Doppelklick fliegt zu dieser Stelle heran, jeder weitere geht näher.')}</p>
         <p>{t('Links unter „Bett“ setzt du eine Vorlage ein, unter „Raum“ trägst du Maße, Stuck und Sockelleiste ein.')}</p>
+        <p>{t('Ganzes Bett auswählen: links unter „Bett“ auf das Bett klicken – oder ein Teil anklicken und Esc drücken.')}</p>
       </div>
     )
   if (sel.kind === 'assembly') {
@@ -55,6 +56,15 @@ function PropertiesBody() {
     const a = asmId ? p.assemblies.find((x) => x.id === asmId) : undefined
     return (
       <div className="props">
+        {a && (
+          <nav className="crumbs" aria-label={t('Auswahl')}>
+            <button className="link" onClick={() => useStore.getState().select({ kind: 'assembly', id: a.id })} title={t('Ganzes Bett auswählen (Esc)')}>
+              🛏 {tr(a.name)}
+            </button>
+            <span>›</span>
+            <b>{tr(m?.name ?? pa?.name ?? '') || t('Bauteil')}</b>
+          </nav>
+        )}
         {m && <MemberProps m={m} free={!m.assemblyId} />}
         {pa && !m && (
           <Section title={pa.name ? tr(pa.name) : t('Fläche')}>

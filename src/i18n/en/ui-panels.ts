@@ -312,5 +312,7 @@ const en: Record<string, string> = {
   'Nicht übernommen: mindestens {min}': 'Not applied: at least {min}',
   'Nicht übernommen: höchstens {max}': 'Not applied: at most {max}',
   'Geschätzt – bitte nachmessen': 'Estimated – please measure',
+  "Ganzes Bett auswählen: links unter „Bett“ auf das Bett klicken – oder ein Teil anklicken und Esc drücken.": "Select the whole bed: click it under “Bed” on the left – or click any part and press Esc.",
+  "Ganzes Bett auswählen (Esc)": "Select the whole bed (Esc)",
 }
 export default en
