@@ -329,6 +329,8 @@ export interface Assembly {
 export interface BedGroup {
   id: string
   name: string
+  /** Liegefläche: Matratze als Rechteck (Ecke x/y, Länge entlang x, Breite entlang y), Unterkante z */
+  deck?: { x: Mm; y: Mm; length: Mm; width: Mm; z: Mm; thickness: Mm }
 }
 
 export type JointKind = 'ecke' | 't-stoss' | 'kreuzung' | 'auflage' | 'laengsstoss' | 'strebe' | 'beischlag'

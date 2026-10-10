@@ -337,6 +337,69 @@ export function analyze(p: Project, r: Resolved): Analysis {
     }
   }
 
+  // --- Eigene Betten aus freien Teilen ------------------------------------------------
+  for (const g of p.groups) {
+    const D = g.deck
+    if (!D) {
+      add({ id: `liegeflaeche:${g.id}`, severity: 'hinweis', category: CAT.frei, title: t('{name}: Liegefläche fehlt', { name: tr(g.name) }), detail: t('Ohne Liegefläche fehlen die Lasten für die Statik und die Prüfungen für Kopfraum und Absturzsicherung. Bett auswählen → „Liegefläche erkennen“.'), targets: [g.id] })
+      continue
+    }
+    const fp = { minX: D.x, maxX: D.x + D.length, minY: D.y, maxY: D.y + D.width }
+    const parts = r.members.filter((m) => m.groupId === g.id)
+    const mattressTop = D.z + D.thickness
+    let ceilingAbove = room.height
+    for (const ro of room.rosettes) {
+      const rr = Math.max(ro.diameter, ro.lampDiameter) / 2
+      if (ro.x + rr > fp.minX && ro.x - rr < fp.maxX && ro.y + rr > fp.minY && ro.y - rr < fp.maxY) ceilingAbove = Math.min(ceilingAbove, room.height - Math.max(ro.depth, ro.lampDrop))
+    }
+    // Unterkante: tiefstes waagrechtes Holz unter der Liegefläche
+    const under = parts
+      .flatMap((m) => memberBoxes(m).map(obbBounds))
+      .filter((b) => b.max.z <= D.z + 3 && b.max.z - b.min.z < 300 && b.max.x > fp.minX && b.min.x < fp.maxX && b.max.y > fp.minY && b.min.y < fp.maxY)
+    const underside = under.length ? Math.min(...under.map((b) => b.min.z)) : D.z
+    const headroom = ceilingAbove - mattressTop
+    const ph = p.settings.personHeight
+    const c: Clearance = { assemblyId: g.id, underside, headroom, canStand: underside >= ph + 50, canSitDesk: underside >= 450 + 0.52 * ph + 60, canSitBed: headroom >= 0.52 * ph + 50 }
+    clearances.push(c)
+    add({
+      id: `frei:${g.id}`,
+      severity: 'hinweis',
+      category: CAT.frei,
+      title: t('Unter dem Bett {under}, über der Matratze {above}', { under: fmtM(underside), above: fmtM(headroom) }),
+      detail: t('Stehen ({height}): {stand} · Sitzen am Schreibtisch: {desk} · Aufrecht sitzen im Bett: {bed}. Faustwerte Altbau: unten 1,80–2,00 m, Matratze bis Decke 0,80–1,00 m.', { height: fmtM(ph), stand: yes(c.canStand), desk: yes(c.canSitDesk), bed: yes(c.canSitBed) }),
+      targets: [g.id],
+    })
+    if (headroom < 750) add({ id: `kopf:${g.id}`, severity: 'warnung', category: CAT.frei, title: t('Nur {h} über der Matratze', { h: fmtM(headroom) }), detail: t('Zum Aufsetzen im Bett sind 0,80–1,00 m angenehm.'), targets: [g.id] })
+    // Absturzsicherung je Seite: Hölzer mind. 16 cm über der Matratze, nah an der Kante, auf mind. 60 % der Länge
+    if (D.z > 600) {
+      const guards = parts.flatMap((m) => memberBoxes(m).map(obbBounds)).filter((b) => b.max.z >= mattressTop + 160)
+      const edges: { wall: 'A' | 'B' | 'C' | 'D'; along: 'x' | 'y'; at: number; lo: number; hi: number; gap: number }[] = [
+        { wall: 'A', along: 'x', at: fp.minY, lo: fp.minX, hi: fp.maxX, gap: fp.minY },
+        { wall: 'C', along: 'x', at: fp.maxY, lo: fp.minX, hi: fp.maxX, gap: room.width - fp.maxY },
+        { wall: 'B', along: 'y', at: fp.minX, lo: fp.minY, hi: fp.maxY, gap: fp.minX },
+        { wall: 'D', along: 'y', at: fp.maxX, lo: fp.minY, hi: fp.maxY, gap: room.length - fp.maxX },
+      ]
+      for (const e of edges) {
+        const spans = guards
+          .filter((b) => (e.along === 'x' ? b.max.y > e.at - 150 && b.min.y < e.at + 150 : b.max.x > e.at - 150 && b.min.x < e.at + 150))
+          .map((b) => (e.along === 'x' ? [Math.max(e.lo, b.min.x), Math.min(e.hi, b.max.x)] : [Math.max(e.lo, b.min.y), Math.min(e.hi, b.max.y)]))
+          .filter(([a, b]) => b > a)
+          .sort((a, b) => a[0] - b[0])
+        let covered = 0
+        let end = -Infinity
+        for (const [a, b] of spans) {
+          covered += Math.max(0, b - Math.max(a, end))
+          end = Math.max(end, b)
+        }
+        if (covered >= 0.6 * (e.hi - e.lo)) continue
+        const side = t('zu Wand {w}', { w: e.wall })
+        if (e.gap > 75 && e.gap < 230) add({ id: `wandspalt:${g.id}:${e.wall}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Spalt {gap} zwischen Bett ({side}) und Wand', { gap: fmtCm(e.gap), side }), detail: t('Einklemmgefahr: Spalt höchstens 7,5 cm oder über 23 cm – sonst Geländer auch auf dieser Seite.'), targets: [g.id] })
+        else if (e.gap >= 230) add({ id: `offen:${g.id}:${e.wall}`, severity: safety('fehler'), category: CAT.sicherheit, title: t('Seite {side} ohne Absturzsicherung', { side }), detail: t('Geländer mindestens 16 cm über der Matratze vorsehen.'), targets: [g.id] })
+      }
+      if (prof === 'kinder') add({ id: `alter:${g.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Oben schlafen erst ab 6 Jahren'), targets: [g.id] })
+    }
+  }
+
   // --- Material ----------------------------------------------------------------------
   const unsorted = new Set<string>()
   for (const m of r.members) {
@@ -357,7 +420,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
 
   // --- Projekt ------------------------------------------------------------------------
   if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: CAT.raum, title: t('{n} Maße sind nur geschätzt', { n: p.estimated.length }), detail: t('Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.'), targets: [] })
-  if (p.assemblies.length) add({ id: 'rauchmelder', severity: 'hinweis', category: CAT.sicherheit, title: t('Rauchmelder über der Schlafebene'), detail: t('Rauch staut sich unter der Decke – ein Melder oberhalb der Liegefläche ist sinnvoll.'), targets: [] })
+  if (p.assemblies.length || p.groups.length) add({ id: 'rauchmelder', severity: 'hinweis', category: CAT.sicherheit, title: t('Rauchmelder über der Schlafebene'), detail: t('Rauch staut sich unter der Decke – ein Melder oberhalb der Liegefläche ist sinnvoll.'), targets: [] })
 
   const ack = new Set(p.settings.acknowledged)
   const order: Record<Severity, number> = { fehler: 0, warnung: 1, hinweis: 2 }

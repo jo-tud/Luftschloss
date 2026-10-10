@@ -260,7 +260,9 @@ export function Controller() {
         // (ein Teil eines ausgewählten Betts verschiebt das ganze Bett). Sonst dreht bzw. schiebt die Ansicht.
         const asmOf = (id?: string) => (id?.includes(':') ? id.split(':')[0] : id)
         const cur = st.selection
-        const grp = groupOf(st.project, hit.data.id)
+        // eigenes Bett: über ein freies Teil oder seine Matratze (ID mit Bett-Präfix)
+        const prefix = hit.data.id.split(':')[0]
+        const grp = groupOf(st.project, hit.data.id) ?? (st.project.groups.some((g) => g.id === prefix) ? prefix : undefined)
         const already =
           st.multi.includes(hit.data.id) ||
           (!!cur &&
@@ -276,7 +278,7 @@ export function Controller() {
         const plane = viewPlaneThrough(hit.point)
         // ein selbst konstruiertes Bett bzw. eine Mehrfachauswahl wird als Ganzes verschoben
         const together = st.multi.includes(hit.data.id) ? st.multi : grp ? groupParts(st.project, grp) : undefined
-        const mover = makeMover(st.project, hit.data, st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45), together)
+        const mover = makeMover(st.project, hit.data, st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45), together, st.multi.includes(hit.data.id) ? undefined : grp)
         if (mover) {
           drag.current = { ...base, kind: 'object', plane, hit0: hit.point.clone(), pick: hit.data, apply: mover, coalesce: `drag-${Date.now()}`, snapshot: st.project }
           return
@@ -650,12 +652,16 @@ function snapPoint(q: Vec3, p: Project, grid: number, radius: number): Vec3 {
 }
 
 /** Liefert eine Funktion, die ein gezogenes Objekt um delta verschiebt (vom Ausgangszustand aus). */
-function makeMover(p: Project, pick: PickData, elevation: boolean, together?: string[]): ((delta: Vec3, d: Project) => void) | null {
+function makeMover(p: Project, pick: PickData, elevation: boolean, together?: string[], groupId?: string): ((delta: Vec3, d: Project) => void) | null {
   if (together?.length) {
     const ms = p.members.filter((m) => together.includes(m.id))
     const ps = p.panels.filter((x) => together.includes(x.id))
+    const deck = p.groups.find((g) => g.id === groupId)?.deck
     return (delta, d) => {
       const dz = elevation ? delta.z : 0
+      // die Liegefläche wandert mit dem Bett
+      const dg = d.groups.find((g) => g.id === groupId)
+      if (deck && dg) dg.deck = { ...deck, x: deck.x + delta.x, y: deck.y + delta.y, z: deck.z + dz }
       const mv = (q: Vec3) => ({ x: q.x + delta.x, y: q.y + delta.y, z: q.z + dz })
       for (const m of ms) {
         const dm = d.members.find((x) => x.id === m.id)!

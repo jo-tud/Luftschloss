@@ -327,5 +327,14 @@ const en: Record<string, string> = {
   "Alle freien Teile auswählen, z. B. um sie als Bett zusammenzufassen": "Select all free parts, e.g. to combine them into a bed",
   "Freie Teile ({n})": "Free parts ({n})",
   "{n} Teile entfernen": "Remove {n} parts",
+  "Noch keine Liegefläche: ohne sie fehlen die Lasten für die Statik und die Prüfungen für Kopfraum und Absturzsicherung.": "No sleeping surface yet: without it the statics has no loads, and headroom and fall protection are not checked.",
+  "Liegefläche erkennen": "Detect sleeping surface",
+  "Höhe (Unterkante Matratze)": "Height (underside of mattress)",
+  "Lage x": "Position x",
+  "Ecke der Matratze, gemessen von Wand B": "Mattress corner, measured from wall B",
+  "Lage y": "Position y",
+  "Ecke der Matratze, gemessen von Wand A": "Mattress corner, measured from wall A",
+  "Neu erkennen": "Detect again",
+  "Liegefläche entfernen": "Remove sleeping surface",
 }
 export default en

@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tk } from '../i18n'
 import { add, dot, memberAxes, memberBoxes, memberLength, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
 import { defaultJointType } from './joints'
 import { generateLoftBed, type BedFixing, type BedInfo } from './loftbed'
@@ -62,6 +62,19 @@ export function resolveProject(p: Project): Resolved {
         }
       }
     }
+  }
+
+  // Eigene Betten: Matratze auf der festgelegten Liegefläche (Last für die Statik, Bezug für die Prüfungen)
+  for (const g of p.groups) {
+    const D = g.deck
+    if (!D) continue
+    const outline = [
+      { x: D.x, y: D.y },
+      { x: D.x + D.length, y: D.y },
+      { x: D.x + D.length, y: D.y + D.width },
+      { x: D.x, y: D.y + D.width },
+    ]
+    panels.push({ id: `${g.id}:matratze`, kind: 'matratze', name: tk('Matratze'), outline, z: D.z, thickness: D.thickness, groupId: g.id })
   }
 
   const deepNotches: Resolved['deepNotches'] = []

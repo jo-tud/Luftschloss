@@ -351,8 +351,8 @@ function BedTab() {
   const update = useStore((s) => s.update)
   const select = useStore((s) => s.select)
   const sel = useStore((s) => s.selection)
-  // freie Balken, die zu keinem Bett gehören (Flächen ohne Balken allein sind selten gemeint)
-  const freeIds = p.members.filter((m) => !m.groupId).map((m) => m.id)
+  // freie Teile, die zu keinem Bett gehören – Balken und Flächen (z. B. Matratze eines aufgelösten Betts)
+  const freeIds = [...p.members.filter((m) => !m.groupId).map((m) => m.id), ...p.panels.filter((x) => !x.groupId).map((x) => x.id)]
   const insert = (preset: Preset, corner: Corner) => {
     const params = placeBed(p.room, preset.type, preset.patch, corner)
     const id = uid('bett')
