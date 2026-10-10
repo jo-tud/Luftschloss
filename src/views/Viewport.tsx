@@ -61,7 +61,8 @@ function MiniScene({ view }: { view: ViewMode }) {
   return (
     <>
       <color attach="background" args={['#f7f8fa']} />
-      <SceneContent p={project} d={d} mini showCeiling={false} />
+      {/* Draufsicht: Lampe und Rosetten verdeckten sonst das Bett (die große Ansicht schneidet sie weg) */}
+      <SceneContent p={project} d={d} mini showCeiling={false} hideCeilingItems={view.kind === 'plan'} />
       <StaticCam view={view} />
     </>
   )
@@ -82,7 +83,14 @@ export function Viewport() {
   const minis = miniViews(view, lastWall.current)
   return (
     <div className={`viewport${view.kind === 'unfold' || view.kind === 'foto' ? ' unfold-on' : ''}`}>
-      <Canvas shadows="percentage" camera={{ fov: 40, near: 0.05, far: 200, position: [3, 3, 3] }} gl={{ antialias: true, preserveDrawingBuffer: true, stencil: true }} dpr={quality === 'einfach' ? 1 : quality === 'normal' ? [1, 1.5] : [1, 2]}>
+      {/* verdeckt (Abwicklung, Foto) nicht weiterrechnen – spart auf dem Tablet Akku */}
+      <Canvas
+        frameloop={view.kind === 'unfold' || view.kind === 'foto' ? 'never' : 'always'}
+        shadows="percentage"
+        camera={{ fov: 40, near: 0.05, far: 200, position: [3, 3, 3] }}
+        gl={{ antialias: true, preserveDrawingBuffer: true, stencil: true }}
+        dpr={quality === 'einfach' ? 1 : quality === 'normal' ? [1, 1.5] : [1, 2]}
+      >
         <MainScene />
       </Canvas>
       {view.kind === 'unfold' && <UnfoldView />}
@@ -93,8 +101,9 @@ export function Viewport() {
       <StaticsPanel />
       <BuildPlayer />
       <div className="minis">
-        {minis.map((v) => (
-          <button key={v.kind} className="mini" onClick={() => setView(v)} title={t('{view} groß anzeigen', { view: viewLabel(v) })}>
+        {/* nach Platz statt Ansicht schlüsseln: sonst entstünde bei jedem Ansichtswechsel ein neuer WebGL-Kontext */}
+        {minis.map((v, slot) => (
+          <button key={slot} className="mini" onClick={() => setView(v)} title={t('{view} groß anzeigen', { view: viewLabel(v) })}>
             <Canvas frameloop="demand" camera={{ fov: 40, near: 0.05, far: 300 }} dpr={1} gl={{ stencil: true }}>
               <MiniScene view={v} />
             </Canvas>

@@ -130,7 +130,7 @@ export function Controller() {
       boxPlanes[4].set(new THREE.Vector3(0, -1, 0), (b.z1 + e) / 1000)
       gl.clippingPlanes = boxPlanes
     } else gl.clippingPlanes = []
-  })
+  }, -1) // vor allen anderen useFrame (Beschriftungen, Puppenhaus-Wände): sie sehen schon die neue Kamera
 
   // Bild selbst zeichnen, danach die Schnittflächen (Priorität 1: läuft nach allen anderen useFrame)
   useFrame(({ gl, scene, camera }) => {
@@ -151,17 +151,22 @@ export function Controller() {
     }
     const pick = (e: { clientX: number; clientY: number }): { data: PickData; point: THREE.Vector3 } | null => {
       raycaster.setFromCamera(ndc(e), camera)
+      // Linien (z. B. Netz-Liegefläche) nur in Zeigernähe treffen – Standard wäre 1 m
+      raycaster.params.Line = { threshold: worldPerPixel() * 4 }
       const hits = raycaster.intersectObjects(scene.children, true)
+      let first: { data: PickData; point: THREE.Vector3 } | null = null
       for (const h of hits) {
         if (!visibleChain(h.object)) continue
-        if (clipPlaneActive() && h.point.y > clipPlane.constant) continue
+        // Weggeschnittenes (Draufsicht-Schnitt, Schnittbox) ist unsichtbar und nicht wählbar
+        if (gl.clippingPlanes.some((pl) => pl.distanceToPoint(h.point) < 0)) continue
         const data = pickOf(h.object)
-        if (data) return { data, point: h.point }
+        // Endgriffe liegen immer obenauf (ohne Tiefentest) und gehen deshalb vor
+        if (data?.kind === 'handle') return { data, point: h.point }
+        if (data && !first) first = { data, point: h.point }
         // Wände/Boden verdecken dahinterliegende Objekte nicht für die Auswahl
       }
-      return null
+      return first
     }
-    const clipPlaneActive = () => gl.clippingPlanes.length > 0
     const worldPerPixel = () => {
       const c = cam.current!
       return c.viewH / el.clientHeight
@@ -270,6 +275,7 @@ export function Controller() {
         if (m) {
           const p0 = m[end]
           const elev = st.view.kind === 'elev' || (isOrtho(c) && c.pitch > -45)
+          let targets: Vec3[] | undefined
           drag.current = {
             ...base,
             kind: 'object',
@@ -281,7 +287,7 @@ export function Controller() {
             apply: (delta, d) => {
               const dm = d.members.find((x) => x.id === m.id)!
               let q = { x: p0.x + delta.x, y: p0.y + delta.y, z: p0.z + (elev ? delta.z : 0) }
-              if (st.snap) q = snapPoint(q, { ...d, members: d.members.filter((x) => x.id !== m.id) } as Project, st.grid, worldPerPixel() * 12 * 1000)
+              if (st.snap) q = snapPoint(q, d, st.grid, worldPerPixel() * 12 * 1000, (targets ??= snapTargets(st.project, m.id)))
               dm[end] = { x: Math.round(q.x), y: Math.round(q.y), z: Math.round(elev ? q.z : p0.z) }
             },
           }
@@ -328,6 +334,9 @@ export function Controller() {
           drag.current = { ...base, kind: 'object', plane, hit0: hit.point.clone(), pick: hit.data, apply: mover, coalesce: `drag-${Date.now()}`, snapshot: st.project }
           return
         }
+        // nicht verschiebbar (z. B. freie Platte): Ansicht bewegen, ein Klick bleibt aber ein Klick auf das Teil
+        drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: hit.data }
+        return
       }
       drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: undefined }
     }
@@ -460,8 +469,10 @@ export function Controller() {
       // zum Mauszeiger hin zoomen
       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir(c).multiplyScalar(-1), c.target)
       const p = ray(e).intersectPlane(plane, new THREE.Vector3())
+      const before = c.viewH
       c.viewH = THREE.MathUtils.clamp(c.viewH * k, 0.3, 40)
-      if (p) c.target.sub(p).multiplyScalar(k).add(p)
+      // tatsächlicher Faktor: an der Zoomgrenze nicht mehr zum Zeiger hin verschieben
+      if (p) c.target.sub(p).multiplyScalar(c.viewH / before).add(p)
     }
 
     const onDblClick = (e: MouseEvent) => {
@@ -484,10 +495,14 @@ export function Controller() {
     }
 
     let hoverFrame = 0
-    const hoverAndCursor = (e: PointerEvent) => {
+    // höchstens einmal je Bild, aber mit der letzten Zeigerposition (nicht der ersten)
+    let hoverEvent: PointerEvent | null = null
+    const hoverAndCursor = (ev: PointerEvent) => {
+      hoverEvent = ev
       if (hoverFrame) return
       hoverFrame = requestAnimationFrame(() => {
         hoverFrame = 0
+        const e = hoverEvent!
         const st = useStore.getState()
         const hit = pick(e)
         const id = hit ? (hit.data.id.includes(':') ? hit.data.id.split(':')[0] : hit.data.id) : null
@@ -565,6 +580,8 @@ export function Controller() {
       }
     }
     const onKeyUp = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase())
+    // Fensterwechsel bei gedrückter Taste: das keyup kommt nie an – sonst liefe man in der Ich-Ansicht weiter
+    const releaseKeys = () => keys.current.clear()
     const noMenu = (e: Event) => e.preventDefault()
     // mittlere Taste: kein Auto-Scrollen (Windows) und kein Einfügen (Linux)
     const noMiddle = (e: MouseEvent) => {
@@ -582,7 +599,12 @@ export function Controller() {
     el.addEventListener('auxclick', noMiddle)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', releaseKeys)
+    document.addEventListener('visibilitychange', releaseKeys)
     return () => {
+      cancelAnimationFrame(hoverFrame)
+      window.removeEventListener('blur', releaseKeys)
+      document.removeEventListener('visibilitychange', releaseKeys)
       boxDiv.remove()
       el.removeEventListener('pointerdown', onPointerDown)
       el.removeEventListener('pointermove', onPointerMove)
@@ -689,17 +711,19 @@ function makePost(pt: Vec3, catalogId: string, height: number): Member {
 }
 
 /** Fang: Bauteilenden, Wände, Raster */
-function snapPoint(q: Vec3, p: Project, grid: number, radius: number): Vec3 {
-  const d = derive(p)
+/** Fangpunkte: Enden aller Stäbe (optional ohne den gerade gezogenen) – einmal je Ziehvorgang bestimmen */
+function snapTargets(p: Project, except?: string): Vec3[] {
+  return derive(p).resolved.members.filter((m) => m.id !== except).flatMap((m) => [m.start, m.end])
+}
+
+function snapPoint(q: Vec3, p: Project, grid: number, radius: number, targets: Vec3[] = snapTargets(p)): Vec3 {
   let best: Vec3 | null = null
   let bestD = radius
-  for (const m of d.resolved.members) {
-    for (const e of [m.start, m.end]) {
-      const dd = Math.hypot(e.x - q.x, e.y - q.y)
-      if (dd < bestD) {
-        bestD = dd
-        best = { x: e.x, y: e.y, z: q.z }
-      }
+  for (const e of targets) {
+    const dd = Math.hypot(e.x - q.x, e.y - q.y)
+    if (dd < bestD) {
+      bestD = dd
+      best = { x: e.x, y: e.y, z: q.z }
     }
   }
   if (best) return best

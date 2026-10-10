@@ -70,6 +70,41 @@ function capColor(m: THREE.Material): THREE.Color {
   return base ? color.copy(base).multiplyScalar(0.78) : color.set('#5d5850')
 }
 
+const corner = new THREE.Vector3()
+const size = new THREE.Vector2()
+
+/**
+ * Scissor auf das Bildschirmrechteck des Quaders setzen. false, wenn er ganz außerhalb liegt; liegt eine
+ * Ecke hinter der Kamera, gilt das ganze Bild.
+ */
+function scissorTo(gl: THREE.WebGLRenderer, camera: THREE.Camera, b: THREE.Box3): boolean {
+  gl.getSize(size)
+  let x0 = Infinity
+  let y0 = Infinity
+  let x1 = -Infinity
+  let y1 = -Infinity
+  for (let i = 0; i < 8; i++) {
+    corner.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).applyMatrix4(camera.matrixWorldInverse)
+    if (corner.z > -1e-3 && (camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+      gl.setScissor(0, 0, size.x, size.y)
+      gl.setScissorTest(true)
+      return true
+    }
+    corner.applyMatrix4(camera.projectionMatrix)
+    x0 = Math.min(x0, corner.x)
+    x1 = Math.max(x1, corner.x)
+    y0 = Math.min(y0, corner.y)
+    y1 = Math.max(y1, corner.y)
+  }
+  if (x1 < -1 || x0 > 1 || y1 < -1 || y0 > 1) return false
+  const px = (v: number, n: number) => Math.round(((Math.max(-1, Math.min(1, v)) + 1) / 2) * n)
+  const sx = px(x0, size.x)
+  const sy = px(y0, size.y)
+  gl.setScissor(sx - 1, sy - 1, px(x1, size.x) - sx + 2, px(y1, size.y) - sy + 2)
+  gl.setScissorTest(true)
+  return true
+}
+
 /** Schnittflächen für die gerade aktiven Schnittebenen des Renderers zeichnen (nach dem Bild) */
 export function drawSectionCaps(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
   const all = gl.clippingPlanes.slice()
@@ -94,6 +129,8 @@ export function drawSectionCaps(gl: THREE.WebGLRenderer, scene: THREE.Scene, cam
       const g = mesh.geometry
       if (!g.boundingBox) g.computeBoundingBox()
       if (!box.copy(g.boundingBox!).applyMatrix4(mesh.matrixWorld).intersectsPlane(plane)) continue
+      // nur im Bildausschnitt des Körpers arbeiten – sonst wäre jede Schnittfläche ein Vollbild-Durchgang
+      if (!scissorTo(gl, camera, box)) continue
       gl.clear(false, false, true)
       // 1. Querschnitt ins Stencil: alle Flächen des Körpers, mit allen Ebenen beschnitten
       gl.clippingPlanes = all
@@ -111,6 +148,7 @@ export function drawSectionCaps(gl: THREE.WebGLRenderer, scene: THREE.Scene, cam
       gl.render(capScene, camera)
     }
   }
+  gl.setScissorTest(false)
   gl.clippingPlanes = all
   gl.autoClear = autoClear
   proxy.geometry = empty
