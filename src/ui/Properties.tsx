@@ -113,6 +113,12 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           <Num label="Breite" value={P.mattressWidth} onChange={(v) => setP({ mattressWidth: v })} min={600} />
         </div>
         <Num label="Matratzendicke" value={P.mattressThickness} onChange={(v) => setP({ mattressThickness: v })} min={50} />
+        {(P.type === 'freistehend' || P.type === 'deckenhoch') && (
+          <>
+            <Check label="Etagenbett (zweites Bett unten)" value={P.lowerBed} onChange={(v) => setP({ lowerBed: v })} />
+            {P.lowerBed && <Num label="Untere Liegehöhe (Oberkante Rost)" value={P.lowerDeckHeight} onChange={(v) => setP({ lowerDeckHeight: v })} min={150} />}
+          </>
+        )}
       </Section>
       <Section title="Lage im Raum">
         <div className="pair">
@@ -134,6 +140,15 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
           <Sel label="Freie Ecke getragen von" value={P.cornerSupport} options={[['pfosten', 'Pfosten'], ['decke', 'Abhängung von der Decke']]} onChange={(v) => setP({ cornerSupport: v })} />
         )}
         <Check label="Kopfbänder (Aussteifung)" value={P.braces} onChange={(v) => setP({ braces: v })} />
+        {P.type !== 'nische' && P.type !== 'abgehaengt' && (
+          <Sel
+            label="Mittelstützen je freier Längsseite"
+            value={String(P.midPosts ?? 0) as '0'}
+            options={[['0', 'keine'], ['1', '1'], ['2', '2'], ['3', '3']]}
+            onChange={(v) => setP({ midPosts: Number(v) })}
+            title="Zusätzliche Stützen unter den Längszargen – für lange Betten und Galerien"
+          />
+        )}
       </Section>
       <Section title="Liegefläche">
         <Sel<DeckType>
@@ -145,9 +160,11 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
             ['lattenrost', 'Lattenrost (Fertigteil)'],
             ['platte', 'Platte'],
             ['dielen', 'Dielen / Rauspund'],
+            ['netz', 'Begehbares Netz (für Geübte)'],
           ]}
-          onChange={(v) => setP({ deck: v, deckCatalogId: v === 'latten' ? 'geh-44x74' : v === 'platte' ? 'osb-22' : v === 'dielen' ? 'nf-kiefer-27' : v })}
+          onChange={(v) => setP({ deck: v, deckCatalogId: v === 'latten' ? 'geh-44x74' : v === 'platte' ? 'osb-22' : v === 'dielen' ? 'nf-kiefer-27' : v === 'netz' ? 'netz-begehbar' : v })}
         />
+        {P.deck === 'netz' && <p className="hint">Zum Chillen statt Schlafen: Das Netz hängt durch und zieht kräftig an den Zargen. Ringsum Zargen, am besten an zwei Wänden – die Prüfung nennt die Kräfte.</p>}
         {P.deck === 'latten' && (
           <>
             <Sel label="Latten" value={P.deckCatalogId} options={catalogOptions((t) => !t.round && t.b <= 44 && t.h >= 44)} onChange={(v) => setP({ deckCatalogId: v })} />

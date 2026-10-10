@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { parsePriceAnswer, pricePrompt, type Bom } from '../analysis/bom'
+import { loadApiKey, runPriceAgent, storeApiKey, type PriceAgentProgress } from '../analysis/priceAgent'
 import { fmtCm, fmtM } from '../model/geometry'
 import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
@@ -58,6 +59,8 @@ export function MaterialDialog() {
                 <span>Markt (optional)</span>
                 <input value={market} placeholder="z. B. Hornbach Leipzig" onChange={(e) => setMarket(e.target.value)} />
               </label>
+              <PriceAgent prompt={prompt} onAnswer={(t) => (setAnswer(t), setMsg(`${parsePriceAnswer(t).length} Preise gefunden – bitte kurz prüfen und übernehmen.`))} />
+              <h3>Oder per Chat</h3>
               <textarea readOnly value={prompt} rows={12} />
               <button onClick={() => navigator.clipboard?.writeText(prompt).then(() => setMsg('Prompt kopiert.'))}>📋 Prompt kopieren</button>
               <h3>Antwort einfügen</h3>
@@ -206,4 +209,95 @@ function downloadCsv(bom: Bom) {
   a.download = 'luftschloss-material.csv'
   a.click()
   URL.revokeObjectURL(a.href)
+}
+
+/** Recherche direkt aus der App mit eigenem Claude-API-Schlüssel */
+function PriceAgent({ prompt, onAnswer }: { prompt: string; onAnswer: (text: string) => void }) {
+  const [key, setKey] = useState(loadApiKey)
+  const [remember, setRemember] = useState(() => !!loadApiKey())
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<PriceAgentProgress>({ searches: [], sources: [] })
+  const [info, setInfo] = useState('')
+  const [error, setError] = useState('')
+  const abort = useRef<AbortController | null>(null)
+  const start = async () => {
+    setBusy(true)
+    setError('')
+    setInfo('')
+    setProgress({ searches: [], sources: [] })
+    storeApiKey(remember ? key : null)
+    abort.current = new AbortController()
+    try {
+      const res = await runPriceAgent(key.trim(), prompt, setProgress, abort.current.signal)
+      onAnswer(res.text)
+      setInfo(`${res.usage.searches} Suchen · ${Math.round((res.usage.input + res.usage.output) / 1000)} Tsd. Tokens · ${res.servedBy}`)
+    } catch (e) {
+      const m = (e as Error).message ?? String(e)
+      setError(
+        abort.current?.signal.aborted
+          ? 'Abgebrochen.'
+          : /401|authentication|api.key/i.test(m)
+            ? 'Der API-Schlüssel wurde abgelehnt.'
+            : /connection|network|fetch/i.test(m)
+              ? 'Keine Verbindung zur Anthropic-API – Netzwerk, Proxy oder Werbeblocker prüfen.'
+              : /429|rate/i.test(m)
+                ? 'Zu viele Anfragen – in einer Minute nochmal versuchen.'
+                : m,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+  if (!open)
+    return (
+      <div className="agent-box">
+        <button onClick={() => setOpen(true)}>🔎 Direkt recherchieren lassen</button>
+        <span className="hint"> mit eigenem Claude-API-Schlüssel, dauert einige Minuten</span>
+      </div>
+    )
+  return (
+    <div className="agent-box open">
+      <b>Direkt recherchieren</b>
+      <p className="hint">
+        Claude sucht im Netz nach den aktuellen Preisen und füllt die Antwort unten aus. Dafür braucht es einen eigenen API-Schlüssel von console.anthropic.com; die Kosten
+        (meist einige Cent bis wenige Euro je Recherche) laufen über dieses Konto. Der Schlüssel geht nur vom Browser direkt an Anthropic.
+      </p>
+      <label className="field">
+        <span>API-Schlüssel</span>
+        <input type="password" value={key} placeholder="sk-ant-…" autoComplete="off" onChange={(e) => setKey(e.target.value)} />
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+        <span>In diesem Browser merken</span>
+      </label>
+      <div className="row">
+        {busy ? (
+          <button onClick={() => abort.current?.abort()}>Abbrechen</button>
+        ) : (
+          <button className="primary" disabled={!key.trim()} onClick={start}>
+            Recherche starten
+          </button>
+        )}
+        {busy && <span className="hint">Sucht … {progress.searches.length} Suchen, {progress.sources.length} Seiten</span>}
+      </div>
+      {busy && progress.searches.length > 0 && <p className="hint">Zuletzt: „{progress.searches[progress.searches.length - 1]}“</p>}
+      {info && <p className="hint">{info}</p>}
+      {error && <p className="warn">{error}</p>}
+      {!busy && progress.sources.length > 0 && (
+        <details>
+          <summary>{progress.sources.length} Quellen</summary>
+          <ul className="sources">
+            {progress.sources.slice(0, 40).map((s) => (
+              <li key={s.url}>
+                <a href={s.url} target="_blank" rel="noreferrer">
+                  {s.title || s.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  )
 }

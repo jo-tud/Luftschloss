@@ -43,14 +43,14 @@ export function resolveProject(p: Project): Resolved {
   for (const a of p.assemblies) {
     let asm: Assembly = a
     if (a.params.wallFit === 'abruecken' && p.room.skirting.enabled) {
-      const probe = generateLoftBed(a, p.room.height)
+      const probe = generateLoftBed(a, p.room.height, p.room)
       const { dx, dy } = skirtingShift(p.room, probe.info.footprint)
       if (dx || dy) {
         asm = { ...a, params: { ...a.params, x: a.params.x + dx, y: a.params.y + dy } }
         shifts.push({ assemblyId: a.id, dx, dy })
       }
     }
-    const g = generateLoftBed(asm, p.room.height)
+    const g = generateLoftBed(asm, p.room.height, p.room)
     beds.set(a.id, g.info)
     members.push(...g.members)
     panels.push(...g.panels)
@@ -203,6 +203,9 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'stufe') typeId = 'gratnut'
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'holm' && !endingMember.round && p.settings.jointPreference !== 'wenig-metall') typeId = 'holzbauschraube'
         if (upper?.role === 'leiste') typeId = 'lose'
+        // Geländerbretter werden angeschraubt, nicht gebolzt; Latten liegen nur lose an
+        if (kindInfo.kind === 'beischlag' && (A.catalogId.startsWith('leimholz') || B.catalogId.startsWith('leimholz'))) typeId = 'holzbauschraube'
+        if (kindInfo.kind === 'beischlag' && (A.role === 'leiste' || B.role === 'leiste')) typeId = 'lose'
         if ((A.catalogId === 'seil-12' || B.catalogId === 'seil-12') && kindInfo.kind !== 'auflage') typeId = 'seilbefestigung'
         if (A.catalogId === 'gewindestange-m10' || B.catalogId === 'gewindestange-m10') typeId = 'gewindestange'
       }

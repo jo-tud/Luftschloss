@@ -336,6 +336,7 @@ export const SHEETS: SheetItem[] = [
   { id: 'rollrost', kind: 'platte', group: 'rollrost', name: 'Rollrost (Fertigteil)', thickness: 40, formats: [{ l: 2000, w: 900, price: 30 }, { l: 2000, w: 1000, price: 35 }, { l: 2000, w: 1200, price: 45 }, { l: 2000, w: 1400, price: 55 }], priceEstimated: true },
   { id: 'lattenrost', kind: 'platte', group: 'lattenrost', name: 'Lattenrost (Fertigteil)', thickness: 80, formats: [{ l: 2000, w: 900, price: 60 }, { l: 2000, w: 1000, price: 70 }, { l: 2000, w: 1200, price: 90 }, { l: 2000, w: 1400, price: 110 }], priceEstimated: true },
   { id: 'netz', kind: 'platte', group: 'netz', name: 'Sicherheitsnetz, Maschenweite ≤ 50 mm', thickness: 5, formats: [{ l: 3000, w: 1000, price: 25 }], priceEstimated: true },
+  { id: 'netz-begehbar', kind: 'platte', group: 'netz', name: 'Begehbares Netz (Kletter-/Trampolinnetz, PP 5 mm, Masche 45 mm, mit Randseil)', thickness: 6, formats: [{ l: 2000, w: 1000, price: 70 }, { l: 2000, w: 1500, price: 95 }, { l: 2500, w: 2000, price: 150 }], priceEstimated: true },
 ]
 
 export const HARDWARE: HardwareItem[] = [

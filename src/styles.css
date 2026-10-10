@@ -1544,3 +1544,20 @@ table.compare td {
 .photo-fit small {
   display: block;
 }
+
+.agent-box {
+  margin: 10px 0;
+}
+.agent-box.open {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.agent-box .sources {
+  max-height: 160px;
+  overflow-y: auto;
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}

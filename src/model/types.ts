@@ -223,7 +223,7 @@ export type BedType =
   | 'nische'
   | 'abgehaengt'
 
-export type DeckType = 'latten' | 'platte' | 'dielen' | 'rollrost' | 'lattenrost'
+export type DeckType = 'latten' | 'platte' | 'dielen' | 'rollrost' | 'lattenrost' | 'netz'
 export type GuardType = 'staebe' | 'bretter' | 'platte' | 'netz' | 'seil' | 'keins'
 export type LadderType = 'senkrecht' | 'schraeg' | 'stufen' | 'treppe' | 'keine'
 export type Side = 'vorne' | 'hinten' | 'links' | 'rechts'
@@ -283,6 +283,12 @@ export interface LoftBedParams {
   wallFit: 'abruecken' | 'ausklinken'
   /** Bei deckenhohen Pfosten: Luft für Stellfuß/Spindel */
   ceilingGap: Mm
+  /** Etagenbett: zweite Liegefläche unten zwischen denselben Pfosten (nur mit vier Pfosten) */
+  lowerBed: boolean
+  /** Oberkante der unteren Liegefläche über dem Boden */
+  lowerDeckHeight: Mm
+  /** Zusätzliche Stützen unter jeder freien Längszarge (lange Betten, Galerien) */
+  midPosts: number
 }
 
 export interface Assembly {

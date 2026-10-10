@@ -275,7 +275,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M5 Statik des Gestells | 3D-Stabwerk (Skyline-Löser) mit Verbindungsfedern je Verbindungsart, Lastfälle Eigengewicht/Nutzlast (Lastprofil Bett 1,0 bzw. Hochebene 2,0 kN/m²), Toben 2 kN auf 50 × 50 cm, Seitenlast längs/quer, Geländer; EC5-Nachweise (Biegung + Normalkraft mit Knicken, Schub mit k_cr, Durchbiegung L/300 bzw. L/200 mit Kriechen, Restquerschnitt an Verbindungen), Verbindungskräfte, Wackeln; Einfärbung, Verformungsfigur, Wackel-Animation, Querschnittsvergleich, Befunde in der Prüfliste | ✅ |
 | M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Werkstattskizzen je Verbindungsart, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
 | M6b Tablet | Finger/Stift (antippen = auswählen, ausgewählt ziehen = verschieben, Pinch-Zoom, zwei Finger verschieben/drehen, Doppeltipp = Fokus), Seitenleisten als Schubladen unter 1280 px, große Bedienflächen bei Fingerbedienung, `npm run lan` mit Projekt-Abgleich über /api/projekt und QR-Code, Tailscale-Anleitung, PWA (installierbar, offline über HTTPS/localhost) | ✅ |
-| M7 Erweiterungen | Weitere Bauarten (Halbhoch, Etagenbett, auf Regal, Galerie), begehbares Netz, Raum als Polygon, Dachschräge, Preis-Agent | ◻ |
+| M7 Erweiterungen | Vorlagen Halbhoch, **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). Offen: auf Regal, Raum als Polygon, Dachschräge, Plattenzuschnitt 2D. | ◐ |
 
 ---
 
@@ -293,7 +293,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
    - Sockelleiste (6 × 1,8 cm)
 2. **Wandbaustoff und Deckenart** im Testzimmer: Nur die Fensterwand A ist gemauert; B, C und D sind als Leichtbau eingetragen. Die Decke ist als nicht tragfähig eingetragen, also keine Abhängung.
 3. **DIN EN 747:2024:** Werte gegen den Normtext prüfen, sobald er vorliegt.
-4. Soll der **Preis-Agent** später direkt in der App laufen (eigener Claude-API-Schlüssel im Browser), oder bleibt es beim Prompt?
+4. ~~Soll der **Preis-Agent** später direkt in der App laufen?~~ Beides: Prompt zum Kopieren und optional direkt mit eigenem API-Schlüssel (M7).
 
 ---
 
