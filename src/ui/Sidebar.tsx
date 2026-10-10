@@ -1,7 +1,7 @@
 import { defaultBedParams, emptyProject, testProject } from '../model/defaults'
 import { uid } from '../model/geometry'
 import { BED_TYPE_LABEL, bedOuterSize } from '../model/loftbed'
-import type { BedType, CeilingMaterial, CorniceProfile, FloorMaterial, Furniture, FurnitureKind, Project, WallId, WallMaterial, WallObject } from '../model/types'
+import type { BedType, CeilingMaterial, LoftBedParams, CorniceProfile, FloorMaterial, Furniture, FurnitureKind, Project, WallId, WallMaterial, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { migrate, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
@@ -14,6 +14,7 @@ const WALL_MAT: [WallMaterial, string][] = [
   ['porenbeton', 'Porenbeton'],
   ['trockenbau', 'Trockenbau'],
   ['holzstaender', 'Holzständer/Fachwerk'],
+  ['leichtbau', 'Leichtbau/Altbau-Innenwand (nicht tragend)'],
 ]
 
 export function Sidebar() {
@@ -125,7 +126,7 @@ function RoomTab() {
           <Sel key={w} label={`Wand ${w}`} value={r.walls[w].material} options={WALL_MAT} onChange={(v) => setRoom((d) => void (d.room.walls[w].material = v))} />
         ))}
         <Sel<FloorMaterial> label="Boden" value={r.floor} options={[['estrich', 'Estrich mit Belag'], ['fussbodenheizung', 'Fußbodenheizung (nicht bohren)'], ['holzdielen', 'Dielen/Holzbalkendecke']]} onChange={(v) => setRoom((d) => void (d.room.floor = v))} />
-        <Sel<CeilingMaterial> label="Decke" value={r.ceiling} options={[['beton', 'Betondecke'], ['holzbalken', 'Holzbalkendecke'], ['abgehaengt', 'Abgehängte Decke']]} onChange={(v) => setRoom((d) => void (d.room.ceiling = v))} />
+        <Sel<CeilingMaterial> label="Decke" value={r.ceiling} options={[['beton', 'Betondecke'], ['holzbalken', 'Holzbalkendecke'], ['abgehaengt', 'Abgehängte Decke'], ['schwach', 'Nicht tragfähig (keine Abhängung)']]} onChange={(v) => setRoom((d) => void (d.room.ceiling = v))} />
       </Section>
       <Section title="Einstellungen">
         <Sel label="Sicherheitsempfehlungen" value={p.settings.safetyProfile} options={[['kinder', 'Kinder (streng)'], ['jugendliche', 'Jugendliche'], ['erwachsene', 'Erwachsene (nur Hinweise)']]} onChange={(v) => update((d) => void (d.settings.safetyProfile = v))} />
@@ -222,15 +223,23 @@ function FixturesTab() {
   )
 }
 
-const BED_TYPES: BedType[] = ['freistehend', 'deckenhoch', 'wandseitig', 'eck', 'nische', 'abgehaengt']
-const BED_HINT: Record<BedType, string> = {
-  freistehend: 'Am häufigsten. Vier Pfosten tragen, die Wand nur als Kippsicherung. Mietwohnungs-tauglich.',
-  deckenhoch: 'Pfosten bis zur Decke verspannt, sehr steif. Stuck und Deckenart beachten.',
-  wandseitig: 'Längsseite auf Wandriegel, vorne zwei Pfosten. Braucht tragfähige Wand.',
-  eck: 'Zwei Wände tragen, ein freier Pfosten. Viel Platz darunter.',
-  nische: 'Wand zu Wand ohne Pfosten – für Nischen bis ca. 2,5 m.',
-  abgehaengt: 'Wandriegel hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.',
+interface Preset {
+  key: string
+  label: string
+  hint: string
+  type: BedType
+  patch: Partial<LoftBedParams>
 }
+
+const PRESETS: Preset[] = [
+  { key: 'frei', label: 'Freistehend, 4 Pfosten', hint: 'Am häufigsten. Vier Pfosten tragen, die Wand nur als Kippsicherung. Mietwohnungs-tauglich.', type: 'freistehend', patch: {} },
+  { key: 'wandbalken', label: 'Wandbalken, Latten drauf', hint: 'Balken direkt an die massive Wand (Ziegel/Beton), vorne ein Balken auf zwei Pfosten, Latten einfach auflegen. Sehr effizient.', type: 'wandseitig', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'eck', label: 'Eckbett, 1 Pfosten', hint: 'Zwei Wände tragen, ein freier Pfosten. Viel Platz darunter.', type: 'eck', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'eck-decke', label: 'Eckbett, Ecke abgehängt', hint: 'Zwei Wandbalken, die freie Ecke hängt an einer Gewindestange von der Decke. Nur bei sehr tragfähiger Decke.', type: 'eck', patch: { frameStyle: 'aufgelegt', cornerSupport: 'decke' } },
+  { key: 'deckenhoch', label: 'Deckenhoch verspannt', hint: 'Pfosten bis zur Decke verspannt, sehr steif. Stuck und Deckenart beachten.', type: 'deckenhoch', patch: {} },
+  { key: 'nische', label: 'Hochebene Wand zu Wand', hint: 'Wandbalken an beiden Enden, Querträger aufgelegt – für Nischen bis ca. 2,5 m.', type: 'nische', patch: { frameStyle: 'aufgelegt' } },
+  { key: 'abgehaengt', label: 'Wandbalken + Decke', hint: 'Wandbalken hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.', type: 'abgehaengt', patch: { frameStyle: 'aufgelegt' } },
+]
 
 /** Ecke des Raums, in die ein neues Bett gestellt wird */
 type Corner = 'AD' | 'AB' | 'CB' | 'CD'
@@ -240,8 +249,9 @@ function BedTab() {
   const update = useStore((s) => s.update)
   const select = useStore((s) => s.select)
   const sel = useStore((s) => s.selection)
-  const insert = (type: BedType, corner: Corner) => {
-    const params = defaultBedParams({ type, deckHeight: Math.min(1900, p.room.height - 1100), wallEnd: corner === 'AD' || corner === 'CB' ? 'rechts' : 'links', braces: type === 'freistehend' })
+  const insert = (preset: Preset, corner: Corner) => {
+    const type = preset.type
+    const params = defaultBedParams({ type, deckHeight: Math.min(1900, p.room.height - 1100), wallEnd: corner === 'AD' || corner === 'CB' ? 'rechts' : 'links', braces: type === 'freistehend', ...preset.patch })
     const { length } = bedOuterSize(params)
     const r = p.room
     // Bett läuft entlang Wand A (bzw. C), die Rückseite liegt an der Wand
@@ -252,7 +262,7 @@ function BedTab() {
     if (type === 'nische') Object.assign(params, { mattressLength: Math.max(1600, r.length - 2 * 80 - 20), x: 0, rotation: corner.startsWith('C') ? 180 : 0, y: corner.startsWith('C') ? r.width : 0 })
     if (type === 'nische' && corner.startsWith('C')) params.x = r.length
     const id = uid('bett')
-    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: BED_TYPE_LABEL[type], params, detached: [] }))
+    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: preset.label, params, detached: [] }))
     select({ kind: 'assembly', id })
   }
   return (
@@ -269,12 +279,12 @@ function BedTab() {
       </Section>
       <Section title="Vorlage einsetzen">
         <div className="templates">
-          {BED_TYPES.map((t) => (
-            <div key={t} className="template">
-              <TemplateIcon type={t} />
+          {PRESETS.map((t) => (
+            <div key={t.key} className="template">
+              <TemplateIcon type={t.type} aufgelegt={t.patch.frameStyle === 'aufgelegt'} hang={t.patch.cornerSupport === 'decke' || t.type === 'abgehaengt'} />
               <div>
-                <b>{BED_TYPE_LABEL[t]}</b>
-                <p>{BED_HINT[t]}</p>
+                <b>{t.label}</b>
+                <p>{t.hint}</p>
                 <div className="corners">
                   in Ecke:
                   {(['AD', 'AB', 'CB', 'CD'] as Corner[]).map((c) => (
@@ -293,7 +303,7 @@ function BedTab() {
   )
 }
 
-function TemplateIcon({ type }: { type: BedType }) {
+function TemplateIcon({ type, aufgelegt, hang }: { type: BedType; aufgelegt?: boolean; hang?: boolean }) {
   const post = (x: number, h = 44) => <rect x={x} y={52 - h} width={5} height={h} fill="#b07a3b" />
   return (
     <svg viewBox="0 0 64 56" width="56" height="49" className="ticon" aria-hidden>
@@ -302,8 +312,9 @@ function TemplateIcon({ type }: { type: BedType }) {
       {(type === 'wandseitig' || type === 'eck' || type === 'nische' || type === 'abgehaengt') && <rect x="0" y="0" width="3" height="53" fill="#ccc" />}
       {type === 'nische' && <rect x="61" y="0" width="3" height="53" fill="#ccc" />}
       {(type === 'freistehend' || type === 'deckenhoch') && post(6, type === 'deckenhoch' ? 50 : 44)}
-      {type !== 'nische' && type !== 'abgehaengt' && post(52, type === 'deckenhoch' ? 50 : 44)}
-      {type === 'abgehaengt' && <line x1="56" y1="0" x2="56" y2="22" stroke="#777" strokeWidth="1.5" />}
+      {type !== 'nische' && !hang && post(52, type === 'deckenhoch' ? 50 : 44)}
+      {hang && <line x1="56" y1="0" x2="56" y2="22" stroke="#777" strokeWidth="1.5" />}
+      {aufgelegt && [12, 22, 32, 42, 52].map((x) => <rect key={x} x={x} y={17} width={4} height={3} fill="#c08a4a" />)}
       <rect x="3" y="20" width="58" height="6" fill="#d9a566" />
       <rect x="8" y="15" width="48" height="5" fill="#eef" stroke="#99a" strokeWidth="0.5" />
       {type === 'freistehend' && <path d="M11 32 L18 26 M52 32 L45 26" stroke="#b07a3b" strokeWidth="2" />}
