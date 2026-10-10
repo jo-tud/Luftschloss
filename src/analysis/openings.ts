@@ -18,7 +18,8 @@ export function blockers(p: Project, r: Resolved): Blocker[] {
   for (const m of r.members) out.push({ id: m.id, label: m.name ? tr(m.name) : t('Bauteil'), boxes: memberBoxes(m) })
   for (const pa of r.panels) out.push({ id: pa.id, label: pa.name ? tr(pa.name) : t('Fläche'), boxes: [panelOBB(pa)] })
   for (const o of roomObstacles(p)) {
-    if (o.kind === 'sockelleiste' || o.kind === 'steckdose' || o.kind === 'konvektion') continue
+    // Personen-Platzhalter dienen nur der Anschauung – sie blockieren keinen Fensterflügel
+    if (o.kind === 'sockelleiste' || o.kind === 'steckdose' || o.kind === 'konvektion' || o.kind === 'person') continue
     out.push({ id: o.ownerId, label: tr(o.label), boxes: [o.box], kind: o.kind })
   }
   return out

@@ -465,11 +465,15 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     // Lose aufgelegte Latten quer über die Längszargen (Forenpraxis: Abstand 6–10 cm, belüftet)
     // 5 mm Luft zu den Pfosten, damit die Latten lose liegen und nicht mit den Pfosten verschraubt werden
     const w = slat.h
-    const span = Lo - 2 * p - 10
+    // An einer Querseite an der Wand sitzen die Geländerpfosten innen auf der Zarge – dort enden die Latten davor
+    const guardIn = (s: Side) => (P.guard !== 'keins' && P.guardSides[s] && wallGap(s) < guard.h + 10 ? (P.guard === 'bretter' ? 18 : guard.b) + guard.b : 0)
+    const m0 = Math.max(p, guardIn('links')) // i18n-ok
+    const m1 = Math.max(p, guardIn('rechts')) // i18n-ok
+    const span = Lo - m0 - m1 - 10
     const n = Math.max(2, Math.floor((span + P.slatGap) / (w + P.slatGap)))
     const gap = (span - n * w) / (n - 1)
     for (let i = 0; i < n; i++) {
-      const x = p + 5 + w / 2 + i * (w + gap)
+      const x = m0 + 5 + w / 2 + i * (w + gap)
       // 5 mm vor der Außenkante enden, damit außen angeschraubte Geländerstützen frei bleiben
       slatXs.push(x)
       add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, deckZ + deckT / 2), v(x, Wo - 5, deckZ + deckT / 2), w, deckT, { name: t('Latte {n}', { n: i + 1 }) })

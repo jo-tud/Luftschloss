@@ -446,8 +446,13 @@ export function analyze(p: Project, r: Resolved): Analysis {
     if (STRUCTURAL.has(m.role) && !timber(m.catalogId).sorted) unsorted.add(m.catalogId)
   }
   for (const id of unsorted) add({ id: `sortierung:${id}`, severity: 'hinweis', category: CAT.material, title: t('{name} ist nicht festigkeitssortiert', { name: tr(timber(id).name) }), detail: t('Wird später als C16 gerechnet. Für tragende Teile KVH (C24) empfehlen; Stücke mit großen Ästen oder Rissen aussortieren.'), targets: [] })
+  // Stahlteile (Gewindestange, Seil) gehen absichtlich durch das Holz – keine Durchdringung im Sinne eines Fehlers
+  const through = (id: string) => {
+    const item = catalogItem(memberById.get(id)?.catalogId ?? '')
+    return item?.kind === 'beschlag' || memberById.get(id)?.catalogId === 'seil-12'
+  }
   for (const j of r.joints) {
-    if (j.kind === 'kreuzung' && j.typeId !== 'ueberblattung') add({ id: `kreuzung:${j.key}`, severity: 'warnung', category: CAT.kollision, title: t('Bauteile durchdringen sich'), detail: t('Überblattung wählen oder Bauteile versetzen.'), targets: [j.a, j.b], pos: j.pos })
+    if (j.kind === 'kreuzung' && j.typeId !== 'ueberblattung' && !through(j.a) && !through(j.b)) add({ id: `kreuzung:${j.key}`, severity: 'warnung', category: CAT.kollision, title: t('Bauteile durchdringen sich'), detail: t('Überblattung wählen oder Bauteile versetzen.'), targets: [j.a, j.b], pos: j.pos })
   }
 
   const tc = transportCheck(p, r)

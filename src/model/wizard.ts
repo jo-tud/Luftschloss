@@ -1,5 +1,6 @@
 import { analyze } from '../analysis/checks'
 import { computeBom } from '../analysis/bom'
+import { computeStatics } from '../analysis/statics'
 import { t, tk, tr } from '../i18n'
 import { emptyProject } from './defaults'
 import { uid } from './geometry'
@@ -102,6 +103,8 @@ function wallObject(o: WizardOpening): WallObject {
 export function roomProject(a: WizardAnswers): Project {
   const p = emptyProject(a.length, a.width, a.height)
   p.name = tk('Mein Zimmer')
+  // Prüfstrenge nach Alter: Kinder streng (DIN EN 747), sonst wie gewählt
+  p.settings.safetyProfile = a.age === 'klein' || a.age === 'kind' ? 'kinder' : a.age === 'jugend' ? 'jugendliche' : 'erwachsene'
   p.room.ceiling = a.ceiling
   p.room.walls = Object.fromEntries(WALL_IDS.map((w) => [w, { material: WALL_MATERIAL[a.walls[w]] }])) as Project['room']['walls']
   p.wallObjects = a.openings.map(wallObject)
@@ -189,6 +192,10 @@ export function proposals(a: WizardAnswers, n = 3): Proposal[] {
     const info = r.beds.get('bett-1')
     if (!info) continue
     const findings = analyze(project, r).findings
+    // „geprüft“ heißt auch: die Statik trägt (wie in der Prüfliste: über 150 % Fehler, über 100 % Warnung)
+    const statics = computeStatics(project, r).maxUtil
+    const stab = 'Stabilität' as const // i18n-ok
+    if (statics > 1) findings.push({ id: 'statik', severity: statics > 1.5 ? 'fehler' : 'warnung', category: stab, title: t('Statik: höchste Ausnutzung {pct} %', { pct: Math.round(statics * 100) }), targets: [] })
     const errors = findings.filter((f) => f.severity === 'fehler')
     const warnings = findings.filter((f) => f.severity === 'warnung')
     const cost = computeBom(project, r).total

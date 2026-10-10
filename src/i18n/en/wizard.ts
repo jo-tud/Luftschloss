@@ -2,6 +2,7 @@ const en: Record<string, string> = {
   "Fenster {w}": "Window {w}",
   "Mein Zimmer": "My room",
   "Freistehend: trägt sich selbst, die Wand dient nur der Kippsicherung.": "Freestanding: carries itself, the wall only prevents tipping.",
+  'Statik: höchste Ausnutzung {pct} %': 'Structure: highest utilisation {pct} %',
   "Wand {w} ist massiv: ein Wandbalken trägt mit, vorne reichen zwei Pfosten.": "Wall {w} is solid: a wall ledger carries part of the load, two posts at the front are enough.",
   "Wände {a} und {b} sind massiv: Eckbett mit nur einem Pfosten, viel Platz darunter.": "Walls {a} and {b} are solid: corner bed with just one post and lots of space underneath.",
   "Raum schmal genug: Hochebene von Wand zu Wand, ganz ohne Pfosten.": "Room narrow enough: wall-to-wall platform without any posts.",

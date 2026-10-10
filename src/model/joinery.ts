@@ -559,18 +559,19 @@ export function cutLengths(joints: DetectedJoint[], members: Member[]): Map<stri
   for (const m of members) {
     const L = memberLength(m)
     const mc = cuts.members.get(m.id)
-    if (!mc) {
+    if (!mc && !m.shape) {
       out.set(m.id, L)
       continue
     }
     const [ax] = memberAxes(m)
-    let lo = 0
-    let hi = L
-    for (const b of mc.add) {
+    // Kopfband mit Gehrung: zuschneiden von Spitze zu Spitze, nicht nach der Achslänge
+    let lo = m.shape ? Infinity : 0
+    let hi = m.shape ? -Infinity : L
+    for (const b of mc?.add ?? []) {
       lo = Math.min(lo, b[0][0])
       hi = Math.max(hi, b[0][1])
     }
-    for (const p of mc.prisms) {
+    for (const p of [...(m.shape ? [m.shape] : []), ...(mc?.prisms ?? [])]) {
       const { bottom, top } = prismCorners(p)
       for (const q of [...bottom, ...top]) {
         const u = dot(sub(q, m.start), ax)

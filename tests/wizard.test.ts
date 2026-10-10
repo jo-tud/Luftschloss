@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CLEARANCE, HEADROOM, defaultAnswers, proposals, roomProject } from '../src/model/wizard'
+import { computeStatics } from '../src/analysis/statics'
+import { resolveProject } from '../src/model/resolve'
 
 describe('Planungsassistent', () => {
   it('baut das Zimmer aus den Antworten', () => {
@@ -30,5 +32,25 @@ describe('Planungsassistent', () => {
     expect(proposals(a)[0].compromise).toBeTruthy()
     const k = proposals({ ...defaultAnswers(), age: 'klein' })[0]
     expect(k.params.deckHeight).toBeLessThanOrEqual(1000)
+  })
+})
+
+describe('Assistent: geprüft heißt auch Statik und passende Prüfstrenge', () => {
+  it('Prüfstrenge folgt dem Alter', () => {
+    const a = defaultAnswers()
+    expect(roomProject({ ...a, age: 'kind' }).settings.safetyProfile).toBe('kinder')
+    expect(roomProject({ ...a, age: 'klein' }).settings.safetyProfile).toBe('kinder')
+    expect(roomProject({ ...a, age: 'jugend' }).settings.safetyProfile).toBe('jugendliche')
+    expect(roomProject({ ...a, age: 'erwachsen' }).settings.safetyProfile).toBe('erwachsene')
+  })
+  it('Vorschläge ohne Fehler sind auch statisch in Ordnung', () => {
+    const solid = { ...defaultAnswers(), walls: { A: 'massiv', B: 'massiv', C: 'massiv', D: 'massiv' } as const }
+    for (const a of [defaultAnswers(), solid, { ...solid, mattressWidth: 1400, age: 'erwachsen' as const }]) {
+      for (const p of proposals(a)) {
+        if (p.errors) continue
+        const util = computeStatics(p.project, resolveProject(p.project)).maxUtil
+        expect(util, p.key).toBeLessThanOrEqual(1.5)
+      }
+    }
   })
 })
