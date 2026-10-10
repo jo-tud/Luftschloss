@@ -1,5 +1,16 @@
 import { catalogItem } from '../model/catalog'
 import { memberLength } from '../model/geometry'
+import { CARPENTRY, cutLengths } from '../model/joinery'
+
+const JOINERY_LABEL: Record<string, string> = {
+  ueberblattung: 'Blatt',
+  zapfen: 'Zapfen bzw. Zapfenloch',
+  schwalbenschwanz: 'Schwalbenschwanz',
+  gratnut: 'Gratnut bzw. Grat',
+  ausklinkung: 'Einlassung',
+  stecken: 'Bohrung bzw. Stab',
+  auflagerleiste: 'Auflagerleiste',
+}
 import { jointType } from '../model/joints'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project } from '../model/types'
@@ -16,22 +27,30 @@ export interface PartType {
   count: number
   memberIds: string[]
   notches: { reason: string; length: number; depth: number }[]
+  /** Holzverbindungen an diesem Teil (Zapfen, Blatt, …) */
+  joinery: string[]
   roles: string[]
 }
 
-function partKey(m: Member): string {
+function partKey(m: Member, len: number, joinery: string): string {
   const notches = (m.notches ?? []).map((n) => `${n.reason.split(' ')[0]}:${Math.round(n.length)}x${Math.round(n.depth)}`).sort().join(',')
-  return `${m.catalogId}|${Math.round(memberLength(m))}|${Math.min(m.b, m.h)}x${Math.max(m.b, m.h)}|${notches}`
+  return `${m.catalogId}|${Math.round(len)}|${Math.min(m.b, m.h)}x${Math.max(m.b, m.h)}|${notches}|${joinery}`
 }
 
 export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<string, number> } {
   const groups = new Map<string, Member[]>()
+  const cutLen = cutLengths(r.joints, r.members)
+  const len = (m: Member) => cutLen.get(m.id) ?? memberLength(m)
+  // Holzverbindungen an den Enden gehören zur Teilenummer (anderes Werkstück)
+  const joinery = new Map<string, string[]>()
+  for (const j of r.joints)
+    if (CARPENTRY.has(j.typeId)) for (const id of [j.a, j.b]) joinery.set(id, [...(joinery.get(id) ?? []), JOINERY_LABEL[j.typeId] ?? j.typeId])
   for (const m of r.members) {
-    const k = partKey(m)
+    const k = partKey(m, len(m), (joinery.get(m.id) ?? []).sort().join(','))
     groups.set(k, [...(groups.get(k) ?? []), m])
   }
   const roleOrder = ['pfosten', 'wandriegel', 'zarge', 'quertraeger', 'strebe', 'leiste', 'holm', 'stab', 'stufe', 'sprosse', 'sonstiges']
-  const list = [...groups.values()].sort((a, b) => roleOrder.indexOf(a[0].role) - roleOrder.indexOf(b[0].role) || memberLength(b[0]) - memberLength(a[0]))
+  const list = [...groups.values()].sort((a, b) => roleOrder.indexOf(a[0].role) - roleOrder.indexOf(b[0].role) || len(b[0]) - len(a[0]))
   const byMember = new Map<string, number>()
   const parts = list.map((ms, i) => {
     const m = ms[0]
@@ -40,7 +59,8 @@ export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<strin
       no: i + 1,
       catalogId: m.catalogId,
       name: baseName(m.name ?? m.role),
-      length: Math.round(memberLength(m)),
+      length: Math.round(len(m)),
+      joinery: [...new Set(joinery.get(m.id) ?? [])],
       b: Math.min(m.b, m.h),
       h: Math.max(m.b, m.h),
       round: m.round,

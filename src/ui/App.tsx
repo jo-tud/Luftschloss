@@ -180,7 +180,7 @@ function StatusBar() {
         ? 'Pfosten: in Draufsicht oder 3D auf den Boden klicken. Höhe = Arbeitshöhe.'
         : s.view.kind === 'person'
           ? 'Ich-Perspektive: Ziehen = umsehen, W/A/S/D = gehen, Q/E = runter/hoch, Mausrad = Blickwinkel.'
-          : 'Ziehen = drehen (3D) bzw. verschieben (2D) · Ausgewähltes ziehen = verschieben · Rechte Maustaste = drehen · Mausrad = Zoom · Doppelklick = heranholen'
+          : 'Ziehen = drehen (3D) bzw. verschieben (2D) · Ausgewähltes ziehen = verschieben · Rechte Maustaste = drehen · Mittlere Maustaste = verschieben · Mausrad = Zoom · Doppelklick = heranholen'
   return (
     <footer className="statusbar">
       <span className="coords">{c ? `x ${fmtCm(c.x)} · y ${fmtCm(c.y)} · z ${fmtCm(c.z)}` : '–'}</span>
@@ -260,7 +260,7 @@ function Help() {
             <li>Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort</li>
             <li>„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen</li>
             <li>Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen</li>
-            <li>Mausbelegung „CAD“ (unter Raum → Einstellungen): mittlere Taste dreht, Shift+Mitte verschiebt, links nur Auswahl</li>
+            <li>Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen und mittlere Taste verschieben, Shift + mittlere Taste dreht</li>
             <li>In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).</li>
             <li>Ich-Perspektive: Ziehen = umsehen, <kbd>W</kbd>
               <kbd>A</kbd>

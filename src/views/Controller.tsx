@@ -196,7 +196,8 @@ export function Controller() {
         return
       }
       if (e.button === 1) {
-        drag.current = { ...base, kind: person ? 'nav-look' : cad && !e.shiftKey ? 'nav-orbit' : 'nav-pan' }
+        // mittlere Taste verschiebt immer, im CAD-Profil dreht Shift + mittlere Taste
+        drag.current = { ...base, kind: person ? 'nav-look' : cad && e.shiftKey ? 'nav-orbit' : 'nav-pan' }
         return
       }
       if (e.button !== 0) return
@@ -470,6 +471,10 @@ export function Controller() {
     }
     const onKeyUp = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase())
     const noMenu = (e: Event) => e.preventDefault()
+    // mittlere Taste: kein Auto-Scrollen (Windows) und kein Einfügen (Linux)
+    const noMiddle = (e: MouseEvent) => {
+      if (e.button === 1) e.preventDefault()
+    }
 
     el.addEventListener('pointerdown', onPointerDown)
     el.addEventListener('pointermove', onPointerMove)
@@ -478,6 +483,8 @@ export function Controller() {
     el.addEventListener('wheel', onWheel, { passive: false })
     el.addEventListener('dblclick', onDblClick)
     el.addEventListener('contextmenu', noMenu)
+    el.addEventListener('mousedown', noMiddle)
+    el.addEventListener('auxclick', noMiddle)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     return () => {
@@ -488,6 +495,8 @@ export function Controller() {
       el.removeEventListener('wheel', onWheel)
       el.removeEventListener('dblclick', onDblClick)
       el.removeEventListener('contextmenu', noMenu)
+      el.removeEventListener('mousedown', noMiddle)
+      el.removeEventListener('auxclick', noMiddle)
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
     }

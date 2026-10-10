@@ -4,17 +4,20 @@ import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode
 import * as THREE from 'three'
 import { UTIL_COLOR } from '../analysis/statics'
 import { catalogItem } from '../model/catalog'
-import { fmtCm, fmtM, memberBoxes, panelOBB, wallFrame, type OBB } from '../model/geometry'
+import { fmtCm, fmtM, memberBoxes, memberOBB, panelOBB, wallFrame, type OBB } from '../model/geometry'
+import { allCuts, cutMemberBoxes, type Prism } from '../model/joinery'
+import type { DetectedJoint } from '../model/resolve'
 import { cornice, doorGeom, furnitureBox, lampShadeHeight, sashBoxes, windowSashes } from '../model/room'
-import type { Furniture, Member, Panel, Project, WallId, WindowObj } from '../model/types'
+import type { Furniture, Member, Panel, Project, Vec3, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { buildSteps } from '../analysis/assembly'
 import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
 import { hardwareInstances } from './hardware'
+import { prismGeometry } from './joineryGeo'
 import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
 
-const COLORS = {
+export const COLORS = {
   wall: '#ece7df',
   wallEdge: '#b9b0a3',
   floor: '#caa774',
@@ -48,7 +51,7 @@ function vec(v: { x: number; y: number; z: number }): THREE.Vector3 {
 }
 
 /** Lage eines orientierten Quaders als three-Transformation */
-function obbTransform(o: OBB, roundAxis = false): { position: THREE.Vector3; quaternion: THREE.Quaternion; size: [number, number, number] } {
+export function obbTransform(o: OBB, roundAxis = false): { position: THREE.Vector3; quaternion: THREE.Quaternion; size: [number, number, number] } {
   const [a0, a1raw, a2] = o.axes.map(vec)
   // Quader sind symmetrisch: Linkssysteme (z. B. Wandkoordinaten) durch Umdrehen einer Achse korrigieren
   const a1 = new THREE.Vector3().crossVectors(a2, a0).dot(a1raw) < 0 ? a1raw.clone().negate() : a1raw
@@ -60,7 +63,7 @@ function obbTransform(o: OBB, roundAxis = false): { position: THREE.Vector3; qua
   return { position: T(o.center.x, o.center.y, o.center.z), quaternion: q, size: size.map((s) => s / 1000) as [number, number, number] }
 }
 
-function Box({ o, color, pick, opacity = 1, edges = false, round = false, cast = true, highlight, wood, plaster }: { o: OBB; color: string; pick?: PickData; opacity?: number; edges?: boolean; round?: boolean; cast?: boolean; highlight?: string; wood?: WoodKind; plaster?: boolean }) {
+export function Box({ o, color, pick, opacity = 1, edges = false, round = false, cast = true, highlight, wood, plaster }: { o: OBB; color: string; pick?: PickData; opacity?: number; edges?: boolean; round?: boolean; cast?: boolean; highlight?: string; wood?: WoodKind; plaster?: boolean }) {
   const t = useMemo(() => obbTransform(o, round), [o, round])
   const shared = wood && !round ? woodMaterial(wood, highlight ?? color, { emissive: highlight, opacity }) : plaster ? plasterMaterial(color, { opacity }) : undefined
   return (
@@ -99,15 +102,18 @@ function isSelected(sel: ReturnType<typeof useStore.getState>['selection'], m: {
   return sel.kind === 'assembly' && sel.id === m.assemblyId
 }
 
-export function MemberMeshes({ members, mini }: { members: Member[]; mini?: boolean }) {
+export function MemberMeshes({ members, mini, joints }: { members: Member[]; mini?: boolean; joints?: DetectedJoint[] }) {
   const sel = useStore((s) => s.selection)
   const hover = useStore((s) => s.hover)
   const staticsMode = useStore((s) => s.staticsMode)
   const statics = useStore((s) => s.statics)
+  // Zapfen, Blätter, Nuten: Holz angesetzt bzw. ausgenommen
+  const cuts = useMemo(() => (joints ? allCuts(joints, members) : undefined), [joints, members])
   return (
     <group>
       {members.map((m) => {
-        const boxes = memberBoxes(m)
+        const mc = cuts?.members.get(m.id)
+        const boxes = mc ? cutMemberBoxes(m, mc) : memberBoxes(m)
         let highlight = mini ? undefined : isSelected(sel, m) ? COLORS.select : hover && (hover === m.id || hover === m.assemblyId) ? COLORS.hover : undefined
         let color = memberColor(m)
         if (!mini && staticsMode && statics) {
@@ -130,10 +136,43 @@ export function MemberMeshes({ members, mini }: { members: Member[]; mini?: bool
                 wood={catalogItem(m.catalogId)?.kind === 'beschlag' ? undefined : woodKindFor(m.catalogId)}
               />
             ))}
+            {mc?.prisms.map((pr, i) => (
+              <PrismMesh key={`p${i}`} m={m} prism={pr} color={highlight ?? color} highlight={highlight} pick={{ kind: 'member', id: m.id }} />
+            ))}
           </BuildAnimated>
         )
       })}
+      {cuts?.extras.map((o, i) => (
+        <Box key={`x${i}`} o={o} color={COLORS.woodLight} edges wood="latte" />
+      ))}
+      {cuts?.holes.map((h, i) => (
+        <HoleDisc key={`h${i}`} at={h.at} normal={h.normal} r={h.r} />
+      ))}
     </group>
+  )
+}
+
+/** Schwalbenschwanz bzw. Keil als Prisma im System seines Holzes */
+export function PrismMesh({ m, prism, color, highlight, pick }: { m: Member; prism: Prism; color: string; highlight?: string; pick?: PickData }) {
+  const { geo, frame } = useMemo(() => {
+    const t = obbTransform(memberOBB(m))
+    return { frame: t, geo: prismGeometry(prism, t) }
+  }, [m, prism])
+  return (
+    <mesh position={frame.position} quaternion={frame.quaternion} geometry={geo} material={woodMaterial(woodKindFor(m.catalogId), color, { emissive: highlight })} userData={pick ? { pick } : {}} castShadow receiveShadow>
+      <Edges color="#7a5a3a" threshold={20} transparent opacity={0.35} />
+    </mesh>
+  )
+}
+
+/** Bohrung (Rundstab in Bohrung): dunkler Ring um den Stab */
+export function HoleDisc({ at, normal, r }: { at: Vec3; normal: Vec3; r: number }) {
+  const q = useMemo(() => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(normal.x, normal.z, -normal.y)), [normal])
+  return (
+    <mesh position={T(at.x, at.y, at.z)} quaternion={q} raycast={() => null}>
+      <cylinderGeometry args={[(r + 1.5) / 1000, (r + 1.5) / 1000, 0.0006, 24]} />
+      <meshStandardMaterial color="#3a2a1c" roughness={1} />
+    </mesh>
   )
 }
 
@@ -903,7 +942,7 @@ export function SceneContent({ p, d, mini, showCeiling }: { p: Project; d: Deriv
         />
       )}
       <RoomMeshes p={p} mini={mini} showCeiling={showCeiling} wallShadows={!!sun && !mini} />
-      <MemberMeshes members={d.resolved.members} mini={mini} />
+      <MemberMeshes members={d.resolved.members} mini={mini} joints={rich ? d.resolved.joints : undefined} />
       <PanelMeshes panels={d.resolved.panels} mini={mini} />
       <FurnitureMeshes items={p.furniture} mini={mini} />
       {!mini && <SwingArcs p={p} d={d} />}
@@ -1105,12 +1144,13 @@ function outsideTexture(seedKey: string): THREE.CanvasTexture {
   return tex
 }
 
-const metal = new THREE.MeshStandardMaterial({ color: '#d9dcdf', metalness: 0.55, roughness: 0.42 })
-const pocketMat = new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 1 })
-const headGeo = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2)
-const washerGeo = new THREE.CylinderGeometry(1, 1, 1, 20)
-const nutGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
-const plateGeo = new THREE.BoxGeometry(1, 1, 1)
+export const metal = new THREE.MeshStandardMaterial({ color: '#d9dcdf', metalness: 0.55, roughness: 0.42 })
+export const pocketMat = new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 1 })
+export const pinMat = new THREE.MeshStandardMaterial({ color: '#a8743f', roughness: 0.85 })
+export const headGeo = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+export const washerGeo = new THREE.CylinderGeometry(1, 1, 1, 20)
+export const nutGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
+export const plateGeo = new THREE.BoxGeometry(1, 1, 1)
 
 /** Schlossschrauben, Winkel und Balkenschuhe als InstancedMesh – wenige Draw Calls */
 function BoltHardware({ d }: { d: Derived }) {
@@ -1124,7 +1164,7 @@ function BoltHardware({ d }: { d: Derived }) {
       im.raycast = () => {}
       return im
     }
-    return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates), make(washerGeo, h.pockets, pocketMat)].filter(Boolean) as THREE.InstancedMesh[]
+    return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates), make(washerGeo, h.pockets, pocketMat), make(washerGeo, h.screws), make(washerGeo, h.pins, pinMat)].filter(Boolean) as THREE.InstancedMesh[]
   }, [d])
   return (
     <group>

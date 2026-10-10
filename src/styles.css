@@ -1632,7 +1632,8 @@ table.compare td {
   font-size: 11px;
 }
 .view-switcher {
-  z-index: 5;
+  /* über den Maßbeschriftungen im Bild (zIndexRange bis 10) */
+  z-index: 15;
 }
 .unfold,
 .photo-view {

@@ -8,6 +8,7 @@ import type { Member, Vec3 } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
 import { CutPlan } from './Material'
+import { JointIso, jointSketchNote } from './JointSketch'
 import { staticsFindings } from './Statics'
 
 type View = 'front' | 'side' | 'top'
@@ -130,139 +131,6 @@ function PlanView({ view, members, origin, ex, ey, numbers, labelNos, title }: {
   )
 }
 
-/** Schematische Werkstattskizze je Verbindungsart mit Maßangaben */
-function JointSketch({ typeId, b, h, d }: { typeId: string; b: number; h: number; d: number }) {
-  const W = 260
-  const H = 170
-  const wood = { fill: '#ecd2a6', stroke: '#6b5136', strokeWidth: 1.5 }
-  const steel = { fill: '#9aa1aa', stroke: '#555' }
-  const t = (x: number, y: number, s: string, size = 11) => (
-    <text x={x} y={y} fontSize={size} fill="#2b2b2b">
-      {s}
-    </text>
-  )
-  let body: ReactElement
-  switch (typeId) {
-    case 'schlossschraube':
-    case 'bettschraube':
-      body = (
-        <>
-          <rect x={20} y={10} width={50} height={150} {...wood} />
-          <rect x={70} y={55} width={170} height={60} {...wood} />
-          <circle cx={45} cy={72} r={6} {...steel} />
-          <circle cx={45} cy={98} r={6} {...steel} />
-          {t(80, 50, typeId === 'schlossschraube' ? '2 × M10, Ø 11 mm vorbohren' : 'Bettschraube M8 + Zylindermutter')}
-          {t(80, 135, `Randabstand ≥ 40 mm, Abstand ≥ 50 mm`)}
-          {t(80, 152, `Zarge ${b}×${h} an Pfosten`)}
-        </>
-      )
-      break
-    case 'winkel':
-      body = (
-        <>
-          <rect x={20} y={10} width={50} height={150} {...wood} />
-          <rect x={70} y={60} width={170} height={55} {...wood} />
-          <path d="M70 116 L110 116 L110 120 L74 120 L74 150 L70 150 Z" {...steel} />
-          <path d="M70 56 L110 56 L110 52 L74 52 L74 22 L70 22 Z" {...steel} />
-          {t(120, 40, '2 Winkel 90 mit Sicke')}
-          {t(120, 140, 'je Winkel 10 Schrauben 5×50')}
-        </>
-      )
-      break
-    case 'balkenschuh':
-      body = (
-        <>
-          <rect x={20} y={30} width={60} height={120} {...wood} />
-          <rect x={86} y={60} width={150} height={50} {...wood} />
-          <path d="M80 56 L92 56 L92 114 L80 114" fill="none" stroke="#555" strokeWidth={4} />
-          {t(100, 40, `Balkenschuh für ${b}×${h}`)}
-          {t(100, 135, 'alle Löcher verschrauben (5×50)')}
-        </>
-      )
-      break
-    case 'ueberblattung':
-      body = (
-        <>
-          <rect x={20} y={40} width={220} height={50} {...wood} />
-          <rect x={110} y={10} width={50} height={150} {...wood} opacity={0.85} />
-          <rect x={110} y={40} width={50} height={25} fill="#c49460" />
-          {t(170, 30, `Blatttiefe = ${Math.round(h / 2)} mm (h/2)`)}
-          {t(20, 120, 'beide Hölzer halb ausnehmen, leimen + 2 Schrauben')}
-        </>
-      )
-      break
-    case 'schwalbenschwanz':
-      body = (
-        <>
-          <rect x={20} y={20} width={60} height={130} {...wood} />
-          <path d="M80 70 L200 60 L200 110 L80 100 Z" {...wood} />
-          <path d="M60 64 L80 70 L80 100 L60 106 Z" fill="#c49460" />
-          {t(90, 50, 'Neigung 1:6 (Nadelholz)')}
-          {t(90, 135, `Blatttiefe ≈ ${Math.round(h / 2)} mm`)}
-        </>
-      )
-      break
-    case 'zapfen':
-      body = (
-        <>
-          <rect x={20} y={20} width={60} height={130} {...wood} />
-          <rect x={100} y={55} width={140} height={60} {...wood} />
-          <rect x={60} y={72} width={40} height={26} fill="#c49460" stroke="#6b5136" />
-          {t(100, 45, `Zapfendicke ≈ ${Math.round(b / 3)} mm (1/3)`)}
-          {t(100, 140, 'Zapfenlänge ≈ halbe Pfostendicke, Holznagel Ø 20')}
-        </>
-      )
-      break
-    case 'stecken':
-      body = (
-        <>
-          <rect x={20} y={60} width={220} height={50} {...wood} />
-          <rect x={110} y={10} width={d || 30} height={70} fill="#d6b07a" stroke="#6b5136" />
-          {t(150, 30, `Bohrung Ø ${d || 30} mm`)}
-          {t(150, 46, 'Tiefe ≈ 2/3 der Holzdicke, leimen')}
-        </>
-      )
-      break
-    case 'gratnut':
-      body = (
-        <>
-          <rect x={20} y={20} width={44} height={140} {...wood} />
-          <rect x={64} y={70} width={170} height={24} {...wood} />
-          <rect x={52} y={70} width={12} height={24} fill="#c49460" />
-          {t(80, 60, 'Nut 12 mm tief, 2 cm vor Vorderkante enden')}
-          {t(80, 120, 'Stufe einleimen + 2 Schrauben')}
-        </>
-      )
-      break
-    case 'kopfband':
-      body = (
-        <>
-          <rect x={20} y={10} width={45} height={150} {...wood} />
-          <rect x={65} y={10} width={175} height={45} {...wood} />
-          <path d="M65 115 L150 55 L170 55 L65 135 Z" {...wood} />
-          {t(150, 90, '45°, Schenkel ≈ 35 cm')}
-          {t(150, 106, 'je 2 Schrauben 8×160')}
-        </>
-      )
-      break
-    default:
-      body = (
-        <>
-          <rect x={20} y={90} width={220} height={50} {...wood} />
-          <rect x={80} y={50} width={100} height={40} {...wood} />
-          <line x1={110} y1={45} x2={110} y2={120} stroke="#555" strokeWidth={3} />
-          <line x1={150} y1={45} x2={150} y2={120} stroke="#555" strokeWidth={3} />
-          {t(20, 30, typeId === 'lose' ? 'lose auflegen, 1 Schraube gegen Verrutschen' : 'auflegen, 2 Holzbauschrauben 8×160')}
-        </>
-      )
-  }
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="pl-sketch">
-      {body}
-    </svg>
-  )
-}
-
 export function BauplanDialog() {
   const show = useStore((s) => s.showPlan)
   const set = useStore((s) => s.set)
@@ -293,8 +161,11 @@ export function BauplanDialog() {
   const vertical = new Set(data.parts.filter((pt) => pt.roles.some((r) => r === 'pfosten' || r === 'holm' || r === 'zarge' || r === 'wandriegel' || r === 'strebe' || r === 'stufe')).map((pt) => pt.no))
   const horizontal = new Set(data.parts.filter((pt) => !vertical.has(pt.no)).map((pt) => pt.no))
   const jointsByType = new Map<string, typeof d.resolved.joints>()
-  for (const j of d.resolved.joints) jointsByType.set(j.typeId, [...(jointsByType.get(j.typeId) ?? []), j])
-  const memberById = new Map(d.resolved.members.map((m) => [m.id, m]))
+  // je Verbindungsart und Lage (Stoß mit Ende bzw. angelegt) eine Skizze
+  for (const j of d.resolved.joints) {
+    const k = `${j.typeId}|${j.ending ? 'stoss' : 'anlage'}`
+    jointsByType.set(k, [...(jointsByType.get(k) ?? []), j])
+  }
   const open = [...d.analysis.findings, ...staticsFindings(p, statics)].filter((f) => f.severity !== 'hinweis' && !p.settings.acknowledged.includes(f.id))
   const transport = transportCheck(p, d.resolved)
   const clearance = a ? d.analysis.clearances.find((c) => c.assemblyId === a.id) : undefined
@@ -399,7 +270,7 @@ export function BauplanDialog() {
                   <td>{pt.round ? `Ø ${pt.b}` : `${pt.b} × ${pt.h}`}</td>
                   <td>{fmtCm(pt.length)}</td>
                   <td className="muted">{catalogItem(pt.catalogId)?.name ?? pt.catalogId}</td>
-                  <td>{pt.notches.map((n) => `${n.reason}: ${fmtCm(n.length)} lang, ${fmtCm(n.depth)} tief ausklinken`).join('; ') || '–'}</td>
+                  <td>{[...pt.notches.map((n) => `${n.reason}: ${fmtCm(n.length)} lang, ${fmtCm(n.depth)} tief ausklinken`), ...pt.joinery].join('; ') || '–'}</td>
                 </tr>
               ))}
             </tbody>
@@ -407,19 +278,18 @@ export function BauplanDialog() {
 
           <h3>Verbindungen</h3>
           <div className="pl-joints">
-            {[...jointsByType.entries()].map(([typeId, list]) => {
+            {[...jointsByType.entries()].map(([groupKey, list]) => {
+              const typeId = list[0].typeId
               const jt = jointType(typeId)
               const sample = list[0]
-              const ma = memberById.get(sample.ending ?? sample.a)
-              const mb = memberById.get(sample.ending === sample.a ? sample.b : sample.a)
-              const ref = mb && mb.role !== 'leiste' ? mb : ma
               return (
-                <div key={typeId} className="pl-joint">
-                  <JointSketch typeId={typeId} b={ref?.b ?? 60} h={ref?.h ?? 120} d={ma?.round ? ma.b : 0} />
+                <div key={groupKey} className="pl-joint">
+                  <JointIso j={sample} resolved={d.resolved} />
                   <div>
                     <b>
                       {list.length}× {jt?.name ?? typeId}
                     </b>
+                    <p>{jointSketchNote(sample, d.resolved)}</p>
                     <p className="hint">{jt?.note}</p>
                     {jt?.tools.length ? <p className="hint">Werkzeug: {jt.tools.join(', ')}</p> : null}
                   </div>

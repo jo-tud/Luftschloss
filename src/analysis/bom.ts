@@ -1,5 +1,6 @@
 import { HARDWARE, PRICE_STAND, catalogItem, type HardwareItem, type SheetItem, type TimberItem } from '../model/catalog'
 import { fmtCm, fmtM, memberLength } from '../model/geometry'
+import { cutLengths } from '../model/joinery'
 import { jointType } from '../model/joints'
 import type { Resolved } from '../model/resolve'
 import type { Panel, Project } from '../model/types'
@@ -90,10 +91,12 @@ export function computeBom(p: Project, r: Resolved): Bom {
     hw.set(id, e)
   }
 
+  // mit Zapfen, Blättern usw. – nicht nur von Knoten zu Knoten
+  const cutLen = cutLengths(r.joints, r.members)
   for (const m of r.members) {
     const item = catalogItem(m.catalogId)
     if (!item) continue
-    const L = Math.ceil(memberLength(m))
+    const L = Math.ceil(cutLen.get(m.id) ?? memberLength(m))
     if (item.kind === 'beschlag') {
       addHw(item.id, item.perMeter ? L : 1, m.name ?? 'Bauteil')
       continue
