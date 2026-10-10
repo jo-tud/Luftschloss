@@ -51,10 +51,10 @@ Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck,
   - **Sockel- bzw. Parkettleiste**
 - **Fenster:** Laibungstiefe, Nische bis zum Boden, Flügel (Dreh, Kipp, fest), Fensterbank.
 - **Weitere Ausstattung:** Tür, Heizkörper mit Konvektionsraum, Steckdosen, Möbel und Personen als Platzhalter.
-- **Sechs Bauarten als Vorlagen:** freistehend, deckenhoch verspannt, wandseitig, Eckbett, Wand zu Wand, abgehängt.
+- **Bauarten als Vorlagen:** freistehend, Wandbalken, Eckbett (auch abgehängt), deckenhoch verspannt, Wand zu Wand, abgehängt, Halbhoch, **Etagenbett**, **Galerie mit Mittelstütze**, **Netz-Hochebene**.
   - Alle Parameter sind jederzeit änderbar.
   - Einzelteile lassen sich aus der Vorlage lösen, die ganze Baugruppe lässt sich auflösen.
-- **Liegefläche:** lose Latten, Rollrost, Lattenrost, Platte oder Dielen.
+- **Liegefläche:** lose Latten, Rollrost, Lattenrost, Platte, Dielen oder begehbares Netz.
 - **Geländer:** Bretter, Rundstäbe, Vollfläche, Netz oder Seil.
 - **Leitern:** Stufenleiter, senkrecht, schräg oder Treppe.
 - **Wandanschluss:** Pfosten an Sockelleiste und Stuck **automatisch ausklinken**, oder das Bett **abrücken**.
@@ -77,6 +77,7 @@ Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck,
   - Zuschnittplan
   - Beschläge aus den Verbindungen
   - **Recherche-Prompt** für aktuelle Preise; die Antwort fügt man ein und übernimmt die Preise
+  - oder **direkt recherchieren lassen** mit eigenem Claude-API-Schlüssel (Websuche, ein paar Minuten)
   - CSV und Druck
 
 ## Bedienung in Kürze
