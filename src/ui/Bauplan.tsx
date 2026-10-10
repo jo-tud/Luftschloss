@@ -77,7 +77,7 @@ function PlanView({ view, members, origin, ex, ey, numbers, labelNos, title }: {
     spots.push([lx, ly])
     labels.push(
       <g key={`l${no}`}>
-        {(off[0] || off[1]) && <line x1={s.cx} y1={s.cy} x2={lx} y2={ly} className="pl-leader" />}
+        {off[0] || off[1] ? <line x1={s.cx} y1={s.cy} x2={lx} y2={ly} className="pl-leader" /> : null}
         <circle cx={lx} cy={ly} r={R} className="pl-bubble" />
         <text x={lx} y={ly} className="pl-no">
           {no}
@@ -176,7 +176,7 @@ export function BauplanDialog() {
       <div className="modal plan" onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>
-            {t('Bauplan')} · {p.name}
+            {t('Bauplan')} · {tr(p.name)}
           </h2>
           <span className="muted">{new Date().toLocaleDateString(locale())}</span>
           <button onClick={() => window.print()}>🖨 {t('Drucken / PDF')}</button>

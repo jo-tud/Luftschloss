@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { aabbOBB, add, cross, norm, scale, v, wallFrame, type OBB, type WallFrame } from './geometry'
 import type { CorniceProfile, DoorObj, Furniture, Project, Room, Vec3, WallId, WindowObj } from './types'
 import { WALL_IDS } from './types'
@@ -149,13 +149,13 @@ export function roomObstacles(p: Project): Obstacle[] {
     const f = wallFrame(room, o.wall)
     if (o.kind === 'fenster') {
       // Laibungswände links und rechts in der Nische (begrenzen den Flügel bei großen Winkeln)
-      out.push({ id: `${o.id}:laibung-l`, ownerId: o.id, label: t('{name}: Laibung', { name: o.name }), kind: 'laibung', box: wallBox(f, o.offset - 300, o.offset, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
-      out.push({ id: `${o.id}:laibung-r`, ownerId: o.id, label: t('{name}: Laibung', { name: o.name }), kind: 'laibung', box: wallBox(f, o.offset + o.width, o.offset + o.width + 300, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
+      out.push({ id: `${o.id}:laibung-l`, ownerId: o.id, label: t('{name}: Laibung', { name: tr(o.name) }), kind: 'laibung', box: wallBox(f, o.offset - 300, o.offset, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
+      out.push({ id: `${o.id}:laibung-r`, ownerId: o.id, label: t('{name}: Laibung', { name: tr(o.name) }), kind: 'laibung', box: wallBox(f, o.offset + o.width, o.offset + o.width + 300, -o.revealDepth, 0, o.sillHeight, o.sillHeight + o.height) })
       if (o.sill.enabled) {
         out.push({
           id: `${o.id}:fensterbank`,
           ownerId: o.id,
-          label: t('{name}: Fensterbank', { name: o.name }),
+          label: t('{name}: Fensterbank', { name: tr(o.name) }),
           kind: 'fensterbank',
           box: wallBox(f, o.offset - o.sill.sideOverhang, o.offset + o.width + o.sill.sideOverhang, -o.revealDepth, o.sill.projection, o.sillHeight - o.sill.thickness, o.sillHeight),
         })
@@ -165,7 +165,7 @@ export function roomObstacles(p: Project): Obstacle[] {
       out.push({
         id: `${o.id}:konvektion`,
         ownerId: o.id,
-        label: t('{name}: Konvektionsraum', { name: o.name }),
+        label: t('{name}: Konvektionsraum', { name: tr(o.name) }),
         kind: 'konvektion',
         box: wallBox(f, o.offset, o.offset + o.width, 0, o.wallGap + o.depth, o.bottom + o.height, o.bottom + o.height + o.convectionClearance),
       })

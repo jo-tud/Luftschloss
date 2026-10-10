@@ -83,6 +83,23 @@ describe('Übersetzungen', () => {
     const missing = [...new Set(s.keys.filter((k) => !(k.key in en)).map((k) => `${k.where}  ${k.key}`))]
     expect(missing).toEqual([])
   })
+  it('derselbe deutsche Text hat überall dieselbe englische Übersetzung', () => {
+    const dir = 'src/i18n/en'
+    const seen = new Map<string, { file: string; value: string }>()
+    const clash: string[] = []
+    for (const f of readdirSync(dir).filter((x) => x !== 'index.ts')) {
+      const ast = parse(readFileSync(join(dir, f), 'utf8'), { sourceType: 'module', plugins: ['typescript'] })
+      const decl = ast.program.body.find((n: N) => n.type === 'VariableDeclaration') as N
+      for (const prop of decl.declarations[0].init.properties as N[]) {
+        const key = prop.key.type === 'Identifier' ? prop.key.name : prop.key.value
+        const value = prop.value.value
+        const prev = seen.get(key)
+        if (prev && prev.value !== value) clash.push(`${key}: ${prev.file}=${prev.value} | ${f}=${value}`)
+        else seen.set(key, { file: f, value })
+      }
+    }
+    expect(clash).toEqual([])
+  })
   it('t() nur mit festen Texten (Platzhalter über {name})', () => {
     expect(s.dynamic).toEqual([])
   })

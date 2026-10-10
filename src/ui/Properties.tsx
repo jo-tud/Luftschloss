@@ -227,7 +227,7 @@ function BedProps({ a, nested }: { a: Assembly; nested?: boolean }) {
         )}
       </Section>
       <Section title={t('Lage im Raum')}>
-        {info && <BedPlacement a={a} fp={info.footprint} shift={(dx, dy) => setP({ x: Math.round(P.x + dx), y: Math.round(P.y + dy) }, `lage:${a.id}`)} />}
+        {info && <BedPlacement fp={info.footprint} shift={(dx, dy) => setP({ x: Math.round(P.x + dx), y: Math.round(P.y + dy) }, `lage:${a.id}`)} />}
         <Sel label={t('Drehung')} value={String(P.rotation) as '0'} options={[['0', '0°'], ['90', '90°'], ['180', '180°'], ['270', '270°']]} onChange={(v) => setP({ rotation: Number(v) as 0 })} />
         <Check label={t('Gespiegelt (links ↔ rechts)')} value={P.mirror} onChange={(v) => setP({ mirror: v })} />
         <Sel
@@ -739,14 +739,13 @@ function FurnitureProps({ id }: { id: string }) {
 export { jointKey }
 
 /** Lage über Wandabstände, Schubknöpfe und „In Ecke schieben“ statt roher Koordinaten */
-function BedPlacement({ a, fp, shift }: { a: Assembly; fp: { x: number; y: number }[]; shift: (dx: number, dy: number) => void }) {
+function BedPlacement({ fp, shift }: { fp: { x: number; y: number }[]; shift: (dx: number, dy: number) => void }) {
   const room = useStore((s) => s.project.room)
   const [step, setStep] = useState(100)
   const minX = Math.min(...fp.map((q) => q.x))
   const maxX = Math.max(...fp.map((q) => q.x))
   const minY = Math.min(...fp.map((q) => q.y))
   const maxY = Math.max(...fp.map((q) => q.y))
-  void a
   const corner = (c: 'AD' | 'AB' | 'CB' | 'CD') => {
     const dx = c === 'AB' || c === 'CB' ? -minX : room.length - maxX
     const dy = c.startsWith('A') ? -minY : room.width - maxY

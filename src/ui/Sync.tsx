@@ -92,7 +92,8 @@ export function ServerSync() {
       try {
         const meta = await fetch('/api/projekt?meta').then((r) => (r.ok ? r.json() : null))
         if (meta && meta.savedAt > lastSent && meta.device !== me && Date.now() - lastChange > 3000) {
-          const remote = await fetch('/api/projekt').then((r) => r.json())
+          const remote = await fetch('/api/projekt').then((r) => (r.ok ? r.json() : null))
+          if (!remote?.project) return
           applying = true
           useStore.getState().replaceProject(migrate(remote.project as Project))
           applying = false

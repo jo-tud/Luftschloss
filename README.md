@@ -16,8 +16,13 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 
 - Works in any current browser on laptop, desktop and tablet (Chrome, Edge, Firefox, Safari).
 - **Install it as an app on your tablet or phone:** open the link and choose "Add to Home Screen" (iPad/iPhone) or "Install app" (Android, Chrome) in the browser menu. Luftschloss then starts like a regular app and also works offline.
-- On first launch a **sample room** is loaded: just click around, select the bed, drag it, change dimensions.
-- **New to this? Use the planning assistant 🧭.** Six short questions – room size, walls, windows and doors, who sleeps on top, what goes underneath, whether you may screw into the walls – and you get checked suggestions for your room. Pick one and keep adjusting.
+- On first launch an **example room** is loaded: just click around, select the bed, drag it, change dimensions. The banner button **🧭 Plan your own room** starts the planning assistant.
+- **New to this? Use the planning assistant 🧭.** A few short steps – room size and ceiling, walls, windows/doors/radiators, who sleeps on top, what goes underneath and whether you may screw into the walls – up to three checked suggestions. Pick one and keep adjusting.
+
+<p align="center">
+  <img src="docs/screenshots/assistent.jpg" alt="Planning assistant with checked suggestions for your room" width="700">
+</p>
+
 - **English or German:** Luftschloss picks the language of your browser automatically (German browsers get German, everyone else English). Switch any time with 🌐 in the toolbar.
 
 ## What you can do with it
@@ -34,17 +39,19 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 **And there's more:**
 
 - **Lots of designs:** freestanding, against the wall, corner bed, floor-to-ceiling tension-mounted, wall to wall, mid-height, bunk bed, gallery, net platform – and two kids side by side on two mattresses.
+- **Real carpentry joints:** half-lap, mortise and tenon with peg, dovetail lap, sliding dovetail, housing, round bar in a hole, ledger strip, mitred and housed knee braces. Click a joint to see it as an exploded 3D detail with an explanation of how it works and the steps to make it; the build plan shows it as an isometric sketch.
 - **Checklist with explanations:** window sashes that bump into the frame, too little headroom, gaps in the guard rail, the wrong anchors in stud walls … These are all recommendations you can consciously acknowledge and dismiss.
 - **Your loft bed in a photo of your room:** load a photo, tap a few corners – the planned bed appears in the photo in correct perspective.
 - **Build animation:** the parts fly in in the order you will later assemble them.
 - **Wood that looks real:** grain, growth rings on the end faces, visible carriage bolts, brackets and joist hangers, moulding, plank floor – a view out of the window and, if you like, sunlight at a chosen time of day. Double-click flies you to any spot.
+- **Your workspace:** drag the edges of the side panels to resize them, cut the room open with the section box ✂, and pick a lower rendering quality for older tablets.
 - **Made with German DIY stores in mind:** the timber catalogue, stock lengths and reference prices are based on German DIY stores (Hornbach). For up-to-date prices, copy a research prompt into an AI chat or let it research directly with your own Claude API key.
 
 ## On the tablet
 
 <img src="docs/screenshots/tablet.jpg" alt="Luftschloss on an iPad" width="280" align="right">
 
-With finger or pen: tap to select, drag a selected part with one finger, zoom and pan with two fingers. ☰ opens room and templates, ⓘ the properties and the checklist.
+With finger or pen: tap to select, drag a selected part with one finger, one finger on an empty area rotates, two fingers zoom, pan and rotate. ☰ opens room and templates, ⓘ the properties and the checklist.
 
 **Laptop and tablet on the same project at the same time**, e.g. in the workshop: start Luftschloss on the laptop with `npm run lan` (see below), click **📱 Tablet** at the top and scan the QR code. Changes sync every few seconds. No shared Wi-Fi? It works with [Tailscale](https://tailscale.com) too.
 
@@ -76,8 +83,10 @@ Sharing on the network has no login – only use it on your own network or tailn
 
 | Action | Mouse / keyboard |
 |---|---|
-| Switch view | Bar at the top of the view, or `1` top view, `2` elevation (press again for the next wall), `3` 3D, `4` first person, `5` unfolded walls, `6` photo |
-| Rotate, pan, zoom | Drag on an empty area (rotates in 3D, pans in 2D), right button rotates, middle button pans, mouse wheel zooms; double-click flies to a spot |
+| Switch view | Bar at the top of the view, or `1` top view, `2` elevation (press again for the next wall), `3` 3D, `4` first person, `5` unfolded walls, `6` photo, `0` reset view |
+| Rotate, pan, zoom | Drag on an empty area (rotates in 3D, pans in 2D), right button or `Alt`+drag rotates, middle button pans, mouse wheel zooms, double-click flies closer. Prefer CAD-style? Choose the "CAD" mouse profile under Room → Settings |
+| First person | Drag to look around, `W` `A` `S` `D` or arrow keys to walk, `Q`/`E` down/up, mouse wheel = field of view |
+| Select / rotate cross-section / focus | `V` / `R` / `F` |
 | Move the bed | Click it, then drag (stops at walls) – or enter exact distances to each wall in the properties panel |
 | Draw | `B` beam, `P` post, `Esc` cancel |
 | Undo / Redo | `Ctrl+Z` / `Ctrl+Y` |

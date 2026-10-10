@@ -31,8 +31,6 @@ const KDEF = 0.6
 const PSI2 = 0.3
 const PSI0 = 0.7
 
-export type CaseId = 'g' | 'q' | 'jump' | 'hx' | 'hy' | 'guard'
-
 export interface MemberCheck {
   memberId: string
   /** Maßgebende Ausnutzung (1 = 100 %) */
@@ -623,19 +621,6 @@ function patchCarriers(s: Surface, radius: number): { m: Member; t: number }[] {
   if (near.length) return near
   const best = out.sort((a, b) => a.d - b.d)[0]
   return best ? [best] : []
-}
-
-export function nearestCarrier(s: Surface): { m: Member; t: number } | undefined {
-  const c = v((s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2, 0)
-  let best: { m: Member; t: number; d: number } | undefined
-  for (const m of s.carriers) {
-    const ax = memberAxes(m)[0]
-    const t = Math.max(0, Math.min(memberLength(m), dot(sub(v(c.x, c.y, m.start.z), m.start), ax)))
-    const q = add(m.start, scale(ax, t))
-    const d = Math.hypot(q.x - c.x, q.y - c.y)
-    if (!best || d < best.d) best = { m, t, d }
-  }
-  return best && { m: best.m, t: best.t }
 }
 
 function deckLevel(r: Resolved, m: Member): number | undefined {

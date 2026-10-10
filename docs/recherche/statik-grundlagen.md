@@ -1,4 +1,4 @@
-# Grundlagen für die spätere Statik-Abschätzung
+# Grundlagen für die Statik-Abschätzung
 
 Recherche vom Oktober 2026. Kennzeichnung:
 - **[N]** normativ belegt, über Sekundärquellen, die die Norm wiedergeben
@@ -66,6 +66,11 @@ Quellen: dataholz (https://www.dataholz.eu/fileadmin/dataholz/media/baustoffe/Da
   - q_k = 2,0 kN/m² plus Eigengewicht.
   - Q_k = 1,0 kN lokal.
   - Lastfall „Toben“: eine Person × 3 als Einzellast, kurze Lasteinwirkungsdauer.
+- **Umgesetzt (`src/analysis/statics.ts`):**
+  - Nutzlast nach Lastprofil: Bett 1,0 kN/m², Hochebene 2,0 kN/m² (A3); dazu Matratze und Bettzeug 0,3 kN.
+  - „Toben“: 2 kN Stoß, über die Matratze auf ca. 50 × 50 cm verteilt, kurze Lasteinwirkungsdauer.
+  - Keine eigene Einzellast Q_k = 1,0 kN; der Lastfall „Toben“ deckt sie ab.
+  - Geländer 0,5 kN horizontal, Seitenlast 0,5 kN längs bzw. quer.
 
 ## Ausklinkungen [N]/[F]
 
@@ -107,7 +112,7 @@ KVH C24 60×120 hochkant, L = 2,0 m, q = 0,575 kN/m:
 
 ## Konsequenz für Luftschloss
 
-Die Statik soll später **das ganze Gestell** prüfen, als Stabwerk mit Gelenken bzw. halbsteifen Ecken je nach Verbindungstyp. Vorbereitet ist das bereits:
+Die Statik prüft **das ganze Gestell** als Stabwerk mit Gelenken bzw. halbsteifen Ecken je nach Verbindungstyp – umgesetzt in `src/analysis/frame.ts` und `src/analysis/statics.ts` (M5). Grundlage:
 - jede Verbindung trägt eine Steifigkeitsklasse und einen Restquerschnitt (`src/model/joints.ts`)
 - jedes Holz trägt eine Festigkeitsklasse (`src/model/catalog.ts`)
 - Auflager und Befestigungen sind als Fixings modelliert

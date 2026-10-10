@@ -145,4 +145,4 @@ Außerdem gibt es: Universalbrett Kiefer gehobelt 38×140×2500 und Furnierschic
 
 - **Keine öffentliche API.** Seiten enthalten schema.org-JSON-LD (`Product`, `offers` mit `OnSitePickup` und Marktcode), aber nur für den eingestellten Markt.
 - Online- und Marktpreise sind laut Hornbach gleich (Dauertiefpreise). Marktabhängig sind Bestand, Palettenpflicht und Mengenstaffeln.
-- Für die App heißt das: Preise per **Recherche-Prompt** über einen KI-Chat mit Websuche ermitteln, nicht durch automatisches Auslesen.
+- Für die App heißt das: Preise per **Recherche-Prompt** über einen KI-Chat mit Websuche ermitteln, nicht durch automatisches Auslesen. Optional recherchiert ein Preis-Agent direkt in der App mit eigenem Claude-API-Schlüssel.

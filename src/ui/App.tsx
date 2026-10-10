@@ -257,7 +257,7 @@ function Help() {
           </p>
           <ul>
             <li>
-              <kbd>1</kbd> {t('Draufsicht')} · <kbd>2</kbd> {t('Seitenansicht (nochmal drücken: nächste Wand)')} · <kbd>3</kbd> 3D · <kbd>4</kbd> {t('Ich-Perspektive (nochmal: nächster Standpunkt)')} · <kbd>5</kbd> {t('Abwicklung')} · <kbd>0</kbd> {t('Ansicht zurücksetzen')}
+              <kbd>1</kbd> {t('Draufsicht')} · <kbd>2</kbd> {t('Seitenansicht (nochmal drücken: nächste Wand)')} · <kbd>3</kbd> 3D · <kbd>4</kbd> {t('Ich-Perspektive (nochmal: nächster Standpunkt)')} · <kbd>5</kbd> {t('Abwicklung')} · <kbd>6</kbd> {t('Foto')} · <kbd>0</kbd> {t('Ansicht zurücksetzen')}
             </li>
             <li>{t('Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen')}</li>
             <li>{t('Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort')}</li>
@@ -303,13 +303,16 @@ function useShortcuts() {
       // Esc schließt zuerst Dialoge und Schubladen, dann Aufbau/Statik, sonst Werkzeug abbrechen
       if (e.key === 'Escape') {
         if (s.jointDetail) return s.set({ jointDetail: null })
-        if (s.showHelp || s.showShare || s.showMaterial || s.showPlan) return s.set({ showHelp: false, showShare: false, showMaterial: false, showPlan: false })
+        if (s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard) return s.set({ showHelp: false, showShare: false, showMaterial: false, showPlan: false, showWizard: false })
         if (s.leftOpen || s.rightOpen) return s.set({ leftOpen: false, rightOpen: false })
         if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
         if (s.build) return s.set({ build: null })
         if (s.staticsMode) return s.set({ staticsMode: false, wobble: false })
       }
       if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
+      if (e.key === '?' && s.showHelp) return s.set({ showHelp: false })
+      // Hinter einem offenen Dialog keine Tastenkürzel (sonst z. B. Entf löscht das Bett dahinter)
+      if (s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || s.jointDetail) return
       const k = e.key.toLowerCase()
       if ((e.ctrlKey || e.metaKey) && k === 'z') {
         e.preventDefault()
@@ -355,7 +358,7 @@ function useShortcuts() {
 
 /** Fokus beim Öffnen eines Dialogs auf dessen Schließen-Knopf, beim Schließen zurück */
 function useDialogFocus() {
-  const open = useStore((s) => s.showHelp || s.showShare || s.showMaterial || s.showPlan || !!s.jointDetail)
+  const open = useStore((s) => s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || !!s.jointDetail)
   useEffect(() => {
     if (!open) return
     const before = document.activeElement as HTMLElement | null

@@ -87,7 +87,7 @@ Pfosten zu verlängern ohne Deckenfixierung **verschlechtert** das Wackeln.
 - PP-Sicherheitsnetz, 45 mm Masche, 3–4 mm Faden, Randseil.
 - Zum Beispiel schutznetze24: knotenlos, Ø 4 mm, Maschenhöchstzugkraft 1600 N, 24,10 €/m² (ab 20 m² 12,05 €/m²). https://schutznetze24.de/Hochbettnetz/Netz-zur-Sicherung-von-Galerien-und-Hochebenen-nach-Mass::116.html
 - Befestigung: Ösenschrauben in einer Zusatzleiste 60×40 alle ca. 20 cm, Spannseil durch die Randmaschen, Wantenspanner.
-- Netz als begehbare Fläche: selten. Die Randkräfte sind sehr hoch (Faustformel T ≈ F·L/4f), deshalb braucht es Durchhang und einen eigenen Spannrahmen. In der App ist das als Expertenmodus mit Warnung vorgesehen.
+- Netz als begehbare Fläche: selten. Die Randkräfte sind sehr hoch (Faustformel T ≈ F·L/4f), deshalb braucht es Durchhang und einen eigenen Spannrahmen. In der App umgesetzt als Vorlage „Netz-Hochebene“ mit Warnhinweis; Randzug und Sprung gehen als Seilkräfte in die Rahmenstatik ein.
 
 ## Leitern und Treppen
 
@@ -116,7 +116,7 @@ Pfosten zu verlängern ohne Deckenfixierung **verschlechtert** das Wackeln.
 1. **Kinderhochbett mit Treppenregal** (heimwerker.de): 106×207 cm, Liegefläche 140 cm hoch, Brettbauweise mit Schlitz und Zapfen, 5 Regalkästen als Treppe.
 2. **Eckbett über einem Bestandsbett** (woodworker 2024): 93×250 auf 135 cm Höhe, 2 Wände und 1 Stütze. Das Forum korrigiert auf Pfosten 80×80 und Rahmenbretter 30×120.
 3. **Erwachsenen-Eckbett 140×200** (woodworker 2026): Kiefer, ca. 2 m hoch, 2 Steinwände und 1 Stütze, zwei Lattenroste.
-4. **Berliner Altbau-Hochebene** (woodworker): Raumhöhe 3,7 m, 298×130 cm auf ca. 2,4 m. **4 KVH-Pfosten 80×80, an der Fußleiste ausgeklinkt**, Längsträger 60×120, Dielen, Wand nur als Kippsicherung, Brettgeländer 18×195. **Vorbild für das Testzimmer.**
+4. **Berliner Altbau-Hochebene** (woodworker): Raumhöhe 3,7 m, 298×130 cm auf ca. 2,4 m. **4 KVH-Pfosten 80×80, an der Fußleiste ausgeklinkt**, Längsträger 60×120, Dielen, Wand nur als Kippsicherung, Brettgeländer 18×195. **Vorbild für das Beispielzimmer.**
 5. **Hochebene mit Leseecke** (woodworker 2024): 321×138 cm, Balken 80×140 überblattet, Schlossschrauben, lose Latten 40×80.
 6. **Hochebene Wand zu Wand, U-Form** (woodworker): 3,20 m, Balken 10×20 bzw. Baudielen 280×48, Kopfbänder statt Mittelpfosten.
 7. **Spieleetage an drei Wänden** (woodworker): 2,3×1,8 m, Eckstützen 7×7, Dielung 27 mm, nur Lagesicherung mit Schrauben 6×160.
@@ -127,7 +127,7 @@ Pfosten zu verlängern ohne Deckenfixierung **verschlechtert** das Wackeln.
 ## Vorgeschlagene Standardwerte (umgesetzt)
 
 - Pfosten 80×80 KVH, Zargen KVH 60×120 hochkant, Querträger 44×74.
-- Lose Latten 24×94 mit 6 cm Abstand.
+- Lose Latten gehobelt 44×74 (`geh-44x74`), flach gelegt, mit 6 cm Abstand.
 - Brettgeländer aus Leimholz 18×200 mit Handlauf, mindestens 16 cm über der Matratze.
 - Stufenleiter mit flachen Tritten, Neigung 70°, Stufenabstand ca. 22–26 cm.
 - Schlossschrauben M10 an Pfosten–Zarge (zerlegbar).

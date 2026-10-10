@@ -1,5 +1,5 @@
 import { t, tk } from '../i18n'
-import { HARDWARE, catalogItem, sheet, timber } from './catalog'
+import { catalogItem, sheet, timber } from './catalog'
 import { rotate2, v } from './geometry'
 import type { Assembly, LoftBedParams, Member, MemberRole, MemberShape, Mm, Panel, Side, Vec3 } from './types'
 
@@ -124,6 +124,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const needsJoists = P.deck === 'platte' || P.deck === 'dielen' || P.deck === 'lattenrost' || (P.deck === 'latten' && carriersLR)
   const deckTopOfFrame = H - deckT
   const railTop = aufgelegt && needsJoists ? deckTopOfFrame - joist.h : deckTopOfFrame
+  // Unterkante der Liegefläche: bei aufgelegter Bauweise auf den Querträgern, sonst auf den Zargen
+  const deckZ = aufgelegt && needsJoists ? deckTopOfFrame : railTop
   const railBottom = railTop - rh
   const guardTop = H + P.guardHeight
   const detached = new Set(a.detached)
@@ -471,7 +473,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const x = p + 5 + w / 2 + i * (w + gap)
       // 5 mm vor der Außenkante enden, damit außen angeschraubte Geländerstützen frei bleiben
       slatXs.push(x)
-      add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, railTop + deckT / 2), v(x, Wo - 5, railTop + deckT / 2), w, deckT, { name: t('Latte {n}', { n: i + 1 }) })
+      add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, deckZ + deckT / 2), v(x, Wo - 5, deckZ + deckT / 2), w, deckT, { name: t('Latte {n}', { n: i + 1 }) })
     }
     addMidCarriers()
   } else if (netDeck) {
@@ -479,7 +481,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       kind: 'netz',
       name: t('Begehbares Netz'),
       outline: rect(rb, rb, Lo - rb, Wo - rb).map((q) => to2(q.x, q.y)),
-      z: railTop,
+      z: deckZ,
       thickness: deckT,
       catalogId: 'netz-begehbar',
       direction: P.rotation,
@@ -500,7 +502,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       kind: P.deck,
       name: P.deck === 'platte' ? t('Liegefläche (Platte)') : t('Liegefläche (Dielen)'),
       outline: clean.map((q) => to2(q.x, q.y)),
-      z: railTop,
+      z: deckZ,
       thickness: deckT,
       catalogId: P.deckCatalogId,
       direction: P.rotation,
@@ -523,7 +525,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
               ? t('Lattenrost {n}', { n: i + 1 })
               : t('Lattenrost'),
         outline: rect(ax0, ay0, ax1, ay1).map((q) => to2(q.x, q.y)),
-        z: railTop,
+        z: deckZ,
         thickness: deckT,
         catalogId: P.deckCatalogId,
         direction: P.rotation,
@@ -828,4 +830,3 @@ export const BED_TYPE_LABEL: Record<LoftBedParams['type'], string> = {
   abgehaengt: tk('Abgehängt (Wand + Decke)'),
 }
 
-export const HARDWARE_IDS = new Set(HARDWARE.map((h) => h.id))

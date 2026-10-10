@@ -31,7 +31,6 @@ export type Tool = 'select' | 'balken' | 'pfosten'
 
 export interface Layers {
   joints: boolean
-  obstacles: boolean
   persons: boolean
   furniture: boolean
   labels: boolean
@@ -65,7 +64,7 @@ interface State {
   focusRequest: { id: string; nonce: number } | null
   /** Schnittbox in 3D (mm); null = aus */
   sectionBox: { x0: number; x1: number; y0: number; y1: number; z1: number } | null
-  /** Mausbelegung: standard = links ziehen dreht; cad = mittlere Taste dreht, links nur Auswahl */
+  /** Mausbelegung: standard = links ziehen dreht (3D); cad = links und rechts verschieben, Shift + mittlere Taste dreht. Mittlere Taste verschiebt immer. */
   mouseProfile: 'standard' | 'cad'
   /** Darstellungsqualität: hoch (volle Auflösung), normal, einfach (ohne Raumlicht und Beschläge, für ältere Tablets) */
   quality: 'hoch' | 'normal' | 'einfach'
@@ -122,7 +121,7 @@ function loadProject(): Project {
       if (p && p.version === 1 && p.room) return migrate(p)
     }
   } catch {
-    // ohne gespeicherten Stand mit dem Testzimmer starten
+    // ohne gespeicherten Stand mit dem Beispielzimmer starten
   }
   return testProject()
 }
@@ -170,7 +169,7 @@ export const useStore = create<State>((set, get) => ({
   snap: true,
   planCut: 2600,
   cursor: null,
-  layers: { joints: false, obstacles: true, persons: true, furniture: true, labels: true, swing: true },
+  layers: { joints: false, persons: true, furniture: true, labels: true, swing: true },
   sidebar: 'bett',
   savedAt: 0,
   showMaterial: false,

@@ -6,7 +6,6 @@ import { ProjectMenu } from './Project'
 
 const LAYER_LABEL: Record<keyof Layers, string> = {
   joints: tk('Verbindungen'),
-  obstacles: tk('Hindernisse'),
   persons: tk('Personen'),
   furniture: tk('Möbel'),
   labels: tk('Beschriftung & Maße'),
@@ -100,6 +99,9 @@ export function Toolbar() {
           <button onClick={() => s.set({ showPlan: true })}>📐 {t('Bauplan')}</button>
           <button onClick={() => s.set({ showShare: true })}>📱 {t('Auf dem Tablet öffnen')}</button>
           <SunControl />
+          <div className="menu-lang" onClick={(e) => e.stopPropagation()}>
+            <LangSelect />
+          </div>
           <b className="menu-head">{t('Ebenen')}</b>
           {(Object.keys(LAYER_LABEL) as (keyof Layers)[]).map((k) => (
             <label key={k} className="check" onClick={(e) => e.stopPropagation()}>
@@ -110,7 +112,7 @@ export function Toolbar() {
         </div>
       </details>
       <button className={`sync wide-only ${s.server ? s.server.status : ''}`} onClick={() => s.set({ showShare: true })} title={s.server ? t('Abgleich im WLAN: {status}', { status: tr(s.server.status) }) : t('Auf dem Tablet öffnen')}>
-        📱<span className="lbl"> {t('Tablet')}</span>
+        📱<span className="lbl lbl-xl"> {t('Tablet')}</span>
       </button>
       <button
         className={`narrow-only info-btn${counts.fehler ? ' has-err' : counts.warnung ? ' has-warn' : ''}`}
@@ -120,7 +122,9 @@ export function Toolbar() {
       >
         ⓘ{counts.fehler > 0 ? <span className="b fehler">⛔ {counts.fehler}</span> : counts.warnung > 0 ? <span className="b warnung">⚠ {counts.warnung}</span> : null}
       </button>
-      <LangSelect />
+      <span className="wide-only">
+        <LangSelect />
+      </span>
       <button onClick={() => s.set({ showHelp: true })} title={t('Bedienung und Tastenkürzel (?)')} aria-label={t('Hilfe')}>
         ?
       </button>
@@ -152,10 +156,17 @@ function LangSelect() {
   const lang = useStore((s) => s.lang)
   const setLangSetting = useStore((s) => s.setLangSetting)
   return (
-    <select className="lang-select" value={setting} onChange={(e) => setLangSetting(e.target.value as LangSetting)} title={LANG_TITLE} aria-label={LANG_TITLE}>
-      <option value="auto">🌐 Auto ({lang.toUpperCase()}){/* i18n-ok: Sprachwahl bleibt zweisprachig */}</option>
-      <option value="en">English{/* i18n-ok */}</option>
-      <option value="de">Deutsch{/* i18n-ok */}</option>
+    <select
+      className="lang-select"
+      value={setting}
+      onChange={(e) => setLangSetting(e.target.value as LangSetting)}
+      title={`${LANG_TITLE} · ${setting === 'auto' ? `auto → ${lang === 'de' ? 'Deutsch' : 'English'}` : lang === 'de' ? 'Deutsch' : 'English'}` /* i18n-ok */}
+      aria-label={LANG_TITLE}
+    >
+      {/* kurz halten, die Werkzeugleiste ist voll; die Sprachwahl bleibt zweisprachig */}
+      <option value="auto">🌐 Auto{/* i18n-ok */}</option>
+      <option value="en">🌐 EN</option>
+      <option value="de">🌐 DE</option>
     </select>
   )
 }

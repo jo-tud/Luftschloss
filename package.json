@@ -2,7 +2,7 @@
   "name": "luftschloss",
   "private": true,
   "version": "0.1.0",
-  "description": "Hochbettplaner im Browser: Raum vermessen, Hochbett einpassen, Material planen",
+  "description": "Loft bed planner in the browser: measure your room, fit a loft bed, plan materials",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -26,6 +26,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.9",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

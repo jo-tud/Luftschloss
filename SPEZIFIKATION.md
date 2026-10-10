@@ -19,14 +19,14 @@ Luftschloss ist ein Planungswerkzeug im Desktop-Browser. Heimwerker passen damit
 
 1. **Einpassen in den Raum** – mit guter Usability am Desktop.
 2. **Konstruieren** – Vorlagen sind immer anpassbar, alternativ wird frei gezeichnet.
-3. **Prüfen** – Freiraum, Fenster und Tür, Kollisionen (auch mit Stuck und Sockelleiste), Sicherheitsempfehlungen; später die Statik des ganzen Gestells.
+3. **Prüfen** – Freiraum, Fenster und Tür, Kollisionen (auch mit Stuck und Sockelleiste), Sicherheitsempfehlungen und die Statik des ganzen Gestells.
 4. **Material** – eine Einkaufsliste, die man im Baumarkt (Hornbach) tatsächlich bekommt, mit Zuschnitt und Kosten.
 5. **Preise** – recherchieren lassen über einen Prompt zum Kopieren.
 
 ### 1.2 Grundsätze
 
 - **Empfehlungen statt Verbote.** Sicherheitsregeln (DIN EN 747), Foren-Konsens und Faustregeln erscheinen als Hinweise, Warnungen oder Fehler. Die Erwachsenen entscheiden: Jeder Befund lässt sich quittieren und bleibt dann ausgegraut sichtbar.
-- **Kreativität zulassen.** Auch riskante Bauarten werden angeboten, zum Beispiel abgehängte Betten, Seilgeländer und später begehbare Netze. Sie bekommen einen dezenten Warnhinweis.
+- **Kreativität zulassen.** Auch riskante Bauarten werden angeboten, zum Beispiel abgehängte Betten, Seilgeländer und begehbare Netze. Sie bekommen einen dezenten Warnhinweis.
 - **Vom Foren-Konsens abweichen können.** Die Recherche bestimmt nur die *Vorschlagswerte* (Latten statt Platte, Stufen statt Rundsprossen, Schlossschrauben). Jede Alternative bleibt wählbar.
 - **Baumarkt-Realität.** Querschnitte und Längen kommen aus dem Katalog; Überlängen werden gemeldet. Tragendes Holz ist bei Hornbach **Fichte** (KVH C24); Kiefer gibt es nur bei Leimholz, Dielen, Leisten und Rundstäben.
 - **Immer ein Wow-Feature mitdenken.** An irgendeiner Stelle soll man denken: „Boah, das kann die App?!“ Bei jeder Ausbaustufe fragen, was über das Erwartbare hinausgeht (siehe Kapitel 12).
@@ -49,20 +49,21 @@ Luftschloss ist ein Planungswerkzeug im Desktop-Browser. Heimwerker passen damit
 | F1 | Ort | Repository **Luftschloss** |
 | F2 | Raumform | **Rechteck**, dazu **Stuckleisten** (an allen Wänden gleich, je Wand abweichend möglich), **Deckenrosette mit Lampe**, **Sockel- bzw. Parkettleisten**, **tiefe Fensternischen**. L-Form, Unterzug und Dachschräge kommen später. |
 | F3 | Zielgruppe | Kinder, Jugendliche, Erwachsene; das Testbett ist für Jugendliche. Das Sicherheitsprofil ist umschaltbar, und alles ist quittierbar. |
-| F4 | Sprache | Deutsch, Anzeige in cm, intern ganzzahlige mm |
+| F4 | Sprache | Englisch als Standard, Deutsch umschaltbar, automatisch nach Browsersprache (🌐 in der Werkzeugleiste); Anzeige in cm, intern ganzzahlige mm |
 | F5 | Technik | React, TypeScript, Vite, three.js über react-three-fiber |
-| F6 | Preise | Recherche-Prompt zum Kopieren und Antwort zurückfügen (umgesetzt). Ein Agent mit API-Schlüssel ist optional für später. |
+| F6 | Preise | Recherche-Prompt zum Kopieren und Antwort zurückfügen (umgesetzt). Optional ein Agent mit eigenem API-Schlüssel (umgesetzt, M7). |
 | F7 | Vorlagen | **Immer anpassbar** (parametrisch). Einzelne Teile lassen sich herauslösen, ganze Baugruppen auflösen. |
-| F8 | Statik | Später, aber als **Prüfung des ganzen Gestells**, nicht je Balken. Das Datenmodell ist vorbereitet. |
-| F9/F10 | Bauplan, Holzverbindungen | Vorerst auswählen und anzeigen. Später Bauanleitungen mit Maßzeichnung; die Bearbeitungen werden schon jetzt gespeichert. |
+| F8 | Statik | Später, aber als **Prüfung des ganzen Gestells**, nicht je Balken. Das Datenmodell ist vorbereitet. (umgesetzt, M5) |
+| F9/F10 | Bauplan, Holzverbindungen | Vorerst auswählen und anzeigen. Später Bauanleitungen mit Maßzeichnung; die Bearbeitungen werden schon jetzt gespeichert. (umgesetzt: Bauplan M6, Holzverbindungen als Geometrie M8) |
 | F11 | Normen | Gekennzeichnete Richtwerte (EN 747 Stand 2015, 2024 ungeprüft) |
 | F12 | Riskante Bauarten | Anbieten, mit dezenter Warnung |
-| F13–F16 | Mehrere Betten, Speichern, Montage | Mehrere Betten gehen; Speichern lokal und als Datei; Montageanleitung kommt später |
+| F13–F16 | Mehrere Betten, Speichern, Montage | Mehrere Betten gehen; Speichern lokal und als Datei; Montageanleitung umgesetzt (Montageschritte im Bauplan, Aufbau-Animation) |
 
 ---
 
 ## 3. Arbeitsablauf
 
+0. **Planungsassistent (optional)** – Raum und Decke, Wände, Fenster/Türen/Heizkörper, wer oben schläft, Nutzung darunter, Befestigung an der Wand → bis zu drei geprüfte, gewichtete Vorschläge. Aufruf über das Projektmenü, das Banner im Beispielzimmer, den leeren Bett-Reiter und Raum → Projekt. ✅
 1. **Raum** – Maße, Stuck, Sockelleiste, Rosette und Lampe, Wand-, Boden- und Deckenart. ✅
 2. **Ausstattung** – Fenster (Flügel, Laibung, Nische, Fensterbank), Tür, Heizkörper, Steckdosen. ✅
 3. **Bett** – Vorlage in eine Raumecke einsetzen oder Balken und Pfosten frei zeichnen. ✅
@@ -70,7 +71,7 @@ Luftschloss ist ein Planungswerkzeug im Desktop-Browser. Heimwerker passen damit
 5. **Prüfen** – laufende Prüfliste mit Fokus auf das betroffene Teil. ✅
 6. **Material** – Einkaufsliste, Zuschnittplan, Kosten, Preis-Prompt, CSV und Druck. ✅
 
-Beim ersten Start lädt das **Testzimmer**: 4,30 × 5,95 m, zwei Fenster an Wand A, Tür in Wand C, Stuck, Rosette, Parkettleisten, Bett in der hinteren linken Ecke vor dem linken Fenster. Geschätzte Maße sind gelb markiert und erscheinen als Hinweis „bitte nachmessen“.
+Beim ersten Start lädt das **Beispielzimmer** (`testProject()` in `src/model/defaults.ts`): Altbau 4,30 × 5,95 m, 3,50 m hoch, zwei Fenster mit Heizkörpern an Wand A (gemauert), Wände B–D Leichtbau, Tür in Wand C, Holzbalkendecke, Dielenboden, Stuck, Rosette mit Lampe, Sockelleisten, Schreibtisch; freistehendes Hochbett in der hinteren linken Ecke (von der Tür aus). Ein Banner bietet den Planungsassistenten an („Eigenes Zimmer planen“). Das Beispielzimmer hat keine „geschätzt“-Markierungen.
 
 ---
 
@@ -79,9 +80,9 @@ Beim ersten Start lädt das **Testzimmer**: 4,30 × 5,95 m, zwei Fenster an Wand
 - **Koordinaten:** Ursprung in der Ecke Wand A/B; x entlang Wand A, y in den Raum, z nach oben.
 - **Wände:** A (Fensterwand), B, C, D im Umlauf. „Links“ bei Wandobjekten heißt immer: vom Raum aus auf die Wand gesehen.
 - **Wand-, Boden-, Deckenart:**
-  - Wand: Beton, KS, Vollziegel, Lochziegel, Porenbeton, Trockenbau, Holzständer. Steuert die Warnungen zu Befestigungen.
+  - Wand: Beton, KS, Vollziegel, Lochziegel, Porenbeton, Trockenbau, Holzständer, Leichtbau/Altbau-Innenwand (nicht tragend). Steuert die Warnungen zu Befestigungen.
   - Boden: Estrich, Fußbodenheizung, Dielen. Bei Dielen gibt es einen Hinweis auf Lastverteilplatten.
-  - Decke: Beton, Holzbalken, abgehängt.
+  - Decke: Beton, Holzbalken, abgehängt, nicht tragfähig.
 - **Stuckleiste:** Höhe an der Wand, Ausladung an der Decke, Profil Hohlkehle, Schräge oder Rechteck; je Wand abweichend möglich.
   - Kollision wird mit dem echten Profil geprüft.
   - Wandnahe Pfosten, die in den Stuck ragen, werden ausgeklinkt, höchstens bis zum halben Querschnitt.
@@ -104,10 +105,12 @@ Beim ersten Start lädt das **Testzimmer**: 4,30 × 5,95 m, zwei Fenster an Wand
 
 ## 5. Konstruktionsmodell ✅
 
-- **Stab** (Member): Achse Start/Ende, Querschnitt b × h, rund oder eckig, Drehung, Katalogartikel, Rolle, **Ausklinkungen** (Notches mit Grund). Die Ausklinkungen sind die Grundlage für spätere Maßzeichnungen.
+- **Stab** (Member): Achse Start/Ende, Querschnitt b × h, rund oder eckig, Drehung, Katalogartikel, Rolle, **Ausklinkungen** (Notches mit Grund). Die Ausklinkungen sind die Grundlage für die Maßzeichnungen im Bauplan.
+  - Optional eine abweichende **Körperform** (`Member.shape`), z. B. Kopfband mit Gehrungsschnitten. Statik und Kollision rechnen weiter mit dem Quader.
 - **Fläche** (Panel): waagrecht (Umriss) oder senkrecht (Geländerfüllung, Netz). Arten: Platte, Dielen, Rollrost, Lattenrost, Netz, Matratze.
 - **Baugruppe „Hochbett“:** parametrisch, erzeugt alle Stäbe und Flächen neu. Teile lassen sich **herauslösen** (werden frei) oder die ganze Baugruppe **auflösen**.
 - **Verbindungen:** werden automatisch erkannt. Arten: Eckstoß, T-Stoß, Kreuzung, Auflage, Längsstoß, Strebe, Beischlag. Der Typ ist je Verbindung wählbar und wird gespeichert.
+  - Zimmermannsmäßige Verbindungen verändern die Geometrie (Zapfen, Blatt, Nut, Einlassung). Gerechnet wird das an einer Stelle, `src/model/joinery.ts`; 3D-Ansicht, Verbindungsdetail, Bauplan-Skizze und Zuschnittlängen nutzen dieselbe Rechnung.
 - **Befestigungen:** Wandriegel mit Dübeln, Kippsicherung, Stellfüße für die Deckenverspannung, Deckenanker für abgehängte Betten.
 
 ### 5.1 Bauarten (Vorlagen)
@@ -122,13 +125,20 @@ Beim ersten Start lädt das **Testzimmer**: 4,30 × 5,95 m, zwei Fenster an Wand
 | Abgehängt | ✅ mit Warnung | Wandriegel und Gewindestangen |
 | **Wandbalken, Latten drauf** | ✅ | Bei massiven Wänden (Ziegel, Beton) sehr effizient: Balken direkt an die Wand, vorne ein Balken auf Pfosten, Querträger bzw. Latten oben **aufgelegt** (Bauweise „aufgelegt“). Warnung, wenn die Wand nicht tragfähig ist. |
 | **Eckbett, Ecke abgehängt** | ✅ | Zwei Wandbalken, die freie Ecke an einer Gewindestange von der Decke. Fehler bei nicht tragfähiger Decke, Warnung bei Holzbalkendecke (nur in einen Balken). |
-| Halbhochbett, Etagenbett, Bett auf Regal, Podest, Galerie mit Mittelpfosten | ◻ | |
+| Halbhoch, 1,20 m | ✅ | Für jüngere Kinder |
+| Etagenbett | ✅ | Zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft |
+| Galerie mit Mittelstütze | ✅ | Lange Hochebene, eine Stütze in der Mitte jeder Längsseite |
+| Zwei Kinder oben | ✅ | Zwei Matratzen nebeneinander, Mittelträger unter der Fuge |
+| Netz-Hochebene | ✅ mit Warnung | Begehbares Netz, kräftige Zargen |
+| Bett auf Regal, Podest | ◻ | |
 
 Parameter sind:
 - **Bauweise:** Querträger zwischen Zargen oder **aufgelegt**; freie Ecke auf Pfosten oder **von der Decke abgehängt**
-- Matratzenmaß und -dicke, Spiel, Liegehöhe, Lage und Drehung, Wandanschluss
+- Matratzenmaß und -dicke, Spiel, Liegehöhe, Lage und Drehung, Spiegeln, Wandanschluss
+- Mehrere Matratzen: Anzahl, nebeneinander oder hintereinander, Abstand
+- Etagenbett (untere Liegefläche mit Höhe), Mittelstützen
 - Hölzer für Pfosten, Zargen und Querträger
-- Liegefläche: **Latten lose aufgelegt** (Standard), Rollrost, Lattenrost, Platte, Dielen
+- Liegefläche: **Latten lose aufgelegt** (Standard), Rollrost, Lattenrost, Platte, Dielen, begehbares Netz
 - Geländer: **Bretter** (Standard), Rundstäbe, Vollfläche, Netz, Seil oder keins; Höhe und Seiten
 - Leiter: **Stufenleiter** (Standard), senkrecht, schräg oder Treppe; Seite, Position, Breite, Neigung, Hölzer
 
@@ -138,12 +148,13 @@ Parameter sind:
 |---|---|
 | Stahl | Winkel mit Sicke, Balkenschuh, Seilbefestigung, Gewindestange |
 | Schrauben | Schlossschrauben M10, Holzbauschrauben 8×160, Bettschraube mit Quermutter |
-| Holz | Stumpfe Auflage, Auflagerleiste, lose aufgelegt, Ausklinkung, Überblattung, Schwalbenschwanzblatt, Zapfen, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Kopfband |
+| Holz | Stumpfe Auflage, Auflagerleiste, lose aufgelegt, Ausklinkung/Einlassung, Überblattung, Schwalbenschwanzblatt, Zapfen mit Holznagel, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Kopfband auf Gehrung (verschraubt), Kopfband eingelassen (Versatz) |
 
 Jeder Typ trägt:
 - Schwierigkeit, Werkzeuge, ob zerlegbar, Hinweistext mit belegten Werten
+- Je Verbindungsart: Wirkprinzip und Herstellungsschritte (Verbindungsdetail, Bauplan)
 - Beschläge für die Stückliste
-- **Steifigkeitsklasse** (gelenkig, halbsteif, steif) und **Restquerschnitt** für die spätere Statik
+- **Steifigkeitsklasse** (gelenkig, halbsteif, steif) und **Restquerschnitt** für die Statik
 
 Die Vorschläge richten sich nach der Rolle des Teils und der Projektvorgabe: *einfach*, *zerlegbar* (Standard) oder *wenig Metall*.
 
@@ -160,24 +171,25 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 5. **Draufsicht mit Schnitthöhe.** Alles oberhalb wird abgeschnitten (Regler); geschnittene Wände erscheinen dunkel. ✅
 6. **Ich-Perspektive mit Standpunkten:** „An der Tür stehen“, „Unter dem Bett sitzen“, „Auf der Matratze sitzen“, „Im Bett liegen“.
    - Die Augenhöhe kommt aus der Körpergröße, die Kamera fliegt hin. ✅
-   - Umsehen per Ziehen, Gehen mit WASD, Q/E für hoch/runter, Mausrad für den Blickwinkel. ✅
+   - Umsehen per Ziehen, Gehen mit WASD oder den Pfeiltasten, Q/E für hoch/runter, Mausrad für den Blickwinkel. ✅
 7. **Übersichtskarte** mit Kamerastandort und Blickkegel; ein Klick setzt das Blickziel. ✅
-8. **Zoom zum Mauszeiger, Doppelklick zentriert, Fokus aus der Prüfliste.** ✅
-9. Geplant ◻:
-   - aufklappbarer Raum (Abwicklung) zum Eintragen von Wandobjekten
-   - verzerrungsarme Weitwinkelprojektion (Panini) für die Ich-Perspektive
-   - Schnittbox in 3D
-   - Ansichtswürfel
+8. **Zoom zum Mauszeiger, Doppelklick fliegt schrittweise näher heran, Fokus aus der Prüfliste;** „⌂ Zurück“ (Taste `0`) zeigt wieder das ganze Zimmer. ✅
+9. **Maus:** links ziehen dreht in 3D bzw. verschiebt in 2D, rechte Taste oder Alt + links dreht, mittlere Taste verschiebt immer. Mausprofil „CAD“ (Raum → Einstellungen): links und rechts verschieben, Shift + mittlere Taste dreht. ✅
+10. Abwicklung (Taste `5`), Schnittbox ✂ in 3D, Mausprofil CAD. ✅ Statt Ansichtswürfel: Übersichtskarte und Ansichtsleiste.
+11. Geplant ◻:
+   - verzerrungsarme Weitwinkelprojektion (Panini) für die Ich-Perspektive (zurückgestellt)
    - Tiefenstaffelung in der Seitenansicht
-   - wählbare Mausbelegung (SketchUp, Blender)
+   - weitere Mausprofile (SketchUp, Blender)
 
 **Bearbeiten:**
 - Bett in Draufsicht oder 3D ziehen; es rastet an Wänden ein. In der Seitenansicht hoch und runter ziehen ändert die **Liegehöhe**. ✅
 - Fenster, Heizkörper und Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen. ✅
 - **Balken zeichnen:** zwei Klicks auf Arbeitshöhe (Oberkante) bzw. in der Seitenansicht auf einer Ebene im wählbaren Wandabstand. Shift zeichnet gerade, Strg zeichnet weiter. Fang auf Bauteilenden, Wände und Raster. ✅
 - **Pfosten setzen:** ein Klick. ✅
-- Rückgängig und Wiederholen (200 Schritte; Ziehen zählt als ein Schritt). Tastenkürzel: 1–4, V, B, P, R, F, Entf, Esc. ✅
-- Geplant ◻: Griffe an den Stabenden, „gleichmäßig verteilen“, Spiegeln, Maßketten mit direkter Eingabe in der Ansicht.
+- Rückgängig und Wiederholen (200 Schritte; Ziehen zählt als ein Schritt). Tastenkürzel: 1–6, 0, V, B, P, R, F, Entf/Rücktaste, Esc, ?, Strg/Cmd+Z, Strg+Y/Strg+Shift+Z. ✅
+- Griffe an den Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Spiegeln. ✅
+- Seitenleisten und Prüfliste in der Größe veränderbar (Rand ziehen, Doppelklick setzt zurück). ✅
+- Geplant ◻: Maßketten mit direkter Eingabe in der Ansicht.
 
 ---
 
@@ -195,10 +207,10 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 | Stabilität: freistehend ohne Aussteifung, Wandbaustoff bei Befestigung, Holzbalkendecke, abgehängt, Mietwohnung (Zahl der Bohrungen) | ✅ |
 | Material: Überlänge, unsortiertes Holz für tragende Teile, sich durchdringende Teile | ✅ |
 | Ausklinkung zu tief | ✅ |
-| Hinweis auf geschätzte Maße, Rauchmelder | ✅ |
+| Hinweis auf geschätzte Maße (nur bei älteren Projekten), Rauchmelder | ✅ |
 | **Statik des Gestells** (Stabwerk, Lastfälle, Durchbiegung und Ausnutzung, Seitensteifigkeit) | ✅ |
 | Einbringen durch die Tür, Montagereihenfolge mit Hinweis auf das Aufrichten deckenhoher Pfosten | ✅ |
-| Begehbares Netz mit Durchhang und Randkräften | ◻ (Expertenmodus) |
+| Begehbares Netz mit Durchhang und Randkräften: Randzug und Sprung als Seilkraft in der Rahmenstatik, Warnhinweis | ✅ (M7) |
 
 ### 7.1 Statik (umgesetzt)
 
@@ -206,14 +218,13 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 
 - **Modell:** 3D-Stabwerk aus den Stäben; Knoten an den erkannten Verbindungen, deren Steifigkeit aus dem Verbindungstyp kommt; Auflager aus Boden, Wand- und Deckenbefestigungen.
 - **Lastfälle:**
-  - Eigengewicht
-  - Nutzlast 2,0 kN/m² (A3)
-  - Einzellast 1,0 kN
-  - „Toben“ als 3 × Körpergewicht, kurz
+  - Eigengewicht, dazu Matratze und Bettzeug 0,3 kN
+  - Nutzlast nach Lastprofil: Bett 1,0 kN/m², Hochebene 2,0 kN/m² (A3)
+  - „Toben“: 2 kN Stoß, über die Matratze auf ca. 50 × 50 cm verteilt, kurze Lasteinwirkung
   - Geländer 0,5 kN horizontal
-  - Seitenlast für die Standsicherheit
+  - Seitenlast 0,5 kN längs bzw. quer für Standsicherheit und Wackeln
 - **Nachweise (vereinfachter EC5):**
-  - Biegung, Schub mit k_cr = 0,5 (NA), Ausklinkungen mit k_v
+  - Biegung, Schub mit k_cr nach NA (2,0 / f_v,k, bei BSH 2,5 / f_v,k), Restquerschnitt aus dem Verbindungstyp; Ausklinkungen mit k_v noch nicht
   - Knicken der Pfosten
   - Durchbiegung L/300 bzw. L/200 mit k_def
   - Verbindungsmittel mit den belegten charakteristischen Werten
@@ -242,24 +253,29 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
   - Die Antwort wird als `id;preis;einheit;name;url` zurückgefügt.
   - Die Preise ersetzen die Richtpreise und erscheinen mit Datum.
 - **Export:** CSV, Druckansicht.
-- Geplant ◻:
-  - 2D-Zuschnittplan für Platten
-  - Bauplan-PDF mit Maßketten, Teilenummern und **Detailzeichnungen der Verbindungen** (aus den gespeicherten Ausklinkungen und Bearbeitungen)
-  - Montageanleitung
-  - optional ein Preis-Agent mit eigenem API-Schlüssel
+- Umgesetzt ✅:
+  - Bauplan (PDF über Drucken) mit Maßketten, Teilenummern und **Skizzen der Verbindungen** (M6)
+  - Montageschritte im Bauplan und Aufbau-Animation (M6)
+  - optional ein Preis-Agent mit eigenem API-Schlüssel (M7)
+- Geplant ◻: 2D-Zuschnittplan für Platten
 
 ---
 
 ## 9. Technik
 
 - React 19, TypeScript, Vite, three.js 0.186 über react-three-fiber 9 und drei; Zustand mit immer; Tests mit Vitest.
-- **Kern ohne DOM** (`src/model`, `src/analysis`), vollständig getestet:
+- **Kern ohne DOM** (`src/model`, `src/analysis`), mit Vitest getestet:
   - Geometrie (orientierte Quader, Trennachsen-Test, Ausklinkungen)
   - Raum (Stuckprofil, Flügel-Schwenk, Kippspalt, Hindernisse)
   - Hochbett-Generator, Auflöser (Abrücken, Ausklinken, Verbindungserkennung)
-  - Prüfungen, Stückliste und Zuschnitt
+  - Holzverbindungen als Geometrie (`joinery.ts`)
+  - Planungsassistent und Platzierung (`wizard.ts`, `placement.ts`)
+  - Statik (`frame.ts`, `statics.ts`)
+  - Prüfungen, Stückliste und Zuschnitt, Foto-Abgleich (`photo.ts`), Montagereihenfolge (`assembly.ts`), Öffnungen (`openings.ts`)
 - **Ansichten:** `src/views` mit einer gemeinsamen Szene, einer Kamera-Steuerung mit Animation und eigener Zeigerlogik (Auswahl, Ziehen, Zeichnen, Navigation).
-- **UI:** `src/ui` mit Werkzeugleiste, Seitenleiste, Eigenschaften, Prüfliste, Material-Dialog und Hilfe.
+- **UI:** `src/ui` mit Werkzeugleiste (inkl. Sprachwahl), in der Größe veränderbaren Seitenleisten, Eigenschaften, Prüfliste, Material-Dialog, Bauplan mit Skizzen, Planungsassistent, Statik, Aufbau-Animation, Tablet-Abgleich und Hilfe.
+- **Sprachen:** `src/i18n` (Deutsch im Quelltext, Englisch in `src/i18n/en/*`); `tests/i18n.test.ts` prüft auf fehlende Übersetzungen.
+- **PWA und Abgleich:** `vite-plugin-pwa` (installierbar, offline), `vite/sync-plugin.ts` für den Projekt-Abgleich mit dem Tablet (`npm run lan`).
 - **Speichern:** automatisch in `localStorage`; Export und Import als `.hochbett.json`. Ältere Stände werden beim Laden ergänzt.
 
 ---
@@ -273,11 +289,11 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M3 Verbindungen & Material | Verbindungskatalog, automatische Erkennung, Einkaufsliste, Zuschnitt, Preis-Prompt | ✅ Prototyp |
 | M4 Bedienung verfeinern | Griffe an Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Bett spiegeln, Abwicklung (Wandobjekte ziehen), Schnittbox, „Ansicht zurücksetzen“, Kamera nicht unter den Boden, Mausprofil CAD, 3D-Detail je Verbindung (Explosion mit Beschlägen). Statt Ansichtswürfel: Übersichtskarte und Ansichtsleiste. Panini-Projektion zurückgestellt. | ✅ |
 | M5 Statik des Gestells | 3D-Stabwerk (Skyline-Löser) mit Verbindungsfedern je Verbindungsart, Lastfälle Eigengewicht/Nutzlast (Lastprofil Bett 1,0 bzw. Hochebene 2,0 kN/m²), Toben 2 kN auf 50 × 50 cm, Seitenlast längs/quer, Geländer; EC5-Nachweise (Biegung + Normalkraft mit Knicken, Schub mit k_cr, Durchbiegung L/300 bzw. L/200 mit Kriechen, Restquerschnitt an Verbindungen), Verbindungskräfte, Wackeln; Einfärbung, Verformungsfigur, Wackel-Animation, Querschnittsvergleich, Befunde in der Prüfliste | ✅ |
-| M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Werkstattskizzen je Verbindungsart, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
+| M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Skizzen je Verbindungsart als Explosions-Isometrie, aus der Modellgeometrie erzeugt, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
 | M6b Tablet | Finger/Stift (antippen = auswählen, ausgewählt ziehen = verschieben, Pinch-Zoom, zwei Finger verschieben/drehen, Doppeltipp = Fokus), Seitenleisten als Schubladen unter 1280 px, große Bedienflächen bei Fingerbedienung, `npm run lan` mit Projekt-Abgleich über /api/projekt und QR-Code, Tailscale-Anleitung, PWA (installierbar, offline über HTTPS/localhost) | ✅ |
-| M7 Erweiterungen | Vorlagen Halbhoch, **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). Offen: auf Regal, Raum als Polygon, Dachschräge, Plattenzuschnitt 2D. | ◐ |
+| M7 Erweiterungen | Vorlagen Halbhoch, **mehrere Matratzen** (Anzahl, nebeneinander oder hintereinander, Abstand; „Zwei Kinder oben“), **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). Offen: auf Regal, Raum als Polygon, Dachschräge, Plattenzuschnitt 2D. | ◐ |
+| M8 Visuelle Qualität | Erster Durchgang: prozedurale Holzmaserung (Faser, Jahresringe, Hirnholz, OSB-Späne), Dielenboden, Putz, weiches Fensterlicht ohne Download, Außenansicht durch die Fenster (Stencil-Maske), Schlossschrauben als Modelle, Doppelklick-Heranfliegen, Qualitätsstufen. Zweiter Durchgang: Winkel und Balkenschuhe, Stuckprofil und Rosette, Sonnenlicht nach Uhrzeit. Dritter Durchgang: Holzverbindungen als Geometrie (Zapfen, Blätter, Nuten, Einlassungen), Kopfbänder auf Gehrung und eingelassen, Holzbauschrauben, Holznägel, Holzdübel, Bettschrauben mit Quermutter, Skizzen als Isometrie, Verschieben mit der mittleren Maustaste, Seitenleisten in der Größe veränderbar. Offen siehe Kapitel 13 | ✅ |
 | M9 Sprachen & Einstieg | Englisch als Standard, Deutsch umschaltbar (automatisch nach Browsersprache), alle Texte über `t()` mit Test auf fehlende Übersetzungen; **Planungsassistent** für Einsteiger (Raum, Wände, Öffnungen, Schläfer, Nutzung darunter, Befestigung → geprüfte, gewichtete Vorschläge) | ✅ |
-| M8 Visuelle Qualität | Erster Durchgang: prozedurale Holzmaserung (Faser, Jahresringe, Hirnholz, OSB-Späne), Dielenboden, Putz, weiches Fensterlicht ohne Download, Außenansicht durch die Fenster (Stencil-Maske), Schlossschrauben als Modelle, Doppelklick-Heranfliegen, Qualitätsstufen. Zweiter Durchgang: Winkel und Balkenschuhe, Stuckprofil und Rosette, Sonnenlicht nach Uhrzeit. Offen siehe Kapitel 13 | ✅ |
 
 ---
 
@@ -296,19 +312,20 @@ Gesammelt und laufend ergänzt:
 
 1. **Dein Hochbett im Foto deines Zimmers.** Ein Foto vom Zimmer laden und ein paar Raumecken anklicken. Die App errechnet daraus Standort und Brennweite der Kamera und blendet das geplante Bett perspektivisch richtig ins Foto ein. ✅ umgesetzt (Ansicht **📷 Foto**, Taste `6`): Kamera per Levenberg-Marquardt aus 4–8 Punkten; auf Wunsch werden Lage und Größe der angeklickten Fenster und Türen mitgeschätzt und zum Übernehmen vorgeschlagen. Das Foto bleibt im Browser (IndexedDB).
 2. **Aufbau-Animation.** Die Teile fliegen in Montagereihenfolge an ihren Platz, so wie man sie später aufbaut. Jeder Schritt kann einzeln angesehen werden. ✅ umgesetzt
-3. **Wackel-Vorschau.** Die Statik zeigt nicht nur Zahlen: Ein Gestell ohne Aussteifung wackelt sichtbar, mit Kopfbändern steht es still.
+3. **Wackel-Vorschau.** Die Statik zeigt nicht nur Zahlen: Ein Gestell ohne Aussteifung wackelt sichtbar, mit Kopfbändern steht es still. ✅ umgesetzt (M5)
 4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.
+5. **Vom leeren Zimmer zum geprüften Entwurf.** Der Planungsassistent fragt in wenigen Schritten Raum und Decke, Wände, Öffnungen, Schläfer, Nutzung darunter und Befestigung ab und schlägt bis zu drei geprüfte, gewichtete Entwürfe vor, die direkt weiter anpassbar sind. ✅ umgesetzt (M9)
 
 ---
 
-## 13. Visuelle Qualität (später, als letzter Schritt)
+## 13. Visuelle Qualität (M8)
 
 Recherche: [docs/recherche/visuelle-qualitaet.md](docs/recherche/visuelle-qualitaet.md). Umgesetzt (✅) bzw. offen (◻):
 
 1. ✅ **Holz:** Maserung richtig darstellen – entlang der Stabachse ausgerichtet, Hirnholz an den Stirnseiten mit Jahresringen, leichte Farbvariation je Bauteil, Fasen/gebrochene Kanten. KVH, Leimholz, OSB, Dielen und Latten unterscheidbar.
-2. ✅ **Verbindungen:** Schlossschrauben (Kopf, Scheibe, Mutter), Winkel (L-Blech in der Innenecke) und Balkenschuhe (Boden, Seiten, Laschen) als Instanzen; Holzverbindungen (Überblattung, Zapfen mit Holznagel, Schwalbenschwanzblatt, Gratnut, Einlassung, Rundstab in Bohrung, Auflagerleiste) als echte Geometrie in 3D, Verbindungsdetail und Bauplan-Skizze aus einer gemeinsamen Rechnung (`src/model/joinery.ts`); Zuschnittlängen enthalten Zapfen und Blätter. Beschläge sichtbar und plausibel modellieren (Schlossschrauben mit Kopf und Mutter, Winkel mit Sicke und Löchern, Balkenschuhe, Bettschrauben), Ausklinkungen, Überblattungen und Zapfen in der Geometrie zeigen.
+2. ✅ **Verbindungen:** Beschläge als Instanzen – Schlossschrauben (Kopf, Scheibe, Mutter), Bettschrauben mit Quermutter in sichtbarer Tasche, Bleche für Winkel (L-Blech in der Innenecke) und Balkenschuhe (Boden, Seiten, Laschen), Schraubenköpfe der Holzbauschrauben, Holznägel, Holzdübel, Gewindestangen mit Mutter und Scheibe. Holzverbindungen (Überblattung, Zapfen mit Holznagel, Schwalbenschwanzblatt, Gratnut, Einlassung, Rundstab in Bohrung, Auflagerleiste, Kopfband auf Gehrung bzw. eingelassen) als echte Geometrie in 3D, Verbindungsdetail und Bauplan-Skizze aus einer gemeinsamen Rechnung (`src/model/joinery.ts`); Zuschnittlängen enthalten Zapfen und Blätter. Offen ◻: Sicken und Löcher an den Winkeln.
 3. ✅ **Zoom auf interessante Stellen per Klick** (Doppelklick, schrittweise): Verbindung, Ausklinkung am Stuck, Fensterflügel-Anschlag usw. anklicken → Kamera fährt weich heran (mit Rücksprung).
-4. ✅ **Zimmer** (Dielen, Putz, weiches Licht, Stuckprofil mit Rundstäben und Hohlkehle, Rosette als Drehkörper; Umgebungsverdeckung getestet und wegen Stencil-Konflikt und iPad-Kosten verworfen): Wände mit Putzstruktur, Dielenboden mit Maserung, Stuckprofil und Rosette plastisch, Sockelleisten, Heizkörperrippen, Steckdosen, Fensterrahmen mit Profil; weiches Licht, Umgebungsverdeckung (SSAO/AO), Kontaktschatten.
+4. ✅ **Zimmer** (Dielen, Putz, weiches Licht, Stuckprofil mit Rundstäben und Hohlkehle, Rosette als Drehkörper; Umgebungsverdeckung getestet und wegen Stencil-Konflikt und iPad-Kosten verworfen): Wände mit Putzstruktur, Dielenboden mit Maserung, Stuckprofil und Rosette plastisch, Sockelleisten, Heizkörperrippen, Steckdosen, Fensterrahmen mit Profil; weiches Licht. Offen ◻: Kontaktschatten.
 5. ✅ **Blick durch die Fenster** (prozedurale Kulisse, nur in der Fensteröffnung sichtbar) und **Sonnenlicht nach Uhrzeit** (Ebenen ▾ → ☀, Lichtfleck mit Fensterkreuz, morgens/abends wärmer): Außenansicht statt leerem Hintergrund (Himmel, Bäume/Straße als Panorama oder HDRI), Tageslicht durch die Fenster, Tageszeit wählbar.
 6. ◐ **Allgemein** (Qualitätsstufen hoch/normal/einfach unter Raum → Einstellungen): Kantenglättung, ruhige Materialpalette, ggf. Umgebungslicht aus HDRI; Leistung auf dem Tablet im Blick behalten (Qualitätsstufen).
 

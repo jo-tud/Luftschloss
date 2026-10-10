@@ -65,7 +65,7 @@ Schlossschrauben, einschnittig, C24, je 60 mm Holz [eR, Johansen]:
 | Gipskarton | 0,15 | 0,15–0,23 kN |
 
 - Trockenbau: Ständerabstand 625 mm; Konsollasten bis 0,4–0,7 kN/m, darüber nur mit Holzeinlage.
-- Die App fragt den Wandbaustoff ab und warnt bei Porenbeton, Lochziegel und Trockenbau.
+- Die App fragt den Wandbaustoff ab und warnt bei Porenbeton, Lochziegel, Trockenbau und Leichtbau-Innenwänden (Altbau, nicht tragend).
 - Für Deckenverspannung ohne Bohren wurden keine Herstellerdaten gefunden, nur Forenansätze mit Keilen und Gewindestangen.
 
 ## DIN EN 747-1

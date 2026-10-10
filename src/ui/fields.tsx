@@ -70,8 +70,10 @@ export function Num({ label, value, onChange, unit = 'cm', step, min, max, title
 }
 
 export function Sel<T extends string>({ label, value, options, onChange, title }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void; title?: string }) {
+  // Lange Einträge passen nicht in die schmale Spalte: dann Beschriftung oben, Auswahl volle Breite
+  const long = options.some(([, l]) => l.length > 13)
   return (
-    <label className="field" title={title}>
+    <label className={long ? 'field stacked' : 'field'} title={title}>
       <span>{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value as T)}>
         {options.map(([v, l]) => (
@@ -103,10 +105,6 @@ export function Section({ title, children, open = true, right }: { title: string
       <div className="section-body">{children}</div>
     </details>
   )
-}
-
-export function Row({ children }: { children: ReactNode }) {
-  return <div className="row">{children}</div>
 }
 
 export const eur = (x: number) => x.toLocaleString(locale(), { style: 'currency', currency: 'EUR' })

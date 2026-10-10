@@ -140,7 +140,6 @@ const en: Record<string, string> = {
   'Für Abhängungen nur in tragfähige Decken (Beton oder Holzbalken), nie in Stuck oder abgehängte Decken.':
     'Suspend only from load-bearing ceilings (concrete or timber joists), never from cornice or suspended ceilings.',
   'Kopfband/Strebe, verschraubt': 'Knee brace/brace, screwed',
-  'Steift die Ecke aus. Möglichst beidseitig bzw. in beiden Richtungen anordnen.': 'Stiffens the corner. Fit on both sides or in both directions where possible.',
 
   // Werkzeug
   Akkuschrauber: 'Cordless drill',
@@ -222,9 +221,9 @@ const en: Record<string, string> = {
   'Brettschichtholz (GL24h)': 'Glulam (GL24h)',
   'Kantholz sägerau': 'Sawn squared timber',
   'Kantholz gehobelt': 'Planed squared timber',
-  Latten: 'Battens',
-  Leisten: 'Strips',
-  Rundstäbe: 'Round bars',
+  'Latten': 'Battens',
+  'Leisten': 'Strips',
+  'Rundstäbe': 'Round bars',
   'Richtpreise Hornbach, Stand 2025/26': 'Hornbach guide prices, as of 2025/26',
 }
 export default en

@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
@@ -17,7 +17,7 @@ import { Box, COLORS, HoleDisc, PrismMesh, headGeo, metal, nutGeo, pinMat, plate
 /** Beschläge einer Verbindung als Instanzen, wie in der 3D-Ansicht, dazu Schäfte und Dübel */
 function useHardware(key: string) {
   const d = useDerived()
-  return useMemo(() => {
+  const hw = useMemo(() => {
     const h = hardwareInstances(d.resolved, { only: key, rods: true })
     const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material) => {
       if (!list.length) return null
@@ -39,6 +39,8 @@ function useHardware(key: string) {
     const moving = [make(washerGeo, h.dowels, pinMat)].filter(Boolean) as THREE.InstancedMesh[]
     return { fixed, moving }
   }, [d, key])
+  useEffect(() => () => [...hw.fixed, ...hw.moving].forEach((m) => m.dispose()), [hw])
+  return hw
 }
 
 function Pieces({ m, boxes, prisms, color }: { m: Member; boxes: OBB[]; prisms: Prism[]; color: string }) {
@@ -144,14 +146,14 @@ export function JointDetailDialog() {
         </header>
         <div className="joint-body">
           <div className="joint-canvas">
-            <Canvas key={j.key} shadows camera={{ position: cam.toArray(), fov: 40, near: 0.01, far: 20 }}>
+            <Canvas key={j.key} shadows="percentage" camera={{ position: cam.toArray(), fov: 40, near: 0.01, far: 20 }}>
               <color attach="background" args={['#f4f5f7']} />
               <DetailScene key={`${j.key}|${j.typeId}`} j={j} ending={ending} through={through} />
             </Canvas>
             <span className="hint">{t('Ziehen = drehen · Mausrad = zoomen')}</span>
           </div>
           <div className="joint-info">
-            <label className="field">
+            <label className="field stacked">
               <span>{t('Verbindung')}</span>
               <select
                 value={j.typeId}

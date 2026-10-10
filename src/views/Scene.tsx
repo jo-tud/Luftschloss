@@ -52,6 +52,12 @@ function vec(v: { x: number; y: number; z: number }): THREE.Vector3 {
 }
 
 /** Lage eines orientierten Quaders als three-Transformation */
+/** three.js-Objekte aus useMemo wieder freigeben, sobald sie ersetzt werden (R3F tut das bei Props nicht) */
+type Disposable = { dispose(): void }
+export function useDispose(item: Disposable | Disposable[] | null | undefined) {
+  useEffect(() => () => (Array.isArray(item) ? item : [item]).forEach((x) => x?.dispose()), [item])
+}
+
 export function obbTransform(o: OBB, roundAxis = false): { position: THREE.Vector3; quaternion: THREE.Quaternion; size: [number, number, number] } {
   const [a0, a1raw, a2] = o.axes.map(vec)
   // Quader sind symmetrisch: Linkssysteme (z. B. Wandkoordinaten) durch Umdrehen einer Achse korrigieren
@@ -158,6 +164,7 @@ export function PrismMesh({ m, prism, color, highlight, pick }: { m: Member; pri
     const t = obbTransform(memberOBB(m))
     return { frame: t, geo: prismGeometry(prism, t) }
   }, [m, prism])
+  useDispose(geo)
   return (
     <mesh position={frame.position} quaternion={frame.quaternion} geometry={geo} material={woodMaterial(woodKindFor(m.catalogId), color, { emissive: highlight })} userData={pick ? { pick } : {}} castShadow receiveShadow>
       <Edges color="#7a5a3a" threshold={20} transparent opacity={0.35} />
@@ -252,6 +259,7 @@ export function StaticsShapes() {
     geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(base.length), 3))
     return { base, disp, geo }
   }, [st, kase])
+  useDispose(data?.geo)
   useFrame(({ clock }) => {
     if (!data || !ref.current) return
     const f = wobble ? Math.sin(clock.elapsedTime * 2 * Math.PI * 1.1) : 1
@@ -319,6 +327,7 @@ function NetPanel({ o, id }: { o: OBB; id: string }) {
     base.repeat.set(t.size[0] / 0.05, t.size[2] / 0.05)
     return base
   }, [t])
+  useDispose(tex)
   return (
     <mesh position={t.position} quaternion={t.quaternion} userData={{ pick: { kind: 'panel', id } }}>
       <boxGeometry args={[t.size[0], 0.004, t.size[2]]} />
@@ -358,6 +367,7 @@ function FlatNet({ pa }: { pa: Panel }) {
     g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3))
     return g
   }, [pa])
+  useDispose(geom)
   return (
     <lineSegments geometry={geom} userData={{ pick: { kind: 'panel', id: pa.id } }}>
       <lineBasicMaterial color="#3d4f5f" transparent opacity={0.75} />
@@ -373,6 +383,7 @@ function FlatPanel({ pa, highlight }: { pa: Panel; highlight?: string }) {
     g.translate(0, pa.z / 1000, 0)
     return g
   }, [pa])
+  useDispose(geom)
   const color = pa.kind === 'platte' ? (pa.catalogId?.startsWith('osb') ? '#cfa565' : COLORS.woodLight) : pa.kind === 'dielen' ? COLORS.woodLight : '#d9c29a'
   return (
     <mesh geometry={geom} userData={{ pick: { kind: 'panel', id: pa.id } }} castShadow receiveShadow>
@@ -504,6 +515,7 @@ export function RoomMeshes({ p, mini, showCeiling, wallShadows = false }: { p: P
   const wallRefs = useRef<Partial<Record<WallId, THREE.Group>>>({})
   const walls = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, wallPieces(p, w)])) as Record<WallId, OBB[]>, [p.room, p.wallObjects])
   const cornices = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, corniceGeometry(p, w)])) as Record<WallId, THREE.BufferGeometry | null>, [p.room])
+  useEffect(() => () => Object.values(cornices).forEach((g) => g?.dispose()), [cornices])
   const labelRefs = useRef<Partial<Record<WallId, HTMLDivElement>>>({})
   const tmp = useMemo(() => new THREE.Vector3(), [])
   useFrame(({ camera }) => {
@@ -617,6 +629,7 @@ function Pendant({ r, ro }: { r: Project['room']; ro: Project['room']['rosettes'
     }
     return new THREE.LatheGeometry(pts, 40)
   }, [R, h])
+  useDispose(geo)
   const pick = { pick: { kind: 'rosette', id: ro.id } }
   return (
     <>
@@ -1169,6 +1182,8 @@ function BoltHardware({ d }: { d: Derived }) {
     }
     return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates), make(washerGeo, h.pockets, pocketMat), make(washerGeo, h.screws), make(washerGeo, h.pins, pinMat)].filter(Boolean) as THREE.InstancedMesh[]
   }, [d])
+  // Instanzpuffer freigeben; Geometrie und Material sind geteilt und bleiben
+  useDispose(meshes)
   return (
     <group>
       {meshes.map((m, i) => (

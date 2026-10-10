@@ -1,6 +1,6 @@
 import { analyze } from '../analysis/checks'
 import { computeBom } from '../analysis/bom'
-import { t, tr } from '../i18n'
+import { t, tk, tr } from '../i18n'
 import { emptyProject } from './defaults'
 import { uid } from './geometry'
 import { generateLoftBed } from './loftbed'
@@ -79,7 +79,7 @@ function wallObject(o: WizardOpening): WallObject {
     return {
       id: o.id,
       kind: 'fenster',
-      name: t('Fenster {w}', { w: o.wall }),
+      name: tk('Fenster'),
       wall: o.wall,
       offset: o.offset,
       width: o.width,
@@ -94,14 +94,14 @@ function wallObject(o: WizardOpening): WallObject {
       sill: { enabled: true, projection: 40, thickness: 30, sideOverhang: 30 },
       displayAngle: 0,
     }
-  if (o.kind === 'tuer') return { id: o.id, kind: 'tuer', name: t('Tür'), wall: o.wall, offset: o.offset, width: o.width, height: o.height, hinge: 'links', opensInward: true, displayAngle: 0 } // i18n-ok
-  return { id: o.id, kind: 'heizkoerper', name: t('Heizkörper'), wall: o.wall, offset: o.offset, width: o.width, bottom: o.bottom, height: o.height, depth: 100, wallGap: 50, convectionClearance: 100 }
+  if (o.kind === 'tuer') return { id: o.id, kind: 'tuer', name: tk('Tür'), wall: o.wall, offset: o.offset, width: o.width, height: o.height, hinge: 'links', opensInward: true, displayAngle: 0 } // i18n-ok
+  return { id: o.id, kind: 'heizkoerper', name: tk('Heizkörper'), wall: o.wall, offset: o.offset, width: o.width, bottom: o.bottom, height: o.height, depth: 100, wallGap: 50, convectionClearance: 100 }
 }
 
 /** Zimmer aus den Antworten (ohne Bett) */
 export function roomProject(a: WizardAnswers): Project {
   const p = emptyProject(a.length, a.width, a.height)
-  p.name = t('Mein Zimmer')
+  p.name = tk('Mein Zimmer')
   p.room.ceiling = a.ceiling
   p.room.walls = Object.fromEntries(WALL_IDS.map((w) => [w, { material: WALL_MATERIAL[a.walls[w]] }])) as Project['room']['walls']
   p.wallObjects = a.openings.map(wallObject)
@@ -179,7 +179,7 @@ export function proposals(a: WizardAnswers, n = 3): Proposal[] {
     let params = placeBed(base.room, c.type, patch, c.corner)
     const fit = fitHeight(a, params)
     params = placeBed(base.room, c.type, { ...patch, deckHeight: fit.deckHeight }, c.corner)
-    const project: Project = { ...base, assemblies: [{ id: 'bett-1', kind: 'hochbett', name: t('Hochbett'), params, detached: [] }] }
+    const project: Project = { ...base, assemblies: [{ id: 'bett-1', kind: 'hochbett', name: tk('Hochbett'), params, detached: [] }] }
     let r
     try {
       r = resolveProject(project)
@@ -204,9 +204,10 @@ export function proposals(a: WizardAnswers, n = 3): Proposal[] {
       corner: c.corner,
       params,
       project,
-      errors: errors.length,
-      warnings: warnings.length,
-      issues: [...errors, ...warnings].slice(0, 3).map((f) => tr(f.title)),
+      errors: new Set(errors.map((f) => f.title)).size,
+      warnings: new Set(warnings.map((f) => f.title)).size,
+      // gleichlautende Befunde (z. B. je Pfosten) nur einmal nennen
+      issues: [...new Set([...errors, ...warnings].map((f) => tr(f.title)))].slice(0, 3),
       reasons: [c.reason],
       clearance,
       headroom,

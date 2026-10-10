@@ -307,14 +307,14 @@ function FixturesTab() {
         <div className="add-row">
           <button
             onClick={() =>
-              addObj({ id: uid('fenster'), kind: 'fenster', name: t('Fenster'), wall, offset: 500, width: 1000, sillHeight: 850, height: 1400, revealDepth: 150, frameWidth: 60, niche: { below: false, belowDepth: 100 }, sashes: [{ opening: 'drehkipp', hinge: 'links' /* i18n-ok */ }], sashThickness: 75, handleProjection: 70, sill: { enabled: true, projection: 40, thickness: 30, sideOverhang: 30 }, displayAngle: 0 })
+              addObj({ id: uid('fenster'), kind: 'fenster', name: tk('Fenster'), wall, offset: 500, width: 1000, sillHeight: 850, height: 1400, revealDepth: 150, frameWidth: 60, niche: { below: false, belowDepth: 100 }, sashes: [{ opening: 'drehkipp', hinge: 'links' /* i18n-ok */ }], sashThickness: 75, handleProjection: 70, sill: { enabled: true, projection: 40, thickness: 30, sideOverhang: 30 }, displayAngle: 0 })
             }
           >
             + {t('Fenster')}
           </button>
-          <button onClick={() => addObj({ id: uid('tuer'), kind: 'tuer', name: t('Tür'), wall, offset: 300, width: 885, height: 2010, hinge: 'links' /* i18n-ok */, opensInward: true, displayAngle: 0 })}>+ {t('Tür')}</button>
-          <button onClick={() => addObj({ id: uid('heizung'), kind: 'heizkoerper', name: t('Heizkörper'), wall, offset: 500, width: 1000, bottom: 150, height: 600, depth: 100, wallGap: 50, convectionClearance: 100 })}>+ {t('Heizkörper')}</button>
-          <button onClick={() => addObj({ id: uid('dose'), kind: 'steckdose', name: t('Steckdose'), wall, offset: 300, width: 80, bottom: 300, height: 80 })}>+ {t('Steckdose')}</button>
+          <button onClick={() => addObj({ id: uid('tuer'), kind: 'tuer', name: tk('Tür'), wall, offset: 300, width: 885, height: 2010, hinge: 'links' /* i18n-ok */, opensInward: true, displayAngle: 0 })}>+ {t('Tür')}</button>
+          <button onClick={() => addObj({ id: uid('heizung'), kind: 'heizkoerper', name: tk('Heizkörper'), wall, offset: 500, width: 1000, bottom: 150, height: 600, depth: 100, wallGap: 50, convectionClearance: 100 })}>+ {t('Heizkörper')}</button>
+          <button onClick={() => addObj({ id: uid('dose'), kind: 'steckdose', name: tk('Steckdose'), wall, offset: 300, width: 80, bottom: 300, height: 80 })}>+ {t('Steckdose')}</button>
         </div>
         <p className="hint">{t('Objekte lassen sich in der Seitenansicht direkt an der Wand verschieben (waagrecht und in der Höhe).')}</p>
       </Section>
@@ -354,7 +354,7 @@ function BedTab() {
   const insert = (preset: Preset, corner: Corner) => {
     const params = placeBed(p.room, preset.type, preset.patch, corner)
     const id = uid('bett')
-    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: tr(preset.label), params, detached: [] }))
+    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: preset.label, params, detached: [] }))
     select({ kind: 'assembly', id })
     // neues Bett ins Bild holen
     setTimeout(() => useStore.getState().focus(id), 50)

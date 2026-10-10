@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { tk } from '../i18n'
 import type { Assembly, LoftBedParams, Project, Room } from './types'
 
 export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedParams {
@@ -73,15 +73,15 @@ export function testRoom(): Room {
 }
 
 /**
- * Das Zimmer, an dem die App zuerst getestet wird: 4,30 m Fensterseite (Wand A), 5,95 m Tiefe.
- * Zwei Fenster in Wand A, Tür in Wand C. Alle Maße außer Länge und Breite sind aus Fotos geschätzt.
+ * Beispielzimmer (öffentlich, Grundlage vieler Tests): 4,30 m Fensterseite (Wand A), 5,95 m Tiefe,
+ * zwei Fenster in Wand A, Tür in Wand C. Nicht nebenbei ändern – Tests hängen an den Maßen.
  */
 export function testProject(): Project {
   const room = testRoom()
   const bed: Assembly = {
     id: 'bett-1',
     kind: 'hochbett',
-    name: t('Hochbett'),
+    name: tk('Hochbett'),
     detached: [],
     params: defaultBedParams({
       // Altbau-Praxis (siehe docs/recherche): freistehend auf vier KVH-Pfosten 80×80, an der
@@ -96,13 +96,13 @@ export function testProject(): Project {
   }
   return {
     version: 1,
-    name: t('Beispielzimmer'),
+    name: tk('Beispielzimmer'),
     room,
     wallObjects: [
       {
         id: 'fenster-links', // i18n-ok
         kind: 'fenster',
-        name: t('Fenster links'),
+        name: tk('Fenster links'),
         wall: 'A',
         offset: 800,
         width: 1150,
@@ -123,7 +123,7 @@ export function testProject(): Project {
       {
         id: 'fenster-rechts', // i18n-ok
         kind: 'fenster',
-        name: t('Fenster rechts'),
+        name: tk('Fenster rechts'),
         wall: 'A',
         offset: 2750,
         width: 1150,
@@ -144,7 +144,7 @@ export function testProject(): Project {
       {
         id: 'heizung-links', // i18n-ok
         kind: 'heizkoerper',
-        name: t('Heizkörper links'),
+        name: tk('Heizkörper links'),
         wall: 'A',
         offset: 900,
         width: 950,
@@ -157,7 +157,7 @@ export function testProject(): Project {
       {
         id: 'heizung-rechts', // i18n-ok
         kind: 'heizkoerper',
-        name: t('Heizkörper rechts'),
+        name: tk('Heizkörper rechts'),
         wall: 'A',
         offset: 2850,
         width: 950,
@@ -170,7 +170,7 @@ export function testProject(): Project {
       {
         id: 'tuer',
         kind: 'tuer',
-        name: t('Tür'),
+        name: tk('Tür'),
         wall: 'C',
         offset: 1000,
         width: 900,
@@ -179,11 +179,11 @@ export function testProject(): Project {
         opensInward: false,
         displayAngle: 0,
       },
-      { id: 'steckdose-1', kind: 'steckdose', name: t('Steckdose'), wall: 'C', offset: 2150, width: 80, bottom: 300, height: 80 },
+      { id: 'steckdose-1', kind: 'steckdose', name: tk('Steckdose'), wall: 'C', offset: 2150, width: 80, bottom: 300, height: 80 },
     ],
     furniture: [
-      { id: 'tisch-1', kind: 'schreibtisch', name: t('Schreibtisch'), x: room.length - 1500 - 150, y: 350, z: 0, sx: 1400, sy: 700, sz: 750, rotation: 0 },
-      { id: 'person-1', kind: 'person-stehend', name: t('Person 1,75 m'), x: 1800, y: 1900, z: 0, sx: 450, sy: 280, sz: 1750, rotation: 0 },
+      { id: 'tisch-1', kind: 'schreibtisch', name: tk('Schreibtisch'), x: room.length - 1500 - 150, y: 350, z: 0, sx: 1400, sy: 700, sz: 750, rotation: 0 },
+      { id: 'person-1', kind: 'person-stehend', name: tk('Person 1,75 m'), x: 1800, y: 1900, z: 0, sx: 450, sy: 280, sz: 1750, rotation: 0 },
     ],
     members: [],
     panels: [],
@@ -206,8 +206,21 @@ export function emptyProject(length = 4000, width = 3500, height = 2500): Projec
   const p = testProject()
   return {
     ...p,
-    name: t('Neues Zimmer'),
-    room: { ...testRoom(), length, width, height, cornice: { enabled: false, height: 120, projection: 120, shape: 'kehle' }, rosettes: [] },
+    name: tk('Neues Zimmer'),
+    // neutrale, vorsichtige Annahmen statt der Wände und Decke des Beispielzimmers
+    room: {
+      ...testRoom(),
+      length,
+      width,
+      height,
+      wallThickness: 240,
+      walls: { A: { material: 'leichtbau' }, B: { material: 'leichtbau' }, C: { material: 'leichtbau' }, D: { material: 'leichtbau' } },
+      floor: 'estrich',
+      ceiling: 'schwach',
+      cornice: { enabled: false, height: 120, projection: 120, shape: 'kehle' },
+      corniceOverrides: {},
+      rosettes: [],
+    },
     wallObjects: [],
     furniture: [],
     assemblies: [],
