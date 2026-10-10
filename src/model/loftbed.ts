@@ -34,6 +34,8 @@ export interface BedInfo {
   ceilingHigh: boolean
   rungPitch?: Mm
   rodGap?: Mm
+  /** Etagenbett: Oberkante der unteren Matratze */
+  lowerMattressTop?: Mm
 }
 
 export interface GeneratedBed {
@@ -67,7 +69,7 @@ export function bedOuterSize(p: LoftBedParams): { length: Mm; width: Mm } {
   }
 }
 
-export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
+export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length: Mm; width: Mm }): GeneratedBed {
   const P = a.params
   const post = timber(P.postCatalogId)
   const rail = timber(P.railCatalogId)
@@ -76,7 +78,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const stile = timber(P.ladderCatalogId)
   const rung = timber(P.rungCatalogId)
   const slatDeck = P.deck === 'latten'
-  const deckSheet = slatDeck ? undefined : sheet(P.deckCatalogId)
+  const netDeck = P.deck === 'netz'
+  const deckSheet = slatDeck ? undefined : sheet(netDeck ? 'netz-begehbar' : P.deckCatalogId)
   const slat = slatDeck ? timber(P.deckCatalogId) : undefined
 
   const p = post.b
@@ -89,7 +92,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const isWall = (s: Side) => walls.includes(s)
   // Aufgelegte Bauweise: Träger laufen vorne/hinten (bei Wand-zu-Wand links/rechts an den Wänden),
   // Querträger bzw. Latten liegen oben drauf.
-  const aufgelegt = P.frameStyle === 'aufgelegt'
+  // Ein begehbares Netz braucht ringsum Zargen, an denen es gespannt wird
+  const aufgelegt = P.frameStyle === 'aufgelegt' && !netDeck
   const carriersLR = isWall('links') && isWall('rechts')
   const carrierSides: Side[] = carriersLR ? ['links', 'rechts'] : ['hinten', 'vorne']
   const needsJoists = P.deck === 'platte' || P.deck === 'dielen' || P.deck === 'lattenrost' || (P.deck === 'latten' && carriersLR)
@@ -110,6 +114,20 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   const to2 = (x: number, y: number) => {
     const w = toWorld(v(x, y, 0))
     return { x: w.x, y: w.y }
+  }
+
+  /** Abstand der Außenseite einer Bettseite zur gegenüberliegenden Wand (Mitte der Seite) */
+  const wallGap = (s: Side): number => {
+    if (!room) return Infinity
+    const f = sideFrame(s, Lo, Wo)
+    const q0 = toWorld(v(f.at(f.length / 2, 0).x, f.at(f.length / 2, 0).y, 0))
+    const q1 = toWorld(v(f.at(f.length / 2, 100).x, f.at(f.length / 2, 100).y, 0))
+    const dx = q1.x - q0.x
+    const dy = q1.y - q0.y
+    if (dx > 50) return room.length - q0.x
+    if (dx < -50) return q0.x
+    if (dy > 50) return room.width - q0.y
+    return q0.y
   }
 
   function add(
@@ -248,6 +266,64 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
     })
   }
 
+  // Mittelstützen unter langen freien Zargen (Galerie): Zarge liegt auf, außen bündig mit den Eckpfosten
+  const midX = (n: number) => Array.from({ length: n }, (_, i) => (Lo * (i + 1)) / (n + 1))
+  const mids = Math.max(0, Math.min(3, Math.round(P.midPosts ?? 0)))
+  const midSides = (['hinten', 'vorne'] as Side[]).filter((s) => {
+    const ends: Corner[] = s === 'hinten' ? ['BL', 'BR'] : ['FL', 'FR']
+    return mids > 0 && keepRail(s) && !isWall(s) && ends.some((c) => fullPost[c])
+  })
+  for (const s of midSides) {
+    const y = s === 'hinten' ? p / 2 : Wo - p / 2
+    midX(mids).forEach((x, i) => {
+      add(`stuetze-${s}-${i + 1}`, 'pfosten', P.postCatalogId, v(x, y, 0), v(x, y, railBottom), post.b, post.h, { name: `Mittelstütze ${s} ${i + 1}` })
+    })
+  }
+
+  // Etagenbett: untere Liegefläche zwischen den vier Pfosten
+  const lower = !!P.lowerBed && (['BL', 'BR', 'FL', 'FR'] as Corner[]).every((c) => fullPost[c])
+  const lowerSlat = timber(slat ? P.deckCatalogId : 'geh-44x74')
+  const lowerRailTop = Math.max(rh + 20, (P.lowerDeckHeight ?? 300) - lowerSlat.b)
+  if (lower) {
+    const zl = lowerRailTop - rh / 2
+    for (const s of ['hinten', 'vorne'] as Side[]) {
+      const y = s === 'hinten' ? rb / 2 : Wo - rb / 2
+      // an Mittelstützen wird die untere Zarge gestoßen
+      const xs = [p, ...(midSides.includes(s) ? midX(mids).flatMap((x) => [x - p / 2, x + p / 2]) : []), Lo - p]
+      for (let i = 0; i < xs.length; i += 2) {
+        const seg = xs.length > 2 ? `-${i / 2 + 1}` : ''
+        add(`unten-zarge-${s}${seg}`, 'zarge', P.railCatalogId, v(xs[i], y, zl), v(xs[i + 1], y, zl), rb, rh, { name: `Untere Längszarge ${s}` })
+      }
+    }
+    for (const s of ['links', 'rechts'] as Side[]) {
+      const x = s === 'links' ? rb / 2 : Lo - rb / 2
+      add(`unten-zarge-${s}`, 'zarge', P.railCatalogId, v(x, p, zl), v(x, Wo - p, zl), rb, rh, { name: `Untere Querzarge ${s}` })
+    }
+    const w = lowerSlat.h
+    const tl = lowerSlat.b
+    const span = Lo - 2 * p - 10
+    const n = Math.max(2, Math.floor((span + P.slatGap) / (w + P.slatGap)))
+    const gap = (span - n * w) / (n - 1)
+    // Latten liegen zwischen den Pfosten auf den Längszargen (an Mittelstützen ausgespart)
+    const blocked = (x: number) => midSides.length > 0 && midX(mids).some((m) => Math.abs(m - x) < p / 2 + w / 2 + 3)
+    for (let i = 0; i < n; i++) {
+      const x = p + 5 + w / 2 + i * (w + gap)
+      if (blocked(x)) continue
+      add(`unten-latte-${i}`, 'leiste', lowerSlat.id, v(x, 5, lowerRailTop + tl / 2), v(x, Wo - 5, lowerRailTop + tl / 2), w, tl, { name: `Untere Latte ${i + 1}` })
+    }
+    if (Wo - 2 * rb > 1250) {
+      add('unten-mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, Wo / 2, lowerRailTop - joist.h / 2), v(Lo - rb, Wo / 2, lowerRailTop - joist.h / 2), joist.b, joist.h, { name: 'Unterer Mittelträger' })
+    }
+    const mx = p + P.mattressGap
+    addPanel('matratze-unten', {
+      kind: 'matratze',
+      name: `Untere Matratze ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
+      outline: rect(mx, mx, mx + P.mattressLength, mx + P.mattressWidth).map((q) => to2(q.x, q.y)),
+      z: lowerRailTop + tl,
+      thickness: P.mattressThickness,
+    })
+  }
+
   // Abhängung: Gewindestangen von den freien Ecken zur Decke, durch die vordere Zarge gebolzt
   for (const c of hangCorners) {
     const x = c[1] === 'L' ? p + 40 : Lo - p - 40
@@ -316,6 +392,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   }
 
   // --- Liegefläche ---------------------------------------------------------------------
+  const slatXs: number[] = []
   if (slat) {
     // Lose aufgelegte Latten quer über die Längszargen (Forenpraxis: Abstand 6–10 cm, belüftet)
     // 5 mm Luft zu den Pfosten, damit die Latten lose liegen und nicht mit den Pfosten verschraubt werden
@@ -325,11 +402,23 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
     const gap = (span - n * w) / (n - 1)
     for (let i = 0; i < n; i++) {
       const x = p + 5 + w / 2 + i * (w + gap)
-      add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 0, railTop + t / 2), v(x, Wo, railTop + t / 2), w, t, { name: `Latte ${i + 1}` })
+      // 5 mm vor der Außenkante enden, damit außen angeschraubte Geländerstützen frei bleiben
+      slatXs.push(x)
+      add(`latte-${i}`, 'leiste', P.deckCatalogId, v(x, 5, railTop + t / 2), v(x, Wo - 5, railTop + t / 2), w, t, { name: `Latte ${i + 1}` })
     }
     if (wideSlats) {
       add('mitteltraeger', 'quertraeger', P.joistCatalogId, v(rb, Wo / 2, railTop - joist.h / 2), v(Lo - rb, Wo / 2, railTop - joist.h / 2), joist.b, joist.h, { name: 'Mittelträger' })
     }
+  } else if (netDeck) {
+    addPanel('liegeflaeche', {
+      kind: 'netz',
+      name: 'Begehbares Netz',
+      outline: rect(rb, rb, Lo - rb, Wo - rb).map((q) => to2(q.x, q.y)),
+      z: railTop,
+      thickness: t,
+      catalogId: 'netz-begehbar',
+      direction: P.rotation,
+    })
   } else if (P.deck === 'platte' || P.deck === 'dielen') {
     const outline: { x: number; y: number }[] = []
     const n = (c: Corner) => (hasPost(c) ? p : 0)
@@ -364,7 +453,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
   }
   const mx0 = p + P.mattressGap
   const my0 = p + P.mattressGap
-  addPanel('matratze', {
+  if (!netDeck) addPanel('matratze', {
     kind: 'matratze',
     name: `Matratze ${P.mattressWidth / 10}×${P.mattressLength / 10}`,
     outline: rect(mx0, my0, mx0 + P.mattressLength, my0 + P.mattressWidth).map((q) => to2(q.x, q.y)),
@@ -459,6 +548,29 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
       }
       segs.forEach(([s0, s1], si) => {
         const key = `${s}-${si}`
+        // Lange Geländerfelder: Zwischenstützen außen an die Zarge geschraubt, höchstens ca. 1,2 m Feldweite.
+        // Steht die Seite an der Wand, sitzt die Stütze innen hinter der Füllung auf der Zarge.
+        const fields = Math.ceil((s1 - s0) / 1250)
+        const inside = wallGap(s) < gh + 10
+        const infill = P.guard === 'bretter' ? 18 : gb
+        const lengthwise = s === 'vorne' || s === 'hinten'
+        for (let i = 1; i < fields; i++) {
+          let a = s0 + ((s1 - s0) * i) / fields
+          // innen: an der Längsseite in eine Lattenlücke setzen, an der Querseite flach an die Zarge
+          const [sx, sy] = inside && !lengthwise ? alongSide(s, gh, gb) : alongSide(s, gb, gh)
+          const depth = inside && !lengthwise ? gb : gh
+          if (inside && lengthwise && slatXs.length > 1) {
+            const want = s === 'vorne' ? a : Lo - a
+            const gaps = slatXs.slice(1).map((x, k) => (x + slatXs[k]) / 2)
+            const best = gaps.reduce((b, x) => (Math.abs(x - want) < Math.abs(b - want) ? x : b), gaps[0])
+            a = s === 'vorne' ? best : Lo - best
+          }
+          const out = inside ? -(infill + depth / 2) : gh / 2
+          const z0 = inside ? (P.deck === 'latten' || netDeck ? railTop : H) : railBottom
+          // innen endet die Stütze unter dem Handlauf, der auf ihr aufliegt
+          const z1 = inside ? guardTop - gh : guardTop
+          add(`gelaenderstuetze-${key}-${i}`, 'holm', P.guardCatalogId, pt(a, z0, out), pt(a, z1, out), sx, sy, { name: `Geländerstütze ${s}` })
+        }
         // Handlauf
         add(`handlauf-${key}`, 'holm', P.guardCatalogId, pt(s0, guardTop - gh / 2), pt(s1, guardTop - gh / 2), gb, gh, { name: `Handlauf ${s}` })
         // Die Öffnungskanten halten die Leiterholme bzw. Haltegriffe.
@@ -522,7 +634,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
     }
   }
 
-  const undersides = members.filter((m) => m.role === 'zarge' || m.role === 'quertraeger' || m.role === 'wandriegel').map((m) => Math.min(m.start.z, m.end.z) - m.h / 2)
+  const undersides = members
+    .filter((m) => (m.role === 'zarge' || m.role === 'quertraeger' || m.role === 'wandriegel') && !m.partKey?.startsWith('unten-'))
+    .map((m) => Math.min(m.start.z, m.end.z) - m.h / 2)
+  const underside = undersides.length ? Math.min(...undersides) : railBottom
 
   return {
     members,
@@ -533,7 +648,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm): GeneratedBed {
       outerWidth: Wo,
       deckTop: H,
       mattressTop: H + P.mattressThickness,
-      underside: undersides.length ? Math.min(...undersides) : railBottom,
+      underside,
+      lowerMattressTop: lower ? lowerRailTop + lowerSlat.b + P.mattressThickness : undefined,
       footprint: rect(0, 0, Lo, Wo).map((q) => to2(q.x, q.y)),
       ladderFootprint,
       accessWidth,

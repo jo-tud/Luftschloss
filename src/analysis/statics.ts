@@ -181,7 +181,10 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
   for (const j of joints) {
     const jt = jointType(j.typeId)
     const kr = jt?.stiffness === 'steif' ? 3e8 : jt?.stiffness === 'halbsteif' ? 3e7 : 2e6
-    links.push({ n1: nodeAt(j.a, axisT(byId.get(j.a)!, j.pos)), n2: nodeAt(j.b, axisT(byId.get(j.b)!, j.pos)), kt: 2e6, kr, tag: j.key })
+    // Schraubanschlüsse geben nach (Verschiebungsmodul einiger Holzbauschrauben ca. 5 kN/mm);
+    // so tragen angeschraubte Geländerbretter nicht unfreiwillig als Unterzug mit
+    const kt = j.typeId === 'holzbauschraube' ? 5e3 : 2e6
+    links.push({ n1: nodeAt(j.a, axisT(byId.get(j.a)!, j.pos)), n2: nodeAt(j.b, axisT(byId.get(j.b)!, j.pos)), kt, kr, tag: j.key })
     linkJoint.push(j.key)
   }
 
@@ -257,10 +260,43 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
         }
       }
       for (const x of st) carrierNodes.push(x.node)
+      if (s.net) {
+        // Netz spannt quer zum Träger: Randzug nach innen, Richtung Flächenmitte
+        const ax = memberAxes(m)[0]
+        const span = Math.abs(ax.x) > Math.abs(ax.y) ? s.y1 - s.y0 : s.x1 - s.x0
+        const mid = add(m.start, scale(ax, (t0 + t1) / 2))
+        const c = v((s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2, 0)
+        const inward = Math.abs(ax.x) > Math.abs(ax.y) ? v(0, Math.sign(c.y - mid.y), 0) : v(Math.sign(c.x - mid.x), 0, 0)
+        for (let i = 0; i < st.length - 1; i++) {
+          const seg = st[i + 1].t - st[i].t
+          for (const [lc0, qa] of [[Q, qArea], [G, gArea]] as const) {
+            const fH = netEdgePull(qa, span) * seg
+            addLoad(lc0, st[i].node, [(inward.x * fH) / 2, (inward.y * fH) / 2, 0, 0, 0, 0])
+            addLoad(lc0, st[i + 1].node, [(inward.x * fH) / 2, (inward.y * fH) / 2, 0, 0, 0, 0])
+          }
+        }
+      }
     })
     // Sprunglast auf die Träger im Bereich ±250 mm um die Mitte verteilen
     const patch = patchCarriers(s, 250)
-    for (const pc of patch) addLoad(J, nodeAt(pc.m.id, pc.t), [0, 0, -LOADS.jump / patch.length, 0, 0, 0])
+    if (s.net) {
+      // Springen im Netz: Einzellast in der Mitte hängt an beiden Rändern, Seilkraft H = P·w/(4f)
+      const along = s.carriers.filter((m) => {
+        const ax = memberAxes(m)[0]
+        return s.x1 - s.x0 >= s.y1 - s.y0 ? Math.abs(ax.x) > Math.abs(ax.y) : Math.abs(ax.y) > Math.abs(ax.x)
+      })
+      const w = Math.min(s.x1 - s.x0, s.y1 - s.y0)
+      const H = LOADS.jump / (4 * NET_SAG)
+      const c = v((s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2, 0)
+      for (const m of along) {
+        const ax = memberAxes(m)[0]
+        const tc = dot(sub(v(c.x, c.y, m.start.z), m.start), ax)
+        const st = stations.get(m.id)!.filter((x) => Math.abs(x.t - tc) <= w / 2)
+        const mid = add(m.start, scale(ax, tc))
+        const inward = Math.abs(ax.x) > Math.abs(ax.y) ? v(0, Math.sign(c.y - mid.y), 0) : v(Math.sign(c.x - mid.x), 0, 0)
+        for (const x of st) addLoad(J, x.node, [(inward.x * H) / st.length, (inward.y * H) / st.length, -LOADS.jump / along.length / st.length, 0, 0, 0])
+      }
+    } else for (const pc of patch) addLoad(J, nodeAt(pc.m.id, pc.t), [0, 0, -LOADS.jump / patch.length, 0, 0, 0])
   }
   const uniq = [...new Set(carrierNodes)]
   for (const n of uniq) {
@@ -470,6 +506,16 @@ interface Surface {
   y1: number
   carriers: Member[]
   panelWeight?: number
+  /** Begehbares Netz: zieht die tragenden Zargen nach innen */
+  net?: boolean
+}
+
+/** Durchhang eines begehbaren Netzes unter Last, bezogen auf die Spannweite */
+export const NET_SAG = 0.08
+
+/** Randzug eines Netzes (N/mm Zargenlänge) unter Flächenlast q (N/mm²) bei Spannweite w (mm): n = q·w²/(8f) */
+export function netEdgePull(q: number, w: number): number {
+  return (q * w) / (8 * NET_SAG)
 }
 
 /** Matratzen (bzw. freie Platten ohne Matratze) und die Stäbe, auf denen sie lasten */
@@ -506,6 +552,16 @@ function loadSurfaces(r: Resolved): Surface[] {
       return cx > b.x0 - pad && cx < b.x1 + pad && cy > b.y0 - pad && cy < b.y1 + pad
     })
     out.push({ ...b, carriers, panelWeight: s.weight })
+  }
+  for (const n of r.panels.filter((x) => x.kind === 'netz' && !x.vertical)) {
+    const b = bbox(n)
+    const carriers = r.members.filter((m) => {
+      if (!isIncluded(m) || !horiz(m) || Math.abs(topOf(m) - n.z) > 3) return false
+      const cx = (m.start.x + m.end.x) / 2
+      const cy = (m.start.y + m.end.y) / 2
+      return cx > b.x0 - 150 && cx < b.x1 + 150 && cy > b.y0 - 150 && cy < b.y1 + 150
+    })
+    out.push({ ...b, carriers, panelWeight: 2e-6 * (b.x1 - b.x0) * (b.y1 - b.y0) * 9.81 * 0.4, net: true })
   }
   return out
 }

@@ -37,6 +37,9 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     wallFit: 'ausklinken',
     wallEnd: 'rechts',
     ceilingGap: 15,
+    lowerBed: false,
+    lowerDeckHeight: 300,
+    midPosts: 0,
     ...over,
   }
 }

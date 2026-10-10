@@ -11,9 +11,11 @@ describe('Foto-Abgleich', () => {
     const truth: PhotoCam = { x: 2600, y: 5300, z: 1550, yaw: Math.PI + 0.12, pitch: 0.18, roll: 0.01, f: 1300 }
     const refs = referencePoints(p).filter((r) => ['decke-AB', 'decke-AD', 'fenster-links-ol', 'fenster-links-ul', 'fenster-rechts-or', 'fenster-rechts-ur'].includes(r.id))
     expect(refs).toHaveLength(6)
-    const obs = refs.map((r) => {
+    // ±1 px Klickungenauigkeit, fest vorgegeben, damit der Test reproduzierbar bleibt
+    const noise = [0.8, -0.6, 0.3, -0.9, 0.5, -0.2, 0.7, -0.4, 0.1, -0.8, 0.6, -0.3]
+    const obs = refs.map((r, i) => {
       const q = projectPoint(truth, r.p, w, h)
-      return { p: r.p, u: q.u + (Math.random() - 0.5) * 2, v: q.v + (Math.random() - 0.5) * 2 }
+      return { p: r.p, u: q.u + noise[2 * i], v: q.v + noise[2 * i + 1] }
     })
     const res = solvePhotoCam(p, obs, w, h)!
     expect(res.rms).toBeLessThan(3)

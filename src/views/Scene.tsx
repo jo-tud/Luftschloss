@@ -234,6 +234,7 @@ export function PanelMeshes({ panels, mini }: { panels: Panel[]; mini?: boolean 
           const o = panelOBB(pa)
           el = pa.kind === 'netz' ? <NetPanel o={o} id={pa.id} /> : <Box o={o} color={COLORS.woodLight} pick={{ kind: 'panel', id: pa.id }} edges highlight={highlight} />
         } else if (pa.kind === 'matratze') el = <Mattress pa={pa} />
+        else if (pa.kind === 'netz') el = <FlatNet pa={pa} />
         else el = <FlatPanel pa={pa} highlight={highlight} />
         return (
           <BuildAnimated key={pa.id} id={pa.id} enabled={!mini}>
@@ -258,6 +259,44 @@ function NetPanel({ o, id }: { o: OBB; id: string }) {
       <boxGeometry args={[t.size[0], 0.004, t.size[2]]} />
       <meshStandardMaterial map={tex} transparent alphaTest={0.3} side={THREE.DoubleSide} color="#ffffff" />
     </mesh>
+  )
+}
+
+/** Waagerechtes, leicht durchhängendes Netz (begehbare Netz-Liegefläche) als Maschengitter */
+function FlatNet({ pa }: { pa: Panel }) {
+  const geom = useMemo(() => {
+    const xs = pa.outline.map((q) => q.x)
+    const ys = pa.outline.map((q) => q.y)
+    const x0 = Math.min(...xs)
+    const x1 = Math.max(...xs)
+    const y0 = Math.min(...ys)
+    const y1 = Math.max(...ys)
+    const sag = 0.03 * Math.min(x1 - x0, y1 - y0)
+    const z = (x: number, y: number) => {
+      const u = (x - x0) / (x1 - x0) - 0.5
+      const w = (y - y0) / (y1 - y0) - 0.5
+      return pa.z - sag * (1 - 4 * u * u) * (1 - 4 * w * w)
+    }
+    const pts: number[] = []
+    const seg = (ax: number, ay: number, bx: number, by: number) => {
+      const a = T(ax, ay, z(ax, ay))
+      const b = T(bx, by, z(bx, by))
+      pts.push(a.x, a.y, a.z, b.x, b.y, b.z)
+    }
+    const mesh = 60
+    const steps = 16
+    for (let x = x0; x <= x1 + 1; x += (x1 - x0) / Math.round((x1 - x0) / mesh))
+      for (let k = 0; k < steps; k++) seg(x, y0 + ((y1 - y0) * k) / steps, x, y0 + ((y1 - y0) * (k + 1)) / steps)
+    for (let y = y0; y <= y1 + 1; y += (y1 - y0) / Math.round((y1 - y0) / mesh))
+      for (let k = 0; k < steps; k++) seg(x0 + ((x1 - x0) * k) / steps, y, x0 + ((x1 - x0) * (k + 1)) / steps, y)
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3))
+    return g
+  }, [pa])
+  return (
+    <lineSegments geometry={geom} userData={{ pick: { kind: 'panel', id: pa.id } }}>
+      <lineBasicMaterial color="#3d4f5f" transparent opacity={0.75} />
+    </lineSegments>
   )
 }
 

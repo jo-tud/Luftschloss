@@ -1,5 +1,6 @@
 import { catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, type OBB } from '../model/geometry'
+import { LOADS, NET_SAG, netEdgePull } from './statics'
 import { cornice, corniceIntrusion, roomObstacles } from '../model/room'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project, Side, Vec3 } from '../model/types'
@@ -175,6 +176,29 @@ export function analyze(p: Project, r: Resolved): Analysis {
     if (headroom < 750) add({ id: `kopf:${a.id}`, severity: 'warnung', category: 'Freiraum', title: `Nur ${fmtM(headroom)} über der Matratze`, detail: 'Zum Aufsetzen im Bett sind 0,80–1,00 m angenehm.', targets: [a.id] })
     const wallC = Math.max(...(['A', 'B', 'C', 'D'] as const).map((w) => (cornice(room, w).enabled ? cornice(room, w).height : 0)))
     if (info.mattressTop + 0.45 * ph > room.height - wallC && wallC > 0) add({ id: `kopf-stuck:${a.id}`, severity: 'hinweis', category: 'Freiraum', title: 'An der Wand ragt der Stuck in den Kopfraum', targets: [a.id] })
+
+    // Etagenbett
+    if (P.lowerBed && info.lowerMattressTop === undefined) add({ id: `etage-pfosten:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Untere Liegefläche nur mit vier Pfosten', detail: 'Das Etagenbett wird bei den Bauarten „freistehend“ und „deckenhoch“ erzeugt.', targets: [a.id] })
+    if (info.lowerMattressTop !== undefined) {
+      const sitUnder = info.underside - info.lowerMattressTop
+      if (sitUnder < 750) add({ id: `etage-kopf:${a.id}`, severity: 'warnung', category: 'Freiraum', title: `Unten nur ${fmtM(sitUnder)} über der Matratze`, detail: 'Zum Aufsetzen im unteren Bett sind mindestens 0,75 m, besser 0,85 m angenehm. Oberes Bett höher setzen oder die untere Liegefläche absenken.', targets: [a.id] })
+      add({ id: `etage-info:${a.id}`, severity: 'hinweis', category: 'Freiraum', title: `Etagenbett: unten ${fmtM(sitUnder)} Sitzhöhe über der Matratze`, detail: 'Die untere Liegefläche zählt nicht als „frei darunter“. Das obere Bett braucht weiterhin Geländer und Leiter wie ein Hochbett.', targets: [a.id] })
+    }
+    // Begehbares Netz
+    if (P.deck === 'netz') {
+      const qArea = p.settings.loadProfile === 'hochebene' ? LOADS.qHochebene : LOADS.qBett
+      const span = Math.min(info.outerLength, info.outerWidth) - 2 * timber(P.railCatalogId).b
+      const pull = netEdgePull(qArea, span) // N/mm = kN/m
+      const jump = LOADS.jump / (4 * NET_SAG) / 1000
+      add({
+        id: `netz-deck:${a.id}`,
+        severity: safety('warnung'),
+        category: 'Stabilität',
+        title: `Begehbares Netz zieht die Zargen mit ${pull.toFixed(1).replace('.', ',')} kN/m nach innen`,
+        detail: `Bei ${Math.round(NET_SAG * 100)} % Durchhang über ${fmtCm(span, 0)} Spannweite; springt jemand in die Mitte, kommen je Seite rund ${jump.toFixed(1).replace('.', ',')} kN hinzu. Die Zargen werden dabei quer zur schwachen Achse gebogen, die Ecken auf Zug. Bewährt: kräftige Zargen (mind. 80×160 oder hochkant BSH), Ecken mit Schlossschrauben und Winkeln, Netz mit Randseil und nachspannbarer Schnürung, Bruchlast des Netzes nach Herstellerangabe. Unter dem Netz rund ${fmtCm(span * NET_SAG * 2, 0)} Durchhang frei halten – keine Kanten und Möbel darunter. Für Jugendliche und Erwachsene, nicht für Kleinkinder.`,
+        targets: [a.id],
+      })
+    }
 
     // Absturzsicherung
     if (P.guard !== 'keins') {
