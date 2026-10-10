@@ -314,5 +314,18 @@ const en: Record<string, string> = {
   'Geschätzt – bitte nachmessen': 'Estimated – please measure',
   "Ganzes Bett auswählen: links unter „Bett“ auf das Bett klicken – oder ein Teil anklicken und Esc drücken.": "Select the whole bed: click it under “Bed” on the left – or click any part and press Esc.",
   "Ganzes Bett auswählen (Esc)": "Select the whole bed (Esc)",
+  "Eigenes Bett": "Custom bed",
+  "{n} Teile ausgewählt": "{n} parts selected",
+  "Shift-Klick nimmt weitere Teile hinzu oder wieder heraus. Ziehen verschiebt alle gemeinsam.": "Shift-click adds or removes parts. Dragging moves them all together.",
+  "Die Teile als ein Bett behandeln: gemeinsam auswählen, verschieben und prüfen": "Treat the parts as one bed: select, move and check them together",
+  "Als Bett zusammenfassen": "Combine into a bed",
+  "eigene Konstruktion": "custom build",
+  "Heranholen": "Zoom to",
+  "Die Teile werden wieder einzelne freie Teile": "The parts become separate free parts again",
+  "Zusammenfassung lösen": "Ungroup",
+  "Shift-Klick wählt weitere freie Teile; mehrere lassen sich als Bett zusammenfassen.": "Shift-click selects more free parts; several can be combined into a bed.",
+  "Alle freien Teile auswählen, z. B. um sie als Bett zusammenzufassen": "Select all free parts, e.g. to combine them into a bed",
+  "Freie Teile ({n})": "Free parts ({n})",
+  "{n} Teile entfernen": "Remove {n} parts",
 }
 export default en

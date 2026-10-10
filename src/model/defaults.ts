@@ -188,6 +188,7 @@ export function testProject(): Project {
     members: [],
     panels: [],
     assemblies: [bed],
+    groups: [],
     joints: [],
     settings: {
       safetyProfile: 'jugendliche',

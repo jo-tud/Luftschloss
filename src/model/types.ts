@@ -186,6 +186,8 @@ export interface Member {
   shape?: MemberShape
   assemblyId?: string
   partKey?: string
+  /** Selbst konstruiertes Bett, zu dem dieses freie Teil gehört */
+  groupId?: string
 }
 
 export interface MemberShape {
@@ -227,6 +229,7 @@ export interface Panel {
   vertical?: { a: { x: Mm; y: Mm }; b: { x: Mm; y: Mm }; height: Mm }
   assemblyId?: string
   partKey?: string
+  groupId?: string
 }
 
 export type BedType =
@@ -322,6 +325,12 @@ export interface Assembly {
   detached: string[]
 }
 
+/** Selbst konstruiertes Bett: freie Teile (groupId), als Ganzes auswählbar und verschiebbar */
+export interface BedGroup {
+  id: string
+  name: string
+}
+
 export type JointKind = 'ecke' | 't-stoss' | 'kreuzung' | 'auflage' | 'laengsstoss' | 'strebe' | 'beischlag'
 
 export interface JointChoice {
@@ -350,6 +359,8 @@ export interface Project {
   members: Member[]
   panels: Panel[]
   assemblies: Assembly[]
+  /** Selbst konstruierte Betten aus freien Teilen */
+  groups: BedGroup[]
   joints: JointChoice[]
   settings: ProjectSettings
   /** Hinweise auf geschätzte Maße (Pfad-Schlüssel wie "room.height") */

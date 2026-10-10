@@ -103,14 +103,17 @@ function memberColor(m: Member): string {
   return COLORS.wood
 }
 
-function isSelected(sel: ReturnType<typeof useStore.getState>['selection'], m: { id: string; assemblyId?: string }): boolean {
+function isSelected(sel: ReturnType<typeof useStore.getState>['selection'], m: { id: string; assemblyId?: string; groupId?: string }, multi: string[] = []): boolean {
+  if (multi.includes(m.id)) return true
   if (!sel) return false
   if (sel.id === m.id) return true
+  if (sel.kind === 'group') return sel.id === m.groupId
   return sel.kind === 'assembly' && sel.id === m.assemblyId
 }
 
 export function MemberMeshes({ members, mini, joints }: { members: Member[]; mini?: boolean; joints?: DetectedJoint[] }) {
   const sel = useStore((s) => s.selection)
+  const multi = useStore((s) => s.multi)
   const hover = useStore((s) => s.hover)
   const staticsMode = useStore((s) => s.staticsMode)
   const statics = useStore((s) => s.statics)
@@ -120,12 +123,12 @@ export function MemberMeshes({ members, mini, joints }: { members: Member[]; min
     <group>
       {members.map((m) => {
         const { boxes, prisms } = memberSolids(m, cuts?.members.get(m.id))
-        let highlight = mini ? undefined : isSelected(sel, m) ? COLORS.select : hover && (hover === m.id || hover === m.assemblyId) ? COLORS.hover : undefined
+        let highlight = mini ? undefined : isSelected(sel, m, multi) ? COLORS.select : hover && (hover === m.id || hover === m.assemblyId) ? COLORS.hover : undefined
         let color = memberColor(m)
         if (!mini && staticsMode && statics) {
           const c = statics.members.get(m.id)
           color = c ? UTIL_COLOR(c.util) : '#c9c9c9'
-          if (highlight && !isSelected(sel, m)) highlight = undefined
+          if (highlight && !isSelected(sel, m, multi)) highlight = undefined
         }
         return (
           <BuildAnimated key={m.id} id={m.id} enabled={!mini}>
@@ -298,10 +301,11 @@ function getNetTexture(): THREE.CanvasTexture {
 
 export function PanelMeshes({ panels, mini }: { panels: Panel[]; mini?: boolean }) {
   const sel = useStore((s) => s.selection)
+  const multi = useStore((s) => s.multi)
   return (
     <group>
       {panels.map((pa) => {
-        const highlight = !mini && isSelected(sel, pa) ? COLORS.select : undefined
+        const highlight = !mini && isSelected(sel, pa, multi) ? COLORS.select : undefined
         let el: ReactElement
         if (pa.vertical) {
           const o = panelOBB(pa)

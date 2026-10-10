@@ -193,6 +193,7 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
 - Griffe an den Stabenden, Länge im Etikett eintippen, Reihe erzeugen, Spiegeln. ✅
 - Seitenleisten und Prüfliste in der Größe veränderbar (Rand ziehen, Doppelklick setzt zurück). ✅
 - Ein angeklicktes Bauteil zeigt oben den Pfad „Bett › Bauteil“; ein Klick auf das Bett oder `Esc` wählt das ganze Bett. ✅
+- **Eigenes Bett aus freien Teilen:** Shift-Klick wählt mehrere freie Teile (gemeinsam verschieben oder entfernen), „Als Bett zusammenfassen“ macht daraus ein Bett mit Namen. Es steht in der Bettliste, wird als Ganzes ausgewählt und verschoben (Pfad und `Esc` wie bei Vorlagen) und lässt sich wieder auflösen. „Freie Teile (n)“ in der Bettliste wählt alle freien Teile. ✅
 - Geplant ◻: Maßketten mit direkter Eingabe in der Ansicht.
 
 ---

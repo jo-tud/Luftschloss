@@ -26,6 +26,7 @@ export type Selection =
   | { kind: 'panel'; id: string }
   | { kind: 'joint'; id: string }
   | { kind: 'rosette'; id: string }
+  | { kind: 'group'; id: string }
 
 export type Tool = 'select' | 'balken' | 'pfosten'
 
@@ -43,6 +44,8 @@ interface State {
   future: Project[]
   coalesce: string | null
   selection: Selection | null
+  /** Mehrfachauswahl freier Teile (Shift-Klick), mindestens zwei, sonst leer */
+  multi: string[]
   hover: string | null
   view: ViewMode
   /** Erhöht sich bei jedem Wunsch, die Kamera neu auszurichten (auch bei gleicher Ansicht) */
@@ -104,6 +107,8 @@ interface State {
   undo: () => void
   redo: () => void
   select: (s: Selection | null) => void
+  /** Freies Teil zur Mehrfachauswahl hinzufügen bzw. wieder herausnehmen */
+  toggleMulti: (id: string) => void
   setHover: (id: string | null) => void
   setView: (v: ViewMode) => void
   set: (partial: Partial<State>) => void
@@ -158,6 +163,7 @@ export const useStore = create<State>((set, get) => ({
   future: [],
   coalesce: null,
   selection: null,
+  multi: [],
   hover: null,
   view: { kind: '3d' },
   viewNonce: 0,
@@ -243,7 +249,16 @@ export const useStore = create<State>((set, get) => ({
     set({ project: next, past: [...past, project], future: future.slice(1), coalesce: null })
     persist(next)
   },
-  select: (selection) => set({ selection }),
+  select: (selection) => set({ selection, multi: [] }),
+  toggleMulti: (id) => {
+    const { selection, multi, project } = get()
+    const free = (x: string) => isFreePart(project, x)
+    if (!free(id)) return
+    const cur = multi.length ? multi : selection && free(selection.id) ? [selection.id] : []
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+    const last = next[next.length - 1]
+    set({ multi: next.length > 1 ? next : [], selection: last ? selectionFor(project, last) : null })
+  },
   setHover: (hover) => (get().hover === hover ? undefined : set({ hover })),
   setView: (view) => set({ view, viewNonce: get().viewNonce + 1 }),
   set: (partial) => set(partial),
@@ -287,9 +302,21 @@ export function useDerived(): Derived {
   return derive(project)
 }
 
+/** Freies Teil (Balken oder Fläche), das noch zu keinem Bett gehört */
+export function isFreePart(p: Project, id: string): boolean {
+  return p.members.some((m) => m.id === id && !m.groupId) || p.panels.some((x) => x.id === id && !x.groupId)
+}
+
+/** Selbst konstruiertes Bett, zu dem ein Teil gehört */
+export function groupOf(p: Project, id: string | undefined): string | undefined {
+  if (!id) return undefined
+  return p.members.find((m) => m.id === id)?.groupId ?? p.panels.find((x) => x.id === id)?.groupId
+}
+
 /** Zu welchem Projektobjekt gehört eine ID (Bauteile einer Baugruppe gehören zur Baugruppe)? */
 export function selectionFor(p: Project, id: string): Selection | null {
   if (p.assemblies.some((a) => a.id === id)) return { kind: 'assembly', id }
+  if (p.groups.some((g) => g.id === id)) return { kind: 'group', id }
   if (p.wallObjects.some((o) => o.id === id)) return { kind: 'wallObject', id }
   if (p.furniture.some((f) => f.id === id)) return { kind: 'furniture', id }
   if (p.room.rosettes.some((r) => r.id === id)) return { kind: 'rosette', id }
