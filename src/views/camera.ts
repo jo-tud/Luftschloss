@@ -125,6 +125,7 @@ export const PERSON_LABEL: Record<PersonPreset, string> = {
   matratze: tk('Auf der Matratze sitzen'),
   liegen: tk('Im Bett liegen'),
 }
+export const PERSON_ICON: Record<PersonPreset, string> = { tuer: '🚪', unter: '🪑', matratze: '🛏', liegen: '😴' }
 
 /** Augpunkt und Blickrichtung für die Ich-Perspektive */
 export function personGoal(preset: PersonPreset, p: Project, d: Derived): CamState {

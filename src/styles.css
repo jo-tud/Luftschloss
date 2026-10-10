@@ -454,10 +454,6 @@ kbd {
   border-color: transparent;
   padding: 4px 8px;
 }
-.view-switcher .view-name {
-  color: var(--muted);
-  padding: 0 6px;
-}
 .minis {
   position: absolute;
   right: 10px;
@@ -1417,9 +1413,6 @@ table.compare td {
   .minis {
     display: none;
   }
-  .view-switcher .view-name {
-    display: none;
-  }
 }
 /* Finger- und Stiftbedienung: größere Ziele (≥ 40 px) */
 @media (pointer: coarse) {
@@ -2018,12 +2011,6 @@ button.primary:disabled {
 }
 .view-switcher button,
 .view-switcher summary {
-  white-space: nowrap;
-}
-.view-switcher .view-name {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 /* Werkzeugleiste: nichts quetschen; wenn es eng wird, lieber waagrecht scrollen */

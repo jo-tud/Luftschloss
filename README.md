@@ -16,7 +16,7 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 
 - Works in any current browser on laptop, desktop and tablet (Chrome, Edge, Firefox, Safari).
 - **Install it as an app on your tablet or phone:** open the link and choose "Add to Home Screen" (iPad/iPhone) or "Install app" (Android, Chrome) in the browser menu. Luftschloss then starts like a regular app and also works offline.
-- On first launch an **example room** is loaded: just click around, select the bed, drag it, change dimensions. The banner button **🧭 Plan your own room** starts the planning assistant.
+- On first launch an **example room** is loaded: just click around, select the bed, drag it, change dimensions. The button **🧭 Plan your own room** in the strip above the view starts the planning assistant.
 - **New to this? Use the planning assistant 🧭.** A few short steps – room size and ceiling, walls, windows/doors/radiators, who sleeps on top, what goes underneath and whether you may screw into the walls – up to three checked suggestions. Pick one and keep adjusting.
 
 <p align="center">
@@ -53,7 +53,7 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 
 With finger or pen: tap to select, drag a selected part with one finger, one finger on an empty area rotates, two fingers zoom, pan and rotate. ☰ opens room and templates, ⓘ the properties and the checklist.
 
-**Laptop and tablet on the same project at the same time**, e.g. in the workshop: start Luftschloss on the laptop with `npm run lan` (see below), click **📱 Tablet** at the top and scan the QR code. Changes sync every few seconds. No shared Wi-Fi? It works with [Tailscale](https://tailscale.com) too.
+**Laptop and tablet on the same project at the same time**, e.g. in the workshop: start Luftschloss on the laptop with `npm run lan` (see below), click the tablet icon in the toolbar and scan the QR code. Changes sync every few seconds. No shared Wi-Fi? It works with [Tailscale](https://tailscale.com) too.
 
 <br clear="right">
 

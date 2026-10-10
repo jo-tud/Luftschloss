@@ -16,7 +16,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 
 - Läuft in jedem aktuellen Browser auf Laptop, PC und Tablet (Chrome, Edge, Firefox, Safari).
 - **Als App aufs Tablet oder Handy:** Link öffnen und im Browsermenü „Zum Home-Bildschirm“ (iPad/iPhone) bzw. „App installieren“ (Android, Chrome) wählen. Danach startet Luftschloss wie eine App und funktioniert auch offline.
-- Beim ersten Start ist ein **Beispielzimmer** geladen: einfach herumklicken, das Bett auswählen und verschieben, Maße ändern. Der Knopf **🧭 Eigenes Zimmer planen** im Banner startet den Planungsassistenten.
+- Beim ersten Start ist ein **Beispielzimmer** geladen: einfach herumklicken, das Bett auswählen und verschieben, Maße ändern. Der Knopf **🧭 Eigenes Zimmer planen** in der Leiste über der Ansicht startet den Planungsassistenten.
 - **Neu dabei? Der Planungsassistent 🧭 hilft.** Ein paar kurze Schritte – Raumgröße und Decke, Wände, Fenster/Türen/Heizkörper, wer oben schläft, was darunter soll und ob in die Wand geschraubt werden darf – und du bekommst bis zu drei geprüfte Vorschläge. Einen übernehmen und weiter anpassen.
 
 <p align="center">
@@ -53,7 +53,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 
 Mit Finger oder Stift: antippen wählt aus, ein ausgewähltes Teil ziehst du mit einem Finger, ein Finger auf leerer Fläche dreht, mit zwei Fingern zoomst, verschiebst und drehst du. ☰ öffnet Raum und Vorlagen, ⓘ die Eigenschaften und die Prüfliste.
 
-**Laptop und Tablet gleichzeitig am selben Projekt**, z. B. in der Werkstatt: Luftschloss auf dem Laptop mit `npm run lan` starten (siehe unten), oben auf **📱 Tablet** klicken und den QR-Code scannen. Änderungen gleichen sich alle paar Sekunden ab. Ohne gemeinsames WLAN klappt das mit [Tailscale](https://tailscale.com).
+**Laptop und Tablet gleichzeitig am selben Projekt**, z. B. in der Werkstatt: Luftschloss auf dem Laptop mit `npm run lan` starten (siehe unten), oben in der Werkzeugleiste auf das Tablet-Symbol klicken und den QR-Code scannen. Änderungen gleichen sich alle paar Sekunden ab. Ohne gemeinsames WLAN klappt das mit [Tailscale](https://tailscale.com).
 
 <br clear="right">
 
