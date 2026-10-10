@@ -228,11 +228,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     FL: ['vorne', 'links'], // i18n-ok
     FR: ['vorne', 'rechts'], // i18n-ok
   }
-  const shortPost: Record<Corner, boolean> = { BL: false, BR: false, FL: false, FR: false }
-  for (const c of Object.keys(cornerSides) as Corner[]) {
-    if (!fullPost[c] && cornerSides[c].some(guardOn)) shortPost[c] = true
-  }
-  const hasPost = (c: Corner) => fullPost[c] || shortPost[c]
+  // Ecken ohne Pfosten schließt der Rahmen selbst (Zarge an Zarge); ein Geländer dort hält ein
+  // Geländerpfosten außen an der Zarge (siehe Geländer), kein kurzes Pfostenstück zwischen den Zargen
+  const hasPost = (c: Corner) => fullPost[c]
   const cornerPos: Record<Corner, { x: Mm; y: Mm }> = {
     BL: { x: 0, y: 0 },
     BR: { x: Lo - p, y: 0 },
@@ -245,11 +243,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const { x, y } = cornerPos[c]
     const cx = x + p / 2
     const cy = y + p / 2
-    const z0 = fullPost[c] ? 0 : railBottom
-    const m = add(`pfosten-${c}`, 'pfosten', P.postCatalogId, v(cx, cy, z0), v(cx, cy, fullPost[c] ? postTop : guardTop), post.b, post.h, {
-      name: fullPost[c] ? t('Pfosten {c}', { c: cornerLabel(c) }) : t('Geländerpfosten {c}', { c: cornerLabel(c) }),
+    const m = add(`pfosten-${c}`, 'pfosten', P.postCatalogId, v(cx, cy, 0), v(cx, cy, postTop), post.b, post.h, {
+      name: t('Pfosten {c}', { c: cornerLabel(c) }),
     })
-    if (m && ceilingHigh && fullPost[c]) {
+    if (m && ceilingHigh) {
       fixings.push({ memberId: m.id, target: 'decke', hardwareId: 'stellfuss-m16', count: 1, note: t('Pfosten gegen die Decke verspannen (Stellfuß/Spindel)') })
     }
   }
@@ -627,8 +624,19 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     for (const s of ['hinten', 'vorne', 'links', 'rechts'] as Side[]) {
       if (!guardOn(s)) continue
       const frame = sideFrame(s, Lo, Wo)
-      const g0 = p
-      const g1 = frame.length - p
+      const [c0, c1] = SIDE_ENDS[s]
+      const lengthwise0 = s === 'vorne' || s === 'hinten'
+      // Ende ohne Pfosten: Längsseiten laufen bis in die Ecke, Querseiten stoßen an ein Längsgeländer
+      const endGap = (c: Corner) => {
+        if (fullPost[c]) return p
+        const other = cornerSides[c].find((x) => x !== s)!
+        return !lengthwise0 && guardOn(other) ? guard.b : 0
+      }
+      const g0 = endGap(c0)
+      const g1 = frame.length - endGap(c1)
+      // Lage der Zarge dieser Seite entlang der Seite (dort wird der Geländerpfosten angeschraubt)
+      const railAlong: [Mm, Mm] =
+        s === 'vorne' ? [xStart(s), xEnd(s)] : s === 'hinten' ? [Lo - xEnd(s), Lo - xStart(s)] : s === 'links' ? [yStart(s), yEnd(s)] : [Wo - yEnd(s), Wo - yStart(s)] // i18n-ok
       const gb = guard.b
       const gh = guard.h
       const inPlane = gb / 2
@@ -652,23 +660,31 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         const inside = wallGap(s) < gh + 10
         const infill = P.guard === 'bretter' ? 18 : gb
         const lengthwise = s === 'vorne' || s === 'hinten'
+        // innen: an der Längsseite in eine Lattenlücke setzen, an der Querseite flach an die Zarge
+        const [sx, sy] = inside && !lengthwise ? alongSide(s, gh, gb) : alongSide(s, gb, gh)
+        const depth = inside && !lengthwise ? gb : gh
+        const out = inside ? -(infill + depth / 2) : gh / 2
+        const z0 = inside ? (P.deck === 'latten' || netDeck ? railTop : H) : railBottom
+        // innen endet die Stütze unter dem Handlauf, der auf ihr aufliegt
+        const z1 = inside ? guardTop - gh : guardTop
+        const along = inside && !lengthwise ? gh : gb
         for (let i = 1; i < fields; i++) {
           let a = s0 + ((s1 - s0) * i) / fields
-          // innen: an der Längsseite in eine Lattenlücke setzen, an der Querseite flach an die Zarge
-          const [sx, sy] = inside && !lengthwise ? alongSide(s, gh, gb) : alongSide(s, gb, gh)
-          const depth = inside && !lengthwise ? gb : gh
           if (inside && lengthwise && slatXs.length > 1) {
             const want = s === 'vorne' ? a : Lo - a
             const gaps = slatXs.slice(1).map((x, k) => (x + slatXs[k]) / 2)
             const best = gaps.reduce((b, x) => (Math.abs(x - want) < Math.abs(b - want) ? x : b), gaps[0])
             a = s === 'vorne' ? best : Lo - best
           }
-          const out = inside ? -(infill + depth / 2) : gh / 2
-          const z0 = inside ? (P.deck === 'latten' || netDeck ? railTop : H) : railBottom
-          // innen endet die Stütze unter dem Handlauf, der auf ihr aufliegt
-          const z1 = inside ? guardTop - gh : guardTop
           add(`gelaenderstuetze-${key}-${i}`, 'holm', P.guardCatalogId, pt(a, z0, out), pt(a, z1, out), sx, sy, { name: t('Geländerstütze {s}', { s: sideLabel(s) }) })
         }
+        // Geländerende ohne Pfosten: Geländerpfosten wie eine Stütze an die Zarge dieser Seite geschraubt
+        const ends: [Corner, number][] = []
+        // 5 mm Abstand zum Zargenende, damit der Pfosten nur an seiner Zarge anliegt
+        if (si === 0 && !fullPost[c0]) ends.push([c0, Math.max(s0, railAlong[0] + 5) + along / 2])
+        if (si === segs.length - 1 && !fullPost[c1]) ends.push([c1, Math.min(s1, railAlong[1] - 5) - along / 2])
+        for (const [c, a] of ends)
+          add(`gelaenderpfosten-${c}-${s}`, 'holm', P.guardCatalogId, pt(a, z0, out), pt(a, z1, out), sx, sy, { name: t('Geländerpfosten {c}', { c: cornerLabel(c) }) })
         // Handlauf
         add(`handlauf-${key}`, 'holm', P.guardCatalogId, pt(s0, guardTop - gh / 2), pt(s1, guardTop - gh / 2), gb, gh, { name: t('Handlauf {s}', { s: sideLabel(s) }) })
         // Die Öffnungskanten halten die Leiterholme bzw. Haltegriffe.
@@ -761,6 +777,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
 }
 
 /** Lokales System einer Bettseite: along läuft von der linken zur rechten Ecke (von außen gesehen), out zeigt nach außen. */
+/** Ecken am Anfang und Ende einer Seite in Laufrichtung von sideFrame */
+const SIDE_ENDS: Record<Side, [Corner, Corner]> = { vorne: ['FL', 'FR'], hinten: ['BR', 'BL'], links: ['BL', 'FL'], rechts: ['FR', 'BR'] }
+
 function sideFrame(s: Side, Lo: Mm, Wo: Mm) {
   switch (s) {
     case 'vorne':
