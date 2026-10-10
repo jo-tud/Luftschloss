@@ -21,6 +21,9 @@ export interface BedFixing {
 export interface BedInfo {
   outerLength: Mm
   outerWidth: Mm
+  /** Stellmaß einschließlich Leiter bzw. Treppe (ohne Ausstiegsfläche), in Bettrichtung */
+  standLength: Mm
+  standWidth: Mm
   deckTop: Mm
   mattressTop: Mm
   /** Tiefste Unterkante des Rahmens */
@@ -466,6 +469,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   let accessWidth: Mm | undefined
   let opening: [Mm, Mm] | undefined
   let rungPitch: Mm | undefined
+  let standPts: { x: Mm; y: Mm }[] = []
   if (P.ladder !== 'keine') {
     const side = P.ladderSide
     const frame = sideFrame(side, Lo, Wo)
@@ -519,6 +523,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         }
       }
     }
+    standPts = [frame.at(a0, 0), frame.at(a1, 0), frame.at(a1, run + sh), frame.at(a0, run + sh)]
     const reach = run + sh + 600
     ladderFootprint = [frame.at(a0, 0), frame.at(a1, 0), frame.at(a1, reach), frame.at(a0, reach)].map((q) => to2(q.x, q.y))
   }
@@ -646,6 +651,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     info: {
       outerLength: Lo,
       outerWidth: Wo,
+      ...standSize([...rect(0, 0, Lo, Wo), ...standPts]),
       deckTop: H,
       mattressTop: H + P.mattressThickness,
       underside,
@@ -678,6 +684,12 @@ function sideFrame(s: Side, Lo: Mm, Wo: Mm) {
 /** Querschnitt eines senkrechten Stabs: Maß entlang der Bettseite und nach außen, als (lokal x, lokal y). */
 function alongSide(s: Side, along: Mm, out: Mm): [Mm, Mm] {
   return s === 'vorne' || s === 'hinten' ? [along, out] : [out, along]
+}
+
+function standSize(pts: { x: number; y: number }[]) {
+  const xs = pts.map((q) => q.x)
+  const ys = pts.map((q) => q.y)
+  return { standLength: Math.round(Math.max(...xs) - Math.min(...xs)), standWidth: Math.round(Math.max(...ys) - Math.min(...ys)) }
 }
 
 function rect(x0: number, y0: number, x1: number, y1: number) {

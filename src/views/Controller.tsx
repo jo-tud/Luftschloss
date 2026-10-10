@@ -236,11 +236,15 @@ export function Controller() {
       }
       if (hit) {
         const sel = selectionFor(st.project, hit.data.id)
-        // Finger: erst antippen = auswählen, Ziehen verschiebt nur, was schon ausgewählt ist
-        const already = !!st.selection && !!sel && st.selection.kind === sel.kind && st.selection.id === sel.id
-        st.select(sel)
-        if (e.pointerType === 'touch' && !already) {
-          drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) ? 'nav-pan' : 'nav-orbit', pick: hit.data }
+        // Erst anklicken/antippen = auswählen; Ziehen verschiebt nur, was schon ausgewählt ist
+        // (ein Teil eines ausgewählten Betts verschiebt das ganze Bett). Sonst dreht bzw. schiebt die Ansicht.
+        const asmOf = (id?: string) => (id?.includes(':') ? id.split(':')[0] : id)
+        const cur = st.selection
+        const already =
+          !!cur && !!sel && ((cur.kind === sel.kind && cur.id === sel.id) || (hit.data.id.includes(':') && asmOf(cur.id) === asmOf(hit.data.id)))
+        if (!already) st.select(sel)
+        if (!already) {
+          drag.current = { ...base, kind: person ? 'nav-look' : isOrtho(c) || st.mouseProfile === 'cad' ? 'nav-pan' : 'nav-orbit', pick: hit.data }
           return
         }
         const plane = viewPlaneThrough(hit.point)
@@ -287,7 +291,7 @@ export function Controller() {
       }
       const dx = e.clientX - dr.startX
       const dy = e.clientY - dr.startY
-      if (!dr.moved && Math.hypot(dx, dy) < 4) return
+      if (!dr.moved && Math.hypot(dx, dy) < (dr.kind === 'object' ? 7 : 4)) return
       dr.moved = true
       if (dr.kind === 'nav-orbit') {
         if (isOrtho(dr.cam0)) {
@@ -626,6 +630,9 @@ function makeMover(p: Project, pick: PickData, elevation: boolean): ((delta: Vec
       if (Math.abs(x + ox + ex - r.length) < snap) x = r.length - ex - ox
       if (Math.abs(y + oy) < snap) y = -oy
       if (Math.abs(y + oy + ey - r.width) < snap) y = r.width - ey - oy
+      // an den Wänden anhalten statt hindurchzufahren
+      if (ex <= r.length) x = Math.min(Math.max(x, -ox), r.length - ex - ox)
+      if (ey <= r.width) y = Math.min(Math.max(y, -oy), r.width - ey - oy)
       da.params.x = x
       da.params.y = y
     }

@@ -146,7 +146,13 @@ export function ShareDialog() {
                   </div>
                 ))}
               </div>
-              <p className="hint">Status: {server.status}. Unterwegs ohne gemeinsames WLAN: Tailscale auf Laptop und Tablet, dann die Tailscale-Adresse des Laptops mit Port {server.port} öffnen (oder <code>tailscale serve --bg {server.port}</code> für HTTPS und Offline-Betrieb).</p>
+              <p className="hint">Abgleich: {server.status}.</p>
+              <details>
+                <summary>Unterwegs ohne gemeinsames WLAN? (für Fortgeschrittene)</summary>
+                <p className="hint">
+                  Mit der App Tailscale auf Laptop und Tablet entsteht ein privates Netz. Dann die Tailscale-Adresse des Laptops mit Port {server.port} öffnen. Mit <code>tailscale serve --bg {server.port}</code> gibt es eine HTTPS-Adresse, über die sich Luftschloss auf dem Tablet installieren lässt und offline läuft.
+                </p>
+              </details>
             </>
           ) : (
             <>
@@ -157,7 +163,7 @@ export function ShareDialog() {
                 </li>
                 <li>Diese Seite über die angezeigte Netzwerk-Adresse öffnen – dann erscheint hier ein QR-Code für das Tablet.</li>
                 <li>
-                  Alternativ: Projekt unter <i>Raum → Projekt</i> exportieren und auf dem Tablet importieren.
+                  Alternativ: Im Projektmenü oben links „Als Datei speichern“ und die Datei auf dem Tablet mit „Öffnen…“ laden.
                 </li>
               </ol>
               <p className="hint">Mit Tailscale klappt das auch ohne gemeinsames WLAN, z. B. auf der Baustelle.</p>

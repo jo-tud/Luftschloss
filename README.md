@@ -7,7 +7,7 @@ Ein Hochbett ins echte Zimmer planen, im Browser am Desktop:
 - in Draufsicht, Seitenansicht, 3D und Ich-Perspektive prüfen
 - eine Einkaufsliste bekommen, die es im Baumarkt wirklich gibt
 
-> **Status:** Prototyp. Spezifikation und Ausbaustufen stehen in [SPEZIFIKATION.md](SPEZIFIKATION.md), die Recherchen in [docs/recherche](docs/recherche/).
+> **Status:** Prototyp, erstes UX-Review umgesetzt ([Bericht](docs/ux-review/bericht-2026-10-10.md)). Spezifikation und Ausbaustufen stehen in [SPEZIFIKATION.md](SPEZIFIKATION.md), die Recherchen in [docs/recherche](docs/recherche/).
 
 ## Starten
 
@@ -40,7 +40,7 @@ Im Laptop-Browser oben auf **📱 Tablet** klicken und den QR-Code mit dem Table
 - **Ohne gemeinsames WLAN, z. B. auf der Baustelle:** [Tailscale](https://tailscale.com) auf Laptop und Tablet installieren und `http://<Tailscale-IP des Laptops>:4173` öffnen. Mit `tailscale serve --bg 4173` gibt es eine HTTPS-Adresse. Darüber lässt sich Luftschloss auf dem Tablet als App installieren („Zum Home-Bildschirm“), und es läuft dann auch offline.
 - Die Freigabe hat keine Anmeldung. Deshalb nur im eigenen Netz bzw. Tailnet nutzen und nicht ins Internet stellen.
 
-Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck, Rosette, Hochbett vor dem linken Fenster). Gelb markierte Felder sind geschätzt und sollten nachgemessen werden. Der Stand wird automatisch im Browser gespeichert. Unter *Raum → Projekt* lässt er sich exportieren, importieren oder auf das Testzimmer bzw. ein leeres Zimmer zurücksetzen.
+Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck, Rosette, Hochbett vor dem linken Fenster). Gelb markierte Felder sind geschätzt und sollten nachgemessen werden. Der Stand wird automatisch im Browser gespeichert (✓ neben dem Projektnamen). Über das **Projektmenü** oben links lässt er sich als Datei speichern, öffnen oder durch ein neues Zimmer bzw. das Beispielzimmer ersetzen.
 
 ## Was der Prototyp kann
 
@@ -84,12 +84,12 @@ Beim ersten Start lädt das **Testzimmer** (4,30 × 5,95 m, zwei Fenster, Stuck,
 
 | Aktion | Maus / Taste |
 |---|---|
-| Ansicht wechseln | Leiste oben links oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive, `5` Abwicklung, `6` Foto |
+| Ansicht wechseln | Leiste oben links oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive, `5` Abwicklung, `6` Foto, `Esc` schließt Dialoge |
 | Drehen | Ziehen auf leerer Fläche (3D) oder rechte Maustaste – auch aus der Draufsicht heraus |
 | Verschieben | Ziehen auf leerer Fläche (2D), mittlere Maustaste |
 | Zoom | Mausrad, zum Zeiger hin |
 | Auswählen / Fokus | Klick / Doppelklick |
-| Bett verschieben | Ziehen in Draufsicht oder 3D; in der Seitenansicht hoch/runter = Liegehöhe |
+| Bett verschieben | anklicken, dann ziehen (hält an Wänden an); in der Seitenansicht hoch/runter = Liegehöhe; genau über „Lage im Raum“ (Abstand zu jeder Wand, Schieben, In Ecke schieben) |
 | Zeichnen | `B` Balken (zwei Klicks, `Shift` gerade, `Strg` weiterzeichnen), `P` Pfosten, `Esc` abbrechen |
 | Ich-Perspektive | Ziehen = umsehen, `W` `A` `S` `D` gehen, `Q`/`E` runter/hoch |
 | Bearbeiten | `Strg+Z` / `Strg+Y`, `Entf`, `R` Querschnitt drehen |

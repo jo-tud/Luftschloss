@@ -41,12 +41,12 @@ export function staticsFindings(p: Project, s: StaticsResult | null): Finding[] 
   for (const c of s.joints.values()) {
     if (c.util <= 1) continue
     const j = d.resolved.joints.find((x) => x.key === c.key)
-    out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: 'Stabilität', title: `Verbindung ${jointNames.get(c.key)}: ${pct(c.util)} ausgelastet`, detail: `Kraft ca. ${c.forceKN.toFixed(1)} kN, Verbindung trägt grob ${c.capacityKN} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.`, targets: j ? [j.a, j.b] : [], pos: j?.pos })
+    out.push({ id: `statik-v:${c.key}`, severity: 'warnung', category: 'Stabilität', title: `Verbindung ${jointNames.get(c.key)}: ${pct(c.util)} ausgelastet`, detail: `Kraft ca. ${c.forceKN.toLocaleString('de-DE', { maximumFractionDigits: 1 })} kN, Verbindung trägt grob ${c.capacityKN} kN (charakteristisch). Stärkere Verbindung wählen, z. B. Schlossschrauben oder Auflage.`, targets: j ? [j.a, j.b] : [], pos: j?.pos })
   }
   const sMax = Math.max(s.sway.x, s.sway.y)
   if (s.swayClass !== 'steif')
     out.push({ id: 'statik-wackeln', severity: s.swayClass === 'wackelt' ? 'warnung' : 'hinweis', category: 'Stabilität', title: s.swayClass === 'wackelt' ? `Gestell wackelt (${sMax.toFixed(0)} mm bei 0,5 kN Seitenlast)` : `Gestell gibt spürbar nach (${sMax.toFixed(0)} mm bei 0,5 kN)`, detail: 'Kopfbänder oder Diagonalen einbauen, zwei Pfosten an der Wand befestigen oder steifere Verbindungen wählen. In der Statik-Ansicht „Wackeln“ abspielen.', targets: [] })
-  out.push({ id: 'statik-info', severity: 'hinweis', category: 'Stabilität', title: `Statik-Abschätzung: höchste Ausnutzung ${pct(s.maxUtil)}`, detail: 'Vereinfachte Rechnung des ganzen Gestells (EC5, Lastprofil unter Raum → Einstellungen). Keine Tragwerksplanung.', targets: [] })
+  out.push({ id: 'statik-info', severity: 'hinweis', category: 'Stabilität', title: `Statik-Abschätzung: höchste Ausnutzung ${pct(s.maxUtil)}`, detail: 'Vereinfachte Rechnung des ganzen Gestells nach Eurocode 5; die Belastung (Bett oder Spiel-Hochebene) lässt sich unter Raum → Einstellungen wählen. Keine Tragwerksplanung.', targets: [] })
   return out
 }
 
@@ -76,21 +76,21 @@ export function StaticsPanel() {
               <span>höchste Ausnutzung</span>
             </div>
             <div>
-              <b style={{ color: st.swayClass === 'steif' ? '#2f9e5b' : st.swayClass === 'spürbar' ? '#e0a400' : '#d64545' }}>{Math.max(st.sway.x, st.sway.y).toFixed(1)} mm</b>
+              <b style={{ color: st.swayClass === 'steif' ? '#2f9e5b' : st.swayClass === 'spürbar' ? '#e0a400' : '#d64545' }}>{Math.max(st.sway.x, st.sway.y).toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm</b>
               <span>Wackeln ({st.swayClass})</span>
             </div>
           </div>
           <label className="field">
             <span>Verformung zeigen</span>
             <select value={s.staticsCase} onChange={(e) => s.set({ staticsCase: e.target.value as typeof s.staticsCase })}>
-              <option value="gq">Eigengewicht + Nutzlast</option>
-              <option value="jump">Toben (2 kN)</option>
-              <option value="hx">Seitenlast längs (0,5 kN)</option>
-              <option value="hy">Seitenlast quer (0,5 kN)</option>
+              <option value="gq">Liegen, Eigengewicht</option>
+              <option value="jump">Toben, Springen (≈ 200 kg)</option>
+              <option value="hx">Seitlich schieben, längs (≈ 50 kg)</option>
+              <option value="hy">Seitlich schieben, quer (≈ 50 kg)</option>
             </select>
           </label>
           <label className="field">
-            <span>Überhöhung ×{s.staticsScale}</span>
+            <span>Verformung {s.staticsScale}-fach vergrößert</span>
             <input type="range" min={1} max={100} value={s.staticsScale} onChange={(e) => s.set({ staticsScale: Number(e.target.value) })} />
           </label>
           <button className={s.wobble ? 'on' : ''} onClick={() => s.set({ wobble: !s.wobble, staticsCase: s.staticsCase === 'gq' || s.staticsCase === 'jump' ? (st.sway.y > st.sway.x ? 'hy' : 'hx') : s.staticsCase })}>
@@ -114,7 +114,7 @@ export function StaticsPanel() {
               </li>
             ))}
           </ul>
-          <p className="hint">Abschätzung nach EC5 (vereinfacht) für das ganze Gestell. Ersetzt keine Tragwerksplanung.</p>
+          <p className="hint">Vereinfachte Abschätzung für das ganze Gestell nach den Holzbau-Regeln (Eurocode 5). Ersetzt keine Tragwerksplanung.</p>
         </>
       )}
     </div>
@@ -179,7 +179,7 @@ export function MemberStatics({ m }: { m: Member }) {
           </div>
         ))}
       </div>
-      {c.span > 0 && <p className="hint">Durchbiegung im Endzustand {c.w.toFixed(1)} mm auf {fmtCm(c.span, 0)} (Grenze L/200).</p>}
+      {c.span > 0 && <p className="hint">Durchbiegung im Endzustand {c.w.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm auf {fmtCm(c.span, 0)} (Grenze L/200).</p>}
       {!compare ? (
         <button onClick={() => setCompare(true)}>Querschnitte vergleichen</button>
       ) : (

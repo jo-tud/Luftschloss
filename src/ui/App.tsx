@@ -1,3 +1,4 @@
+import { GROUP_LABEL, TIMBER } from '../model/catalog'
 import { useEffect } from 'react'
 import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
@@ -12,14 +13,18 @@ import { StaticsRunner } from './Statics'
 import { BauplanDialog } from './Bauplan'
 import { ServerSync, ShareDialog, Toast } from './Sync'
 import { Toolbar } from './Toolbar'
+import { ExampleBanner } from './Project'
+import { deleteSelection } from './actions'
 
 export function App() {
   useShortcuts()
+  useDialogFocus()
   const leftOpen = useStore((s) => s.leftOpen)
   const rightOpen = useStore((s) => s.rightOpen)
   return (
     <div className={`app${leftOpen ? ' left-open' : ''}${rightOpen ? ' right-open' : ''}`}>
       <Toolbar />
+      <ExampleBanner />
       <Sidebar />
       <main className="center">
         <Viewport />
@@ -54,10 +59,28 @@ function StatusBar() {
         ? 'Pfosten: in Draufsicht oder 3D auf den Boden klicken. Höhe = Arbeitshöhe.'
         : s.view.kind === 'person'
           ? 'Ich-Perspektive: Ziehen = umsehen, W/A/S/D = gehen, Q/E = runter/hoch, Mausrad = Blickwinkel.'
-          : 'Ziehen auf leerer Fläche = drehen (3D) bzw. verschieben (2D) · Rechte Maustaste = drehen (auch aus 2D heraus) · Mausrad = Zoom zum Zeiger · Doppelklick = Fokus'
+          : 'Ziehen = drehen (3D) bzw. verschieben (2D) · Ausgewähltes ziehen = verschieben · Rechte Maustaste = drehen · Mausrad = Zoom · Doppelklick = heranholen'
   return (
     <footer className="statusbar">
       <span className="coords">{c ? `x ${fmtCm(c.x)} · y ${fmtCm(c.y)} · z ${fmtCm(c.z)}` : '–'}</span>
+      {s.tool !== 'select' && (
+        <span className="ctl">
+          <label className="field compact">
+            <span>Querschnitt</span>
+            <select value={s.toolCatalogId} onChange={(e) => s.set({ toolCatalogId: e.target.value })} title="Querschnitt für neue Bauteile">
+              {Object.entries(GROUP_LABEL).map(([g, label]) => (
+                <optgroup key={g} label={label}>
+                  {TIMBER.filter((t) => t.group === g).map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.round ? `Ø ${t.b}` : `${t.b}×${t.h}`} – {t.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+        </span>
+      )}
       <span className="ctl">
         <Num label="Arbeitshöhe" value={s.workingHeight} onChange={(v) => s.set({ workingHeight: v })} />
       </span>
@@ -125,7 +148,8 @@ function Help() {
           </ul>
           <h3>Bearbeiten</h3>
           <ul>
-            <li>Bett ziehen: in Draufsicht/3D verschieben (rastet an Wänden ein), in der Seitenansicht hoch/runter = Liegehöhe</li>
+            <li>Bett verschieben: erst anklicken bzw. antippen, dann ziehen (rastet an Wänden ein und hält dort an); in der Seitenansicht hoch/runter = Liegehöhe. Genau geht es rechts unter „Lage im Raum“: Abstand zu jeder Wand, Schieben in Schritten, „In Ecke schieben“.</li>
+            <li>Tablet: antippen = auswählen, Ausgewähltes mit einem Finger ziehen, leere Fläche mit einem Finger = drehen, zwei Finger = zoomen und verschieben, Doppeltipp = heranholen. ☰ öffnet Raum und Vorlagen, ⓘ Eigenschaften und Prüfung.</li>
             <li>Frei gezeichnete Balken: orange Griffe an den Enden ziehen, Länge im Etikett anklicken und eintippen</li>
             <li>Verbindungen: Ebene „Verbindungen“ einblenden und auf einen Punkt klicken – zeigt die Verbindung in 3D mit Beschlägen</li>
             <li>Fenster, Heizkörper, Steckdosen in der Seitenansicht entlang der Wand und in der Höhe ziehen</li>
@@ -147,8 +171,17 @@ function Help() {
 function useShortcuts() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
       const s = useStore.getState()
+      // Esc schließt zuerst Dialoge und Schubladen, dann Aufbau/Statik, sonst Werkzeug abbrechen
+      if (e.key === 'Escape') {
+        if (s.jointDetail) return s.set({ jointDetail: null })
+        if (s.showHelp || s.showShare || s.showMaterial || s.showPlan) return s.set({ showHelp: false, showShare: false, showMaterial: false, showPlan: false })
+        if (s.leftOpen || s.rightOpen) return s.set({ leftOpen: false, rightOpen: false })
+        if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
+        if (s.build) return s.set({ build: null })
+        if (s.staticsMode) return s.set({ staticsMode: false, wobble: false })
+      }
+      if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
       const k = e.key.toLowerCase()
       if ((e.ctrlKey || e.metaKey) && k === 'z') {
         e.preventDefault()
@@ -184,22 +217,24 @@ function useShortcuts() {
           if (m) [m.b, m.h] = [m.h, m.b]
         })
       } else if ((k === 'delete' || k === 'backspace') && s.selection) {
-        const sel = s.selection
-        s.update((d) => {
-          if (sel.kind === 'assembly') d.assemblies = d.assemblies.filter((a) => a.id !== sel.id)
-          else if (sel.kind === 'member' && !sel.id.includes(':')) d.members = d.members.filter((m) => m.id !== sel.id)
-          else if (sel.kind === 'member' && sel.id.includes(':')) {
-            const [a, key] = sel.id.split(':')
-            const asm = d.assemblies.find((x) => x.id === a)
-            if (asm && !asm.detached.includes(key)) asm.detached.push(key)
-          } else if (sel.kind === 'wallObject') d.wallObjects = d.wallObjects.filter((o) => o.id !== sel.id)
-          else if (sel.kind === 'furniture') d.furniture = d.furniture.filter((f) => f.id !== sel.id)
-          else if (sel.kind === 'panel') d.panels = d.panels.filter((x) => x.id !== sel.id)
-        })
-        s.select(null)
+        deleteSelection(s.selection)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+}
+
+/** Fokus beim Öffnen eines Dialogs auf dessen Schließen-Knopf, beim Schließen zurück */
+function useDialogFocus() {
+  const open = useStore((s) => s.showHelp || s.showShare || s.showMaterial || s.showPlan || !!s.jointDetail)
+  useEffect(() => {
+    if (!open) return
+    const before = document.activeElement as HTMLElement | null
+    const t = setTimeout(() => (document.querySelector('.modal .close, .modal button') as HTMLElement | null)?.focus(), 30)
+    return () => {
+      clearTimeout(t)
+      before?.focus?.()
+    }
+  }, [open])
 }

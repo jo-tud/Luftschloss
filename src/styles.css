@@ -1157,7 +1157,11 @@ table.compare td {
 }
 .pl-view svg {
   width: 100%;
-  height: 300px;
+  height: 360px;
+}
+.pl-leader {
+  stroke: #c8752e;
+  stroke-width: 5;
 }
 .pl-part {
   stroke: #6b5136;
@@ -1173,7 +1177,7 @@ table.compare td {
   stroke-width: 8;
 }
 .pl-no {
-  font-size: 70px;
+  font-size: 90px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
@@ -1185,7 +1189,7 @@ table.compare td {
 }
 .pl-dim text {
   fill: #2a6fdb;
-  font-size: 80px;
+  font-size: 110px;
   text-anchor: middle;
 }
 .pl-joints {
@@ -1560,4 +1564,271 @@ table.compare td {
   margin: 4px 0 0;
   padding-left: 18px;
   font-size: 12px;
+}
+
+/* UX-Review: Feldfehler, geschätzte Werte, Ansichtsleiste über Vollbild-Ansichten */
+.field .field-error {
+  grid-column: 1 / -1;
+  color: var(--err);
+  font-size: 12px;
+}
+.field.invalid .num input {
+  border-color: var(--err);
+  background: #fdecec;
+}
+.field .num input {
+  text-align: right;
+}
+.est-tag {
+  color: var(--warn);
+  font-size: 11px;
+}
+.view-switcher {
+  z-index: 5;
+}
+.unfold,
+.photo-view {
+  top: 58px;
+}
+@media (pointer: coarse) {
+  .unfold,
+  .photo-view {
+    top: 66px;
+  }
+}
+.checks li button.title {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.checks li.fehler button.title {
+  color: #a32a2a;
+}
+.est-list {
+  margin: 4px 0 6px;
+  padding-left: 16px;
+}
+/* Kontrast ≥ 4,5:1 auf den Zählern */
+.b.fehler {
+  background: #b42318;
+}
+.b.warnung {
+  background: #8a5a00;
+}
+.b.hinweis {
+  background: #5b6472;
+}
+
+/* Projektmenü, Statik-Ampel, Prüfzähler am ⓘ, Beispiel-Hinweis */
+.toolbar .project-menu summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-color: transparent;
+}
+.toolbar .project-menu .proj {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.project-menu .saved {
+  color: var(--ok);
+  font-size: 12px;
+}
+.project-menu .saved.err {
+  color: var(--err);
+}
+.project-menu .menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.project-menu .menu button {
+  text-align: left;
+}
+.toolbar button.util-ok {
+  box-shadow: inset 0 -3px 0 var(--ok);
+}
+.toolbar button.util-warn {
+  box-shadow: inset 0 -3px 0 var(--warn);
+}
+.toolbar button.util-err {
+  box-shadow: inset 0 -3px 0 var(--err);
+  color: #b42318;
+  font-weight: 600;
+}
+.info-btn {
+  align-items: center;
+  gap: 4px;
+}
+@media (max-width: 1279px) {
+  .narrow-only.info-btn {
+    display: inline-flex;
+  }
+}
+.example-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 56px;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 32px);
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.field.compact {
+  grid-template-columns: auto minmax(0, 260px);
+}
+.toolbar .group .redo {
+  margin-left: 4px;
+}
+/* Fingerbedienung: Ziele mindestens 44 px */
+@media (pointer: coarse) {
+  .toolbar button,
+  .toolbar summary,
+  .view-switcher button,
+  .corners button,
+  .checks li button.title,
+  .checks .check,
+  .statusbar .check {
+    min-height: 44px;
+  }
+  .toolbar button,
+  .view-switcher button {
+    min-width: 44px;
+  }
+  .toolbar .group .redo {
+    margin-left: 8px;
+  }
+  .corners button {
+    min-width: 44px;
+  }
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) {
+  background: #b5661f;
+  border-color: #b5661f;
+}
+button.primary:disabled {
+  opacity: 0.5;
+}
+.props-actions {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+}
+.minimap {
+  top: 62px;
+}
+@media (pointer: coarse) {
+  .minimap {
+    top: 72px;
+  }
+}
+@media (max-width: 900px) {
+  .minimap {
+    display: none;
+  }
+}
+.person-menu summary {
+  border-color: transparent;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.person-menu summary.on {
+  background: var(--accent-soft);
+}
+.person-menu .menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+}
+.person-menu .menu button {
+  text-align: left;
+  border-color: transparent;
+}
+.person-menu .menu button.on {
+  background: var(--accent-soft);
+}
+/* Schmale Bildschirme: Werkzeugleiste ohne Überlauf, Seltenes im ⋯-Menü */
+.narrow-more {
+  display: none;
+}
+.more-menu summary {
+  min-width: 36px;
+  text-align: center;
+}
+.more-menu .menu {
+  left: auto;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.more-menu .menu button {
+  text-align: left;
+}
+.menu-head {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.toolbar button,
+.toolbar summary {
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .toolbar .wide-only {
+    display: none;
+  }
+  .narrow-more {
+    display: block;
+  }
+  .toolbar .brand b {
+    display: none;
+  }
+  .toolbar .lbl {
+    display: none;
+  }
+  .toolbar .project-menu .proj {
+    max-width: 90px;
+  }
+}
+.toolbar .more-menu {
+  margin: 0 4px;
+}
+.toolbar .more-menu summary {
+  padding: 5px 10px;
 }

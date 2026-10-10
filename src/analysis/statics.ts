@@ -338,11 +338,11 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
     return { f1, f2 }
   }
   const ulsCombos: { name: string; kmod: number; f: (i: number) => { f1: number[]; f2: number[] }; links: [FrameResult | undefined, number][] }[] = [
-    { name: 'Eigengewicht + Nutzlast', kmod: 0.8, f: combo([[rG, 1.35], [rQ, 1.5]]), links: [[rG, 1.35], [rQ, 1.5]] },
-    { name: 'Toben (2 kN auf 50 × 50 cm)', kmod: 1.1, f: combo([[rG, 1.35], [rJ, 1.0]]), links: [[rG, 1.35], [rJ, 1.0]] },
-    { name: 'Seitenlast längs', kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]] },
-    { name: 'Seitenlast quer', kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]] },
-    { name: 'Geländer 0,5 kN', kmod: 0.9, f: combo([[rG, 1.35], [rGU, 1.5]]), links: [[rG, 1.35], [rGU, 1.5]] },
+    { name: 'Liegen, Eigengewicht', kmod: 0.8, f: combo([[rG, 1.35], [rQ, 1.5]]), links: [[rG, 1.35], [rQ, 1.5]] },
+    { name: 'Toben, Springen (≈ 200 kg Stoß)', kmod: 1.1, f: combo([[rG, 1.35], [rJ, 1.0]]), links: [[rG, 1.35], [rJ, 1.0]] },
+    { name: 'Seitlich schieben, längs', kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHX, 1.5]] },
+    { name: 'Seitlich schieben, quer', kmod: 0.9, f: combo([[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]]), links: [[rG, 1.35], [rQ, 1.5 * PSI0], [rHY, 1.5]] },
+    { name: 'Gegen das Geländer drücken', kmod: 0.9, f: combo([[rG, 1.35], [rGU, 1.5]]), links: [[rG, 1.35], [rGU, 1.5]] },
   ]
 
   // --- Nachweise je Stab ---------------------------------------------------------------------
@@ -437,7 +437,7 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
         deflection: util,
         w: wMax,
         span,
-        governing: total === util ? `Durchbiegung ${wMax.toFixed(1)} mm auf ${(span / 10).toFixed(0)} cm` : total === shear ? 'Schub' : `Biegung/Normalkraft (${gov})`,
+        governing: total === util ? `Durchbiegung ${wMax.toLocaleString('de-DE', { maximumFractionDigits: 1 })} mm auf ${Math.round(span / 10)} cm` : total === shear ? 'Schub' : `Biegung beim Lastfall „${gov}“`,
       })
     }
   }

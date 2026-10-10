@@ -35,9 +35,23 @@ export interface Analysis {
   clearances: Clearance[]
 }
 
+/** Wandarten im Klartext für Befunde */
+export const WALL_MATERIAL_SHORT: Record<string, string> = {
+  beton: 'Betonwand',
+  kalksandstein: 'Kalksandsteinwand',
+  vollziegel: 'Vollziegelwand',
+  lochziegel: 'Hochlochziegelwand',
+  porenbeton: 'Porenbetonwand',
+  trockenbau: 'Trockenbauwand',
+  holzstaender: 'Holzständerwand',
+  leichtbau: 'Leichtbauwand',
+}
+
 const STRUCTURAL = new Set(['pfosten', 'zarge', 'quertraeger', 'wandriegel'])
 
 export function analyze(p: Project, r: Resolved): Analysis {
+  // Bei mehreren Betten den Bettnamen voranstellen
+  const bedPrefix = (m?: Member) => (p.assemblies.length > 1 && m?.assemblyId ? `${p.assemblies.find((a) => a.id === m.assemblyId)?.name ?? 'Bett'}: ` : '')
   const findings: Finding[] = []
   const prof = p.settings.safetyProfile
   const safety = (strict: Severity): Severity => (prof === 'kinder' ? strict : prof === 'jugendliche' ? (strict === 'fehler' ? 'warnung' : strict) : 'hinweis')
@@ -248,7 +262,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
       const wall = nearestWallId(m, room)
       if (weak.has(room.walls[wall].material)) {
         const load = memberById.get(f.memberId)?.role === 'wandriegel'
-        add({ id: `wandmaterial:${f.memberId}`, severity: load ? 'fehler' : 'warnung', category: 'Stabilität', title: load ? `Wandbalken an nicht tragfähiger Wand ${wall} (${room.walls[wall].material})` : `Kippsicherung in ${room.walls[wall].material} (Wand ${wall})`, detail: load ? 'Ein tragender Wandbalken braucht eine massive Wand (Ziegel, Beton, Kalksandstein). Hier besser Pfosten stellen.' : 'Dübel tragen hier nur 0,15–0,6 kN – für eine Kippsicherung reicht das meist; in Trockenbau in die Ständer schrauben.', targets: [f.memberId] })
+        add({ id: `wandmaterial:${f.memberId}`, severity: load ? 'fehler' : 'warnung', category: 'Stabilität', title: load ? `Wandbalken an nicht tragfähiger Wand ${wall} (${WALL_MATERIAL_SHORT[room.walls[wall].material] ?? room.walls[wall].material})` : `${bedPrefix(m)}Kippsicherung in ${WALL_MATERIAL_SHORT[room.walls[wall].material] ?? room.walls[wall].material} (Wand ${wall})`, detail: load ? 'Ein tragender Wandbalken braucht eine massive Wand (Ziegel, Beton, Kalksandstein). Hier besser Pfosten stellen.' : 'Dübel tragen hier nur 0,15–0,6 kN – für eine Kippsicherung reicht das meist; in Trockenbau in die Ständer schrauben.', targets: [f.memberId] })
       }
     }
     if (room.floor === 'holzdielen') add({ id: `boden:${a.id}`, severity: 'hinweis', category: 'Stabilität', title: 'Holzbalkendecke/Dielenboden', detail: 'Pfosten auf Lastverteilplatten (z. B. 20 × 20 cm Multiplex) stellen, möglichst wandnah.', targets: [a.id] })
@@ -281,13 +295,13 @@ export function analyze(p: Project, r: Resolved): Analysis {
   else if (tr.door && tr.longest > tr.door - 300) add({ id: 'transport', severity: 'hinweis', category: 'Material', title: `${tr.name} (${fmtM(tr.longest)}) nur schräg durch die Tür`, detail: `Türdiagonale ca. ${fmtM(tr.door)} – lange Teile schräg tragen, Flurecken vorher ausmessen.`, targets: [] })
 
   // --- Projekt ------------------------------------------------------------------------
-  if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: 'Raum', title: `${p.estimated.length} Maße sind nur geschätzt`, detail: 'Raumhöhe, Fenster, Heizkörper, Stuck usw. bitte nachmessen und unter „Raum“ eintragen.', targets: [] })
+  if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: 'Raum', title: `${p.estimated.length} Maße sind nur geschätzt`, detail: 'Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.', targets: [] })
   if (p.assemblies.length) add({ id: 'rauchmelder', severity: 'hinweis', category: 'Sicherheit', title: 'Rauchmelder über der Schlafebene', detail: 'Rauch staut sich unter der Decke – ein Melder oberhalb der Liegefläche ist sinnvoll.', targets: [] })
 
   const ack = new Set(p.settings.acknowledged)
   const order: Record<Severity, number> = { fehler: 0, warnung: 1, hinweis: 2 }
   findings.sort((a, b) => Number(ack.has(a.id)) - Number(ack.has(b.id)) || order[a.severity] - order[b.severity])
-  return { findings, windows, doors, clearances }
+  return { findings: groupFindings(findings, p, r), windows, doors, clearances }
 }
 
 function sideWallGap(s: Side, fp: { minX: number; maxX: number; minY: number; maxY: number }, room: Project['room'], rotation: number): number | undefined {
@@ -315,4 +329,64 @@ function nearestWallId(m: Member, room: Project['room']): 'A' | 'B' | 'C' | 'D' 
     ['D', room.length - b.max.x],
   ]
   return gaps.sort((x, y) => x[1] - y[1])[0][0]
+}
+
+/**
+ * Fasst gleichartige Kollisionen eines Betts zu einem Befund zusammen (z. B. „Hochbett: 12 Teile ragen bis
+ * 27 cm in die Wand“). Die Einzelteile stehen in der Beschreibung, alle bleiben Ziele des Befunds.
+ */
+function groupFindings(findings: Finding[], p: Project, r: Resolved): Finding[] {
+  const asmOf = new Map<string, string>()
+  for (const m of r.members) if (m.assemblyId) asmOf.set(m.id, m.assemblyId)
+  for (const x of r.panels) if (x.assemblyId) asmOf.set(x.id, x.assemblyId)
+  const kindOf = (f: Finding): string | undefined => {
+    const k = f.id.split(':')[0]
+    if (k === 'wand' || k === 'decke' || k === 'stuck' || k === 'kerbe-stuck') return k
+    if (k === 'hindernis' && f.severity !== 'hinweis') return `hindernis:${f.targets[1] ?? ''}`
+    return undefined
+  }
+  const groups = new Map<string, Finding[]>()
+  const out: Finding[] = []
+  for (const f of findings) {
+    const kind = kindOf(f)
+    const asm = asmOf.get(f.targets[0])
+    if (!kind || !asm) {
+      out.push(f)
+      continue
+    }
+    const key = `${kind}|${asm}`
+    if (!groups.has(key)) {
+      groups.set(key, [])
+      out.push({ ...f, id: `@${key}` })
+    }
+    groups.get(key)!.push(f)
+  }
+  return out.map((f) => {
+    if (!f.id.startsWith('@')) return f
+    const key = f.id.slice(1)
+    const list = groups.get(key)!
+    if (list.length === 1) return list[0]
+    const [kind, asm] = key.split('|')
+    const bed = p.assemblies.find((a) => a.id === asm)?.name ?? 'Bett'
+    const depth = Math.max(...list.map((x) => Number(/([\d,]+) cm/.exec(x.title)?.[1]?.replace(',', '.') ?? 0)))
+    const n = list.length
+    const title =
+      kind === 'wand'
+        ? `${bed}: ${n} Teile ragen bis ${fmtCm(depth * 10)} in die Wand`
+        : kind === 'decke'
+          ? `${bed}: ${n} Teile ragen bis ${fmtCm(depth * 10)} in die Decke`
+          : kind === 'stuck'
+            ? `${bed}: ${n} Teile stoßen an den Stuck`
+            : kind === 'kerbe-stuck'
+              ? `${bed}: ${n} Pfosten am Stuck ausgeklinkt`
+              : `${bed}: ${n} Teile kollidieren mit ${list[0].title.split(' kollidiert mit ')[1] ?? 'einem Hindernis'}`
+    const parts = list.map((x) => x.title).join('; ')
+    return {
+      ...list[0],
+      id: `${kind}-gruppe:${asm}`,
+      title,
+      detail: `${list[0].detail ? `${list[0].detail} ` : ''}Betroffen: ${parts}.`,
+      targets: [...new Set(list.flatMap((x) => x.targets))],
+    }
+  })
 }

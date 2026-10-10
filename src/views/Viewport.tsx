@@ -108,6 +108,7 @@ function ViewSwitcher() {
   const setView = useStore((s) => s.setView)
   const walls: WallId[] = ['A', 'B', 'C', 'D']
   const presets: PersonPreset[] = ['tuer', 'unter', 'matratze', 'liegen']
+  const personRef = useRef<HTMLDetailsElement>(null)
   return (
     <div className="view-switcher">
       <button className={view.kind === 'plan' ? 'on' : ''} onClick={() => setView({ kind: 'plan' })} title="Draufsicht (1)">
@@ -115,7 +116,7 @@ function ViewSwitcher() {
       </button>
       <span className="seg">
         {walls.map((w) => (
-          <button key={w} className={view.kind === 'elev' && view.wall === w ? 'on' : ''} onClick={() => setView({ kind: 'elev', wall: w })} title={`Seitenansicht auf Wand ${w} (2)`}>
+          <button key={w} className={view.kind === 'elev' && view.wall === w ? 'on' : ''} onClick={() => setView({ kind: 'elev', wall: w })} title={`Seitenansicht auf Wand ${w} (2)`} aria-label={`Seitenansicht Wand ${w}`}>
             {w}
           </button>
         ))}
@@ -123,21 +124,33 @@ function ViewSwitcher() {
       <button className={view.kind === '3d' ? 'on' : ''} onClick={() => setView({ kind: '3d' })} title="3D-Ansicht (3)">
         3D
       </button>
-      <span className="seg">
-        {presets.map((p) => (
-          <button key={p} className={view.kind === 'person' && view.preset === p ? 'on' : ''} onClick={() => setView({ kind: 'person', preset: p })} title={`Ich-Perspektive: ${PERSON_LABEL[p]} (4)`}>
-            {p === 'tuer' ? '🚪' : p === 'unter' ? '🪑' : p === 'matratze' ? '🛏' : '😴'}
-          </button>
-        ))}
-      </span>
+      <details className="dropdown person-menu" ref={personRef}>
+        <summary className={view.kind === 'person' ? 'on' : ''} title="Ich-Perspektive: den Raum aus Augenhöhe erleben (4)">
+          👁 Ich ▾
+        </summary>
+        <div className="menu">
+          {presets.map((p) => (
+            <button
+              key={p}
+              className={view.kind === 'person' && view.preset === p ? 'on' : ''}
+              onClick={() => {
+                setView({ kind: 'person', preset: p })
+                personRef.current?.removeAttribute('open')
+              }}
+            >
+              {p === 'tuer' ? '🚪' : p === 'unter' ? '🪑' : p === 'matratze' ? '🛏' : '😴'} {PERSON_LABEL[p]}
+            </button>
+          ))}
+        </div>
+      </details>
       <button className={view.kind === 'unfold' ? 'on' : ''} onClick={() => setView({ kind: 'unfold' })} title="Raum aufgeklappt: Wände von innen, Fenster und Heizkörper direkt ziehen (5)">
         Abwicklung
       </button>
       <button className={view.kind === 'foto' ? 'on' : ''} onClick={() => setView({ kind: 'foto' })} title="Das geplante Bett in ein Foto des Zimmers einblenden (6)">
         📷 Foto
       </button>
-      <button onClick={() => setView({ kind: '3d' })} title="Ansicht zurücksetzen (0)">
-        ⌂
+      <button onClick={() => setView({ kind: '3d' })} title="Ansicht zurücksetzen (0)" aria-label="Ansicht zurücksetzen">
+        ⌂<span className="lbl"> Zurück</span>
       </button>
       <SectionToggle />
       <span className="view-name">{viewLabel(view)}</span>

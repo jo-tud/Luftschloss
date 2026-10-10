@@ -57,6 +57,8 @@ interface State {
   cursor: Vec3 | null
   layers: Layers
   sidebar: 'raum' | 'ausstattung' | 'bett' | 'moebel'
+  /** Zeitpunkt des letzten automatischen Speicherns im Browser (−1 = fehlgeschlagen) */
+  savedAt: number
   showMaterial: boolean
   showHelp: boolean
   focusRequest: { id: string; nonce: number } | null
@@ -132,8 +134,10 @@ function persist(p: Project) {
   saveTimer = setTimeout(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+      useStore.setState({ savedAt: Date.now() })
     } catch {
       // Speichern ist Komfort; Export bleibt möglich
+      useStore.setState({ savedAt: -1 })
     }
   }, 300)
 }
@@ -157,6 +161,7 @@ export const useStore = create<State>((set, get) => ({
   cursor: null,
   layers: { joints: false, obstacles: true, persons: true, furniture: true, labels: true, swing: true },
   sidebar: 'bett',
+  savedAt: 0,
   showMaterial: false,
   showHelp: false,
   focusRequest: null,
