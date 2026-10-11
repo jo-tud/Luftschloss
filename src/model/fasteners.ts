@@ -108,8 +108,15 @@ export function pickScrew(first: number, bearing: number, thin: number): { d: nu
 /** Kürzeste Schlossschraube M10, die durch beide Hölzer samt Scheibe und Mutter reicht */
 export function boltM10(through: number): { length: number; item: string } {
   const need = through + 15
-  for (const L of [160, 180, 200, 240]) if (L >= need) return { length: L, item: L === 180 ? 'schlossschraube-m10' : `schlossschraube-m10x${L}` }
+  for (const L of [120, 140, 160, 180, 200, 240]) if (L >= need) return { length: L, item: L === 180 ? 'schlossschraube-m10' : `schlossschraube-m10x${L}` }
   return { length: 240, item: 'schlossschraube-m10x240' }
+}
+
+/** Kürzeste Schlossschraube M8, die durch beide Hölzer samt Scheibe und Mutter reicht */
+export function boltM8(through: number): { length: number; item: string } {
+  const need = through + 12
+  for (const L of [100, 120, 140, 160]) if (L >= need) return { length: L, item: `schlossschraube-m8x${L}` }
+  return { length: 160, item: 'schlossschraube-m8x160' }
 }
 
 /** Abstand der Quermutter vom Hirnholzende (a3,t = 80 mm für M10, DIN EN 1995) */
@@ -342,10 +349,11 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const long1 = o1[1] - o1[0] >= o2[1] - o2[0]
       const e = long1 ? e1 : e2
       const span = long1 ? o1[1] - o1[0] : o2[1] - o2[0]
-      const d = 2 * rad
+      // Holz unter 50 mm (Geländerholz 44): M8 – für M10 fehlen dort 30 mm Rand (3·d)
+      const d = j.typeId === 'schlossschraube' && Math.min(A.b, A.h, B.b, B.h) < 50 ? 8 : 2 * rad
       const sp = Math.min(80, span - 8 * d)
       const offs = sp >= 4 * d ? [-sp / 2, sp / 2] : [0]
-      const b = boltM10(tHead - tNut)
+      const b = d === 8 ? boltM8(tHead - tNut) : boltM10(tHead - tNut)
       // nur Bolzen, die wirklich durch beide Hölzer gehen (schräge Hölzer überdecken sich nicht rechteckig)
       const hits = (q: Vec3) => [A, B].every((m) => { const [m0, m1] = range(m, ax); return inside(m, at(q, [ax, (m0 + m1) / 2 - dot(q, ax)])) })
       // Bolzen stumpfer Stöße an denselben Hölzern (Zargenende am Pfosten) nicht kreuzen
@@ -367,7 +375,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const sets = [offs, ...[0, -5, 5, -10, 10, -15, 15, -30, 30].map((k) => [k])]
       const bases = sets.map((ks) => ks.map((k) => at(mid, [e, k])).filter(hits)).find((qs) => qs.length && qs.every(free)) ?? offs.map((k) => at(mid, [e, k])).filter(hits)
       for (const base of bases.length ? bases : [mid])
-        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d, when: 'nachher', nut: true, item: b.item, drill: 11 })
+        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d, when: 'nachher', nut: true, item: b.item, drill: d + 1 })
       return out
     }
     if (!j.ending) return out
@@ -624,26 +632,38 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       // echten Querschnittsachse von E – bei schrägem T (Treppenwange) stehen across/side schief dazu
       const axE = memberAxes(E)
       const wideAx = E.b >= E.h ? axE[1] : axE[2]
-      const W = Math.max(E.b, E.h)
-      const centre = pt(far, mid(eA), mid(eS))
-      // Platz für drei Schrauben (2 × 4·d Rand + 2 × 5·d Abstand bei d = 8), sonst zwei
+      // nur dort, wo E auch auf T steht (eine innen stehende Geländerstütze ragt über die Zarge hinaus)
+      const wE = range(E, wideAx)
+      const wO = overlap(wE, range(Tm, wideAx))
+      const W = Math.max(0, wO[1] - wO[0])
+      const centre = at(pt(far, mid(eA), mid(eS)), [wideAx, mid(wO) - mid(wE)])
+      // Platz für drei Schrauben (2 × 4·d Rand + 2 × 5·d Abstand bei d = 8), sonst zwei, auf schmaler Auflage eine
       const span = W - 64
-      const m = type === 'holzbauschraube' && span >= 80 ? 3 : 2
+      const m = W < 64 ? 1 : type === 'holzbauschraube' && span >= 80 ? 3 : 2
       // zweiter Stoß quer dazu am selben Holz (Handläufe am Eckpfosten): um 6 mm gegeneinander versetzen
       const cr = crossing(j, E, Tm, byId, r, SCREWED) * (wideAx.z < 0 ? -1 : 1)
       for (let i = 0; i < m; i++) {
-        const q = (span >= 40 ? 32 + (span * i) / (m - 1) : W * (0.3 + (0.4 * i) / (m - 1))) - W / 2 + cr * 6
+        const q = m === 1 ? cr * 6 : (span >= 40 ? 32 + (span * i) / (m - 1) : W * (0.3 + (0.4 * i) / (m - 1))) - W / 2 + cr * 6
         put8(at(centre, [wideAx, q]), into, F.depth, memberLength(E))
       }
     } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(E, o)) <= 1.5 * Math.max(E.b, E.h)) {
       // aufliegend bzw. angelegt: durch E in T, Kopf auf E
       const er = range(E, o)
       const longS = oS[1] - oS[0] >= oA[1] - oA[0]
-      for (const k of [-0.25, 0.25]) {
-        const sd = longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS)
-        const ac = longS ? mid(oA) : mid(oA) + (oA[1] - oA[0]) * k
-        put8(pt(er[0], ac, sd), o, er[1] - er[0], width2(range(Tm, o)))
+      // Bolzen an denselben Hölzern (Haltegriff an der Zarge) nicht kreuzen; Bolzen hängen nicht von Schrauben ab
+      const bolts = r.joints
+        .filter((x) => x.key !== j.key && BOLTS.has(x.typeId) && [x.a, x.b].some((id) => id === E.id || id === Tm.id))
+        .flatMap((x) => jointFasteners(x, byId, r))
+        .filter((f) => f.nut || f.crossNut)
+      const at2 = (k: number) => pt(er[0], longS ? mid(oA) : mid(oA) + (oA[1] - oA[0]) * k, longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS))
+      const clear = (k: number) => {
+        const h = at2(k)
+        const tip = at(h, [o, er[1] - er[0] + 40])
+        return bolts.every((f) => segDist(h, tip, f.head, add(f.head, scale(f.dir, f.length))) >= (8 + f.d) / 2 + 2)
       }
+      const pairs = [[-0.25, 0.25], [-0.35, 0.35], [-0.15, 0.15], [-0.35, 0.05], [-0.05, 0.35], [-0.4, 0.4]]
+      const ks = pairs.find((ps) => ps.every(clear)) ?? pairs[0]
+      for (const k of ks) put8(at2(k), o, er[1] - er[0], width2(range(Tm, o)))
     } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(Tm, o)) <= 1.5 * Math.max(Tm.b, Tm.h)) {
       // umgekehrt aufliegend (Handlauf auf dem Pfostenkopf): durch T von oben in das Ende von E
       const tr = range(Tm, o)
@@ -713,7 +733,18 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const k = c?.extras[0]
     if (!k) return out
     const cols = k.half[1] * 2 >= 70 ? [-0.25, 0.25] : [0]
-    for (const zr of [-0.25, 0.25]) for (const cc of cols) screw(at(k.center, [k.axes[0], -k.half[0]], [k.axes[1], k.half[1] * 2 * cc], [k.axes[2], k.half[2] * 2 * zr]), k.axes[0], 100, 3, 'vorher', 'schraube-6x100', 4)
+    // zweite Knagge am selben Eckpfosten: Schrauben 25 mm tiefer, damit sie die der ersten nicht treffen
+    const cr = crossing(j, E, Tm, byId, r, new Set(['knagge']))
+    const dz = cr < 0 ? 25 : 0
+    for (const zr of [-0.25, 0.25]) for (const cc of cols) screw(at(k.center, [k.axes[0], -k.half[0]], [k.axes[1], k.half[1] * 2 * cc], [k.axes[2], k.half[2] * 2 * zr + dz]), k.axes[0], 100, 3, 'vorher', 'schraube-6x100', 4)
+    // Zuganschluss: eine Tellerkopfschraube 8 × 160 durch den Pfosten ins Hirnholz des Trägers (sonst können
+    // die Pfosten auseinandergehen); die der zweiten Richtung 12 mm versetzt
+    if (F.pE) {
+      const head = at(F.pE, [o, F.depth], [v(0, 0, 1), cr * 12])
+      const sz = screw8(F.depth)
+      screw(head, into, sz.length, 4, 'nachher', sz.item, 6)
+      out[out.length - 1].first = F.depth
+    }
   } else if (type === 'auflagerleiste') {
     // Die Leiste wird zuerst an das durchlaufende Holz geschraubt, dann der Träger aufgelegt
     const c = jointCuts(j, byId)
@@ -774,6 +805,44 @@ function segDist(p0: Vec3, p1: Vec3, q0: Vec3, q1: Vec3): number {
 }
 
 const DRILLED = new Set(['bolzen', 'bettschraube', 'schraube', 'holznagel', 'duebel'])
+
+/**
+ * Schrauben, die durch Luft laufen oder im tragenden Holz zu wenig greifen (mindestens 6·d). Vorgebohrte
+ * Schrauben zählen; Schrauben in Blechen und Hölzer mit eigener Form (Kopfband) nicht.
+ */
+export function fastenerGrip(r: Resolved): { joint: string; member: string; grip: number; need: number; air: number }[] {
+  const byId = new Map(r.members.map((m) => [m.id, m]))
+  const out: { joint: string; member: string; grip: number; need: number; air: number }[] = []
+  for (const j of r.joints) {
+    const A = byId.get(j.a)
+    const B = byId.get(j.b)
+    if (!A || !B || A.shape || B.shape || A.round || B.round) continue
+    const boxes = [A, B].map((m) => ({ m, bs: memberBoxes(m) }))
+    const inside = (q: Vec3) => boxes.find(({ bs }) => bs.some((o) => o.axes.every((a, i) => Math.abs(dot(sub(q, o.center), a)) <= o.half[i] + 0.5)))?.m
+    for (const f of jointFasteners(j, byId, r)) {
+      if (f.kind !== 'schraube' || !f.drill) continue
+      // entlang der Schraube in 2-mm-Schritten: wo Holz, wo Luft
+      const n = Math.max(2, Math.round(f.length / 2))
+      const seq: (Member | undefined)[] = []
+      for (let k = 0; k <= n; k++) seq.push(inside(add(f.head, scale(f.dir, (f.length * k) / n))))
+      const first = seq.findIndex((x) => !!x)
+      if (first < 0) continue
+      const tipM = [...seq].reverse().find((x) => !!x)
+      // Holz im tragenden Teil (das Teil an der Spitze) und Luft zwischen dem ersten Holz und der Spitze
+      let grip = 0
+      let air = 0
+      for (let k = first; k <= n; k++) {
+        if (seq[k] === tipM && seq[k] !== seq[first]) grip += f.length / n
+        else if (!seq[k] && seq.slice(k).some((x) => !!x)) air += f.length / n
+      }
+      // nur ein Holz getroffen: alles im ersten Holz, die Schraube greift nicht ins zweite
+      if (tipM === seq[first]) grip = 0
+      const need = 6 * f.d
+      if (grip < need - 2 || air > 12) out.push({ joint: j.key, member: (tipM ?? seq[first])!.id, grip: Math.round(grip), need, air: Math.round(air) })
+    }
+  }
+  return out
+}
 
 /**
  * Bohrungen zweier Verbindungen, die sich im Holz treffen (zweite Richtung am Eckpfosten). Nur

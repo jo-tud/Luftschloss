@@ -49,24 +49,24 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     mistakes: [tk('Schuh schief angeschraubt: Ein kurzes Reststück des Trägers in den Schuh legen und damit ausrichten.'), tk('Nicht alle Löcher belegt: Der Schuh trägt dann deutlich weniger.')],
   },
   schlossschraube: {
-    how: tk('Zwei Gewindebolzen M10 gehen quer durch beide Hölzer und werden mit großer Scheibe und Mutter angezogen. Zerlegbar und kräftig; die Bohrung im Verbund verzeiht kleine Schieflagen.'),
+    how: tk('Zwei Gewindebolzen gehen quer durch beide Hölzer und werden mit großer Scheibe und Mutter angezogen. Zerlegbar und kräftig; die Bohrung im Verbund verzeiht kleine Schieflagen.'),
     steps: [
       S(tk('Bolzenmitten anreißen: {abstand} mm auseinander, mindestens {rand} mm vom Rand. Die Kreuze mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
       S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
       S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm), in einem Zug von der Kopfseite: Schlangenbohrer, ein Reststück hinten als Opferholz gegen Ausriss. Liegt das Teil flach, senkrecht von oben bohren.'), 'bohren'),
-      S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
+      S(tk('Schlossschraube {m} × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø {scheibe} mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
     ],
     mistakes: [tk('Zu nah am Holzende: Mindestens 80 mm zum belasteten Ende, sonst kann das Holz aufreißen.'), tk('Zu fest angezogen: Die Scheibe drückt sich ins Holz – große Scheiben verwenden, mit Gefühl anziehen.'), tk('Kein Leim in die Bohrungen: Die Verbindung soll zerlegbar bleiben.')],
   },
   // durchgebolzt mit nur einem Bolzen (wenig Überdeckung oder Platz neben einem Stoß)
   'schlossschraube-1': {
-    how: tk('Ein Gewindebolzen M10 geht quer durch beide Hölzer und wird mit großer Scheibe und Mutter angezogen. Für mehr Halt fehlt hier die Überdeckung; zusammen mit den anderen Verbindungen des Teils hält das.'),
+    how: tk('Ein Gewindebolzen geht quer durch beide Hölzer und wird mit großer Scheibe und Mutter angezogen. Für mehr Halt fehlt hier die Überdeckung; zusammen mit den anderen Verbindungen des Teils hält das.'),
     steps: [
       S(tk('Bolzenmitte anreißen: mittig in der Überdeckung, mindestens {rand} mm vom Rand. Das Kreuz mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
       S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
       S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm), in einem Zug von der Kopfseite: Schlangenbohrer, ein Reststück hinten als Opferholz gegen Ausriss. Liegt das Teil flach, senkrecht von oben bohren.'), 'bohren'),
-      S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
+      S(tk('Schlossschraube {m} × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø {scheibe} mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
     ],
     mistakes: [tk('Zu nah am Holzende: Mindestens 80 mm zum belasteten Ende, sonst kann das Holz aufreißen.'), tk('Zu fest angezogen: Die Scheibe drückt sich ins Holz – große Scheiben verwenden, mit Gefühl anziehen.')],
@@ -126,6 +126,16 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
       S(tk('Im aufliegenden Holz Ø 6 mm vorbohren und {n} Tellerkopfschrauben {size} von oben eindrehen ({grip} mm im unteren Holz).'), 'befestigen'),
     ],
     mistakes: [tk('Schraube zu kurz: Bei 120 mm hohem Holz greift eine 160er nur 40 mm – mindestens 200 mm verwenden.')],
+  },
+  // stehendes Holz auf liegendem (Geländerstütze innen auf der Zarge): Schrauben von unten ins Hirnholz
+  'auflage-unten': {
+    how: tk('Das stehende Holz steht auf dem liegenden; die Last geht über Druck Holz auf Holz. Schrauben von unten durch das liegende Holz in das Hirnholz halten es in Position.'),
+    steps: [
+      S(tk('Standfläche auf {T} anreißen; {E} unten rechtwinklig absägen.')),
+      S(tk('{E} aufstellen und lotrecht ausrichten.'), 'fuegen'),
+      S(tk('Von unten durch {T} Ø 6 mm vorbohren und {n} Tellerkopfschrauben {size} eindrehen ({grip} mm im Hirnholz von {E}).'), 'befestigen'),
+    ],
+    mistakes: [tk('Schraube zu kurz: Im Hirnholz hält das Gewinde schlechter – mindestens 72 mm im stehenden Holz.')],
   },
   auflagerleiste: {
     how: tk('Eine Leiste wird unter dem späteren Trägerende an das durchlaufende Holz geschraubt; der Träger liegt darauf. Die Schrauben der Leiste tragen auf Abscheren – einfach, aber nur für leichtere Lasten.'),
@@ -245,11 +255,11 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     mistakes: [tk('Nut zu breit: Die Stufe wackelt – lieber knapp schneiden und mit dem Beitel nacharbeiten.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
   },
   knagge: {
-    how: tk('Ein Klotz aus Kantholz wird stehend unter das spätere Trägerende an den Pfosten geschraubt. Der Träger liegt darauf; die Last geht über Druck in den Klotz und über vier Schrauben in den Pfosten. Tragfähiger als eine kurze waagrechte Leiste.'),
+    how: tk('Ein Klotz wird stehend unter das spätere Trägerende an den Pfosten geschraubt. Der Träger liegt darauf; die Last geht über Druck in den Klotz und über dessen Schrauben in den Pfosten. Eine lange Schraube durch den Pfosten ins Trägerende hält beides zusammen. Tragfähiger als eine kurze waagrechte Leiste.'),
     steps: [
-      S(tk('Unterkante von {E} an {T} anreißen. Aus einem Reststück Kantholz einen Klotz {breite} × {hoehe} mm sägen, 40 mm dick, die Oberseite genau rechtwinklig.')),
-      S(tk('Knagge bündig unter den Riss an {T} halten, mit der Wasserwaage lotrecht ausrichten, Ø 4 mm vorbohren und mit 4 Schrauben 6 × 100 festschrauben (60 mm im Pfosten).'), 'vorher'),
-      S(tk('{E} auflegen und mit einer Schraube bzw. einem Winkel gegen Verrutschen sichern.'), 'fuegen'),
+      S(tk('Unterkante von {E} an {T} anreißen. Aus einem Rest Geländerholz (44 mm dick) einen Klotz {breite} × {hoehe} mm sägen, die Oberseite genau rechtwinklig.')),
+      S(tk('Knagge bündig unter den Riss an {T} halten, mit der Wasserwaage lotrecht ausrichten, Ø 4 mm vorbohren und mit {n} Schrauben 6 × 100 festschrauben (56 mm im Pfosten). Sitzt am selben Pfosten eine zweite Knagge, deren Schrauben 25 mm tiefer setzen.'), 'vorher'),
+      S(tk('{E} auflegen. Von außen eine Tellerkopfschraube {size} durch {T} in das Hirnholz von {E} drehen (Ø 6 mm vorbohren) – sie hält den Pfosten am Träger.'), 'fuegen', 'befestigen'),
     ],
     mistakes: [tk('Knagge schief: Der Träger liegt dann nur auf einer Kante – Oberseite rechtwinklig sägen und lotrecht anschrauben.'), tk('Zu kurze Schrauben: Sie müssen mindestens 54 mm (9 · d) im Pfosten sitzen.')],
   },

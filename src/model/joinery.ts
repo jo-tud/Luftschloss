@@ -123,8 +123,10 @@ export function jointFrame(j: DetectedJoint, A: Member, B: Member): JointFrame |
     pE = e.pt
     into = e.into
   } else {
-    // ohne Ende (Auflage, Beischlag, Kreuzung): kleinerer Querschnitt liegt an
-    if (A.b * A.h > B.b * B.h) {
+    // ohne Ende (Auflage, Beischlag, Kreuzung): kleinerer Querschnitt liegt an; eine Wange, die nicht dicker
+    // als der Haltegriff ist, wird von innen an ihn geschraubt (Köpfe zwischen den Wangen), sonst umgekehrt
+    const holmGriff = (x: Member, y: Member) => !!x.partKey?.startsWith('leiter-holm') && !!y.partKey?.startsWith('leiter-griff') && Math.min(x.b, x.h) <= Math.min(y.b, y.h)
+    if (holmGriff(B, A) || (!holmGriff(A, B) && A.b * A.h > B.b * B.h)) {
       E = B
       T = A
     }
@@ -388,7 +390,8 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
     }
     case 'knagge': {
       if (!F.pE) return undefined
-      // stehender Klotz 40 mm dick, so breit wie der Träger, bis 200 mm hoch unter dem Trägerende
+      // stehender Klotz aus einem Rest Geländerholz 44 × 74, bis 200 mm hoch unter dem Trägerende, mittig
+      // unter dem Träger (74 breit: Platz für zwei Schraubenreihen)
       const down = v(0, 0, -1)
       const along = norm(cross(F.out, down))
       if (len(along) < 0.5) return undefined
@@ -396,8 +399,10 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const eAlong = rangeAlong(E, along)
       const hk = Math.min(200, rangeAlong(T, down)[1] - eDown[1])
       if (hk < 100) return undefined
-      out.extras.push(frameBox([F.out, along, down], [[F.face - 40, F.face], eAlong, [eDown[1], eDown[1] + hk]]))
-      out.dims = { hoehe: Math.round(hk), breite: Math.round(width(eAlong)) }
+      const mA = (eAlong[0] + eAlong[1]) / 2
+      const wk = Math.max(width(eAlong), 74)
+      out.extras.push(frameBox([F.out, along, down], [[F.face - 44, F.face], [mA - wk / 2, mA + wk / 2], [eDown[1], eDown[1] + hk]]))
+      out.dims = { hoehe: Math.round(hk), breite: Math.round(wk) }
       return out
     }
     case 'auflagerleiste': {

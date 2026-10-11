@@ -318,7 +318,10 @@ export const JOINT_TYPES: JointType[] = [
     stiffness: 'gelenkig',
     residualSection: 1,
     tools: [tk('Akkuschrauber'), tk('Handsäge'), tk('Zwingen'), tk('Wasserwaage')],
-    hardware: [{ id: 'schraube-6x100', qty: 4 }],
+    hardware: [
+      { id: 'schraube-6x100', qty: 4 },
+      { id: 'schraube-8x160', qty: 1 },
+    ],
     note: tk('Ein Klotz aus Kantholz, stehend unter das Trägerende an den Pfosten geschraubt; der Träger liegt darauf. Tragfähiger als eine kurze waagrechte Leiste.'),
     capacityKN: 8,
   },
@@ -483,6 +486,11 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
   const [p, q] = [axis(a), axis(b)]
   const along = Math.abs(p[0] * q[0] + p[1] * q[1] + p[2] * q[2])
   if (along > 0.85 && !['schlossschraube', 'holzbauschraube', 'lose', 'auflage', 'seilbefestigung'].includes(typeId)) return tk('Die Hölzer liegen fast parallel – hier hilft nur, sie seitlich durch die Überdeckung zu verschrauben oder zu verbolzen.')
+  // Geländer- und Griffanschlüsse (stehendes Geländerholz) müssen fest sein; am Handlauf keine Stahlkanten
+  // und keine Taschen in 44 mm Holz
+  const guardUpright = both.some((m) => m.role === 'holm' && Math.abs(m.end.z - m.start.z) > 0.7 * (Math.hypot(m.end.x - m.start.x, m.end.y - m.start.y, m.end.z - m.start.z) || 1))
+  if (typeId === 'lose' && jm.kind === 'beischlag' && guardUpright) return tk('Geländerstützen und Haltegriffe müssen fest verbunden sein – sie halten Menschen.')
+  if ((typeId === 'balkenschuh' || typeId === 'bettschraube') && both.every((m) => m.role === 'holm')) return tk('Am Geländer keine Stahlkanten und keine Taschen im schmalen Holz – verschrauben oder verbolzen.')
   switch (typeId) {
     case 'gratnut':
     case 'nut':

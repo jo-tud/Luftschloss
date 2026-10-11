@@ -235,6 +235,8 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         // Stufen in eine gerade Nut: tragfähig und für Heimwerker machbar (Gratnut bleibt wählbar)
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'stufe') typeId = 'nut'
         if (kindInfo.kind === 't-stoss' && endingMember?.ends) typeId = 'anlage'
+        // Wange am Haltegriff: von innen mit Holzbauschrauben (für einen Bolzen ist der Griff zu schmal)
+        if (kindInfo.kind === 'beischlag' && [A, B].some((m) => m.partKey?.startsWith('leiter-holm')) && [A, B].some((m) => m.partKey?.startsWith('leiter-griff'))) typeId = 'holzbauschraube'
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'holm' && !endingMember.round && p.settings.jointPreference !== 'wenig-metall') typeId = 'holzbauschraube'
         // Latten liegen lose: weder auf noch unter ihnen wird geschraubt (z. B. Unterholm des Geländers auf den Latten)
         if (upper && (A.role === 'leiste' || B.role === 'leiste')) typeId = 'lose'

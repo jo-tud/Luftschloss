@@ -194,8 +194,15 @@ export function computeBom(p: Project, r: Resolved): Bom {
     if (!jt) continue
     const items = jointFasteners(j, memberById, r).filter((f) => f.item)
     const name = tr(jointVariant(j.typeId, j, memberById)?.name ?? jt.name)
-    if (items.length) for (const f of items) addHw(f.item!, 1, name)
-    else if (!MODELED.has(j.typeId)) for (const h of jt.hardware) addHw(h.id, h.qty, name)
+    const E = memberById.get(j.ending ?? '')
+    for (const f of items) {
+      // Balkenschuh: Innenmaß nach dem Querträger
+      if (f.item === 'balkenschuh-60' && E) addHw(f.item, 1, `${name}: ${t('Innenmaß {b} × {h} mm', { b: Math.round(Math.min(E.b, E.h)) + 2, h: Math.round(Math.max(E.b, E.h)) - 4 })}`)
+      else addHw(f.item!, 1, name)
+      // Bolzen: eine große Scheibe (DIN 440) unter Mutter bzw. Kopf, die U-Scheibe liegt dem Bolzen bei
+      if (f.kind === 'bolzen') addHw(f.d <= 8 ? 'scheibe-din440-r9' : 'scheibe-din440-r11', 1, name)
+    }
+    if (!items.length && !MODELED.has(j.typeId)) for (const h of jt.hardware) addHw(h.id, h.qty, name)
   }
   for (const f of r.fixings) {
     addHw(f.hardwareId, f.count, tr(f.note))
