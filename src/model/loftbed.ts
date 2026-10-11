@@ -1,7 +1,8 @@
 import { t, tk } from '../i18n'
 import { catalogItem, sheet, timber } from './catalog'
-import { rotate2, v } from './geometry'
+import { clipHalf, rotate2, v } from './geometry'
 import type { Assembly, LoftBedParams, Member, MemberRole, MemberShape, Mm, Panel, Side, Vec3 } from './types'
+import { deckBoards } from './deckBoards'
 
 /**
  * Erzeugt aus den Parametern einer Hochbett-Baugruppe alle Stäbe und Flächen.
@@ -379,6 +380,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   // --- Querträger ----------------------------------------------------------------------
   const x0 = rb
   const x1 = Lo - rb
+  // Breite Leimholzbretter quer von Zarge zu Zarge: Querträger genau unter den Stößen
+  const boards = P.deck === 'platte' && deckSheet?.group === 'leimholz' && !aufgelegt && !carriersLR ? deckBoards(Lo, Wo, deckSheet.formats)?.widths : undefined
+  const boardSeams = boards ? boards.slice(0, -1).map((_, i) => boards.slice(0, i + 1).reduce((s, w) => s + w, 0)) : []
   let joistCount = 0
   if (aufgelegt && needsJoists) {
     // Querträger liegen auf den Trägern, jeweils auch an beiden Enden
@@ -402,7 +406,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     joistCount = 1
   }
   if (aufgelegt) joistCount = 0
-  let joistXs = Array.from({ length: joistCount }, (_, i) => x0 + ((x1 - x0) * (i + 1)) / (joistCount + 1))
+  let joistXs = boards ? boardSeams : Array.from({ length: joistCount }, (_, i) => x0 + ((x1 - x0) * (i + 1)) / (joistCount + 1))
   // Roste hintereinander: an jeder Fuge ein Querträger
   if (!aufgelegt && rost && seamXs.length) joistXs = P.deck === 'lattenrost' ? [...seamXs, ...mats.map((m) => (m.x0 + m.x1) / 2)] : seamXs
   joistXs.forEach((x, k) => {
@@ -504,15 +508,35 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     outline.push({ x: 0, y: n('BL') })
     if (n('BL')) outline.push({ x: p, y: p }, { x: p, y: 0 })
     const clean = outline.filter((q, i) => i === 0 || q.x !== outline[i - 1].x || q.y !== outline[i - 1].y)
-    addPanel('liegeflaeche', {
-      kind: P.deck,
-      name: P.deck === 'platte' ? t('Liegefläche (Platte)') : t('Liegefläche (Dielen)'),
-      outline: clean.map((q) => to2(q.x, q.y)),
-      z: deckZ,
-      thickness: deckT,
-      catalogId: P.deckCatalogId,
-      direction: P.rotation,
-    })
+    if (boards) {
+      // je Brett ein Paneel, an den Stößen eine haarfeine Fuge (Maße bleiben auf den mm genau)
+      let xa = 0
+      boards.forEach((w, i) => {
+        const lo = i ? xa + 0.25 : xa
+        const hi = i < boards.length - 1 ? xa + w - 0.25 : xa + w
+        const piece = clipHalf(clipHalf(clean, lo, -1, 0), -hi, 1, 0)
+        xa += w
+        if (piece.length < 3) return
+        addPanel(i ? `liegeflaeche-${i + 1}` : 'liegeflaeche', {
+          kind: 'platte',
+          name: t('Liegefläche, Brett {n}', { n: i + 1 }),
+          outline: piece.map((q) => to2(q.x, q.y)),
+          z: deckZ,
+          thickness: deckT,
+          catalogId: P.deckCatalogId,
+          direction: P.rotation,
+        })
+      })
+    } else
+      addPanel('liegeflaeche', {
+        kind: P.deck,
+        name: P.deck === 'platte' ? t('Liegefläche (Platte)') : t('Liegefläche (Dielen)'),
+        outline: clean.map((q) => to2(q.x, q.y)),
+        z: deckZ,
+        thickness: deckT,
+        catalogId: P.deckCatalogId,
+        direction: P.rotation,
+      })
   } else {
     // ein Rost je Matratze, Stoß über Mittel- bzw. Querträger
     const xs = [p, ...seamXs, Lo - p]

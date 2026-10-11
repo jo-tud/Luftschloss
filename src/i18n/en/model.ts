@@ -226,5 +226,6 @@ const en: Record<string, string> = {
   'Leisten': 'Strips',
   'Rundstäbe': 'Round bars',
   'Richtpreise Hornbach, Stand 2025/26': 'Hornbach guide prices, as of 2025/26',
+  'Liegefläche, Brett {n}': 'Deck, board {n}',
 }
 export default en

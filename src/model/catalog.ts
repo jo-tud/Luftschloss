@@ -339,7 +339,7 @@ export const SHEETS: SheetItem[] = [
   { id: '3s-19', kind: 'platte', group: 'dreischicht', name: tk('Fichte 3-Schichtplatte B/C 19 mm'), thickness: 19, formats: [{ l: 2500, w: 1250, price: 129 }], eMean: 10000, maxSpan: 600 },
   { id: '3s-27', kind: 'platte', group: 'dreischicht', name: tk('Fichte 3-Schichtplatte B/C 27 mm'), thickness: 27, formats: [{ l: 2500, w: 1250, price: 179 }], eMean: 8200, maxSpan: 800 },
   { id: 'mpx-18', kind: 'platte', group: 'multiplex', name: tk('Multiplex Eukalyptus/Birke 18 mm'), thickness: 18, formats: [{ l: 2500, w: 1220, price: 112 }], eMean: 10048, maxSpan: 600 },
-  { id: 'leimholz-fi-18', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Fichte B/C 18 mm'), thickness: 18, formats: [{ l: 2000, w: 600, price: 31.95 }, { l: 1200, w: 600, price: 19.25 }] },
+  { id: 'leimholz-fi-18', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Fichte B/C 18 mm'), thickness: 18, formats: [{ l: 2000, w: 600, price: 31.95 }, { l: 1200, w: 600, price: 19.25 }, { l: 1200, w: 400, price: 12.75 }] },
   { id: 'leimholz-ki-18', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Kiefer B/C 18 mm'), thickness: 18, formats: [{ l: 2000, w: 600, price: 28.95 }] },
   { id: 'leimholz-fi-28', kind: 'platte', group: 'leimholz', name: tk('Leimholzplatte Fichte A/B 28 mm'), thickness: 28, formats: [{ l: 2000, w: 600, price: 79.95 }] },
   { id: 'rauspund-18', kind: 'platte', group: 'diele', name: tk('Rauspund Fichte 18×96 mm'), thickness: 18, formats: [{ l: 2400, w: 96, price: 2.75 }, { l: 2100, w: 96, price: 2.41 }, { l: 2700, w: 96, price: 3.1 }], maxSpan: 500, eMean: 8000 },

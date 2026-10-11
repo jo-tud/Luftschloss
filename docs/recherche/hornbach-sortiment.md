@@ -96,7 +96,7 @@ Außerdem gibt es: Universalbrett Kiefer gehobelt 38×140×2500 und Furnierschic
 
 | Holz / Dicke | Formate | Preisbeispiel |
 |---|---|---|
-| Fichte 18 mm A/B, B/C | 800–2500 × 200–600 | 2000×600 B/C 31,95 €; A/B 50,95 € |
+| Fichte 18 mm A/B, B/C | 800–2500 × 200–600 | 2000×600 B/C 31,95 €; A/B 50,95 €; 1200×600 B/C 19,25 €; 1200×400 B/C 12,75 € (Marktpreis laut Nutzerangabe, Oktober 2026) |
 | Kiefer 18 mm B/C | 2000×600 | 28,95 € |
 | Buche 18 mm | 2000×600 | 53,95 € |
 | Fichte 28 mm A/B | bis 2000×600 | ca. 79,95 € |
