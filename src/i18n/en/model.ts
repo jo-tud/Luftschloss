@@ -242,5 +242,7 @@ const en: Record<string, string> = {
   "Der Pfosten ist zu schmal für die Laschen des Balkenschuhs – Winkel oder Bolzen nehmen.": "The post is too narrow for the flanges of the joist hanger – use brackets or bolts.",
   "Seitlich anliegende Hölzer bilden keine Ecke für einen Winkel – durchschrauben oder verbolzen.": "Timbers lying side by side form no corner for a bracket – screw or bolt through them.",
   "Die Latte ist niedriger als der Winkel – Latten von oben aufschrauben.": "The slat is lower than the bracket – screw slats on from above.",
+  "Sechskantschraube M10 × 140 mit Mutter und 2 Scheiben": "Hex bolt M10 × 140 with nut and 2 washers",
+  "Brett zu dünn für Schrauben ins Hirnholz – Stufen in eine Gratnut, Bretter mit Winkeln oder seitlich überlappend befestigen.": "Board too thin for screws into the end grain – put steps into a sliding dovetail housing, fix boards with brackets or overlapping at the side.",
 }
 export default en

@@ -2,7 +2,8 @@ import { getLang, locale, t, tk, tr } from '../i18n'
 import { HARDWARE, PRICE_STAND, catalogItem, type HardwareItem, type SheetItem, type TimberItem } from '../model/catalog'
 import { fmtCm, fmtM, memberLength } from '../model/geometry'
 import { cutLengths } from '../model/joinery'
-import { jointFasteners } from '../model/fasteners'
+import { jointFasteners, MODELED } from '../model/fasteners'
+import { jointVariant } from '../model/jointPlan'
 import { jointType } from '../model/joints'
 import type { Resolved } from '../model/resolve'
 import type { Panel, Project } from '../model/types'
@@ -192,8 +193,9 @@ export function computeBom(p: Project, r: Resolved): Bom {
     const jt = jointType(j.typeId)
     if (!jt) continue
     const items = jointFasteners(j, memberById, r).filter((f) => f.item)
-    if (items.length) for (const f of items) addHw(f.item!, 1, tr(jt.name))
-    else for (const h of jt.hardware) addHw(h.id, h.qty, tr(jt.name))
+    const name = tr(jointVariant(j.typeId, j, memberById)?.name ?? jt.name)
+    if (items.length) for (const f of items) addHw(f.item!, 1, name)
+    else if (!MODELED.has(j.typeId)) for (const h of jt.hardware) addHw(h.id, h.qty, name)
   }
   for (const f of r.fixings) addHw(f.hardwareId, f.count, tr(f.note))
   // Liegefläche verschrauben

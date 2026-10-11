@@ -1,5 +1,5 @@
 import { tk } from '../i18n'
-import { CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
+import { bedCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
 import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
 import { allCuts, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
@@ -79,16 +79,12 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.abstand = bolts.length > 1 ? r0(len(sub(bolts[0].head, bolts[1].head))) : 0
     vars.nut = CROSS_NUT_DEPTH
     vars.tasche = r0(f.crossNut?.depth ?? E.b / 2 + 12)
-    vars.tiefe = f.crossNut ? r0(f.length - 10) : r0(f.length)
-    // kleinster Abstand der Bolzenachse zum Rand des anschließenden Holzes
+    // Bohrtiefe: beim Stoß bis zur Mitte der Tasche bzw. Querbohrung, sonst durch beide Hölzer
+    vars.tiefe = f.crossNut ? r0(len(sub(f.crossNut.at, f.head))) : r0(f.length)
+    // kleinster Rand- bzw. Endabstand quer zur Bolzenachse in beiden Hölzern
     const ax = memberAxes(E)
-    const edge = Math.min(
-      ...bolts.map((b) => {
-        const rel = sub(b.head, E.start)
-        return Math.min(E.b / 2 - Math.abs(dot(rel, ax[1])), E.h / 2 - Math.abs(dot(rel, ax[2])))
-      }),
-    )
-    vars.rand = Math.max(0, r0(edge))
+    const edges = bolts.flatMap((b) => [E, T].flatMap((m) => (m ? [boltEdge(m, b.head, b.dir)] : [])).filter((x): x is number => x !== undefined))
+    vars.rand = edges.length ? Math.max(0, r0(Math.min(...edges))) : 0
     // Abstand der Bolzen zur Ober- und Unterkante des anschließenden Holzes (nur beim stumpfen Stoß)
     if (f.crossNut) {
       const up = ax[2].z < -0.1 ? -1 : 1
@@ -143,6 +139,20 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
   return { type, name, tools, toolsPlus, frame, E, T, stoss, guide, vars, effort, fasteners, cuts }
 }
 
+/**
+ * Anzeigename, Schwierigkeit und Werkzeug einer Verbindungsart an genau diesem Stoß (stumpfer Bolzenstoß:
+ * Sechskantschraube mit Mutter in Tasche statt durchgebolzter Schlossschraube)
+ */
+export function jointVariant(typeId: string, j: DetectedJoint, byId: Map<string, Member>): { name: string; difficulty: 1 | 2 | 3; tools: string[] } | undefined {
+  const type = jointType(typeId)
+  if (!type) return undefined
+  const A = byId.get(j.a)
+  const B = byId.get(j.b)
+  const stoss = !!j.ending && !!A && !!B && !!jointFrame(j, A, B)?.pE
+  if (typeId === 'schlossschraube' && stoss) return { name: STOSS_NAME, difficulty: 2, tools: STOSS_TOOLS }
+  return { name: type.name, difficulty: type.difficulty, tools: type.tools }
+}
+
 const STOSS_HARD = tk('Durch den Pfosten lang und gerade ins Hirnholz bohren, bis die Bohrung in der Tasche ankommt.')
 const STOSS_NAME = tk('Bolzenstoß M10: Sechskantschraube, Mutter in einer Tasche (2 Stück)')
 const STOSS_TOOLS = [tk('Bohrmaschine'), tk('Schlangenbohrer Ø 11 × 250 mm'), tk('Forstnerbohrer Ø 35 mm'), tk('Zwingen'), tk('Ratsche mit Nuss 17'), tk('Anschlagwinkel')]
@@ -186,6 +196,7 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
         toward,
         towardName: other ? label(other) : undefined,
         endName: (atStart) => endName(m, atStart, r, label),
+        center: bedCentre(r, m),
       }),
     )
   }
@@ -230,6 +241,7 @@ export function partWorkDrawing(m: Member, r: Resolved, label: (m: Member) => st
     full: true,
     refAtStart: vertical ? m.start.z <= m.end.z : true,
     endName: (atStart) => endName(m, atStart, r, label),
+        center: bedCentre(r, m),
   })
   const any = d.holes.length > 0 || d.views.some((v) => v.waste.length > 0 || v.hidden.length > 0) || !!cut?.add.length
   return any ? d : undefined

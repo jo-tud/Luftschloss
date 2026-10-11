@@ -129,13 +129,42 @@ function range(m: Member, e: Vec3): [number, number] {
   return [lo, hi]
 }
 
-function bedCentre(r: Resolved, m: Member): Vec3 | undefined {
+/** Mitte der Grundfläche des Betts, zu dem m gehört (für innen/außen) */
+export function bedCentre(r: Resolved, m: Member): Vec3 | undefined {
   const bed = m.assemblyId ? r.beds.get(m.assemblyId) : undefined
   if (!bed) return undefined
   return v(bed.footprint.reduce((s, q) => s + q.x, 0) / bed.footprint.length, bed.footprint.reduce((s, q) => s + q.y, 0) / bed.footprint.length, 0)
 }
 
 const BOLTS = new Set(['schlossschraube', 'bettschraube'])
+
+/**
+ * Verbindungsarten, deren Befestigungsmittel hier aus der Geometrie entstehen. Liefern sie an einem
+ * Stoß nichts (Hölzer berühren sich nur an einer Kante), braucht es dort auch nichts zu kaufen.
+ */
+export const MODELED = new Set(['winkel', 'balkenschuh', 'schlossschraube', 'bettschraube', 'holzbauschraube', 'auflage', 'auflagerleiste', 'ausklinkung', 'ueberblattung', 'schwalbenschwanz', 'zapfen', 'holzduebel', 'gratnut', 'kopfband', 'versatz'])
+
+/** Liegt p im Stab m (ohne Ausnehmungen)? */
+function inside(m: Member, p: Vec3): boolean {
+  return memberBoxes(m).some((o) => o.axes.every((a, i) => Math.abs(dot(sub(p, o.center), a)) <= o.half[i] + 0.5))
+}
+
+/**
+ * Kleinster Rand- bzw. Endabstand eines Bolzens (Achse axis durch p) im Stab m, gemessen quer zur
+ * Bolzenachse; undefined, wenn der Bolzen m nicht trifft
+ */
+export function boltEdge(m: Member, p: Vec3, axis: Vec3): number | undefined {
+  const [m0, m1] = range(m, axis)
+  const q = add(p, scale(axis, (m0 + m1) / 2 - dot(p, axis)))
+  let best: number | undefined
+  for (const o of memberBoxes(m)) {
+    const rel = sub(q, o.center)
+    if (!o.axes.every((a, i) => Math.abs(dot(rel, a)) <= o.half[i] + 0.5)) continue
+    const dd = Math.min(...o.axes.map((a, i) => (Math.abs(dot(a, axis)) < 0.7 ? o.half[i] - Math.abs(dot(rel, a)) : Infinity)))
+    best = best === undefined ? dd : Math.max(best, dd)
+  }
+  return best
+}
 
 /** Wie weit ein Strahl ab p in Richtung d im Stab m verläuft (0, wenn p nicht im Holz liegt) */
 function rayIn(m: Member, p: Vec3, d: Vec3): number {
@@ -163,10 +192,16 @@ function chord(m: Member, n: Vec3): number {
 /** Forstner-Ø der Tasche für Mutter und Scheibe M10 im stumpfen Bolzenstoß */
 export const POCKET_D = 35
 
-/** Kürzeste Sechskantschraube M10 (mit Scheiben und Mutter), die durch first mm Holz bis hinter die Tasche reicht */
-export function hexM10(need: number): { length: number; item: string } {
-  for (const L of [160, 180, 200, 240]) if (L >= need + 15) return { length: L, item: `sechskantschraube-m10x${L}` }
-  return { length: 240, item: 'sechskantschraube-m10x240' }
+/**
+ * Sechskantschraube M10 für den Bolzenstoß: durch first mm Holz (Kopfscheibe 3 mm), die Spitze soll
+ * mindestens 1 mm aus der Mutter ragen (Taschenwand plan gestochen, Scheibe 2 + Mutter 8 mm) und
+ * 5 mm vor der Gegenwand der Tasche frei enden
+ */
+export function hexM10(first: number, nutDepth = CROSS_NUT_DEPTH, bore = POCKET_D): { length: number; item: string } {
+  const lo = first + 3 + nutDepth - bore / 2 + 3 + 10 + 1
+  const hi = first + 3 + nutDepth + bore / 2 - 5
+  const L = [140, 160, 180, 200, 240].filter((x) => x >= lo && x <= hi).pop() ?? [140, 160, 180, 200, 240].find((x) => x >= lo) ?? 240
+  return { length: L, item: `sechskantschraube-m10x${L}` }
 }
 
 /**
@@ -268,16 +303,20 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const dOut = scale(ax, sign)
       const tHead = sign > 0 ? hi - p0 : p0 - lo
       const tNut = -(sign > 0 ? p0 - lo : hi - p0)
-      // zwei Bolzen entlang der längeren Überdeckung, mit Randabstand
+      // zwei Bolzen entlang der längeren Überdeckung: 4·d vom Rand der Überdeckung, untereinander
+      // 4·d bis 80 mm (DIN EN 1995); reicht der Platz nicht, ein Bolzen in der Mitte
       const long1 = o1[1] - o1[0] >= o2[1] - o2[0]
       const e = long1 ? e1 : e2
       const span = long1 ? o1[1] - o1[0] : o2[1] - o2[0]
-      const spread = Math.min(span * 0.25, 60)
+      const d = 2 * rad
+      const sp = Math.min(80, span - 8 * d)
+      const offs = sp >= 4 * d ? [-sp / 2, sp / 2] : [0]
       const b = boltM10(tHead - tNut)
-      for (const k of [-1, 1]) {
-        const base = at(mid, [e, spread * k])
-        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d: 2 * rad, when: 'nachher', nut: true, item: b.item, drill: 11 })
-      }
+      // nur Bolzen, die wirklich durch beide Hölzer gehen (schräge Hölzer überdecken sich nicht rechteckig)
+      const hits = (q: Vec3) => [A, B].every((m) => { const [m0, m1] = range(m, ax); return inside(m, at(q, [ax, (m0 + m1) / 2 - dot(q, ax)])) })
+      const bases = offs.map((k) => at(mid, [e, k])).filter(hits)
+      for (const base of bases.length ? bases : [mid])
+        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d, when: 'nachher', nut: true, item: b.item, drill: 11 })
       return out
     }
     if (!j.ending) return out
@@ -306,14 +345,15 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const sideDir = scale(axesE[1], sd)
     // Schlossschraube lässt sich im stumpfen Stoß nicht anziehen (der Vierkant dreht im Holz):
     // Sechskantschraube mit Scheibe, Mutter in einer Tasche (Forstner Ø 35) auf der Innenseite
-    const item = bett ? 'bettschraube-m8' : hexM10(tHead + nutDepth).item
+    const hex = hexM10(tHead, nutDepth)
+    const item = bett ? 'bettschraube-m8' : hex.item
     for (const hgt of heights) {
       const base = at(pE, [hDir, hgt])
       push({
         kind,
         head: at(base, [o, tHead]),
         dir: into,
-        length: tHead + nutDepth + 10,
+        length: bett ? tHead + nutDepth + 10 : hex.length - 3,
         d: 2 * rad,
         when: 'nachher',
         crossNut: bett

@@ -8,6 +8,7 @@ import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, jointFasteners } 
 import { progressAt, timeline } from '../src/model/jointTimeline'
 import { fill, jointDrawings, jointPlan } from '../src/model/jointPlan'
 import { computeBom } from '../src/analysis/bom'
+import { partTypes } from '../src/analysis/assembly'
 
 describe('Ablauf einer Verbindung', () => {
   it('jede Verbindungsart hat eine Anleitung mit genau einem Fügeschritt; Leiste vorher, Befestigen danach', () => {
@@ -210,3 +211,22 @@ describe('Bolzenlage nach DIN EN 1995', () => {
 type V = { x: number; y: number; z: number }
 const lerp = (a: V, b: V, t: number): V => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t })
 const end = (f: { head: V; dir: V; length: number }): V => ({ x: f.head.x + f.dir.x * f.length, y: f.head.y + f.dir.y * f.length, z: f.head.z + f.dir.z * f.length })
+
+describe('Bauplan und Zeichnung eindeutig', () => {
+  it('Teile mit anderem Bohrbild bekommen eine eigene Nummer (gespiegelte Pfosten, Wangen)', () => {
+    const r = resolveProject(testProject())
+    const { parts } = partTypes(r)
+    expect(parts.filter((p) => p.roles.includes('pfosten')).length).toBeGreaterThan(1)
+  })
+
+  it('Bolzenstoß: Pfosten wird von außen gebohrt, Taschen liegen innen; Randabstand ist gerechnet', () => {
+    const r = resolveProject(testProject())
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const j = r.joints.find((x) => x.typeId === 'schlossschraube' && x.ending && byId.get(x.ending)?.role === 'zarge')!
+    const plan = jointPlan(j, byId, r)!
+    expect(Number(plan.vars.rand)).toBeGreaterThanOrEqual(30)
+    const [E, T] = jointDrawings(plan, j, byId, r, (m) => m.name ?? m.role)
+    expect(T.holes.every((h) => h.face.key.startsWith('Außenseite'))).toBe(true)
+    expect(E.holes.filter((h) => h.d === POCKET_D).every((h) => h.face.key.startsWith('Innenseite'))).toBe(true)
+  })
+})

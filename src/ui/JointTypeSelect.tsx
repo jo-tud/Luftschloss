@@ -1,5 +1,6 @@
 import { t, tr } from '../i18n'
 import { jointOptions, jointType } from '../model/joints'
+import { jointVariant } from '../model/jointPlan'
 import type { DetectedJoint } from '../model/resolve'
 import type { Member } from '../model/types'
 
@@ -16,8 +17,9 @@ export function JointTypeSelect({ j, byId, onChange }: { j: DetectedJoint; byId:
   const jt = jointType(j.typeId)
   const label = (id: string) => {
     const ty = jointType(id)
-    if (!ty) return id
-    return `${'●'.repeat(ty.difficulty)} ${tr(ty.name)}${ty.removable ? ` · ${t('zerlegbar')}` : ''}`
+    const v = jointVariant(id, j, byId)
+    if (!ty || !v) return id
+    return `${'●'.repeat(v.difficulty)} ${tr(v.name)}${ty.removable ? ` · ${t('zerlegbar')}` : ''}`
   }
   return (
     <>

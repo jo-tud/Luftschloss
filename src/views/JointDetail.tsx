@@ -310,7 +310,7 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
   const pick = (i: number) => {
     const [a, b] = stepTimes(steps, i)
     // ohne Bewegung gleich das Ergebnis des Schritts zeigen
-    clock.current = still ? { t: b - 1e-3, playing: false, stopAt: Infinity } : { t: a, playing: true, stopAt: b }
+    clock.current = still ? { t: b - 1e-3, playing: false, stopAt: Infinity } : { t: a, playing: true, stopAt: b - 1e-3 }
     setPlaying(!still)
     setMode('3d')
   }

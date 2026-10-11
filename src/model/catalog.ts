@@ -365,6 +365,7 @@ export const HARDWARE: HardwareItem[] = [
   { id: 'schlossschraube-m10', kind: 'beschlag', group: 'bolzen', name: tk('Schlossschraube M10 × 180 mit Mutter und U-Scheibe'), pack: 1, packPrice: 1.6, priceEstimated: true },
   { id: 'schlossschraube-m10x200', kind: 'beschlag', group: 'bolzen', name: tk('Schlossschraube M10 × 200 mit Mutter und U-Scheibe'), pack: 1, packPrice: 1.8, priceEstimated: true },
   { id: 'schlossschraube-m10x240', kind: 'beschlag', group: 'bolzen', name: tk('Schlossschraube M10 × 240 mit Mutter und U-Scheibe'), pack: 1, packPrice: 2.1, priceEstimated: true },
+  { id: 'sechskantschraube-m10x140', kind: 'beschlag', group: 'bolzen', name: tk('Sechskantschraube M10 × 140 mit Mutter und 2 Scheiben'), pack: 1, packPrice: 1.3, priceEstimated: true },
   { id: 'sechskantschraube-m10x160', kind: 'beschlag', group: 'bolzen', name: tk('Sechskantschraube M10 × 160 mit Mutter und 2 Scheiben'), pack: 1, packPrice: 1.4, priceEstimated: true },
   { id: 'sechskantschraube-m10x180', kind: 'beschlag', group: 'bolzen', name: tk('Sechskantschraube M10 × 180 mit Mutter und 2 Scheiben'), pack: 1, packPrice: 1.5, priceEstimated: true },
   { id: 'sechskantschraube-m10x200', kind: 'beschlag', group: 'bolzen', name: tk('Sechskantschraube M10 × 200 mit Mutter und 2 Scheiben'), pack: 1, packPrice: 1.7, priceEstimated: true },
