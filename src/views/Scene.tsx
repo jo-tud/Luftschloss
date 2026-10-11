@@ -16,7 +16,8 @@ import { buildSteps } from '../analysis/assembly'
 import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
 import { locale, t } from '../i18n'
-import { hardwareInstances } from './hardware'
+import { fastenerInstances, type HardwareLists } from './hardware'
+import { allFasteners } from '../model/fasteners'
 import { prismGeometry } from './joineryGeo'
 import { reducedMotion } from './motion'
 import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
@@ -1262,26 +1263,66 @@ export const washerGeo = new THREE.CylinderGeometry(1, 1, 1, 20)
 export const nutGeo = new THREE.CylinderGeometry(1, 1, 1, 6)
 export const plateGeo = new THREE.BoxGeometry(1, 1, 1)
 
-/** Schlossschrauben, Winkel und Balkenschuhe als InstancedMesh – wenige Draw Calls */
+/**
+ * Schlossschrauben, Winkel und Balkenschuhe als InstancedMesh – wenige Draw Calls. In der
+ * Aufbau-Animation erscheinen die Beschläge einer Verbindung erst in dem Schritt, in dem ihr zweites
+ * Teil steht, und dann erst, wenn die Teile gelandet sind.
+ */
 function BoltHardware({ d }: { d: Derived }) {
-  const meshes = useMemo(() => {
-    const h = hardwareInstances(d.resolved)
-    const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material = metal) => {
-      if (!list.length) return null
-      const im = new THREE.InstancedMesh(geo, mat, list.length)
-      list.forEach((m, i) => im.setMatrixAt(i, m))
-      im.castShadow = true
-      im.raycast = () => {}
-      return im
+  const project = useStore((s) => s.project)
+  const groups = useMemo(() => {
+    const make = (h: HardwareLists) => {
+      const one = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material = metal) => {
+        if (!list.length) return null
+        const im = new THREE.InstancedMesh(geo, mat, list.length)
+        list.forEach((m, i) => im.setMatrixAt(i, m))
+        im.castShadow = true
+        im.raycast = () => {}
+        return im
+      }
+      return [one(headGeo, h.heads), one(washerGeo, h.washers), one(nutGeo, h.nuts), one(plateGeo, h.plates), one(washerGeo, h.pockets, pocketMat), one(washerGeo, h.screws), one(washerGeo, h.pins, pinMat)].filter(Boolean) as THREE.InstancedMesh[]
     }
-    return [make(headGeo, h.heads), make(washerGeo, h.washers), make(nutGeo, h.nuts), make(plateGeo, h.plates), make(washerGeo, h.pockets, pocketMat), make(washerGeo, h.screws), make(washerGeo, h.pins, pinMat)].filter(Boolean) as THREE.InstancedMesh[]
-  }, [d])
+    // Schritt je Verbindung aus dem Bauablauf
+    const steps = buildSteps(project, d.resolved)
+    const stepOf = new Map<string, { step: number; parts: number }>()
+    steps.forEach((st, i) => st.joints.forEach((k) => stepOf.set(k, { step: i, parts: st.memberIds.length + st.panelIds.length })))
+    const all = allFasteners(d.resolved)
+    const byStep = new Map<number, typeof all>()
+    for (const f of all) {
+      const s2 = stepOf.get(f.joint)?.step ?? -1
+      byStep.set(s2, [...(byStep.get(s2) ?? []), f])
+    }
+    return [...byStep].map(([step, list]) => ({ step, parts: steps[step] ? steps[step].memberIds.length + steps[step].panelIds.length : 0, meshes: make(fastenerInstances(list, false)) }))
+  }, [d, project])
   // Instanzpuffer freigeben; Geometrie und Material sind geteilt und bleiben
-  useDispose(meshes)
+  useDispose(useMemo(() => groups.flatMap((g) => g.meshes), [groups]))
+  const refs = useRef<(THREE.Group | null)[]>([])
+  useFrame(() => {
+    const b = useStore.getState().build
+    groups.forEach((g, i) => {
+      const o = refs.current[i]
+      if (!o) return
+      if (!b || g.step < 0) {
+        o.visible = !b
+        return
+      }
+      if (g.step < b.step) o.visible = true
+      else if (g.step > b.step) o.visible = false
+      else {
+        // nach dem Landen des letzten Teils dieses Schritts
+        const landed = g.parts * 0.12 + 0.8
+        o.visible = reducedMotion() || (performance.now() - b.start) / 1000 > landed
+      }
+    })
+  })
   return (
     <group>
-      {meshes.map((m, i) => (
-        <primitive key={i} object={m} />
+      {groups.map((g, i) => (
+        <group key={g.step} ref={(o) => void (refs.current[i] = o)}>
+          {g.meshes.map((m, k) => (
+            <primitive key={k} object={m} />
+          ))}
+        </group>
       ))}
     </group>
   )

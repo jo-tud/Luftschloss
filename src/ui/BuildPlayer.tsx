@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { t, tr } from '../i18n'
 import { buildSteps } from '../analysis/assembly'
+import { jointType } from '../model/joints'
 import { useDerived, useStore } from '../state/store'
 
 /** Abspieler für die Aufbau-Animation: Schritt für Schritt fliegen die Teile an ihren Platz. */
@@ -34,6 +35,7 @@ export function BuildPlayer() {
         </button>
       </div>
       <p>{tr(st?.text ?? '')}</p>
+      {st && <StepJoints keys={st.joints} />}
       {st?.tools.length ? <p className="hint">{t('Werkzeug: {tools}', { tools: st.tools.map((x) => tr(x)).join(', ') })}</p> : null}
       <div className="row">
         <button onClick={() => go(build.step - 1)} disabled={build.step === 0} title={t('Schritt zurück')}>
@@ -49,6 +51,39 @@ export function BuildPlayer() {
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Verbindungen dieses Schritts, nach Art gruppiert. Ein Klick öffnet das Verbindungsdetail mit Ablauf,
+ * Anleitung und Werkstattzeichnung – so führt der Aufbau zu jeder Verbindung.
+ */
+export function StepJoints({ keys }: { keys: string[] }) {
+  const d = useDerived()
+  const set = useStore((s) => s.set)
+  const groups = useMemo(() => {
+    const byKey = new Map(d.resolved.joints.map((j) => [j.key, j]))
+    const g = new Map<string, { typeId: string; keys: string[] }>()
+    for (const k of keys) {
+      const j = byKey.get(k)
+      if (!j) continue
+      const id = `${j.typeId}|${j.ending ? 1 : 0}`
+      const e = g.get(id) ?? { typeId: j.typeId, keys: [] }
+      e.keys.push(k)
+      g.set(id, e)
+    }
+    return [...g.values()]
+  }, [keys, d])
+  if (!groups.length) return null
+  return (
+    <div className="step-joints">
+      <span className="muted">{t('Verbindungen in diesem Schritt:')}</span>
+      {groups.map((g) => (
+        <button key={g.keys[0]} className="chip" onClick={() => set({ jointDetail: g.keys[0] })} title={t('Anleitung und Werkstattzeichnung öffnen')}>
+          {g.keys.length} × {tr(jointType(g.typeId)?.name ?? g.typeId)}
+        </button>
+      ))}
     </div>
   )
 }

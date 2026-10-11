@@ -88,14 +88,19 @@ function ViewSvg({ v, dims = true, fs = FS, refName }: { v: View2D; dims?: boole
           })}
           {/* quer: von der Bezugskante (unten) */}
           <line x1={xa - fs * 1.2} y1={0} x2={xa - fs * 1.2} y2={-H} stroke="#59606a" strokeWidth={0.35} />
-          {v.dimY.map((y) => (
-            <g key={`y${y}`}>
-              <line x1={xa - fs * 1.2 - 1} y1={-y} x2={xa - 1} y2={-y} stroke="#59606a" strokeWidth={0.3} />
-              <text x={xa - fs * 1.5} y={-y} textAnchor="end" dominantBaseline="middle">
-                {y}
-              </text>
-            </g>
-          ))}
+          {v.dimY.map((y, i) => {
+            // dicht beieinander: abwechselnd weiter links
+            const near = i > 0 && y - v.dimY[i - 1] < fs * 1.1
+            const tx = xa - fs * 1.5 - (near && i % 2 ? fs * 2.2 : 0)
+            return (
+              <g key={`y${y}`}>
+                <line x1={tx + fs * 0.3} y1={-y} x2={xa - 1} y2={-y} stroke="#59606a" strokeWidth={0.3} />
+                <text x={tx} y={-y} textAnchor="end" dominantBaseline="middle">
+                  {y}
+                </text>
+              </g>
+            )
+          })}
           {v.x[0] === 0 && (
             <text x={0} y={fs * 1.4} fontSize={fs * 0.8} fill="#59606a">
               ▲ {refName}
@@ -125,13 +130,13 @@ export function WorkDrawing({ d, title, onTemplate }: { d: PartDrawing; title: s
       {d.views.map((v) => {
         const fs = Math.max(6, (v.x[1] - v.x[0]) / 45)
         const top = v.y[1] + fs * 1.2 + fs * 5.5
-        const left = fs * 6
+        const left = fs * 8.5
         const w = v.x[1] - v.x[0] + left + 8
         const h = top + fs * 2.5
         return (
-          <figure key={v.key}>
+          <figure key={`${v.key}${v.x[0]}`}>
             <figcaption>
-              {txt(v.title)} <span className="muted">({t('quer {n} mm', { n: Math.round(v.across) })})</span>
+              {txt(v.title)} <span className="muted">({t('quer {n} mm', { n: Math.round(v.across) })}{v.broken.left || v.broken.right ? `, ${t('Ausschnitt {a}–{b} mm', { a: Math.round(v.x[0]), b: Math.round(v.x[1]) })}` : ''})</span>
             </figcaption>
             <svg viewBox={`${v.x[0] - left} ${-top} ${w} ${h}`} className="wd-svg" role="img" aria-label={txt(v.title)}>
               <ViewSvg v={v} fs={fs} refName={txt(d.refName)} />

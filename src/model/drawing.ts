@@ -147,6 +147,10 @@ export interface DrawOpts {
   towardName?: string
   /** Name des Bezugsendes (am Anfang bzw. Ende des Stabs) */
   endName?: (atStart: boolean) => Text
+  /** ganzes Teil zeichnen (Teile-Arbeitsplan) statt eines Ausschnitts um die Verbindung */
+  full?: boolean
+  /** Bezugsende vorgeben (sonst das Ende näher an der Verbindung) */
+  refAtStart?: boolean
 }
 
 export interface Text {
@@ -176,16 +180,16 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
       u1 = Math.max(u1, q[0])
     }
   const uj = at ? local(m, at)[0] : (u0 + u1) / 2
-  const refAtStart = uj - u0 <= u1 - uj
+  const refAtStart = o.refAtStart ?? uj - u0 <= u1 - uj
   const X = (u: number) => (refAtStart ? u - u0 : u1 - u)
   const xj = X(uj)
   const total = u1 - u0
   // Ausschnitt um den Knoten; nahe am Ende bis zum Ende
   const W = Math.max(m.b, m.h) * 1.6 + 60
-  let xa = Math.max(0, xj - W)
-  let xb = Math.min(total, xj + W)
-  if (xa < W * 0.6) xa = 0
-  if (total - xb < W * 0.6) xb = total
+  let wa = Math.max(0, xj - W)
+  let wb = Math.min(total, xj + W)
+  if (wa < W * 0.6) wa = 0
+  if (total - wb < W * 0.6) wb = total
   const half = [m.b / 2, m.h / 2]
   // Ausnehmungen (Abfall): Teile des Grundquerschnitts, die nicht mehr da sind
   const base: LocalBox[] = memberBoxes(m).map((o: OBB) => toLocal(m, o))
@@ -213,6 +217,26 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
     { key: 'b', ax: 2 },
   ]
   const holesLocal = holeList(m, fasteners, [...others.values()], boxes, o.ranges)
+  // ganzes Teil: nur die Bereiche mit Bearbeitungen, je ein Ausschnitt (ein 2 m langes Holz wäre sonst ein Strich)
+  const windows: [number, number][] = []
+  if (o.full) {
+    const xs: number[] = []
+    for (const sb of subs) xs.push(X(sb[0][0]), X(sb[0][1]))
+    for (const h of holesLocal) xs.push(X(h.entry[0]), X(h.exit[0]))
+    for (const b of boxes) if (b[0][0] < -EPS || b[0][1] > L + EPS) xs.push(X(b[0][0]), X(b[0][1]))
+    for (const p of prismPts) for (const q of [...p.bottom, ...p.top]) xs.push(X(q[0]))
+    xs.sort((a, b) => a - b)
+    for (const x of xs) {
+      const last = windows[windows.length - 1]
+      if (last && x - last[1] < 250) last[1] = Math.max(last[1], x)
+      else windows.push([x, x])
+    }
+    for (const w of windows) {
+      w[0] = w[0] - 60 < 150 ? 0 : w[0] - 60
+      w[1] = total - (w[1] + 60) < 150 ? total : w[1] + 60
+    }
+  } else windows.push([wa, wb])
+  for (const [xa, xb] of windows)
   for (const vw of VIEWS) {
     // Ansicht entlang Achse vw.ax; die andere Querachse ist y
     const yAx = vw.ax === 1 ? 2 : 1
@@ -314,6 +338,11 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
       broken: { left: xa > 0, right: xb < total },
       across: 2 * yHalf,
     })
+  }
+  // Bereiche ohne sichtbare Bearbeitung auf dieser Seite weglassen (es bleibt mindestens eine Ansicht je Bereich)
+  if (o.full) {
+    const keep = views.filter((v) => v.holes.length || v.waste.length || v.hidden.length || v.edges.length > 4)
+    if (keep.length) views.splice(0, views.length, ...keep)
   }
 
   // Bohrtabelle; Bohrungen derselben Achse von beiden Seiten in einer Zeile
