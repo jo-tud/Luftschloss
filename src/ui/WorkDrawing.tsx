@@ -145,7 +145,7 @@ export function WorkDrawing({ d, title, onTemplate }: { d: PartDrawing; title: s
         return (
           <figure key={`${v.key}${v.x[0]}`}>
             <figcaption>
-              {txt(v.title)} <span className="muted">({t('quer {n} mm', { n: Math.round(v.across) })}{v.broken.left || v.broken.right ? `, ${t('Ausschnitt {a}–{b} mm', { a: Math.round(v.x[0]), b: Math.round(v.x[1]) })}` : ''})</span>
+              {txt(v.title)} <span className="muted">({t('quer {n} mm', { n: Math.round(v.across) })}{v.yRef ? `, ${t('Querabstände ab {k}', { k: txt(v.yRef) })}` : ''}{v.broken.left || v.broken.right ? `, ${t('Ausschnitt {a}–{b} mm', { a: Math.round(v.x[0]), b: Math.round(v.x[1]) })}` : ''})</span>
             </figcaption>
             <svg viewBox={`${v.x[0] - left} ${-top} ${w} ${h}`} className="wd-svg" role="img" aria-label={txt(v.title)}>
               <ViewSvg v={v} fs={fs} refName={txt(d.refName)} />

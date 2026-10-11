@@ -378,6 +378,7 @@ export const HARDWARE: HardwareItem[] = [
   { id: 'gewindestange-m10', kind: 'beschlag', group: 'bolzen', name: tk('Gewindestange M10 verzinkt (je 1 m)'), pack: 1000, packPrice: 3.5, perMeter: true, priceEstimated: true },
   { id: 'lochband', kind: 'beschlag', group: 'lochband', name: tk('Lochband 20 mm × 10 m'), pack: 1, packPrice: 12, priceEstimated: true },
   { id: 'rahmenduebel-10', kind: 'beschlag', group: 'duebel', name: tk('Rahmendübel 10 × 115 mit Schraube'), pack: 10, packPrice: 9, priceEstimated: true },
+  { id: 'rahmenduebel-10x140', kind: 'beschlag', group: 'duebel', name: tk('Rahmendübel 10 × 140 mit Schraube'), pack: 10, packPrice: 11, priceEstimated: true },
   { id: 'stellfuss-m16', kind: 'beschlag', group: 'spindel', name: tk('Stellfuß / Gewindespindel M16 für Deckenverspannung'), pack: 1, packPrice: 6, priceEstimated: true },
   { id: 'holzduebel-10', kind: 'beschlag', group: 'beschlag', name: tk('Holzdübel Buche 10 × 40, Packung 100'), pack: 100, packPrice: 5, priceEstimated: true },
   { id: 'seil-12', kind: 'beschlag', group: 'netzzubehoer', name: tk('Polypropylen-Seil Ø 12 mm (Meterware)'), pack: 1000, packPrice: 1.5, perMeter: true, priceEstimated: true },

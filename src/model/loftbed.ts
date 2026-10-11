@@ -18,6 +18,8 @@ export interface BedFixing {
   hardwareId: string
   count: number
   note: string
+  /** weitere Beschläge für dieselbe Befestigung (z. B. Winkel und Schrauben der Kippsicherung) */
+  extra?: { id: string; count: number }[]
 }
 
 export interface BedInfo {
@@ -149,7 +151,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const railBottom = railTop - rh
   const cross = (s: Side) => s === 'links' || s === 'rechts' // i18n-ok
   /** Unterkante der Zarge einer Seite (Querzargen bei Zargen außen eine Zargenhöhe tiefer) */
-  const railBottomAt = (s: Side) => (aussen && cross(s) ? railBottom - rh : railBottom)
+  // Zargen zwischen den Pfosten: tragen die Querzargen nichts (Latten und Roste liegen auf den Längszargen),
+  // sitzen sie 6 mm tiefer – dann haben die Bolzen beider Richtungen im Pfosten 30 mm Randabstand
+  const crossDrop = !aussen && !aufgelegt && ['latten', 'rollrost', 'lattenrost'].includes(P.deck) ? 6 : 0
+  const railBottomAt = (s: Side) => (aussen && cross(s) ? railBottom - rh : cross(s) ? railBottom - crossDrop : railBottom)
   const guardTop = H + P.guardHeight
   const detached = new Set(a.detached)
 
@@ -509,7 +514,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       if (!keepRail(cn[1] === 'L' ? 'links' : 'rechts')) continue // i18n-ok
       const xPlane = cn[1] === 'L' ? rb / 2 : Lo - rb / 2
       const yFace = front ? y + p : y
-      brace(`kopfband-${cn}-y`, t('Kopfband {c} quer', { c: cornerLabel(cn) }), v(xPlane, yFace, railBottom), v(0, front ? 1 : -1, 0), v(1, 0, 0))
+      brace(`kopfband-${cn}-y`, t('Kopfband {c} quer', { c: cornerLabel(cn) }), v(xPlane, yFace, railBottomAt(cn[1] === 'L' ? 'links' : 'rechts')), v(0, front ? 1 : -1, 0), v(1, 0, 0)) // i18n-ok
     }
   }
 

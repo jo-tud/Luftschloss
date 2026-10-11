@@ -10,7 +10,8 @@ import { analyze } from '../src/analysis/checks'
 import { progressAt, timeline } from '../src/model/jointTimeline'
 import { fill, jointDrawings, jointPlan } from '../src/model/jointPlan'
 import { computeBom } from '../src/analysis/bom'
-import { partTypes } from '../src/analysis/assembly'
+import { buildSteps, partTypes } from '../src/analysis/assembly'
+import { keepWallContact } from '../src/model/placement'
 
 describe('Ablauf einer Verbindung', () => {
   it('jede Verbindungsart hat eine Anleitung mit genau einem Fügeschritt; Leiste vorher, Befestigen danach', () => {
@@ -169,7 +170,8 @@ describe('Werkstattzeichnung', () => {
     const [E, T] = d
     expect(E.views.some((v) => v.dimX.includes(plan.cuts!.dims.laenge))).toBe(true)
     expect(T.views.some((v) => v.waste.length > 0)).toBe(true)
-    expect(T.refName.key).toBe('oberes Ende')
+    // stehende Hölzer werden überall vom Fuß aus bemaßen
+    expect(T.refName.key).toBe('unteres Ende')
   })
 })
 
@@ -180,6 +182,25 @@ describe('Bolzenlage nach DIN EN 1995', () => {
     const lo = boltHeights(120, 10, -1)
     expect(lo[0]).toBe(4)
     expect(lo[0] - lo[1]).toBeGreaterThanOrEqual(40)
+    // Querzarge 6 mm tiefer: gleiche Höhen im Pfosten, in der Querzarge 30 mm über der Unterkante
+    expect(boltHeights(120, 10, -1, 6)).toEqual([10, -30])
+  })
+
+  it('Beispielbett: alle Bolzenstöße mindestens 30 mm über der Unterkante ihrer Zarge, Tasche 42 mm tief', () => {
+    const r = resolveProject(testProject())
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    let n = 0
+    for (const j of r.joints.filter((x) => x.typeId === 'schlossschraube' && x.ending)) {
+      const E = byId.get(j.ending!)!
+      if (E.role !== 'zarge') continue
+      const bottom = Math.min(E.start.z, E.end.z) - E.h / 2
+      for (const f of jointFasteners(j, byId, r).filter((x) => x.crossNut)) {
+        expect(f.head.z - bottom, j.key).toBeGreaterThanOrEqual(30 - 0.5)
+        expect(f.crossNut!.depth).toBe(E.b / 2 + 12)
+        n++
+      }
+    }
+    expect(n).toBeGreaterThan(0)
   })
 
   it('Bolzen verschiedener Stöße kreuzen sich nirgends im Holz', () => {
@@ -346,5 +367,39 @@ describe('Gratnut-Treppe', () => {
       expect(plan.fasteners.length).toBeGreaterThan(0)
       expect(plan.fasteners.every((f) => f.item === item && f.drillFirst === 6.5), wange).toBe(true)
     }
+  })
+})
+
+describe('Rahmen und Montage (Praxisprüfung)', () => {
+  it('Kippsicherung mit Winkel samt Schrauben im Einkauf; bei Zargen außen Dübel 10 × 140 durch die Zarge', () => {
+    const p = testProject()
+    const r = resolveProject(p)
+    const wall = r.fixings.filter((f) => f.target === 'wand')
+    expect(wall.length).toBeGreaterThan(0)
+    expect(wall.every((f) => f.extra?.some((x) => x.id === 'winkel-90'))).toBe(true)
+    const q = testProject()
+    const b = q.assemblies[0].params
+    q.assemblies[0].params = keepWallContact(q.room, b, { ...b, frameStyle: 'aussen' })
+    const r2 = resolveProject(q)
+    expect(r2.fixings.filter((f) => f.target === 'wand').every((f) => f.hardwareId === 'rahmenduebel-10x140')).toBe(true)
+    // an der Ecke liegt die Längszarge nur auf der Querzarge
+    const byId = new Map(r2.members.map((m) => [m.id, m]))
+    const corner = r2.joints.filter((j) => byId.get(j.a)!.role === 'zarge' && byId.get(j.b)!.role === 'zarge')
+    expect(corner.length).toBe(4)
+    expect(corner.every((j) => j.typeId === 'lose')).toBe(true)
+  })
+
+  it('Montage: vor der Wand aufbauen, Haltegriffe beim Geländer, Posten mit Ausklinkung an verschiedenen Wänden getrennt nummeriert', () => {
+    const p = testProject()
+    const r = resolveProject(p)
+    const steps = buildSteps(p, r)
+    expect(steps.some((s) => s.text.includes('60 cm davor aufbauen'))).toBe(true)
+    const guard = steps.find((s) => s.title === 'Geländer')!
+    expect(guard.memberIds.some((id) => id.includes('leiter-griff'))).toBe(true)
+    const { parts, byMember } = partTypes(r)
+    const posts = r.members.filter((m) => m.role === 'pfosten' && m.notches?.length)
+    const walls = new Set(posts.map((m) => m.notches!.map((n) => n.reason).join()))
+    if (walls.size > 1) expect(new Set(posts.map((m) => byMember.get(m.id))).size).toBeGreaterThan(1)
+    expect(parts.length).toBeGreaterThan(0)
   })
 })
