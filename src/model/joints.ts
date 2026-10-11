@@ -122,7 +122,7 @@ export const JOINT_TYPES: JointType[] = [
     removable: true,
     stiffness: 'halbsteif',
     residualSection: 0.85,
-    tools: [tk('Bohrmaschine'), tk('Holzbohrer Ø 9 und Ø 10 mm'), tk('Zwingen'), tk('Inbusschlüssel')],
+    tools: [tk('Bohrmaschine'), tk('Schlangenbohrer Ø 9 × 250 mm'), tk('Holzbohrer Ø 10 mm'), tk('Zwingen'), tk('Inbusschlüssel')],
     toolsPlus: [tk('Bohrschablone für Bettbeschläge'), tk('Bohrständer')],
     hardware: [{ id: 'bettschraube-m8', qty: 2 }],
     note: tk('Unsichtbar und zerlegbar, typisch im Möbelbau. Bohrungen müssen genau sitzen.'),

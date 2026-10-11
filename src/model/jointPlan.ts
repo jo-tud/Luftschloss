@@ -1,5 +1,5 @@
 import { tk } from '../i18n'
-import { bedCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
+import { BED_NUT_DEPTH, bedCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
 import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
 import { allCuts, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
@@ -77,10 +77,10 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.bohr = f.drill ?? 11
     vars.laenge = buyLength(f.item) ?? r0(f.length)
     vars.abstand = bolts.length > 1 ? r0(len(sub(bolts[0].head, bolts[1].head))) : 0
-    vars.nut = CROSS_NUT_DEPTH
+    vars.nut = f.kind === 'bettschraube' ? BED_NUT_DEPTH : CROSS_NUT_DEPTH
     vars.tasche = r0(f.crossNut?.depth ?? E.b / 2 + 12)
     // Bohrtiefe: beim Stoß bis zur Mitte der Tasche bzw. Querbohrung, sonst durch beide Hölzer
-    vars.tiefe = f.crossNut ? r0(len(sub(f.crossNut.at, f.head))) : r0(f.length)
+    vars.tiefe = f.kind === 'bettschraube' ? r0(f.length + 5) : f.crossNut ? r0(len(sub(f.crossNut.at, f.head))) : r0(f.length)
     // kleinster Rand- bzw. Endabstand quer zur Bolzenachse in beiden Hölzern
     const ax = memberAxes(E)
     const edges = bolts.flatMap((b) => [E, T].flatMap((m) => (m ? [boltEdge(m, b.head, b.dir)] : [])).filter((x): x is number => x !== undefined))
