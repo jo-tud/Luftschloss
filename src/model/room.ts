@@ -292,3 +292,53 @@ export function inWallOpening(p: Project, wall: WallId, q: Vec3, margin = 0): bo
     return s > o.offset - margin && s < o.offset + o.width + margin && q.z > z0 - margin && q.z < z1 + margin
   })
 }
+
+/** Möbel, auf denen ein Bett liegen darf (Korpusse mit tragender Oberseite) */
+export const BEARING_FURNITURE: Furniture['kind'][] = ['schrank', 'regal', 'kommode']
+
+export interface FurnitureBearing {
+  memberId: string
+  furnitureId: string
+  /** Abschnitt entlang der Stabachse, der auf dem Möbel liegt */
+  t0: number
+  t1: number
+}
+
+/**
+ * Waagrechte Hölzer, die auf der Oberseite eines Schranks, Regals oder einer Kommode liegen
+ * (Unterkante höchstens 15 mm über bzw. 5 mm unter der Oberseite). Grundlage für die Auflager
+ * der Statik und die Prüfung „Bett auf Regal/Schrank“.
+ */
+export function furnitureBearings(p: Project, members: Member[]): FurnitureBearing[] {
+  const tops = p.furniture
+    .filter((fu) => BEARING_FURNITURE.includes(fu.kind))
+    .map((fu) => ({ fu, b: obbBounds(furnitureBox(fu)) }))
+  if (!tops.length) return []
+  const out: FurnitureBearing[] = []
+  for (const m of members) {
+    if (Math.abs(m.start.z - m.end.z) > 5) continue
+    const bottom = obbBounds(memberBoxes(m)[0]).min.z
+    const L = Math.hypot(m.end.x - m.start.x, m.end.y - m.start.y)
+    if (L < 1) continue
+    for (const { fu, b } of tops) {
+      const gap = bottom - b.max.z
+      if (gap > 15 || gap < -5) continue
+      // Stabachse im Grundriss auf das Rechteck des Möbels beschneiden (Liang–Barsky)
+      const dx = m.end.x - m.start.x
+      const dy = m.end.y - m.start.y
+      let u0 = 0
+      let u1 = 1
+      const clip = (pp: number, q: number) => {
+        if (Math.abs(pp) < 1e-9) return q >= 0
+        const r = q / pp
+        if (pp < 0) u0 = Math.max(u0, r)
+        else u1 = Math.min(u1, r)
+        return u0 <= u1
+      }
+      if (!(clip(-dx, m.start.x - b.min.x) && clip(dx, b.max.x - m.start.x) && clip(-dy, m.start.y - b.min.y) && clip(dy, b.max.y - m.start.y))) continue
+      if ((u1 - u0) * L < 20) continue
+      out.push({ memberId: m.id, furnitureId: fu.id, t0: u0 * L, t1: u1 * L })
+    }
+  }
+  return out
+}
