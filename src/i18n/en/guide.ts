@@ -72,6 +72,7 @@ const en: Record<string, string> = {
   "Einlassung zu tief: höchstens ein Viertel der Holzstärke.": "Housing too deep: at most a quarter of the timber thickness.",
   "Einlassungen {tiefe} mm tief mit der Japansäge einsägen und mit dem Stechbeitel ausstemmen.": "Saw the housings {tiefe} mm deep with a Japanese saw and chop them out with a chisel.",
   "Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.": "Tongue jams: fit the groove first, then the tongue – never the other way round.",
+  "Zwei Trittbretter je Stufe: eine durchgehende Nut für beide – das vordere Brett zuerst ganz durchschieben, dann das hintere nachschieben.": "Two tread boards per step: one continuous groove for both – slide the front board all the way through first, then push the back one in after it.",
   "Flanken zu locker: Ein Schwalbenschwanz hält nur, wenn die Flanken satt anliegen.": "Loose flanks: a dovetail only holds if the flanks fit snugly.",
   "Führungsleisten": "Guide battens",
   "Führungswinkel bauen: Zwei gerade Leistenreste rechtwinklig zu einem L verleimen und hochkant neben die Bohrstelle stellen. Der Bohrer läuft in der Innenecke und steht so in beiden Richtungen senkrecht.": "Make a guide angle: glue two straight batten offcuts into an L at a right angle and stand it on edge next to the hole. The bit runs in the inside corner and so stays square in both directions.",

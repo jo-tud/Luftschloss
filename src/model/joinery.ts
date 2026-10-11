@@ -605,6 +605,22 @@ export function cutOverlaps(joints: DetectedJoint[], members: Member[]): { membe
     if (!c) continue
     for (const [id, mc] of c.members) for (const box of mc.sub) per.set(id, [...(per.get(id) ?? []), { key: j.key, box }])
   }
+  // Zwei Bretter derselben Stufe in einer gemeinsamen Nut (gleiche Art, parallel, gleiche Dicke in
+  // gleicher Ebene): eine durchgehende Nut, das vordere Brett wird durch die hintere Hälfte geschoben
+  const jByKey = new Map(joints.map((j) => [j.key, j]))
+  const sharedGroove = (ka: string, kb: string, id: string) => {
+    const ja = jByKey.get(ka)!
+    const jb = jByKey.get(kb)!
+    if (ja.typeId !== jb.typeId || (ja.typeId !== 'gratnut' && ja.typeId !== 'nut')) return false
+    const ea = byId.get(ja.a === id ? ja.b : ja.a)
+    const eb = byId.get(jb.a === id ? jb.b : jb.a)
+    if (!ea || !eb || Math.min(ea.b, ea.h) !== Math.min(eb.b, eb.h)) return false
+    const [xa, ya, za] = memberAxes(ea)
+    if (Math.abs(dot(xa, memberAxes(eb)[0])) < 0.999) return false
+    const thick = ea.b <= ea.h ? ya : za
+    const mid = (m: Member) => scale(add(m.start, m.end), 0.5)
+    return Math.abs(dot(sub(mid(ea), mid(eb)), thick)) < 1
+  }
   const out: { memberId: string; joints: [string, string]; volume: number }[] = []
   for (const [id, list] of per) {
     const m = byId.get(id)
@@ -618,7 +634,7 @@ export function cutOverlaps(joints: DetectedJoint[], members: Member[]): { membe
         const b = list[k]
         if (a.key === b.key) continue
         const pair = [a.key, b.key].sort().join('#')
-        if (seen.has(pair)) continue
+        if (seen.has(pair) || sharedGroove(a.key, b.key, id)) continue
         const vol = [0, 1, 2].reduce((acc, d) => acc * Math.max(0, Math.min(a.box[d][1], b.box[d][1], own[d][1]) - Math.max(a.box[d][0], b.box[d][0], own[d][0])), 1)
         if (vol < 1000) continue
         seen.add(pair)
