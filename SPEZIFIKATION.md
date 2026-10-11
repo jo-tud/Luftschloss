@@ -133,7 +133,7 @@ Beim ersten Start lädt das **Beispielzimmer** (`testProject()` in `src/model/de
 | Galerie mit Mittelstütze | ✅ | Lange Hochebene, eine Stütze in der Mitte jeder Längsseite |
 | Zwei Kinder oben | ✅ | Zwei Matratzen nebeneinander, Mittelträger unter der Fuge |
 | Netz-Hochebene | ✅ mit Warnung | Begehbares Netz, kräftige Zargen |
-| Bett auf Regal, Podest | ◻ | |
+| Bett auf Regal/Schrank | ✅ | Pfosten entfallen, der Rahmen liegt auf den Möbeln (Statik: Oberseiten als Auflager). Podest ◻ |
 
 Parameter sind:
 - **Bauweise:** Querträger zwischen Zargen, **aufgelegt** oder **Zargen außen am Pfosten, durchgebolzt** (nur mit vier Pfosten, `outsideRails()` in `src/model/loftbed.ts`); freie Ecke auf Pfosten oder **von der Decke abgehängt**
