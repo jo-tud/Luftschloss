@@ -244,5 +244,11 @@ const en: Record<string, string> = {
   "Die Latte ist niedriger als der Winkel – Latten von oben aufschrauben.": "The slat is lower than the bracket – screw slats on from above.",
   "Sechskantschraube M10 × 140 mit Mutter und 2 Scheiben": "Hex bolt M10 × 140 with nut and 2 washers",
   "Brett zu dünn für Schrauben ins Hirnholz – Stufen in eine Gratnut, Bretter mit Winkeln oder seitlich überlappend befestigen.": "Board too thin for screws into the end grain – put steps into a sliding dovetail housing, fix boards with brackets or overlapping at the side.",
+  "Holzbauschraube 6×70, Packung 100": "Construction screw 6×70, pack of 100",
+  "Bettschraube M8 × 120 mit Zylindermutter": "Bed bolt M8 × 120 with barrel nut",
+  "Bettschraube M8 × 140 mit Zylindermutter": "Bed bolt M8 × 140 with barrel nut",
+  "Bettschraube M8 × 160 mit Zylindermutter": "Bed bolt M8 × 160 with barrel nut",
+  "Schlangenbohrer Ø 9 × 250 mm": "Auger bit Ø 9 × 250 mm",
+  "Holzbohrer Ø 10 mm": "Wood drill bit Ø 10 mm",
 }
 export default en

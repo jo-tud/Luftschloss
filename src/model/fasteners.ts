@@ -77,6 +77,7 @@ const SCREWS: { d: number; L: number; item: string }[] = [
   { d: 8, L: 160, item: 'schraube-8x160' },
   { d: 8, L: 200, item: 'schraube-8x200' },
   { d: 8, L: 240, item: 'schraube-8x240' },
+  { d: 6, L: 70, item: 'schraube-6x70' },
   { d: 6, L: 80, item: 'schraube-6x80' },
   { d: 6, L: 100, item: 'schraube-6x100' },
   { d: 5, L: 50, item: 'schraube-5x50' },
@@ -111,6 +112,15 @@ export function boltM10(through: number): { length: number; item: string } {
 
 /** Abstand der Quermutter vom Hirnholzende (a3,t = 80 mm für M10, DIN EN 1995) */
 export const CROSS_NUT_DEPTH = 80
+
+/** Bettschraube M8: Zylindermutter 60 mm vom Ende (Möbelbau-Praxis 50–60 mm, Recherche) */
+export const BED_NUT_DEPTH = 60
+
+/** Kürzeste Bettschraube M8, die durch die Zylindermutter (Ø 10) reicht, deren Mitte toNut mm hinter dem Kopf liegt */
+export function bedBoltM8(toNut: number): { length: number; item: string } {
+  const L = [120, 140, 160].find((x) => x >= toNut + 6) ?? 160
+  return { length: L, item: `bettschraube-m8x${L}` }
+}
 
 const neg = (a: Vec3): Vec3 => scale(a, -1)
 const width2 = (r: [number, number]) => r[1] - r[0]
@@ -340,8 +350,8 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const [t0, t1] = range(Tm, o)
     const tHead = t1 - dot(pE, o)
     if (tHead < 5 || t0 - dot(pE, o) > 5) return out
-    const nutDepth = CROSS_NUT_DEPTH
     const bett = j.typeId === 'bettschraube'
+    const nutDepth = bett ? BED_NUT_DEPTH : CROSS_NUT_DEPTH
     // Höhen von unten nach oben gemessen (Oberkante ist der beanspruchte Rand)
     const hDir = axesE[2].z < -0.1 ? neg(axesE[2]) : axesE[2]
     const heights = boltHeights(E.h, 2 * rad, crossing(j, E, Tm, byId, r, BOLTS))
@@ -351,14 +361,15 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     // Schlossschraube lässt sich im stumpfen Stoß nicht anziehen (der Vierkant dreht im Holz):
     // Sechskantschraube mit Scheibe, Mutter in einer Tasche (Forstner Ø 35) auf der Innenseite
     const hex = hexM10(tHead, nutDepth)
-    const item = bett ? 'bettschraube-m8' : hex.item
+    const bed = bedBoltM8(tHead + nutDepth)
+    const item = bett ? bed.item : hex.item
     for (const hgt of heights) {
       const base = at(pE, [hDir, hgt])
       push({
         kind,
         head: at(base, [o, tHead]),
         dir: into,
-        length: bett ? tHead + nutDepth + 10 : hex.length - 3,
+        length: bett ? bed.length : hex.length - 3,
         d: 2 * rad,
         when: 'nachher',
         crossNut: bett
@@ -600,14 +611,20 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const e2 = norm(cross(cr, axesA[0]))
     const lapC = at(A.start, [axesA[0], (subA[0][0] + subA[0][1]) / 2], [axesA[1], (subA[1][0] + subA[1][1]) / 2], [axesA[2], (subA[2][0] + subA[2][1]) / 2])
     const ext = (d: Vec3) => [0, 1, 2].reduce((sum, k) => sum + Math.abs(dot(axesA[k], d)) * (subA[k][1] - subA[k][0]), 0)
-    const top = Math.max(range(A, cr)[1], range(B, cr)[1])
-    // so lang wie möglich, ohne unten auszutreten
-    const bottom = Math.min(range(A, cr)[0], range(B, cr)[0])
-    const thick = top - bottom
-    const sz = thick - 8 >= 100 ? { L: 100, r: 3, item: 'schraube-6x100' } : thick - 8 >= 80 ? { L: 80, r: 3, item: 'schraube-6x80' } : { L: 50, r: 2.5, item: 'schraube-5x50' }
+    // von der bündigen Seite (dort liegt das Blatt des dünneren Holzes) durch das Blatt ins dickere Holz
+    const aR = range(A, cr)
+    const bR = range(B, cr)
+    const lo = Math.abs(aR[0] - bR[0]) <= Math.abs(aR[1] - bR[1])
+    const face = lo ? Math.min(aR[0], bR[0]) : Math.max(aR[1], bR[1])
+    const dirIn = lo ? cr : neg(cr)
+    const thick = Math.max(aR[1], bR[1]) - Math.min(aR[0], bR[0])
+    // Blattdicke: halbe Überdeckung quer zur Ebene
+    const blatt = (Math.min(aR[1], bR[1]) - Math.max(aR[0], bR[0])) / 2
+    const sz = pickScrew(blatt, thick - blatt, Math.min(A.b, A.h, B.b, B.h))
     for (const k of [-0.22, 0.22]) {
       const p0 = at(lapC, [axesA[0], ext(axesA[0]) * k], [e2, -ext(e2) * k])
-      screw(at(p0, [cr, top - dot(p0, cr)]), neg(cr), sz.L, sz.r, 'nachher', sz.item, 4)
+      screw(at(p0, [cr, face - dot(p0, cr)]), dirIn, sz.length, sz.d / 2, 'nachher', sz.item, Math.round(sz.d * 0.7))
+      out[out.length - 1].first = blatt
     }
   } else if (type === 'zapfen' && F.pE) {
     // Holznagel quer durch Zapfenloch und Zapfen, Stirnseiten sichtbar

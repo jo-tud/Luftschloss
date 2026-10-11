@@ -167,8 +167,10 @@ export function assemblyDir(j: DetectedJoint, F: JointFrame): Vec3 {
       const aR = rangeAlong(A, cr)
       const bR = rangeAlong(B, cr)
       const lo = Math.abs(aR[0] - bR[0]) <= Math.abs(aR[1] - bR[1])
-      const bUp = lo ? cr : scale(cr, -1)
-      return E === B ? bUp : scale(bUp, -1)
+      // das dünnere Holz behält die bündige Hälfte und kommt von der bündigen Seite (wie in jointCuts)
+      const thin = width(aR) >= width(bR) ? B : A
+      const fromFlush = lo ? scale(cr, -1) : cr
+      return E === thin ? fromFlush : scale(fromFlush, -1)
     }
     case 'schwalbenschwanz':
       return low ? scale(across, -1) : across
@@ -258,15 +260,19 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const oB = ext.get(B.id)!
       const R = fr.map((d) => inter(rng(oA, d), rng(oB, d))) as [Range, Range, Range]
       if (R.some((r) => width(r) < 1)) return undefined
-      // Blatt auf der Seite, auf der beide Hölzer bündig sind; jedes Holz bis zu seiner eigenen
-      // Oberfläche ausnehmen, damit der Sitz offen ist
+      // Blatt zur Seite hin offen, auf der beide Hölzer bündig sind: Das dünnere Holz behält dort seine
+      // halbe Dicke, das dickere wird genau so tief ausgenommen – so bleibt kein Hohlraum (Zarge 60 am
+      // Pfosten 80: beide 30 mm, im Pfosten bleiben 50 mm)
       const mid = (R[2][0] + R[2][1]) / 2
       const aR = rng(oA, cr)
       const bR = rng(oB, cr)
       const lo = Math.abs(aR[0] - bR[0]) <= Math.abs(aR[1] - bR[1])
-      out.dims.blatt = Math.round(lo ? mid - aR[0] : aR[1] - mid)
-      cutOf(out.members, A).sub.push(toLocal(A, frameBox(fr, [R[0], R[1], lo ? [mid, aR[1]] : [aR[0], mid]])))
-      cutOf(out.members, B).sub.push(toLocal(B, frameBox(fr, [R[0], R[1], lo ? [bR[0], mid] : [mid, bR[1]]])))
+      const thickA = width(aR) >= width(bR)
+      const flushCut = (r: Range): Range => (lo ? [r[0], mid] : [mid, r[1]])
+      const farCut = (r: Range): Range => (lo ? [mid, r[1]] : [r[0], mid])
+      out.dims.blatt = Math.round(lo ? mid - Math.max(aR[0], bR[0]) : Math.min(aR[1], bR[1]) - mid)
+      cutOf(out.members, A).sub.push(toLocal(A, frameBox(fr, [R[0], R[1], thickA ? flushCut(aR) : farCut(aR)])))
+      cutOf(out.members, B).sub.push(toLocal(B, frameBox(fr, [R[0], R[1], thickA ? farCut(bR) : flushCut(bR)])))
       return out
     }
     case 'zapfen': {
