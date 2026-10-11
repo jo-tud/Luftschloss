@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { testProject } from '../src/model/defaults'
-import { allFasteners, type Fastener } from '../src/model/fasteners'
+import { allFasteners, fastenerClashes, type Fastener } from '../src/model/fasteners'
 import { add, dot, len, memberBoxes, scale, sub, type OBB } from '../src/model/geometry'
 import { keepWallContact, placeBed } from '../src/model/placement'
 import { resolveProject } from '../src/model/resolve'
@@ -25,6 +25,10 @@ function placed(type: LoftBedParams['type'], patch: Partial<LoftBedParams>): Pro
 function free(patch: Partial<LoftBedParams>): Project {
   const p = testProject()
   p.assemblies[0].params = { ...p.assemblies[0].params, x: 1000, y: 1800, ...patch }
+  return p
+}
+function pref(p: Project, jointPreference: Project['settings']['jointPreference']): Project {
+  p.settings.jointPreference = jointPreference
   return p
 }
 
@@ -103,5 +107,25 @@ describe('Praxistauglich bauen', () => {
         expect(held, m.partKey).toBe(true)
       }
     }
+  })
+
+  it('in den Standardbetten kreuzt sich nichts: Schrauben, Bolzen und Mutterntaschen', () => {
+    const variants: [string, Project][] = [
+      ['Beispiel', testProject()],
+      ['außen', sampleWith({ frameStyle: 'aussen' })],
+      ['aufgelegt', sampleWith({ frameStyle: 'aufgelegt' })],
+      ['einfach', pref(testProject(), 'einfach')],
+      ['frei mit Kopfbändern', free({ braces: true, ladder: 'stufen' })],
+      ['frei außen Treppe', free({ frameStyle: 'aussen', ladder: 'treppe', ladderAngle: 45, ladderCatalogId: 'kvh-60x160' })],
+      ['frei aufgelegt Platte', free({ frameStyle: 'aufgelegt', deck: 'platte', deckCatalogId: 'osb-22', ladder: 'senkrecht' })],
+      ['wandseitig', placed('wandseitig', { ladder: 'stufen' })],
+      ['wandseitig einfach', pref(placed('wandseitig', { ladder: 'senkrecht' }), 'einfach')],
+      ['wandseitig aufgelegt', placed('wandseitig', { frameStyle: 'aufgelegt', ladder: 'schraeg' })],
+      ['Eckbett', placed('eck', { ladder: 'treppe', ladderAngle: 45, ladderCatalogId: 'kvh-60x160' })],
+      ['Eckbett aufgelegt', placed('eck', { frameStyle: 'aufgelegt', ladder: 'stufen', deck: 'platte', deckCatalogId: 'osb-22' })],
+      ['deckenhoch', placed('deckenhoch', { ladder: 'stufen' })],
+      ['deckenhoch außen', placed('deckenhoch', { frameStyle: 'aussen', ladder: 'senkrecht' })],
+    ]
+    for (const [name, p] of variants) expect(fastenerClashes(resolveProject(p)).map((c) => c.joints.join(' ~ ')), name).toEqual([])
   })
 })

@@ -249,6 +249,8 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         // Geländerbretter werden angeschraubt, nicht gebolzt; Latten liegen nur lose an
         if (kindInfo.kind === 'beischlag' && (A.catalogId.startsWith('leimholz') || B.catalogId.startsWith('leimholz'))) typeId = 'holzbauschraube'
         if (kindInfo.kind === 'beischlag' && (A.role === 'leiste' || B.role === 'leiste' || (A.role === 'stufe' && B.role === 'stufe'))) typeId = 'lose' // Trittbretter einer Stufe liegen nebeneinander auf den Wangen
+        // zwei Wandriegel in der Raumecke: beide sind an der Wand verdübelt und stoßen nur stumpf aneinander
+        if (A.role === 'wandriegel' && B.role === 'wandriegel') typeId = 'lose'
         if ((A.catalogId === 'seil-12' || B.catalogId === 'seil-12') && kindInfo.kind !== 'auflage') typeId = 'seilbefestigung'
         if (A.catalogId === 'gewindestange-m10' || B.catalogId === 'gewindestange-m10') typeId = 'gewindestange'
         // Vorschlag taugt für diese Bauteile nicht (z. B. Schrauben ins Hirnholz eines dünnen Bretts): nächstbeste Art

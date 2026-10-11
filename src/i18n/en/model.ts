@@ -214,6 +214,8 @@ const en: Record<string, string> = {
   "Schlossschraube M10 × 140 mit Mutter und U-Scheibe": "Carriage bolt M10 × 140 with nut and washer",
   "Schlossschraube M10 × 120 mit Mutter und U-Scheibe": "Carriage bolt M10 × 120 with nut and washer",
   "Schlossschraube M8 × 160 mit Mutter und U-Scheibe": "Carriage bolt M8 × 160 with nut and washer",
+  "Schlossschraube M8 × 180 mit Mutter und U-Scheibe": "Carriage bolt M8 × 180 with nut and washer",
+  "Schlossschraube M8 × 200 mit Mutter und U-Scheibe": "Carriage bolt M8 × 200 with nut and washer",
   "Schlossschraube M8 × 140 mit Mutter und U-Scheibe": "Carriage bolt M8 × 140 with nut and washer",
   "Schlossschraube M8 × 120 mit Mutter und U-Scheibe": "Carriage bolt M8 × 120 with nut and washer",
   "Schlossschraube M8 × 100 mit Mutter und U-Scheibe": "Carriage bolt M8 × 100 with nut and washer",
@@ -284,5 +286,8 @@ const en: Record<string, string> = {
   "Nur für liegende Träger an einem stehenden Pfosten.": "Only for horizontal beams on an upright post.",
   "Unter dem Träger ist am Pfosten kein Platz für eine Knagge.": "There is no room for a cleat on the post below the beam.",
   "Der Kopf säße zwischen Wandbalken und Wand – am Wandbalken nur von der Raumseite befestigen (Balkenschuh, Winkel, Leiste).": "The head would sit between the wall beam and the wall – fix to the wall beam from the room side only (joist hanger, angle bracket, ledger).",
+  "Tellerkopf-Holzbauschraube 8×120, Packung 50": "Washer-head structural screw 8×120, pack of 50",
+  "Tellerkopf-Holzbauschraube 8×140, Packung 50": "Washer-head structural screw 8×140, pack of 50",
+  "Holzbauschraube / Winkelschraube 5×40, Packung 250": "Structural screw / angle bracket screw 5×40, pack of 250",
 }
 export default en
