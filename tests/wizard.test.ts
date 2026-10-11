@@ -52,5 +52,6 @@ describe('Assistent: geprüft heißt auch Statik und passende Prüfstrenge', () 
         expect(util, p.key).toBeLessThanOrEqual(1.5)
       }
     }
-  })
+    // rechnet viele Vorschläge samt Statik; bei voller Testlast länger als die üblichen 5 s
+  }, 30000)
 })
