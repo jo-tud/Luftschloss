@@ -133,7 +133,17 @@ export interface SocketObj extends WallObjectBase {
   height: Mm
 }
 
-export type WallObject = WindowObj | DoorObj | RadiatorObj | SocketObj
+/**
+ * Mauervorsprung vom Boden bis zur Decke: Kamin, Pfeiler, Schacht – oder, in eine Ecke gesetzt, eine
+ * ausgesparte Raumecke (L-förmiger Raum)
+ */
+export interface ProjectionObj extends WallObjectBase {
+  kind: 'vorsprung'
+  /** wie weit er in den Raum ragt */
+  depth: Mm
+}
+
+export type WallObject = WindowObj | DoorObj | RadiatorObj | SocketObj | ProjectionObj
 
 export type FurnitureKind =
   | 'schreibtisch'

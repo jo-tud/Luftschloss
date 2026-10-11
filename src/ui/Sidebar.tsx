@@ -10,6 +10,7 @@ import { WALL_IDS } from '../model/types'
 import { useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
 import { ProjectActions } from './Project'
+import { WALL_OBJECT_ICON } from './ObjectHeader'
 
 const WALL_MAT: [WallMaterial, string][] = [
   ['beton', tk('Beton')],
@@ -295,10 +296,11 @@ function FixturesTab() {
   // Neues Objekt an die erste freie Wandstelle setzen und die Ansicht hinfahren
   const addObj = (o: WallObject) => {
     const clash: Record<WallObject['kind'], WallObject['kind'][]> = {
-      fenster: ['fenster', 'tuer'],
-      tuer: ['fenster', 'tuer', 'heizkoerper'],
-      heizkoerper: ['tuer', 'heizkoerper'],
-      steckdose: ['tuer', 'steckdose'],
+      fenster: ['fenster', 'tuer', 'vorsprung'],
+      tuer: ['fenster', 'tuer', 'heizkoerper', 'vorsprung'],
+      heizkoerper: ['tuer', 'heizkoerper', 'vorsprung'],
+      steckdose: ['tuer', 'steckdose', 'vorsprung'],
+      vorsprung: ['fenster', 'tuer', 'heizkoerper', 'steckdose', 'vorsprung'],
     }
     const margin = 150
     for (const w of WALL_IDS) {
@@ -320,13 +322,23 @@ function FixturesTab() {
     setTimeout(() => useStore.getState().focus(o.id), 50)
   }
   const wall: WallId = 'A'
+  // L-Form: Block in einer Ecke, die noch frei ist (Ecke = linkes Ende einer Wand)
+  const addCorner = () => {
+    const w = WALL_IDS.find((x) => !p.wallObjects.some((o) => o.wall === x && o.offset < 1200)) ?? 'C'
+    const len = w === 'A' || w === 'C' ? p.room.length : p.room.width
+    const across = w === 'A' || w === 'C' ? p.room.width : p.room.length
+    const o: WallObject = { id: uid('ecke'), kind: 'vorsprung', name: tk('Raumecke'), wall: w, offset: 0, width: Math.round(Math.min(1500, len / 2)), depth: Math.round(Math.min(1200, across / 2)) }
+    update((d) => void d.wallObjects.push(o))
+    select({ kind: 'wallObject', id: o.id })
+    setTimeout(() => useStore.getState().focus(o.id), 50)
+  }
   return (
     <>
       <Section title={t('Fenster, Türen, Heizkörper')}>
         <ul className="list">
           {p.wallObjects.map((o) => (
             <li key={o.id} className={sel?.id === o.id ? 'on' : ''} {...activate(() => (select({ kind: 'wallObject', id: o.id }), useStore.getState().focus(o.id)))}>
-              <span>{o.kind === 'fenster' ? '🪟' : o.kind === 'tuer' ? '🚪' : o.kind === 'heizkoerper' ? '♨' : '🔌'}</span>
+              <span>{WALL_OBJECT_ICON[o.kind]}</span>
               {tr(o.name)} <small>{t('Wand {w}', { w: o.wall })}</small>
               {p.estimated.includes(`wallObjects.${o.id}`) && <em className="est-tag">{t('geschätzt')}</em>}
             </li>
@@ -343,6 +355,12 @@ function FixturesTab() {
           <button onClick={() => addObj({ id: uid('tuer'), kind: 'tuer', name: tk('Tür'), wall, offset: 300, width: 885, height: 2010, hinge: 'links' /* i18n-ok */, opensInward: true, displayAngle: 0 })}>+ {t('Tür')}</button>
           <button onClick={() => addObj({ id: uid('heizung'), kind: 'heizkoerper', name: tk('Heizkörper'), wall, offset: 500, width: 1000, bottom: 150, height: 600, depth: 100, wallGap: 50, convectionClearance: 100 })}>+ {t('Heizkörper')}</button>
           <button onClick={() => addObj({ id: uid('dose'), kind: 'steckdose', name: tk('Steckdose'), wall, offset: 300, width: 80, bottom: 300, height: 80 })}>+ {t('Steckdose')}</button>
+          <button onClick={() => addObj({ id: uid('vorsprung'), kind: 'vorsprung', name: tk('Vorsprung'), wall, offset: 500, width: 500, depth: 400 })} title={t('Kamin, Pfeiler oder Schacht vom Boden bis zur Decke')}>
+            + {t('Vorsprung')}
+          </button>
+          <button onClick={addCorner} title={t('Ausgesparte Ecke für einen L-förmigen Raum; Wand, Breite und Tiefe danach anpassen')}>
+            + {t('Raumecke (L-Form)')}
+          </button>
         </div>
         <p className="hint">{t('Objekte lassen sich in der Seitenansicht direkt an der Wand verschieben (waagrecht und in der Höhe).')}</p>
       </Section>

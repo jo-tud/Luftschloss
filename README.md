@@ -30,7 +30,7 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 | | |
 |---|---|
 | ![Side elevation with window](docs/screenshots/seitenansicht-fenster.jpg) | ![Top view](docs/screenshots/draufsicht.jpg) |
-| **Your room as it really is:** windows with sashes and sill, radiator, door, sockets, cornice moulding, ceiling rose with lamp, skirting boards, sloped ceilings under the roof. | **Drop in a bed and adjust it:** pick a template, push it into a corner, type in the distance to each wall. Everything stays editable at all times. |
+| **Your room as it really is:** windows with sashes and sill, radiator, door, sockets, cornice moulding, ceiling rose with lamp, skirting boards, sloped ceilings under the roof, chimney breasts and L-shaped rooms. | **Drop in a bed and adjust it:** pick a template, push it into a corner, type in the distance to each wall. Everything stays editable at all times. |
 | ![Structural check](docs/screenshots/statik.jpg) | ![First-person view](docs/screenshots/ich-perspektive.jpg) |
 | **Will it hold?** A simplified structural analysis checks the whole frame: utilisation of every beam, wobble, loads when kids jump around. | **How does it feel?** In first-person view you stand at the door, sit under the bed or lie on the mattress. |
 | ![Build plan](docs/screenshots/bauplan.jpg) | ![Materials](docs/screenshots/material.jpg) |

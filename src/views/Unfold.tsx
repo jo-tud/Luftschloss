@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { fmtCm, memberBoxes, obbBounds, wallFrame } from '../model/geometry'
 import { flatSpans, wallTop } from '../model/ceiling'
 import { cornice } from '../model/room'
-import type { Project, WallId } from '../model/types'
+import type { Project, ProjectionObj, WallId } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { t, tr } from '../i18n'
@@ -32,6 +32,13 @@ function unfoldPoint(p: Project, wall: WallId, s: number, z: number): { x: numbe
 function wallRect(p: Project, wall: WallId, s0: number, s1: number, z0: number, z1: number): string {
   const pts = [unfoldPoint(p, wall, s0, z0), unfoldPoint(p, wall, s1, z0), unfoldPoint(p, wall, s1, z1), unfoldPoint(p, wall, s0, z1)]
   return pts.map((q) => `${q.x},${-q.y}`).join(' ')
+}
+
+/** Grundfläche eines Mauervorsprungs auf dem Boden */
+function floorRect(p: Project, o: ProjectionObj): string {
+  const f = wallFrame(p.room, o.wall)
+  const at = (s: number, d: number) => `${f.start.x + f.u.x * s + f.n.x * d},${-(f.start.y + f.u.y * s + f.n.y * d)}`
+  return [at(o.offset, 0), at(o.offset + o.width, 0), at(o.offset + o.width, o.depth), at(o.offset, o.depth)].join(' ')
 }
 
 /** Wandfläche bis zur Decke; unter einer Dachschräge mit schräger Oberkante */
@@ -147,14 +154,15 @@ export function UnfoldView() {
         {/* Wandobjekte */}
         {p.wallObjects.map((o) => {
           const isSel = sel?.id === o.id
-          const z0 = o.kind === 'fenster' ? o.sillHeight : o.kind === 'tuer' ? 0 : o.bottom
-          const z1 = o.kind === 'fenster' || o.kind === 'tuer' ? z0 + o.height : o.bottom + o.height
+          const z0 = o.kind === 'fenster' ? o.sillHeight : o.kind === 'tuer' || o.kind === 'vorsprung' ? 0 : o.bottom
+          const z1 = o.kind === 'vorsprung' ? Math.max(...wallTop(r, o.wall).map((q) => q.z)) : o.kind === 'fenster' || o.kind === 'tuer' ? z0 + o.height : o.bottom + o.height
           const label = unfoldPoint(p, o.wall, o.offset + o.width / 2, (z0 + z1) / 2)
           const res = o.kind === 'fenster' ? d.analysis.windows.filter((w) => w.windowId === o.id) : []
           const blocked = res.some((w) => w.maxAngle < 90 && w.maxAngle >= 0 && o.kind === 'fenster')
           return (
             <g key={o.id} className={`uf-obj ${o.kind}${isSel ? ' sel' : ''}${blocked ? ' blocked' : ''}`} onPointerDown={(e) => onDown(e, o.id, o.wall)}>
               <polygon points={wallRect(p, o.wall, o.offset, o.offset + o.width, z0, z1)} />
+              {o.kind === 'vorsprung' && <polygon points={floorRect(p, o)} className="uf-floor-block" />}
               <text x={label.x} y={-label.y} textAnchor="middle" dominantBaseline="middle" fontSize={130}>
                 {tr(o.name)}
               </text>

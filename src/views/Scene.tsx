@@ -8,8 +8,8 @@ import { fmtCm, fmtM, memberOBB, panelOBB, wallFrame, type OBB } from '../model/
 import { allCuts, memberSolids, type Prism } from '../model/joinery'
 import type { DetectedJoint } from '../model/resolve'
 import { ceilingFaces, flatSpans, wallTop } from '../model/ceiling'
-import { cornice, doorGeom, furnitureBox, lampShadeHeight, sashBoxes, windowSashes } from '../model/room'
-import type { Furniture, Member, Panel, Project, Vec3, WallId, WindowObj } from '../model/types'
+import { cornice, projectionBox, doorGeom, furnitureBox, lampShadeHeight, sashBoxes, windowSashes } from '../model/room'
+import type { DoorObj, Furniture, Member, Panel, Project, Vec3, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { buildSteps } from '../analysis/assembly'
@@ -434,7 +434,7 @@ function wallPieces(p: Project, wall: WallId): WallPiece[] {
   const f = wallFrame(r, wall)
   const T0 = r.wallThickness
   const openings = p.wallObjects
-    .filter((o) => o.wall === wall && (o.kind === 'fenster' || o.kind === 'tuer'))
+    .filter((o): o is WindowObj | DoorObj => o.wall === wall && (o.kind === 'fenster' || o.kind === 'tuer'))
     .map((o) => ({
       s0: o.offset,
       s1: o.offset + o.width,
@@ -657,6 +657,7 @@ function WallObjects({ p, wall }: { p: Project; wall: WallId }) {
           const box = boxFromWall(f, o.offset, o.offset + o.width, o.wallGap, o.wallGap + o.depth, o.bottom, o.bottom + o.height)
           return <Box key={o.id} o={box} color={COLORS.radiator} pick={{ kind: 'wallObject', id: o.id }} edges />
         }
+        if (o.kind === 'vorsprung') return <Box key={o.id} o={projectionBox(r, o)} color={COLORS.wall} pick={{ kind: 'wallObject', id: o.id }} plaster />
         const f = wallFrame(r, o.wall)
         return <Box key={o.id} o={boxFromWall(f, o.offset, o.offset + o.width, 0, 12, o.bottom, o.bottom + o.height)} color="#ffffff" pick={{ kind: 'wallObject', id: o.id }} edges />
       })}
