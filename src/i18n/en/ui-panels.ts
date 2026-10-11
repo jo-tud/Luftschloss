@@ -399,5 +399,7 @@ const en: Record<string, string> = {
   'Zuschnitt {l} × {w}': 'Cutting plan {l} × {w}',
   '{n} Teile · {pct} % genutzt': '{n} parts · {pct} % used',
   '1 Teil · {pct} % genutzt': '1 part · {pct} % used',
+  'Bretter quer von Zarge zu Zarge: {list}. Unter jedem Stoß ein Querträger, so liegt jedes Brett ringsum auf.': 'Boards across from rail to rail: {list}. A joist under every joint, so each board is supported all round.',
+  '1 × {w} (aus {f} gesägt)': '1 × {w} (ripped from {f})',
 }
 export default en

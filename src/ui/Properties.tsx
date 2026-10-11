@@ -6,7 +6,7 @@ import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { JointTypeSelect } from './JointTypeSelect'
 import { GroupProps, MultiProps } from './GroupProps'
-import { BED_TYPE_LABEL, bedTypeLabel } from '../model/loftbed'
+import { BED_TYPE_LABEL, bedOuterSize, bedTypeLabel } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
 import { deckOnFurniture, keepWallContact } from '../model/placement'
 import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, Project, Side, WallId, WallObject } from '../model/types'
@@ -16,6 +16,7 @@ import { Check, Num, Section, Sel } from './fields'
 import { deleteLabel, deleteSelection } from './actions'
 import { Copy, Crosshair, Ico, RotateCcw, RotateCw, Scissors, Sym, Trash2, Ungroup, WALL_OBJECT_SYM } from './icons'
 import { FindingsHint, ObjectHeader, type HeaderAction } from './ObjectHeader'
+import { deckBoards } from '../model/deckBoards'
 
 export function Properties() {
   return <PropertiesBody />
@@ -224,6 +225,20 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
   const styleMatters = a.params.deck === 'platte' || a.params.deck === 'dielen' || a.params.deck === 'lattenrost' || (a.params.deck === 'latten' && wallToWall)
   const P = a.params
   const p = useStore((s) => s.project)
+  // breite Leimholzbretter: Aufteilung wie im Gestell (loftbed.ts)
+  const deckBoardList = (() => {
+    if (P.deck !== 'platte' || P.frameStyle === 'aufgelegt' || P.type === 'nische') return undefined
+    const sh = SHEETS.find((s) => s.id === P.deckCatalogId)
+    if (!sh || sh.group !== 'leimholz') return undefined
+    const { length, width } = bedOuterSize(P)
+    const lay = deckBoards(length, width, sh.formats)
+    if (!lay) return undefined
+    const full = new Map<number, number>()
+    lay.widths.forEach((w, i) => (i < lay.widths.length - 1 || !lay.ripped) && full.set(w, (full.get(w) ?? 0) + 1))
+    const parts = [...full].map(([w, n]) => `${n} × ${fmtCm(w, 0)}`)
+    if (lay.ripped) parts.push(t('1 × {w} (aus {f} gesägt)', { w: fmtCm(lay.widths[lay.widths.length - 1], 0), f: fmtCm(lay.widths[lay.widths.length - 1] + lay.ripped, 0) }))
+    return parts.join(', ')
+  })()
   const roomHeight = p.room.height
   const info = d.resolved.beds.get(a.id)
   const clearance = d.analysis.clearances.find((c) => c.assemblyId === a.id)
@@ -474,7 +489,13 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
         {(P.deck === 'platte' || P.deck === 'dielen') && (
           <>
             <Sel label={t('Material')} value={P.deckCatalogId} options={SHEETS.filter((s) => (P.deck === 'dielen' ? s.group === 'diele' : ['osb', 'osb-nf', 'dreischicht', 'multiplex', 'leimholz'].includes(s.group))).map((s) => [s.id, tr(s.name)])} onChange={(v) => setP({ deckCatalogId: v })} />
-            <Num label={t('Max. Querträgerabstand')} value={P.joistSpacing} onChange={(v) => setP({ joistSpacing: v })} min={200} />
+            {deckBoardList ? (
+              <p className="hint">
+                {t('Bretter quer von Zarge zu Zarge: {list}. Unter jedem Stoß ein Querträger, so liegt jedes Brett ringsum auf.', { list: deckBoardList })}
+              </p>
+            ) : (
+              <Num label={t('Max. Querträgerabstand')} value={P.joistSpacing} onChange={(v) => setP({ joistSpacing: v })} min={200} />
+            )}
             {P.deck === 'platte' && <p className="hint">{t('Geschlossene Platte unter der Matratze: Belüftung einplanen (Lattenrost auflegen oder Lüftungsbohrungen).')}</p>}
           </>
         )}
