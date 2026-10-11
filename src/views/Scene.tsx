@@ -18,6 +18,7 @@ import { T } from './camera'
 import { locale, t } from '../i18n'
 import { hardwareInstances } from './hardware'
 import { prismGeometry } from './joineryGeo'
+import { reducedMotion } from './motion'
 import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
 
 export const COLORS = {
@@ -230,7 +231,7 @@ function BuildAnimated({ id, enabled, children }: { id: string; enabled: boolean
       g.position.y = 0
     } else if (info.step > b.step) g.visible = false
     else {
-      const t = (performance.now() - b.start) / 1000 - info.order * 0.12
+      const t = reducedMotion() ? 1e3 : (performance.now() - b.start) / 1000 - info.order * 0.12
       const k = Math.max(0, Math.min(1, t / 0.7))
       g.visible = t > 0
       const e = 1 - Math.pow(1 - k, 3)

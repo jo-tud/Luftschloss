@@ -11,6 +11,7 @@ import { drawSectionCaps } from './sectionCaps'
 import { applyCam, camDir, camDistance, cloneCam, easeInOut, fromT, goalFor, isOrtho, lerpCam, ORTHO_FOV, T, type CamState } from './camera'
 import type { PickData } from './Scene'
 import { tk } from '../i18n'
+import { motionMs } from './motion'
 
 interface DragState {
   kind: 'nav-orbit' | 'nav-pan' | 'nav-look' | 'object' | 'box'
@@ -54,7 +55,7 @@ export function Controller() {
       applyCam(camera as THREE.PerspectiveCamera, goal)
       return
     }
-    anim.current = { from: cloneCam(cam.current), to: goal, t0: performance.now(), dur: view.kind === 'person' ? 1100 : 750 }
+    anim.current = { from: cloneCam(cam.current), to: goal, t0: performance.now(), dur: motionMs(view.kind === 'person' ? 1100 : 750) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewNonce])
 
@@ -69,7 +70,7 @@ export function Controller() {
     const to = cloneCam(cam.current)
     to.target = center
     if (!isOrtho(to) && to.viewH > 0.01) to.viewH = Math.max(0.8, sz * 1.6)
-    anim.current = { from: cloneCam(cam.current), to, t0: performance.now(), dur: 600 }
+    anim.current = { from: cloneCam(cam.current), to, t0: performance.now(), dur: motionMs(600) }
   }, [focusRequest, scene])
 
   useFrame((_, dt) => {
@@ -384,7 +385,7 @@ export function Controller() {
           const to = cloneCam(dr.cam0)
           to.fov = 40
           to.pitch = Math.max(-80, Math.min(-10, dr.cam0.pitch < -80 ? -55 : -15))
-          anim.current = { from: cloneCam(c), to, t0: performance.now(), dur: 500 }
+          anim.current = { from: cloneCam(c), to, t0: performance.now(), dur: motionMs(500) }
           dr.cam0 = to
           dr.startX = e.clientX
           dr.startY = e.clientY

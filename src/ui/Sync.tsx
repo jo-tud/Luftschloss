@@ -270,5 +270,9 @@ export function ShareDialog() {
 export function Toast() {
   const toast = useStore((s) => s.toast)
   if (!toast) return null
-  return <div className="toast">{tr(toast)}</div>
+  return (
+    <div className="toast" role="status" aria-live="polite">
+      {tr(toast)}
+    </div>
+  )
 }
