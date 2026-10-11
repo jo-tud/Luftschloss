@@ -2,7 +2,7 @@ import { tk } from '../i18n'
 import { CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
 import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
-import { jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
+import { allCuts, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
 import { guideKey, JOINT_GUIDE, type GuideEntry } from './jointGuide'
 import { jointType, type JointType } from './joints'
 import type { DetectedJoint, Resolved } from './resolve'
@@ -183,4 +183,30 @@ export function endName(m: Member, atStart: boolean, r: Resolved, label: (m: Mem
     if (o) return { key: tk('Ende an {teil}'), vars: { teil: label(o) } }
   }
   return { key: tk('Bezugsende') }
+}
+
+/**
+ * Teile-Arbeitsplan: ein Werkstück mit allen Bearbeitungen und Bohrungen aus allen seinen
+ * Verbindungen, über die ganze Länge. Stehende Hölzer werden vom unteren Ende aus bemaßt.
+ */
+export function partWorkDrawing(m: Member, r: Resolved, label: (m: Member) => string): PartDrawing | undefined {
+  if (m.round) return undefined
+  const mine = r.joints.filter((j) => j.a === m.id || j.b === m.id)
+  const cut = allCuts(mine, r.members).members.get(m.id)
+  const byId = new Map(r.members.map((x) => [x.id, x]))
+  const fasteners = mine.flatMap((j) => jointFasteners(j, byId, r))
+  const others = new Map<string, Member>()
+  for (const j of mine) for (const id of [j.a, j.b]) if (id !== m.id && byId.get(id)) others.set(id, byId.get(id)!)
+  const ax = memberAxes(m)[0]
+  const vertical = Math.abs(ax.z) > 0.7
+  const d = partDrawing(m, cut, {
+    fasteners,
+    others,
+    label,
+    full: true,
+    refAtStart: vertical ? m.start.z <= m.end.z : true,
+    endName: (atStart) => endName(m, atStart, r, label),
+  })
+  const any = d.holes.length > 0 || d.views.some((v) => v.waste.length > 0 || v.hidden.length > 0) || !!cut?.add.length
+  return any ? d : undefined
 }

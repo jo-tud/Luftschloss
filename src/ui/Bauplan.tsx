@@ -11,7 +11,8 @@ import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
 import { CutPlan } from './Material'
 import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from './JointGuide'
-import { jointDrawings, jointPlan, type JointPlan } from '../model/jointPlan'
+import { jointDrawings, jointPlan, partWorkDrawing, type JointPlan } from '../model/jointPlan'
+import { StepJoints } from './BuildPlayer'
 import { printTemplate, WorkDrawing } from './WorkDrawing'
 import { JointIso } from './JointSketch'
 import { staticsFindings } from './Statics'
@@ -170,6 +171,7 @@ export function BauplanDialog() {
   // je Verbindungsart und gleichen Maßen eine Anleitung; Teile mit ihren Nummern aus der Teileliste
   type Names = Map<string, Set<number>>
   const jointsByType = new Map<string, { plan: JointPlan; list: typeof d.resolved.joints; es: Names; ts: Names }>()
+  const partLabel = (m: Member) => `${tr(partBaseName(m.name ?? m.role))} (${t('Nr. {n}', { n: data.byMember.get(m.id) ?? '?' })})`
   const label = (m?: Member) => (m ? `${tr(partBaseName(m.name ?? m.role))} (${t('Nr. {n}', { n: data.byMember.get(m.id) ?? '?' })})` : '')
   const note = (names: Names, m?: Member) => {
     if (!m) return
@@ -317,6 +319,18 @@ export function BauplanDialog() {
             </tbody>
           </table>
 
+          <h3>{t('Teile-Arbeitsplan')}</h3>
+          <p className="hint">{t('Je Teil alle Bearbeitungen und Bohrungen, über die ganze Länge. Gleiche Teile nebeneinanderspannen und gemeinsam anreißen.')}</p>
+          <div className="pl-parts">
+            {data.parts.map((pt) => {
+              const m = data.byId.get(pt.memberIds[0])
+              const dr = m ? partWorkDrawing(m, d.resolved, partLabel) : undefined
+              if (!dr) return null
+              const title = `${t('Nr. {n}', { n: pt.no })} · ${tr(pt.name)} (${pt.count}×)`
+              return <WorkDrawing key={pt.no} d={dr} title={title} onTemplate={() => printTemplate(dr, title)} />
+            })}
+          </div>
+
           <h3>{t('Verbindungen')}</h3>
           <DrillHelp open />
           <div className="pl-joints">
@@ -359,6 +373,7 @@ export function BauplanDialog() {
                   </span>
                 )}
                 <p>{s.text}</p>
+                <StepJoints keys={s.joints} />
                 {s.tools.length > 0 && (
                   <p className="hint">
                     {t('Werkzeug:')} {s.tools.map(tr).join(', ')}

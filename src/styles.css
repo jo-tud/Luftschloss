@@ -2614,3 +2614,37 @@ button.wide {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* Verbindungen eines Aufbauschritts */
+.step-joints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0 6px;
+  font-size: 13px;
+}
+.step-joints .chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--accent-soft);
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .step-joints .chip {
+    min-height: 44px;
+  }
+}
+
+.pl-parts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.pl-parts .work-drawing {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  break-inside: avoid;
+}

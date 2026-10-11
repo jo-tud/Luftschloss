@@ -166,7 +166,13 @@ describe('Bauplan und Montage', () => {
     const steps = buildSteps(p, r)
     const inSteps = new Set(steps.flatMap((s) => s.memberIds))
     expect(inSteps.size).toBe(r.members.length)
-    expect(steps[0].title).toBe('Pfosten stellen')
+    expect(steps[0].title).toBe('Zuschneiden, kennzeichnen, bearbeiten')
+    // freistehendes Bett: Seitenrahmen am Boden vormontieren, dann aufrichten
+    expect(steps[1].title).toBe('Seitenrahmen 1 am Boden vormontieren')
+    expect(steps.some((s) => s.title === 'Aufrichten und verbinden')).toBe(true)
+    // jede Verbindung entsteht in genau einem Schritt, wenn ihr zweites Teil dazukommt
+    expect(steps.reduce((n, s) => n + s.joints.length, 0)).toBe(r.joints.length)
+    expect(steps.at(-1)!.title).toBe('Nachziehen')
   })
 })
 

@@ -272,6 +272,8 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 - Umgesetzt ✅:
   - Bauplan (PDF über Drucken) mit Maßketten, Teilenummern und **Skizzen der Verbindungen** (M6)
   - Montageschritte im Bauplan und Aufbau-Animation (M6)
+  - Ablauf nach Heimwerker-Praxis (`docs/recherche/verbindungen-anleitungen.md`): Zuschneiden, kennzeichnen, bearbeiten → Seitenrahmen am Boden vormontieren (Diagonalen, Bolzenlöcher im Verbund) → aufrichten und verbinden → Aussteifung, Querträger, Liegefläche, Geländer, Leiter → Nachziehen. Wandbetten beginnen mit dem Wandbalken.
+  - **Teile-Arbeitsplan** im Bauplan: je Teilenummer alle Bearbeitungen und Bohrungen aus allen Verbindungen, gezeichnet in den Bereichen mit Bearbeitung, mit Bohrtabelle und Schablone 1:1
   - optional ein Preis-Agent mit eigenem API-Schlüssel (M7)
 - Geplant ◻: 2D-Zuschnittplan für Platten
 
@@ -327,7 +329,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 Gesammelt und laufend ergänzt:
 
 1. **Dein Hochbett im Foto deines Zimmers.** Ein Foto vom Zimmer laden und ein paar Raumecken anklicken. Die App errechnet daraus Standort und Brennweite der Kamera und blendet das geplante Bett perspektivisch richtig ins Foto ein. ✅ umgesetzt (Ansicht **📷 Foto**, Taste `6`): Kamera per Levenberg-Marquardt aus 4–8 Punkten; auf Wunsch werden Lage und Größe der angeklickten Fenster und Türen mitgeschätzt und zum Übernehmen vorgeschlagen. Das Foto bleibt im Browser (IndexedDB).
-2. **Aufbau-Animation.** Die Teile fliegen in Montagereihenfolge an ihren Platz, so wie man sie später aufbaut. Jeder Schritt kann einzeln angesehen werden. ✅ umgesetzt
+2. **Aufbau-Animation.** Die Teile fliegen in Montagereihenfolge an ihren Platz, so wie man sie später aufbaut. Jeder Schritt kann einzeln angesehen werden. ✅ umgesetzt Beschläge einer Verbindung erscheinen erst, wenn beide Teile stehen; jeder Schritt nennt die Verbindungen, die dabei entstehen, und öffnet per Klick deren Anleitung und Werkstattzeichnung.
 3. **Wackel-Vorschau.** Die Statik zeigt nicht nur Zahlen: Ein Gestell ohne Aussteifung wackelt sichtbar, mit Kopfbändern steht es still. ✅ umgesetzt (M5)
 4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.
 5. **Vom leeren Zimmer zum geprüften Entwurf.** Der Planungsassistent fragt in wenigen Schritten Raum und Decke, Wände, Öffnungen, Schläfer, Nutzung darunter und Befestigung ab und schlägt bis zu drei geprüfte, gewichtete Entwürfe vor, die direkt weiter anpassbar sind. ✅ umgesetzt (M9)

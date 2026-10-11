@@ -111,5 +111,6 @@ const en: Record<string, string> = {
   "Ausschnitt {a} bis {b} mm vom Bezug ({ende}). Ausschneiden, an der Bezugskante (unten) anlegen, Lochmitten mit einem Nagel durchstechen.": "Section {a} to {b} mm from the reference ({ende}). Cut it out, lay it against the reference edge (bottom) and prick the hole centres through with a nail.",
   "Maße in mm, steigend vom Bezug (Ende) und von der Bezugskante (unten). Schraffiert: Abfall. Gestrichelt: verdeckte Kanten und Bohrungen.": "Dimensions in mm, measured from the reference (end) and the reference edge (bottom). Hatched: waste. Dashed: hidden edges and holes.",
   "{x} mm: hier am Anriss anlegen": "{x} mm: align with the marked line here",
+  'Ausschnitt {a}–{b} mm': 'section {a}–{b} mm',
 }
 export default en

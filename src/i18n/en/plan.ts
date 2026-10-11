@@ -43,7 +43,6 @@ const en: Record<string, string> = {
   'Restliche Teile': 'Remaining parts',
   'Übrige Teile nach Plan montieren.': 'Assemble the remaining parts according to the plan.',
   'Matratze': 'Mattress',
-  'Matratze einlegen, Schrauben nach einigen Wochen nachziehen.': 'Put in the mattress; retighten the screws after a few weeks.',
   'Bauteil': 'Part',
 
   // Stückliste (bom.ts)
@@ -213,5 +212,20 @@ const en: Record<string, string> = {
     'Created with Luftschloss. Planning aid without warranty – does not replace structural engineering. Check dimensions on site before cutting.',
   'Längstes Teil {len} ({name}) lässt sich kaum ins Zimmer tragen: hinter der Tür {depth} Platz, angehoben etwa {tilt}. Teilen oder durchs Fenster.': 'Longest part {len} ({name}) will hardly go into the room: {depth} behind the door, about {tilt} when lifted. Split it or pass it through the window.',
   ' bzw. ': ' or ',
+  "Zuschneiden, kennzeichnen, bearbeiten": "Cut, label, work the parts",
+  "Alle Teile nach der Teileliste zuschneiden (am besten im Baumarkt), mit ihrer Nummer beschriften und die Bezugsseite markieren. Dann je Teil die Bearbeitungen aus dem Teile-Arbeitsplan: Ausklinkungen, Zapfen, Blätter, Querbohrungen. Gleiche Teile nebeneinanderspannen und gemeinsam anreißen.": "Cut all parts to the parts list (ideally at the DIY store), write their number on them and mark the reference face. Then do the work on each part from the parts work plan: notches, tenons, laps, cross holes. Clamp identical parts side by side and mark them out together.",
+  "Anleitung und Werkstattzeichnung öffnen": "Open instructions and workshop drawing",
+  "Aufrichten und verbinden": "Stand up and connect",
+  "Ausklinkungen für Sockelleiste und Stuck vorher sägen.": "Cut the notches for skirting board and cornice beforehand.",
+  "Je Teil alle Bearbeitungen und Bohrungen, über die ganze Länge. Gleiche Teile nebeneinanderspannen und gemeinsam anreißen.": "All work and holes for each part, over its full length. Clamp identical parts side by side and mark them out together.",
+  "Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen, Diagonalen prüfen), dann einhängen bzw. anschrauben und gegen Verrutschen sichern.": "Pre-assemble the ladder on the floor (glue in rungs or treads, check the diagonals), then hook it on or screw it in place and secure it against slipping.",
+  "Matratze einlegen. Probeliegen: Wackelt etwas, Schrauben und Bolzen nachziehen.": "Put in the mattress. Try lying on it: if anything wobbles, retighten screws and bolts.",
+  "Mit einem Helfer beide Rahmen aufrichten und mit Hilfslatten abstützen. Querzargen ansetzen, festspannen, die Verbindungen herstellen (Bolzen höhenversetzt zu den ersten). Pfosten mit der Wasserwaage ins Lot stellen und die Diagonalen in der Draufsicht prüfen.": "With a helper, stand both frames up and prop them with temporary battens. Fit the cross rails, clamp them and make the joints (bolts offset in height from the first ones). Plumb the posts with a spirit level and check the diagonals in plan.",
+  "Nach 4–6 Wochen und zu Beginn der Heizperiode alle Bolzen und Schrauben nachziehen – das Holz schwindet im beheizten Raum.": "After 4–6 weeks and at the start of the heating season, retighten all bolts and screws – timber shrinks in a heated room.",
+  "Nachziehen": "Retighten",
+  "Pfosten und Zarge flach auf Unterlagen legen, Lage anreißen und festspannen. Rechtwinklig ausrichten: Diagonalen messen, sie müssen auf 3 mm gleich sein. Dann die Verbindungen herstellen – Bolzenlöcher jetzt im Verbund bohren.": "Lay the posts and rail flat on supports, mark their positions and clamp them. Square them up: measure the diagonals, they must match within 3 mm. Then make the joints – drill the bolt holes through the clamped parts now.",
+  "Seitenrahmen {i} am Boden vormontieren": "Pre-assemble side frame {i} on the floor",
+  "Teile-Arbeitsplan": "Parts work plan",
+  "Verbindungen in diesem Schritt:": "Joints in this step:",
 }
 export default en
