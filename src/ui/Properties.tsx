@@ -9,7 +9,7 @@ import { GroupProps, MultiProps } from './GroupProps'
 import { BED_TYPE_LABEL, bedOuterSize, bedTypeLabel } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
 import { deckOnFurniture, keepWallContact } from '../model/placement'
-import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, Project, Side, WallId, WallObject } from '../model/types'
+import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, PartOverride, Project, Side, WallId, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
@@ -532,6 +532,15 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
                 <Check key={s} label={sideLabel(s)} value={P.guardSides[s]} onChange={(v) => setP({ guardSides: { ...P.guardSides, [s]: v } })} />
               ))}
             </div>
+            {P.guard === 'bretter' && (
+              <Sel
+                label={t('Bretter oder Latten')}
+                value={P.guardBoardCatalogId ?? 'leimholz-fi-18x200'}
+                options={catalogOptions((x) => !x.round && Math.min(x.b, x.h) <= 30 && Math.max(x.b, x.h) >= 40)}
+                onChange={(v) => setP({ guardBoardCatalogId: v })}
+                title={t('Schmale Latten ergeben mehr Reihen; der Spalt bleibt höchstens 6 cm')}
+              />
+            )}
             <Sel label={t('Handlauf/Holme')} value={P.guardCatalogId} options={catalogOptions((t) => !t.round && t.h >= 44 && t.h <= 100)} onChange={(v) => setP({ guardCatalogId: v })} />
           </>
         )}
@@ -665,6 +674,8 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
             />
             <ArrayTool m={m} />
           </>
+        ) : m.assemblyId && m.partKey && item?.kind === 'stab' ? (
+          <PartOverrideFields m={m} L={L} />
         ) : (
           <p className="hint">{t('Maße kommen aus den Bett-Einstellungen. Über ⋯ lässt sich das Teil aus der Vorlage lösen und frei bearbeiten.')}</p>
         )}
@@ -855,6 +866,40 @@ function WallObjectProps({ id }: { id: string }) {
         {o.kind === 'steckdose' && <Num label={t('Höhe über Boden')} value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'steckdose' && (x.bottom = v)))} />}
       </Section>
     </div>
+  )
+}
+
+/** Holz und Länge eines Vorlagenteils abweichend festlegen – bleibt Teil des Betts */
+function PartOverrideFields({ m, L }: { m: Member; L: number }) {
+  const update = useStore((s) => s.update)
+  const ov = useStore((s) => s.project.assemblies.find((x) => x.id === m.assemblyId)?.overrides?.[m.partKey!])
+  const setOv = (patch: Partial<PartOverride> | null) =>
+    update((dd) => {
+      const asm = dd.assemblies.find((x) => x.id === m.assemblyId)
+      if (!asm) return
+      const all = { ...asm.overrides }
+      const next = patch === null ? {} : { ...all[m.partKey!], ...patch }
+      if (next.catalogId === undefined) delete next.catalogId
+      if (next.length === undefined) delete next.length
+      if (Object.keys(next).length) all[m.partKey!] = next
+      else delete all[m.partKey!]
+      asm.overrides = all
+    })
+  return (
+    <>
+      <Sel label={t('Holz')} value={m.catalogId} options={catalogOptions()} onChange={(v) => setOv({ catalogId: v })} />
+      <Num label={t('Länge')} value={L} onChange={(v) => setOv({ length: v })} min={20} title={t('Vom Anfang des Teils aus gemessen; das andere Ende wandert mit')} />
+      {ov ? (
+        <p className="hint">
+          {t('Abweichend von der Vorlage.')}{' '}
+          <button className="link" onClick={() => setOv(null)}>
+            {t('Zurücksetzen')}
+          </button>
+        </p>
+      ) : (
+        <p className="hint">{t('Holz und Länge gelten nur für dieses Teil; alles andere folgt weiter den Bett-Einstellungen.')}</p>
+      )}
+    </>
   )
 }
 

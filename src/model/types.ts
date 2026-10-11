@@ -298,6 +298,8 @@ export interface LoftBedParams {
   guardHeight: Mm // über Oberkante Liegefläche
   guardSides: Record<Side, boolean>
   guardCatalogId: string
+  /** Bretter bzw. Latten der Füllung bei Geländer „Bretter“ (fehlt = Leimholz 18×200) */
+  guardBoardCatalogId?: string
   /** Kopfbänder; fehlt = Geländerholz, wenn es ein Kantholz ist, sonst 54×74 gehobelt */
   braceCatalogId?: string
   ladder: LadderType
@@ -347,6 +349,16 @@ export interface Assembly {
   params: LoftBedParams
   /** Teile, die aus der Baugruppe herausgelöst wurden und nicht mehr erzeugt werden */
   detached: string[]
+  /**
+   * Einzelne Teile der Vorlage abweichend: anderes Holz bzw. andere Länge (ab dem Anfangspunkt).
+   * Bleibt beim Ändern der Bett-Einstellungen erhalten, anders als ein herausgelöstes Teil.
+   */
+  overrides?: Record<string, PartOverride>
+}
+
+export interface PartOverride {
+  catalogId?: string
+  length?: Mm
 }
 
 /** Selbst konstruiertes Bett: freie Teile (groupId), als Ganzes auswählbar und verschiebbar */

@@ -10,7 +10,7 @@ import type { Project } from '../src/model/types'
 /** Leerer Raum mit einem Bett ohne Pfosten; mit shelves zwei Regale unter den Enden, Höhe angepasst */
 function bedOnShelves(shelves: boolean): Project {
   const p = emptyProject(4000, 3500, 2700)
-  const params = placeBed(p.room, 'freistehend', { cornerSupport: 'moebel', braces: false }, 'AB')
+  const params = placeBed(p.room, 'freistehend', { cornerSupport: 'moebel', braces: false, railCatalogId: 'kvh-80x160' }, 'AB')
   p.assemblies.push({ id: 'bett', kind: 'hochbett', name: 'Auf Regalen', params, detached: [] })
   if (shelves) {
     p.furniture.push(...shelvesUnderBed(params, 1500))

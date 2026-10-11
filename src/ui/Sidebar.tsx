@@ -387,7 +387,7 @@ const PRESETS: Preset[] = [
   { key: 'etage', label: tk('Etagenbett'), hint: tk('Zwei Betten übereinander zwischen vier Pfosten. Unten 0,30 m, oben so hoch, dass man unten aufrecht sitzt.'), type: 'freistehend', patch: { lowerBed: true, deckHeight: 1550, braces: false } },
   { key: 'galerie', label: tk('Galerie mit Mittelstütze'), hint: tk('Lange Hochebene (2,80 × 1,40 m) zum Spielen oder für zwei Matratzen. Eine Stütze in der Mitte jeder Längsseite.'), type: 'wandseitig', patch: { mattressLength: 2800, mattressWidth: 1400, midPosts: 1, frameStyle: 'aufgelegt', railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
   { key: 'netz', label: tk('Netz-Hochebene'), hint: tk('Begehbares Netz zum Chillen, 2,00 × 1,40 m. Das Netz zieht stark nach innen – daher kräftige Zargen 12×12 cm. Für Geübte.'), type: 'freistehend', patch: { deck: 'netz', deckCatalogId: 'netz-begehbar', mattressWidth: 1400, railCatalogId: 'kvh-120x120', postCatalogId: 'kvh-120x120', ladder: 'senkrecht' } },
-  { key: 'regal', label: tk('Auf Regal/Schrank'), hint: tk('Ohne Pfosten: Der Rahmen liegt auf zwei stabilen Regalen unter Kopf- und Fußende. Regale verschrauben und an der Wand sichern.'), type: 'freistehend', patch: { cornerSupport: 'moebel', braces: false } },
+  { key: 'regal', label: tk('Auf Regal/Schrank'), hint: tk('Ohne Pfosten: Der Rahmen liegt auf zwei stabilen Regalen unter Kopf- und Fußende. Regale verschrauben und an der Wand sichern.'), type: 'freistehend', patch: { cornerSupport: 'moebel', braces: false, railCatalogId: 'kvh-80x160' } },
   { key: 'abgehaengt', label: tk('Wandbalken + Decke'), hint: tk('Wandbalken hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.'), type: 'abgehaengt', patch: { frameStyle: 'aufgelegt' } },
 ]
 
