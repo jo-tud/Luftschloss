@@ -83,6 +83,11 @@ export function tr(de: string): string {
   return current === 'en' ? (en[de] ?? de) : de
 }
 
+/** Wie tr, mit Platzhaltern {name} (Texte aus dem Modell, z. B. Arbeitsschritte mit Maßen) */
+export function trv(de: string, vars: Record<string, string | number>): string {
+  return tr(de).replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m))
+}
+
 /**
  * Markiert einen Text für die Übersetzung, ohne ihn schon zu übersetzen – für Tabellen, die beim
  * Laden des Moduls entstehen (Verbindungsarten, Katalog). Angezeigt wird er dann mit tr().

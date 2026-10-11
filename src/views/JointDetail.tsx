@@ -6,8 +6,9 @@ import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
 import { assemblyDir, clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
-import { assemblyHint, JointGuide } from '../ui/JointGuide'
-import { JOINT_GUIDE, type GuideStep } from '../model/jointGuide'
+import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from '../ui/JointGuide'
+import { jointPlan } from '../model/jointPlan'
+import type { GuideStep } from '../model/jointGuide'
 import { HOLD, progressAt, stepTimes, timeline } from '../model/jointTimeline'
 import { Ico } from '../ui/icons'
 import { Pause, Play } from 'lucide-react'
@@ -286,30 +287,7 @@ export function JointDetailDialog() {
                 }
               />
             </label>
-            {jt && (
-              <>
-                <p>{tr(jt.note)}</p>
-                <p>
-                  <b>{t('Schwierigkeit:')}</b> {'●'.repeat(jt.difficulty)}
-                  {'○'.repeat(3 - jt.difficulty)} · {jt.removable ? t('zerlegbar') : t('fest')} · {t('wirkt {s}', { s: stiffnessLabel(jt.stiffness) })}
-                </p>
-                <p>
-                  <b>{t('Werkzeug:')}</b> {jt.tools.map((x) => tr(x)).join(', ')}
-                </p>
-                {jt.hardware.length > 0 && (
-                  <p>
-                    <b>{t('Material je Verbindung:')}</b> {jt.hardware.map((h) => `${h.qty} × ${tr(catalogItem(h.id)?.name ?? h.id)}`).join(', ')}
-                  </p>
-                )}
-                {jt.residualSection < 1 && <p className="hint">{t('Restquerschnitt an der Verbindung ca. {p} %.', { p: Math.round(jt.residualSection * 100) })}</p>}
-              </>
-            )}
-            <p className="hint">
-              {tr(ending?.name ?? '')}: {ending ? t('{item}, Länge {len}', { item: tr(catalogItem(ending.catalogId)?.name ?? ''), len: fmtCm(memberLength(ending)) }) : ''}
-              <br />
-              {tr(through?.name ?? '')}: {through ? t('{item}, Länge {len}', { item: tr(catalogItem(through.catalogId)?.name ?? ''), len: fmtCm(memberLength(through)) }) : ''}
-            </p>
-            <p className="hint">{t('Die Werkstattskizze mit Maßen steht im Bauplan unter „Verbindungen“.')}</p>
+            {jt && <p>{tr(jt.note)}</p>}
         </JointDetailBody>
       </div>
     </div>
@@ -319,12 +297,13 @@ export function JointDetailDialog() {
 /** 3D-Ablauf und Anleitung; der aktuelle Schritt ist in beiden hervorgehoben */
 function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoint; ending?: Member; through?: Member; cam: THREE.Vector3; children: ReactNode }) {
   const d = useDerived()
-  const steps = JOINT_GUIDE[j.typeId]?.steps ?? []
+  const byId = useMemo(() => new Map(d.resolved.members.map((m) => [m.id, m])), [d])
+  const plan = useMemo(() => jointPlan(j, byId, d.resolved), [j, byId, d])
+  const steps = useMemo(() => plan?.guide.steps ?? [], [plan])
   const still = reducedMotion()
   const clock = useRef<StepClock>({ t: still ? 1e6 : 0, playing: !still, stopAt: Infinity })
   const [step, setStep] = useState(0)
   const [playing, setPlaying] = useState(!still)
-  const byId = new Map(d.resolved.members.map((m) => [m.id, m]))
   const pick = (i: number) => {
     const [a, b] = stepTimes(steps, i)
     // ohne Bewegung gleich das Ergebnis des Schritts zeigen
@@ -366,7 +345,34 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
       </div>
       <div className="joint-info">
         {children}
-        <JointGuide typeId={j.typeId} hint={assemblyHint(j, byId)} current={step} onPick={pick} />
+        {plan && (
+          <>
+            <JointEffortInfo plan={plan} />
+            <p className="muted">
+              {plan.type.removable ? t('zerlegbar') : t('fest')} · {t('wirkt {s}', { s: stiffnessLabel(plan.type.stiffness) })}
+            </p>
+            <JointGuide plan={plan} hint={assemblyHint(j, byId)} current={step} onPick={pick} />
+            <p>
+              <b>{t('Werkzeug:')}</b> {plan.type.tools.map((x) => tr(x)).join(', ')}
+              {plan.type.toolsPlus && (
+                <>
+                  <br />
+                  <span className="muted">
+                    {t('Komfortabler mit:')} {plan.type.toolsPlus.map((x) => tr(x)).join(', ')}
+                  </span>
+                </>
+              )}
+            </p>
+            <JointMaterial plan={plan} />
+            {plan.effort.drill > 0 && <DrillHelp />}
+            {plan.type.residualSection < 1 && <p className="hint">{t('Restquerschnitt an der Verbindung ca. {p} %.', { p: Math.round(plan.type.residualSection * 100) })}</p>}
+            <p className="hint">
+              {tr(ending?.name ?? '')}: {ending ? t('{item}, Länge {len}', { item: tr(catalogItem(ending.catalogId)?.name ?? ''), len: fmtCm(memberLength(ending)) }) : ''}
+              <br />
+              {tr(through?.name ?? '')}: {through ? t('{item}, Länge {len}', { item: tr(catalogItem(through.catalogId)?.name ?? ''), len: fmtCm(memberLength(through)) }) : ''}
+            </p>
+          </>
+        )}
       </div>
     </div>
   )

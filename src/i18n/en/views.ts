@@ -41,7 +41,6 @@ const en: Record<string, string> = {
   'Material je Verbindung:': 'Material per joint:',
   'Restquerschnitt an der Verbindung ca. {p} %.': 'Residual cross-section at the joint approx. {p} %.',
   '{item}, Länge {len}': '{item}, length {len}',
-  'Die Werkstattskizze mit Maßen steht im Bauplan unter „Verbindungen“.': 'The dimensioned workshop sketch is in the build plan under “Joints”.',
   'Dein Hochbett im Foto deines Zimmers': 'Your loft bed in a photo of your room',
   'Fotografiere das Zimmer so, dass ein paar Raumecken und Fensterkanten gut zu sehen sind. Dann tippst du 4–6 dieser Punkte an – Luftschloss errechnet daraus den Kamerastandort und setzt das geplante Bett perspektivisch richtig ins Foto.': 'Take a photo of the room so that a few room corners and window edges are clearly visible. Then tap 4–6 of these points – Luftschloss works out the camera position and places the planned bed into the photo in correct perspective.',
   'Foto wählen oder aufnehmen': 'Choose or take a photo',

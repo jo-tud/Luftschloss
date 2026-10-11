@@ -1,17 +1,18 @@
 import { locale, t, tr } from '../i18n'
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
-import { buildSteps, partTypes, transportCheck } from '../analysis/assembly'
+import { buildSteps, partBaseName, partTypes, transportCheck } from '../analysis/assembly'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, obbCorners } from '../model/geometry'
 import { prismCorners } from '../model/joinery'
-import { JOINT_TYPES, jointType } from '../model/joints'
+import { JOINT_TYPES } from '../model/joints'
 import { bedTypeLabel } from '../model/loftbed'
 import type { Member, Vec3 } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
 import { CutPlan } from './Material'
-import { assemblyHint, JointGuide } from './JointGuide'
-import { JointIso, jointSketchNote } from './JointSketch'
+import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from './JointGuide'
+import { jointPlan, type JointPlan } from '../model/jointPlan'
+import { JointIso } from './JointSketch'
 import { staticsFindings } from './Statics'
 import { Sym } from './icons'
 
@@ -165,12 +166,20 @@ export function BauplanDialog() {
   const ey = fp ? norm2(fp[3].x - fp[0].x, fp[3].y - fp[0].y) : { x: 0, y: 1, z: 0 }
   const vertical = new Set(data.parts.filter((pt) => pt.roles.some((r) => r === 'pfosten' || r === 'holm' || r === 'zarge' || r === 'wandriegel' || r === 'strebe' || r === 'stufe')).map((pt) => pt.no))
   const horizontal = new Set(data.parts.filter((pt) => !vertical.has(pt.no)).map((pt) => pt.no))
-  const jointsByType = new Map<string, typeof d.resolved.joints>()
-  // je Verbindungsart und Lage (Stoß mit Ende bzw. angelegt) eine Skizze
+  // je Verbindungsart und gleichen Maßen eine Anleitung; Teile mit ihren Nummern aus der Teileliste
+  const jointsByType = new Map<string, { plan: JointPlan; list: typeof d.resolved.joints; es: Set<string>; ts: Set<string> }>()
+  const label = (m?: Member) => (m ? `${tr(partBaseName(m.name ?? m.role))} (${t('Nr. {n}', { n: data.byMember.get(m.id) ?? '?' })})` : '')
   for (const j of d.resolved.joints) {
-    const k = `${j.typeId}|${j.ending ? 'stoss' : 'anlage'}`
-    jointsByType.set(k, [...(jointsByType.get(k) ?? []), j])
+    const plan = jointPlan(j, data.byId, d.resolved)
+    if (!plan) continue
+    const k = `${j.typeId}|${plan.stoss}|${JSON.stringify({ ...plan.vars, E: '', T: '' })}`
+    const g = jointsByType.get(k) ?? { plan, list: [], es: new Set<string>(), ts: new Set<string>() }
+    g.list.push(j)
+    g.es.add(label(plan.E))
+    g.ts.add(label(plan.T))
+    jointsByType.set(k, g)
   }
+  for (const g of jointsByType.values()) g.plan.labels = { E: [...g.es].join(t(' bzw. ')), T: [...g.ts].join(t(' bzw. ')) }
   const open = [...d.analysis.findings, ...staticsFindings(p, statics)].filter((f) => f.severity !== 'hinweis' && !p.settings.acknowledged.includes(f.id))
   const transport = transportCheck(p, d.resolved)
   const clearance = a ? d.analysis.clearances.find((c) => c.assemblyId === a.id) : undefined
@@ -297,26 +306,23 @@ export function BauplanDialog() {
           </table>
 
           <h3>{t('Verbindungen')}</h3>
+          <DrillHelp open />
           <div className="pl-joints">
-            {[...jointsByType.entries()].map(([groupKey, list]) => {
-              const typeId = list[0].typeId
-              const jt = jointType(typeId)
+            {[...jointsByType.values()].map(({ plan, list }) => {
               const sample = list[0]
               return (
-                <div key={groupKey} className="pl-joint">
+                <div key={sample.key} className="pl-joint">
                   <JointIso j={sample} resolved={d.resolved} />
                   <div>
                     <b>
-                      {list.length}× {tr(jt?.name ?? typeId)}
+                      {list.length}× {tr(plan.type.name)}: {plan.labels?.E} ↔ {plan.labels?.T}
                     </b>
-                    <p>{jointSketchNote(sample, d.resolved)}</p>
-                    <p className="hint">{jt?.note ? tr(jt.note) : null}</p>
-                    <JointGuide typeId={typeId} hint={assemblyHint(sample, data.byId)} />
-                    {jt?.tools.length ? (
-                      <p className="hint">
-                        {t('Werkzeug:')} {jt.tools.map(tr).join(', ')}
-                      </p>
-                    ) : null}
+                    <JointEffortInfo plan={plan} />
+                    <JointGuide plan={plan} hint={assemblyHint(sample, data.byId)} />
+                    <JointMaterial plan={plan} />
+                    <p className="hint">
+                      {t('Werkzeug:')} {plan.type.tools.map(tr).join(', ')}
+                    </p>
                   </div>
                 </div>
               )

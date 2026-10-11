@@ -1,7 +1,5 @@
 /** Bauplan, Material/Zuschnitt, Preis-Agent, Verbindungsskizzen, Stückliste, Montageschritte */
 const en: Record<string, string> = {
-  'Kopfband 350 mm, beide Enden auf 45° gesägt, satt angelegt; je Ende 2 Schrauben vom Rand des Kopfbands in Pfosten bzw. Zarge, vorbohren.': 'Knee brace 350 mm, both ends cut at 45° and fitted tight; 2 screws per end from the edge of the brace into the post or rail, pre-drilled.',
-  'Kopfbandende {d} mm tief einlassen: Sitz mit Japansäge anreißen und einsägen, mit dem Stechbeitel ausstemmen, Kopfband einsetzen, je Ende 1 Schraube.': 'House the brace ends {d} mm deep: mark the seat, saw the cheeks with a Japanese saw, chisel out, fit the brace, 1 screw per end.',
   // Holzverbindungen je Teil (assembly.ts)
   'Blatt': 'Lap',
   'Zapfen bzw. Zapfenloch': 'Tenon or mortise',
@@ -99,15 +97,8 @@ const en: Record<string, string> = {
   // Verbindungsskizzen (JointSketch.tsx)
   '2 × M10 durch das durchlaufende Holz ins Hirnholz, Mutter in einer Querbohrung Ø 25 mm, 70 mm vom Ende. Bolzen zweier Stöße am selben Pfosten in der Höhe versetzen.':
     '2 × M10 through the continuous timber into the end grain, nut in a Ø 25 mm cross hole, 70 mm from the end. Stagger the bolts of two joints on the same post in height.',
-  '2 × M10 durchgebolzt, Ø 11 mm vorbohren, Randabstand ≥ 40 mm, Bolzenabstand ≥ 50 mm.': '2 × M10 through-bolted, pre-drill Ø 11 mm, edge distance ≥ 40 mm, bolt spacing ≥ 50 mm.',
   'Bettschraube M8 durch das durchlaufende Holz, Zylindermutter in Querbohrung Ø 10 mm, 70 mm vom Ende. Bohrschablone verwenden.':
     'M8 bed bolt through the continuous timber, barrel nut in a Ø 10 mm cross hole, 70 mm from the end. Use a drilling jig.',
-  '3 Schrauben 8 × 160 durch das durchlaufende Holz ins Hirnholz, Ø 5 mm vorbohren.': '3 screws 8 × 160 through the continuous timber into the end grain, pre-drill Ø 5 mm.',
-  '2 Schrauben 8 × 160 durch das aufliegende Holz, Ø 5 mm vorbohren.': '2 screws 8 × 160 through the resting timber, pre-drill Ø 5 mm.',
-  'Stumpf auflegen, 2 Schrauben 8 × 160 von oben.': 'Butt it on top, 2 screws 8 × 160 from above.',
-  'Lose auflegen, Filz- oder Gummistreifen dazwischen, ggf. 1 Schraube gegen Verrutschen.': 'Lay loosely with felt or rubber strips in between; 1 screw against slipping if needed.',
-  '2 Winkel 90 mm mit Sicke in die Innenecken, je Winkel 10 Schrauben 5 × 50.': '2 angle brackets 90 mm with stiffening rib in the inside corners, 10 screws 5 × 50 per bracket.',
-  'Balkenschuh passend zum Querschnitt, alle Löcher mit 5 × 50 verschrauben (Vollausnagelung).': 'Joist hanger to match the cross-section, screw all holes with 5 × 50 (full fixing).',
   'Beide Hölzer auf halbe Dicke ausnehmen: Blatttiefe {blatt} mm. Leimen und 2 Schrauben 6 × 80 diagonal.':
     'Cut both timbers to half thickness: lap depth {blatt} mm. Glue and 2 screws 6 × 80 placed diagonally.',
   'Schwalbenschwanzblatt {dicke} mm dick, {tiefe} mm lang, Hals {schmal} mm, Ende {breit} mm (Neigung 1:6). 2 Holznägel Ø 10.':
@@ -118,13 +109,8 @@ const en: Record<string, string> = {
     'Tenon {dicke} × {hoehe} mm, {laenge} mm long. Chisel a mortise of the same size, wooden peg Ø 16 mm.',
   'Gratnut {tiefe} mm tief, Flanken 1:6, Stufe von der Seite einschieben, leimen + 2 Schrauben 5 × 50.':
     'Sliding dovetail housing {tiefe} mm deep, flanks 1:6; slide the step in from the side, glue + 2 screws 5 × 50.',
-  'Einlassung {tiefe} mm tief über die ganze Anlagefläche, 2 Schrauben 8 × 160.': 'Housing {tiefe} mm deep across the whole contact face, 2 screws 8 × 160.',
-  '2 Holzdübel Ø 10 × 80 mm, je 40 mm tief, mit Dübelspitzen anzeichnen, leimen.': '2 wooden dowels Ø 10 × 80 mm, 40 mm deep each; mark with dowel centres, glue.',
-  'Bohrung Ø {durchmesser} mm, {tiefe} mm tief (2/3 der Holzdicke), leimen.': 'Hole Ø {durchmesser} mm, {tiefe} mm deep (2/3 of the timber thickness), glue.',
   'Leiste 40 × 60 mm unter das Ende an das durchlaufende Holz, 3 Schrauben 5 × 50, darauf auflegen.':
     'Batten 40 × 60 mm on the continuous timber below the end, 3 screws 5 × 50; rest the part on it.',
-  'Gewindestange M10 mit großen Unterlegscheiben und Muttern beiderseits des Holzes, Kontermutter.': 'M10 threaded rod with large washers and nuts on both sides of the timber, lock nut.',
-  'Seil durch Bohrung bzw. Augschraube, mit Achtknoten sichern.': 'Rope through a hole or eye bolt, secured with a figure-eight knot.',
 
   // Material & Kosten (Material.tsx)
   'Keine Zeilen im Format id;preis;… gefunden.': 'No lines in the format id;price;… found.',
@@ -226,5 +212,6 @@ const en: Record<string, string> = {
   'Erstellt mit Luftschloss. Planungshilfe ohne Gewähr – ersetzt keine Tragwerksplanung. Maße vor dem Zuschnitt am Bau prüfen.':
     'Created with Luftschloss. Planning aid without warranty – does not replace structural engineering. Check dimensions on site before cutting.',
   'Längstes Teil {len} ({name}) lässt sich kaum ins Zimmer tragen: hinter der Tür {depth} Platz, angehoben etwa {tilt}. Teilen oder durchs Fenster.': 'Longest part {len} ({name}) will hardly go into the room: {depth} behind the door, about {tilt} when lifted. Split it or pass it through the window.',
+  ' bzw. ': ' or ',
 }
 export default en

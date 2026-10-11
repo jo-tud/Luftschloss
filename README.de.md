@@ -40,7 +40,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 **Außerdem:**
 
 - **Viele Bauarten:** freistehend, an der Wand, Eckbett, deckenhoch verspannt, Wand zu Wand, Halbhoch, Etagenbett, Galerie, Netz-Hochebene, auf Regalen oder Schränken – und zwei Kinder nebeneinander auf zwei Matratzen.
-- **Echte Holzverbindungen:** Überblattung, Zapfen mit Holznagel, Schwalbenschwanzblatt, Gratnut, Einlassung, Rundstab in Bohrung, Auflagerleiste, Kopfbänder auf Gehrung und eingelassen. Ein Klick auf eine Verbindung zeigt sie als 3D-Explosion mit Erklärung, wie sie wirkt, und den Arbeitsschritten; im Bauplan erscheint sie als isometrische Skizze.
+- **Echte Holzverbindungen:** Überblattung, Zapfen mit Holznagel, Schwalbenschwanzblatt, Gratnut, Einlassung, Rundstab in Bohrung, Auflagerleiste, Kopfbänder auf Gehrung und eingelassen. Ein Klick auf eine Verbindung zeigt Schritt für Schritt in 3D, wie sie entsteht – erst die Teile, dann Schrauben und Bolzen. Daneben steht die Anleitung mit den echten Maßen dieser Verbindung (Bohrdurchmesser, Tiefen, Abstände, Schraubenlängen), typischen Fehlern, Schwierigkeit, Zeit und Werkzeug, dazu Tipps für gerade Bohrungen ohne Bohrständer. Im Bauplan erscheint jede Verbindung als isometrische Skizze mit derselben Anleitung.
 - **Prüfliste mit Erklärungen:** Fensterflügel, die anstoßen, zu wenig Kopfraum, Lücken im Geländer, falsche Dübel in Leichtbauwänden … Alles sind Empfehlungen, die du bewusst „zur Kenntnis nehmen“ kannst.
 - **Dein Hochbett im Foto deines Zimmers:** Foto laden, ein paar Ecken antippen – das geplante Bett erscheint perspektivisch richtig im Foto.
 - **Aufbau-Animation:** Die Teile fliegen in der Reihenfolge ein, in der du sie später zusammenbaust.

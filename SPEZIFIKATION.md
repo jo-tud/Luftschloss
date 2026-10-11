@@ -151,12 +151,15 @@ Parameter sind:
 | Gruppe | Typen |
 |---|---|
 | Stahl | Winkel mit Sicke, Balkenschuh, Seilbefestigung, Gewindestange |
-| Schrauben | Schlossschrauben M10, Holzbauschrauben 8×160, Bettschraube mit Quermutter |
+| Schrauben | Schlossschrauben M10 (durchgebolzt oder als Stoß mit Quermutter), Tellerkopfschrauben 8 mm (Länge nach Holzdicke), Bettschraube mit Quermutter |
 | Holz | Stumpfe Auflage, Auflagerleiste, lose aufgelegt, Ausklinkung/Einlassung, Überblattung, Schwalbenschwanzblatt, Zapfen mit Holznagel, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Kopfband auf Gehrung (verschraubt), Kopfband eingelassen (Versatz) |
 
 Jeder Typ trägt:
-- Schwierigkeit, Werkzeuge, ob zerlegbar, Hinweistext mit belegten Werten
-- Je Verbindungsart: Wirkprinzip und Herstellungsschritte (Verbindungsdetail, Bauplan)
+- Schwierigkeit in drei Stufen wie in Heimwerker-Anleitungen (leicht, mittel, schwer), Zeit je Verbindung für Anfänger und Geübte, Anspruch beim Bohren (kaum Bohrungen, rechtwinklig bohren, Bohrungen müssen sich treffen) und was es schwer macht. Werkzeug als Mindestausstattung, dazu „komfortabler mit“ (z. B. Oberfräse). Quelle: `docs/recherche/verbindungen-anleitungen.md`.
+- Je Verbindungsart: Wirkprinzip, Herstellungsschritte und typische Fehler (`src/model/jointGuide.ts`). Die Schritte enthalten die Maße der konkreten Verbindung (Bohrdurchmesser, Bohrtiefe, Abstände, Schraubenlänge, Zapfenmaße), gerechnet in `src/model/jointPlan.ts`. Stumpfe Stöße mit Bolzen bzw. Schrauben ins Hirnholz haben eigene Abläufe; bei der Quermutter wird die große Querbohrung zuerst gebohrt, damit die Längsbohrung nur sie treffen muss.
+- Bohrhilfe ohne Bohrständer: Anreißen vom Nullpunkt, im Verbund und von beiden Seiten bohren, Führungswinkel aus Leistenresten, Peilen mit zwei Winkeln, Tiefenmarke.
+- Befestigungsmittel als Modell (`src/model/fasteners.ts`): Lage, Einbaurichtung und Zeitpunkt (vor dem Fügen, mit dem Teil, danach). Schraubenlängen so, dass das Gewinde mindestens 72 mm (9·d) im tragenden Holz sitzt; Quermutter 80 mm vom Hirnholzende; Auflagerleiste mit 6 × 100. Einkaufsliste, 3D-Beschläge und Ablauf im Verbindungsdetail lesen dieselbe Liste.
+- Ablauf im Verbindungsdetail: Die Schritte laufen nacheinander ab, der aktuelle ist hervorgehoben, jeder lässt sich anklicken. Schrauben und Bolzen kommen erst, wenn das Teil sitzt.
 - Zur Auswahl stehen nur Arten, die für die beiden Bauteile praktisch taugen (z. B. Gratnut nur für Bretter und Stufen, Rundstab in Bohrung nur für Rundstäbe, Zapfen und Blatt erst ab 40 mm Holzstärke). Eine schon gewählte, unpassende Art bleibt sichtbar und wird begründet.
 - Fügerichtung je Art: Blatt und Schwalbenschwanz von der Seite eingelegt, Gratnut entlang der Nut eingeschoben, Balkenschuh und Auflagerleiste von oben, sonst in Stabrichtung. Animation im Verbindungsdetail und Explosionsskizze im Bauplan folgen dieser Richtung.
 - Beschläge für die Stückliste

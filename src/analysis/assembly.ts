@@ -60,7 +60,7 @@ export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<strin
     return {
       no: i + 1,
       catalogId: m.catalogId,
-      name: baseName(m.name ?? m.role),
+      name: partBaseName(m.name ?? m.role),
       length: Math.round(len(m)),
       joinery: [...new Set(joinery.get(m.id) ?? [])],
       b: Math.min(m.b, m.h),
@@ -75,7 +75,8 @@ export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<strin
   return { parts, byMember }
 }
 
-function baseName(n: string): string {
+/** Name ohne Lagezusatz („Pfosten hinten links“ → „Pfosten“) */
+export function partBaseName(n: string): string {
   return n.replace(/\s+\d+$/, '').replace(/ (vorne|hinten|links|rechts|front|back|rear|left|right)( (links|rechts|left|right))?$/, '')
 }
 
