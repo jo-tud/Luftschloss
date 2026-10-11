@@ -336,6 +336,8 @@ export interface LoftBedParams {
   lowerDeckHeight: Mm
   /** Zusätzliche Stützen unter jeder freien Längszarge (lange Betten, Galerien) */
   midPosts: number
+  /** Eckpfosten, an die kein Geländer anschließt, enden an der Liegefläche (fehlt = ja) */
+  trimPosts?: boolean
 }
 
 export interface Assembly {

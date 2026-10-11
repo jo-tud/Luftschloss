@@ -43,6 +43,7 @@ export function defaultBedParams(over: Partial<LoftBedParams> = {}): LoftBedPara
     lowerBed: false,
     lowerDeckHeight: 300,
     midPosts: 0,
+    trimPosts: true,
     ...over,
   }
 }

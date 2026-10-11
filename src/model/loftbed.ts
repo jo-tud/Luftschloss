@@ -247,7 +247,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const { x, y } = cornerPos[c]
     const cx = x + p / 2
     const cy = y + p / 2
-    const m = add(`pfosten-${c}`, 'pfosten', P.postCatalogId, v(cx, cy, 0), v(cx, cy, postTop), post.b, post.h, {
+    // ohne Geländer an beiden angrenzenden Seiten reicht der Pfosten nur bis zur Liegefläche
+    const top = !ceilingHigh && P.trimPosts !== false && !cornerSides[c].some(guardOn) ? H : postTop
+    const m = add(`pfosten-${c}`, 'pfosten', P.postCatalogId, v(cx, cy, 0), v(cx, cy, top), post.b, post.h, {
       name: t('Pfosten {c}', { c: cornerLabel(c) }),
     })
     if (m && ceilingHigh) {
