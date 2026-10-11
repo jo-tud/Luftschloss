@@ -34,7 +34,7 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 | ![Structural check](docs/screenshots/statik.jpg) | ![First-person view](docs/screenshots/ich-perspektive.jpg) |
 | **Will it hold?** A simplified structural analysis checks the whole frame: utilisation of every beam, wobble, loads when kids jump around. | **How does it feel?** In first-person view you stand at the door, sit under the bed or lie on the mattress. |
 | ![Build plan](docs/screenshots/bauplan.jpg) | ![Materials](docs/screenshots/material.jpg) |
-| **Printable build plan:** dimensioned views, numbered parts list, joint sketches, assembly steps. | **Shopping list:** timber in stock lengths, cutting plan, screws and brackets, estimated prices, CSV export. |
+| **Printable build plan:** dimensioned views, numbered parts list, joint sketches, assembly steps. | **Shopping list:** timber in stock lengths, cutting plans for bars and sheets, screws and brackets, estimated prices, CSV export. |
 
 **And there's more:**
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { t, tk, tn, tr } from '../i18n'
 import { bomCsv, parsePriceAnswer, pricePrompt, type Bom } from '../analysis/bom'
+import type { SheetLayout } from '../analysis/sheetcut'
 import { loadApiKey, runPriceAgent, storeApiKey, type PriceAgentProgress } from '../analysis/priceAgent'
 import { fmtCm, fmtM } from '../model/geometry'
 import { useDerived, useStore } from '../state/store'
@@ -197,7 +198,57 @@ export function CutPlan({ bom }: { bom: Bom }) {
           ))}
         </div>
       ))}
+      {bom.sheets
+        .filter((s) => s.layouts?.length)
+        .map((s) => (
+          <div key={`${s.item.id}@${s.format.l}x${s.format.w}`} className="cut-group">
+            <h4>
+              {tr(s.item.name)} · {fmtCm(s.format.l, 0)} × {fmtCm(s.format.w, 0)}
+            </h4>
+            {s.layouts!.map((sh, i) => (
+              <SheetDrawing key={i} sheet={sh} />
+            ))}
+          </div>
+        ))}
+      {bom.sheets.some((s) => s.layouts?.length) && <p className="hint">{t('Platten: Guillotine-Schnitte (jeder Schnitt geht durch das ganze Reststück, wie beim Baumarkt-Zuschnitt), Sägefuge 4 mm, Teile dürfen quer liegen.')}</p>}
     </div>
+  )
+}
+
+/** Eine Platte mit den eingezeichneten Teilen, maßstäblich */
+function SheetDrawing({ sheet }: { sheet: SheetLayout }) {
+  const { l, w } = sheet.format
+  const fs = Math.max(l, w) / 34
+  return (
+    <figure className="sheet">
+      <svg viewBox={`-10 -10 ${l + 20} ${w + 20}`} role="img" aria-label={t('Zuschnitt {l} × {w}', { l: fmtCm(l, 0), w: fmtCm(w, 0) })}>
+        <rect x={0} y={0} width={l} height={w} className="sheet-board" />
+        {sheet.pieces.map((pc, j) => {
+          const pl = pc.rotated ? pc.w : pc.l
+          const pw = pc.rotated ? pc.l : pc.w
+          const name = `${tr(pc.label)}${pc.part ? ` ${pc.part}` : ''}`
+          const small = Math.min(pl, pw) < fs * 2.6
+          return (
+            <g key={j}>
+              <rect x={pc.x} y={pc.y} width={pl} height={pw} className="sheet-piece">
+                <title>{`${name}: ${fmtCm(pc.l, 1)} × ${fmtCm(pc.w, 1)}`}</title>
+              </rect>
+              {!small && (
+                <text x={pc.x + pl / 2} y={pc.y + pw / 2} fontSize={fs} textAnchor="middle" dominantBaseline="middle">
+                  <tspan x={pc.x + pl / 2} dy={-fs * 0.6}>
+                    {name}
+                  </tspan>
+                  <tspan x={pc.x + pl / 2} dy={fs * 1.2}>
+                    {fmtCm(pc.l, 1)} × {fmtCm(pc.w, 1)}
+                  </tspan>
+                </text>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+      <figcaption>{tn(sheet.pieces.length, tk('1 Teil · {pct} % genutzt'), tk('{n} Teile · {pct} % genutzt'), { pct: Math.round(sheet.used * 100) })}</figcaption>
+    </figure>
   )
 }
 

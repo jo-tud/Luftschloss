@@ -886,6 +886,34 @@ table.bom tr.group td {
 .bar .waste {
   background: repeating-linear-gradient(45deg, #f3f3f3, #f3f3f3 4px, #e5e5e5 4px, #e5e5e5 8px);
 }
+.sheet {
+  margin: 4px 0 10px;
+  max-width: 520px;
+  break-inside: avoid;
+}
+.sheet svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.sheet-board {
+  fill: #f3f3f3;
+  stroke: #b9a888;
+  stroke-width: 6;
+}
+.sheet-piece {
+  fill: #e9c99e;
+  stroke: #8a6a43;
+  stroke-width: 4;
+}
+.sheet text {
+  fill: #3d2f1f;
+  pointer-events: none;
+}
+.sheet figcaption {
+  color: var(--muted);
+  font-size: 12px;
+}
 
 @media print {
   .app {
