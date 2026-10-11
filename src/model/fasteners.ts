@@ -60,6 +60,8 @@ export interface Fastener {
   item?: string
   /** Vorbohren bzw. Bohrung: Durchmesser in mm (0 = ohne) */
   drill?: number
+  /** Schraube: Durchgangsloch im ersten Holz (Kopfseite), im tragenden Holz dann drill */
+  drillFirst?: number
   /** Schraube: so viel Holz durchdringt sie, bevor sie ins tragende Holz greift */
   first?: number
 }
@@ -146,6 +148,15 @@ export function bedCentre(r: Resolved, m: Member): Vec3 | undefined {
   return v(bed.footprint.reduce((s, q) => s + q.x, 0) / bed.footprint.length, bed.footprint.reduce((s, q) => s + q.y, 0) / bed.footprint.length, 0)
 }
 
+/** Mitte der Leiter zwischen den Wangen bzw. Holmen (Grundriss); nur für Teile der Leiter */
+export function ladderCentre(r: Resolved, m: Member): Vec3 | undefined {
+  if (!m.partKey?.startsWith('leiter-')) return undefined
+  const holme = r.members.filter((x) => x.assemblyId === m.assemblyId && x.partKey?.startsWith('leiter-holm-'))
+  if (!holme.length) return undefined
+  const pts = holme.flatMap((x) => [x.start, x.end])
+  return v(pts.reduce((s, q) => s + q.x, 0) / pts.length, pts.reduce((s, q) => s + q.y, 0) / pts.length, 0)
+}
+
 const BOLTS = new Set(['schlossschraube', 'bettschraube'])
 /** Stöße mit Schrauben ins Hirnholz bzw. durch das durchlaufende Holz */
 const SCREWED = new Set(['holzbauschraube', 'ausklinkung', 'auflage'])
@@ -154,7 +165,7 @@ const SCREWED = new Set(['holzbauschraube', 'ausklinkung', 'auflage'])
  * Verbindungsarten, deren Befestigungsmittel hier aus der Geometrie entstehen. Liefern sie an einem
  * Stoß nichts (Hölzer berühren sich nur an einer Kante), braucht es dort auch nichts zu kaufen.
  */
-export const MODELED = new Set(['winkel', 'balkenschuh', 'schlossschraube', 'bettschraube', 'holzbauschraube', 'auflage', 'auflagerleiste', 'ausklinkung', 'ueberblattung', 'schwalbenschwanz', 'zapfen', 'holzduebel', 'gratnut', 'nut', 'knagge', 'kopfband', 'versatz'])
+export const MODELED = new Set(['anlage', 'winkel', 'balkenschuh', 'schlossschraube', 'bettschraube', 'holzbauschraube', 'auflage', 'auflagerleiste', 'ausklinkung', 'ueberblattung', 'schwalbenschwanz', 'zapfen', 'holzduebel', 'gratnut', 'nut', 'knagge', 'kopfband', 'versatz'])
 
 /** Liegt p im Stab m (ohne Ausnehmungen)? */
 function inside(m: Member, p: Vec3): boolean {
@@ -313,7 +324,8 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const p0 = dot(j.pos, ax)
       const mid = at(v(0, 0, 0), [e1, (o1[0] + o1[1]) / 2], [e2, (o2[0] + o2[1]) / 2], [ax, p0])
       // Kopf nach außen, weg von der Bettmitte
-      const bc = bedCentre(r, A)
+      // unter Teilen der Leiter: weg von der Leitermitte
+      const bc = (B.partKey?.startsWith('leiter-') && ladderCentre(r, A)) || bedCentre(r, A)
       const sign = bc && dot(v(bc.x - j.pos.x, bc.y - j.pos.y, 0), ax) > 0 ? -1 : 1
       const dOut = scale(ax, sign)
       const tHead = sign > 0 ? hi - p0 : p0 - lo
@@ -330,11 +342,16 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       // nur Bolzen, die wirklich durch beide Hölzer gehen (schräge Hölzer überdecken sich nicht rechteckig)
       const hits = (q: Vec3) => [A, B].every((m) => { const [m0, m1] = range(m, ax); return inside(m, at(q, [ax, (m0 + m1) / 2 - dot(q, ax)])) })
       // Bolzen stumpfer Stöße an denselben Hölzern (Zargenende am Pfosten) nicht kreuzen
-      // (Bolzen und Schrauben stumpfer Stöße hängen nicht von durchgebolzten Verbindungen ab)
+      // (Bolzen und Schrauben stumpfer Stöße hängen nicht von durchgebolzten Verbindungen ab).
+      // Anbauteile (Haltegriff an der Wange) weichen außerdem den Bolzen am Rahmen aus (Griff an der Zarge);
+      // der Rahmen richtet sich nie nach Anbauteilen, so hängt nichts im Kreis voneinander ab
+      const frame = (id: string) => ['pfosten', 'zarge', 'wandriegel'].includes(byId.get(id)?.role ?? '')
+      const onFrame = (x: DetectedJoint) => frame(x.a) || frame(x.b)
       const avoid = r.joints
-        .filter((o) => o.key !== j.key && (BOLTS.has(o.typeId) || SCREWED.has(o.typeId)) && o.ending && [o.a, o.b].some((id) => id === A.id || id === B.id))
+        .filter((o) => o.key !== j.key && [o.a, o.b].some((id) => id === A.id || id === B.id))
+        .filter((o) => ((BOLTS.has(o.typeId) || SCREWED.has(o.typeId)) && o.ending) || (!onFrame(j) && onFrame(o) && o.typeId === 'schlossschraube' && !o.ending))
         .flatMap((o) => jointFasteners(o, byId, r))
-        .filter((f) => f.crossNut || (f.kind === 'schraube' && (f.drill ?? 0) > 0 && f.first !== undefined))
+        .filter((f) => f.crossNut || f.nut || (f.kind === 'schraube' && (f.drill ?? 0) > 0 && f.first !== undefined))
       const free = (q: Vec3) => {
         const h = at(q, [dOut, tHead])
         const t = at(h, [dOut, -(tHead - tNut)])
@@ -573,10 +590,17 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const thin = Math.min(E.b, E.h, Tm.b, Tm.h)
     /** Schraube durch first mm Holz in das tragende Holz (bearing mm dick in Schraubrichtung); vorbohren mit 0,7·d */
     const put8 = (head: Vec3, dir: Vec3, first: number, bearing: number) => {
-      // Gratnut: 6 × 80 durch die Wange ins Hirnholz der Stufe sichern, Stufe vorbohren
-      if (type === 'gratnut' || type === 'nut') {
-        screw(head, dir, 80, 3, 'nachher', 'schraube-6x80', 4)
-        out[out.length - 1].first = first
+      // Gratnut: nur geleimt, die Flanken halten – eine Schraube würde die schmale Feder spalten
+      if (type === 'gratnut') return
+      // gerade Nut: 6er-Schraube durch die Wange ins Hirnholz der Stufe, mindestens 45 mm (7,5·d) im Hirnholz;
+      // Wange Ø 6,5 durchbohren, Stufe im Verbund Ø 4 vorbohren
+      if (type === 'nut') {
+        // die Stufe steckt so tief in der Nut, wie die Nut tief ist (wie in joinery.ts)
+        const wood = first - Math.min(10, first / 3)
+        const L = [70, 80, 100].find((x) => x - wood >= 45) ?? 100
+        screw(head, dir, L, 3, 'nachher', `schraube-6x${L}`, 4)
+        out[out.length - 1].first = wood
+        out[out.length - 1].drillFirst = 6.5
         return
       }
       const sz = pickScrew(first, bearing, thin)

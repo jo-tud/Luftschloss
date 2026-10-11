@@ -576,7 +576,14 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
             ['treppe', t('Treppe (breite Stufen)')],
             ['keine', t('keine')], // i18n-ok
           ]}
-          onChange={(v) => setP({ ladder: v, ladderAngle: v === 'treppe' ? 45 : v === 'stufen' ? 70 : v === 'schraeg' ? 75 : 90 })}
+          onChange={(v) =>
+            setP({
+              ladder: v,
+              ladderAngle: v === 'treppe' ? 45 : v === 'stufen' ? 70 : v === 'schraeg' ? 75 : 90,
+              // zwei Trittbretter je Stufe brauchen eine breite Wange (≥ 160 mm)
+              ...(v === 'treppe' && timber(P.ladderCatalogId).h < 160 ? { ladderCatalogId: 'kvh-60x160' } : {}),
+            })
+          }
         />
         {P.ladder !== 'keine' && (
           <>

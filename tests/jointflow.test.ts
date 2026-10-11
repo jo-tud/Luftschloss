@@ -5,7 +5,7 @@ import { resolveProject } from '../src/model/resolve'
 import { JOINT_GUIDE } from '../src/model/jointGuide'
 import { JOINT_TYPES, jointOptions } from '../src/model/joints'
 import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, fastenerClashes, jointFasteners } from '../src/model/fasteners'
-import { cutOverlaps } from '../src/model/joinery'
+import { cutOverlaps, memberSolids, prismCorners } from '../src/model/joinery'
 import { analyze } from '../src/analysis/checks'
 import { progressAt, timeline } from '../src/model/jointTimeline'
 import { fill, jointDrawings, jointPlan } from '../src/model/jointPlan'
@@ -248,16 +248,37 @@ describe('Eckpfosten', () => {
   })
 })
 
-describe('Haltegriff', () => {
-  it('steht neben der Wange, nicht in ihr, und ist an der Zarge verbolzt', () => {
+describe('Haltegriff und Wange', () => {
+  it('Griff an der Zarge verbolzt, Wange seitlich am Griff verbolzt und mit dem Kopfschnitt an der Zarge', () => {
     const p = testProject()
     const r = resolveProject(p)
     const ids = analyze(p, r).findings.map((f) => f.id)
-    expect(ids.filter((i) => i.startsWith('kreuzung:') && i.includes('griff'))).toEqual([])
+    expect(ids.filter((i) => i.startsWith('kreuzung:') && (i.includes('griff') || i.includes('leiter-holm')))).toEqual([])
     const byId = new Map(r.members.map((m) => [m.id, m]))
-    const j = r.joints.find((x) => x.key.includes('leiter-griff-0') && x.key.includes('zarge'))!
-    expect(jointFasteners(j, byId, r).filter((f) => f.kind === 'bolzen').length).toBeGreaterThan(0)
-    expect(r.joints.some((x) => x.key.includes('leiter-griff-0') && x.key.includes('leiter-holm'))).toBe(false)
+    const bolts = (key: (k: string) => boolean) => {
+      const j = r.joints.find((x) => key(x.key))!
+      return jointFasteners(j, byId, r).filter((f) => f.kind === 'bolzen').length
+    }
+    expect(bolts((k) => k.includes('leiter-griff-0') && k.includes('zarge'))).toBeGreaterThan(0)
+    expect(bolts((k) => k.includes('leiter-griff-0') && k.includes('leiter-holm-0'))).toBeGreaterThan(0)
+    // Kopfschnitt lotrecht an der Zarge, Oberkante bündig, Fußschnitt waagrecht auf dem Boden
+    for (const i of [0, 1]) {
+      const head = r.joints.find((x) => x.key.includes(`leiter-holm-${i}`) && x.key.includes('zarge-vorne'))!
+      expect(head.typeId).toBe('anlage')
+      const plan = jointPlan(head, byId, r)!
+      expect(Number(plan.vars.kopf) + Number(plan.vars.fuss)).toBe(90)
+    }
+    const holm = r.members.find((m) => m.partKey === 'leiter-holm-0')!
+    const sol = memberSolids(holm, undefined)
+    const pts = sol.prisms.flatMap((pr) => [...prismCorners(pr).bottom, ...prismCorners(pr).top])
+    const zarge = r.members.find((m) => m.partKey === 'zarge-vorne')!
+    expect(Math.min(...pts.map((q) => q.z))).toBeGreaterThan(-0.5)
+    // die Spitze steht über der Zarge, aber nicht höher als die Matratze
+    expect(Math.max(...pts.map((q) => q.z))).toBeGreaterThan(zarge.start.z + zarge.h / 2)
+    expect(Math.max(...pts.map((q) => q.z))).toBeLessThan(p.assemblies[0].params.deckHeight + p.assemblies[0].params.mattressThickness)
+    // jede Stufe liegt in beiden Wangen
+    const steps = r.members.filter((m) => m.partKey?.startsWith('leiter-stufe'))
+    for (const s of steps) expect(r.joints.filter((x) => (x.a === s.id || x.b === s.id) && x.key.includes('leiter-holm')).length, s.partKey).toBe(2)
   })
 })
 
@@ -275,8 +296,11 @@ describe('Lose Latten', () => {
 })
 
 describe('Gratnut-Treppe', () => {
-  it('nennt Winkel, Teilung und erste Nut; Flanken wie ein 14°-Fräser; Sicherung 6 × 80', () => {
-    const r = resolveProject(testProject())
+  it('nennt Winkel, Teilung und erste Nut; Flanken wie ein 14°-Fräser; nur geleimt', () => {
+    const p = testProject()
+    // Stufen auf Gratnut umstellen (Vorgabe ist die gerade Nut)
+    p.joints = resolveProject(p).joints.filter((x) => x.typeId === 'nut').map((x) => ({ key: x.key, typeId: 'gratnut' }))
+    const r = resolveProject(p)
     const byId = new Map(r.members.map((m) => [m.id, m]))
     const j = r.joints.find((x) => x.typeId === 'gratnut')!
     const plan = jointPlan(j, byId, r)!
@@ -284,7 +308,8 @@ describe('Gratnut-Treppe', () => {
     expect(Number(plan.vars.teilung)).toBeGreaterThan(150)
     const { breit, schmal, tiefe } = plan.cuts!.dims
     expect(Math.abs((breit - schmal) / 2 - tiefe * Math.tan((14 * Math.PI) / 180))).toBeLessThan(1)
-    expect(plan.fasteners.every((f) => f.item === 'schraube-6x80')).toBe(true)
+    // keine Schraube durch die schmale Feder
+    expect(plan.fasteners).toEqual([])
     // Wangenzeichnung: Nutmitte als Linie mit Winkel zur Wangenkante
     const wange = jointDrawings(plan, j, byId, r, (m) => m.name ?? m.role).find((d) => d.member.id === plan.T!.id)!
     const lines = wange.views.flatMap((v) => v.lines)
@@ -292,13 +317,34 @@ describe('Gratnut-Treppe', () => {
     expect(Math.abs(lines[0].deg - Number(plan.vars.winkel))).toBeLessThanOrEqual(1)
   })
 
-  it('Treppe mit zwei Trittbrettern je Stufe: beide in einer gemeinsamen Nut, keine Überschneidung gemeldet', () => {
+  it('Treppe mit zwei Trittbrettern je Stufe: eine Nut je Stufe, Teilung = Steigung / sin α', () => {
     const p = testProject()
-    p.assemblies[0].params.ladder = 'treppe'
+    Object.assign(p.assemblies[0].params, { ladder: 'treppe', ladderCatalogId: 'kvh-60x160' })
     const r = resolveProject(p)
-    const steps = r.joints.filter((j) => j.typeId === 'gratnut')
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const steps = r.joints.filter((j) => j.typeId === 'nut')
     expect(steps.length).toBeGreaterThan(8)
     expect(cutOverlaps(r.joints, r.members)).toEqual([])
     expect(analyze(p, r).findings.filter((f) => f.id.startsWith('ueberschneidung:'))).toEqual([])
+    const plan = jointPlan(steps[0], byId, r)!
+    const P = p.assemblies[0].params
+    const rise = P.deckHeight / Math.max(2, Math.round(P.deckHeight / 220))
+    expect(Math.abs(Number(plan.vars.teilung) - rise / Math.sin((Number(plan.vars.winkel) * Math.PI) / 180))).toBeLessThan(2)
+  })
+
+  it('gerade Nut: Schraubenlänge nach der Wange (44 → 6 × 80, 60 → 6 × 100), Wange durchbohrt', () => {
+    for (const [wange, item] of [
+      ['geh-44x94', 'schraube-6x80'],
+      ['kvh-60x160', 'schraube-6x100'],
+    ]) {
+      const p = testProject()
+      p.assemblies[0].params.ladderCatalogId = wange
+      const r = resolveProject(p)
+      const byId = new Map(r.members.map((m) => [m.id, m]))
+      const j = r.joints.find((x) => x.typeId === 'nut')!
+      const plan = jointPlan(j, byId, r)!
+      expect(plan.fasteners.length).toBeGreaterThan(0)
+      expect(plan.fasteners.every((f) => f.item === item && f.drillFirst === 6.5), wange).toBe(true)
+    }
   })
 })

@@ -1,5 +1,5 @@
 import { tk } from '../i18n'
-import { BED_NUT_DEPTH, bedCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
+import { BED_NUT_DEPTH, bedCentre, ladderCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
 import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
 import { allCuts, assemblyDir, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
@@ -119,14 +119,30 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.nagel = r0(cuts.dims.laenge / 2)
   }
   if ((j.typeId === 'gratnut' || j.typeId === 'nut') && T && E) {
-    // Nutlage an der Wange: Winkel zur Wangenkante, Teilung entlang der Wange, erste Nut ab Fuß
+    // Nutlage an der Wange: Winkel zur Wangenkante, Teilung entlang der Wange, erste Nut ab Fußschnitt.
+    // Je Stufe eine Nut: mehrere Bretter einer Stufe (gleiche Höhe) teilen sich die Nut, gezählt wird ihre Mitte
     let aT = memberAxes(T)[0]
     if (aT.z < 0) aT = scale(aT, -1)
     vars.winkel = r0((Math.asin(Math.min(1, Math.abs(aT.z))) * 180) / Math.PI)
     const foot = T.start.z <= T.end.z ? T.start : T.end
-    const at = r.joints.filter((x) => (x.typeId === 'gratnut' || x.typeId === 'nut') && (x.a === T.id || x.b === T.id)).map((x) => dot(sub(x.pos, foot), aT)).sort((a, b) => a - b)
+    const byStep = new Map<number, number[]>()
+    for (const x of r.joints) {
+      if ((x.typeId !== 'gratnut' && x.typeId !== 'nut') || (x.a !== T.id && x.b !== T.id)) continue
+      const step = byId.get(x.a === T.id ? x.b : x.a)
+      if (!step) continue
+      const z = Math.round((step.start.z + step.end.z) / 2)
+      byStep.set(z, [...(byStep.get(z) ?? []), dot(sub(x.pos, foot), aT)])
+    }
+    const at = [...byStep.values()].map((xs) => xs.reduce((s, x) => s + x, 0) / xs.length).sort((a, b) => a - b)
     vars.erste = r0(at[0] ?? dot(sub(j.pos, foot), aT))
     vars.teilung = at.length > 1 ? r0((at[at.length - 1] - at[0]) / (at.length - 1)) : 0
+  }
+  if (j.typeId === 'anlage' && E) {
+    // Kopf- und Fußschnitt zur Wangenkante: lotrecht 90° − α, waagrecht α
+    const alpha = (Math.asin(Math.min(1, Math.abs(memberAxes(E)[0].z))) * 180) / Math.PI
+    vars.kopf = r0(90 - alpha)
+    vars.fuss = r0(alpha)
+    vars.laenge = r0(cutLengths(r.joints.filter((x) => x.a === E.id || x.b === E.id), r.members).get(E.id) ?? memberLength(E))
   }
   if (j.typeId === 'auflagerleiste' && cuts?.extras[0]) vars.leiste = r0(cuts.extras[0].half[1] * 2)
   // Kopfband: Zuschnitt von Spitze zu Spitze (mit Gehrungen), nicht die Achslänge
@@ -208,10 +224,15 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
         toward,
         towardName: other ? label(other) : undefined,
         endName: (atStart) => endName(m, atStart, r, label),
-        center: bedCentre(r, m),
+        center: ladderCentre(r, m) ?? bedCentre(r, m),
+        ladder: m.partKey?.startsWith('leiter-'),
         lines: housingLines(m, [j], byId),
       }),
     )
+    // Zuschnitt aus allen Verbindungen des Teils (Federn, Zapfen und Schnitte an beiden Enden)
+    const mine = r.joints.filter((x) => x.a === m.id || x.b === m.id)
+    const full = cutLengths(mine, r.members).get(m.id)
+    if (full) out[out.length - 1].length = full
   }
   return out
 }
@@ -269,7 +290,8 @@ export function partWorkDrawing(m: Member, r: Resolved, label: (m: Member) => st
     full: true,
     refAtStart: vertical ? m.start.z <= m.end.z : true,
     endName: (atStart) => endName(m, atStart, r, label),
-    center: bedCentre(r, m),
+    center: ladderCentre(r, m) ?? bedCentre(r, m),
+    ladder: m.partKey?.startsWith('leiter-'),
     lines: housingLines(m, mine, byId),
   })
   const any = d.holes.length > 0 || d.views.some((v) => v.waste.length > 0 || v.hidden.length > 0) || !!cut?.add.length

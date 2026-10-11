@@ -323,6 +323,23 @@ export const JOINT_TYPES: JointType[] = [
     capacityKN: 8,
   },
   {
+    id: 'anlage',
+    name: tk('Wange mit Kopfschnitt angelehnt'),
+    group: 'holz',
+    kinds: ['t-stoss'],
+    difficulty: 1,
+    minutes: [20, 10],
+    drill: 0,
+    hard: tk('Kopf- und Fußschnitt im richtigen Winkel sägen.'),
+    removable: true,
+    stiffness: 'gelenkig',
+    residualSection: 1,
+    tools: [tk('Schmiege'), tk('Handkreissäge oder Handsäge')],
+    hardware: [],
+    note: tk('Die Wange ist oben lotrecht abgeschnitten und liegt an der Zarge an; gehalten wird sie seitlich am Haltegriff.'),
+    capacityKN: 3,
+  },
+  {
     id: 'gratnut',
     name: tk('Stufe in Gratnut, geleimt'),
     group: 'holz',
@@ -452,6 +469,10 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
   if (typeId === 'gewindestange') return rod ? undefined : tk('Nur für Abhängungen mit Gewindestange.')
   if (rope && typeId !== 'lose' && typeId !== 'auflage') return tk('Ein Seil wird angeknotet, nicht verschraubt oder verzapft.')
   if (rod) return tk('Die Gewindestange wird mit Muttern befestigt.')
+  // Wange mit lotrechtem Kopfschnitt: liegt nur an, gehalten wird sie seitlich am Haltegriff
+  const cutHead = jm.kind === 't-stoss' && !!jm.ending?.ends
+  if (typeId === 'anlage') return cutHead ? undefined : tk('Nur für eine Wange mit lotrechtem Kopfschnitt an der Zarge.')
+  if (cutHead) return tk('Die Wange liegt mit dem Kopfschnitt an der Zarge an und wird am Haltegriff verbolzt – hier nichts verschrauben.')
   if (typeId === 'stecken') return E.round ? undefined : tk('Nur für Rundstäbe – ein Kantholz passt in keine Bohrung.')
   if (round && !['holzbauschraube', 'auflage', 'lose'].includes(typeId)) return tk('Rundstäbe werden gesteckt oder verschraubt; Winkel, Bolzen und Zimmermannsverbindungen finden am runden Holz keinen Halt.')
   // fast parallel (Leitergriff am Holm): nur seitlich durch die Überdeckung verbinden

@@ -307,6 +307,25 @@ export function analyze(p: Project, r: Resolved): Analysis {
       else if (info.accessWidth > 400 && prof === 'kinder') add({ id: `zugang-breit:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Einstieg {w} breit', { w: fmtCm(info.accessWidth) }), detail: t('DIN EN 747 empfiehlt für Kinderbetten 30–40 cm.'), targets: [a.id] })
     }
     if (info.rungPitch !== undefined && (info.rungPitch < 200 || info.rungPitch > 300)) add({ id: `sprossen:${a.id}`, severity: safety('warnung'), category: CAT.sicherheit, title: t('Sprossenabstand {pitch}', { pitch: fmtCm(info.rungPitch) }), detail: t('Richtwert: 25 cm ± 5 cm, alle gleich.'), targets: [a.id] })
+    // Stufe muss ganz auf der Wange liegen: waagrechte Breite der Wange h / sin α ≥ Stufentiefe + 2 × 3 mm
+    if (P.ladder === 'treppe' || P.ladder === 'stufen') {
+      const wange = r.members.find((m) => m.assemblyId === a.id && m.partKey === 'leiter-holm-0')
+      const tread = P.ladder === 'treppe' ? 190 : 94
+      if (wange) {
+        const ax = Math.hypot(wange.end.x - wange.start.x, wange.end.y - wange.start.y, wange.end.z - wange.start.z) || 1
+        const sin = Math.abs(wange.end.z - wange.start.z) / ax
+        const span = Math.max(wange.b, wange.h) / Math.max(0.1, sin)
+        if (span < tread + 6)
+          add({
+            id: `wange-schmal:${a.id}`,
+            severity: safety('warnung'),
+            category: CAT.sicherheit,
+            title: t('Treppenwange zu schmal für die Stufen'),
+            detail: t('Waagrecht misst die Wange nur {w} mm, die Stufe ist {s} mm tief – vorne bzw. hinten liegt sie nicht auf. Breitere Wange wählen (Treppe: KVH 60 × 160).', { w: Math.round(span), s: tread }),
+            targets: [a.id, wange.id],
+          })
+      }
+    }
     if (P.ladder === 'senkrecht' || P.ladder === 'schraeg') add({ id: `sprossen-flach:${a.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Rundsprossen sind barfuß unbequem'), detail: t('Heimwerker-Erfahrung: flache Stufen in Gratnuten sind deutlich angenehmer (Leitertyp „Stufenleiter“).'), targets: [a.id] })
     // Offene Seiten zur Wand
     const sides: Side[] = ['hinten', 'vorne', 'links', 'rechts'] // i18n-ok

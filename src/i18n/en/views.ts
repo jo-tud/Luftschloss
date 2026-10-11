@@ -121,6 +121,7 @@ const en: Record<string, string> = {
   "Innenseite, gegenüber {name}": "Inside, facing away from {name}",
   "Außenseite, gegenüber {name}": "Outside, facing away from {name}",
   "Innenseite (zur Bettmitte)": "Inside (towards the bed centre)",
+  "Innenseite (zu den Stufen)": "Inside (towards the treads)",
   "Außenseite": "Outside",
   "Schmalseite innen": "Narrow face inside",
   "Schmalseite außen": "Narrow face outside",
