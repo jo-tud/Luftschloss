@@ -7,6 +7,7 @@ import { fmtCm, fmtM } from '../model/geometry'
 import { useDerived, useStore } from '../state/store'
 import { copyText } from './clipboard'
 import { eur } from './fields'
+import { Sym } from './icons'
 
 export function MaterialDialog() {
   const show = useStore((s) => s.showMaterial)
@@ -67,7 +68,7 @@ export function MaterialDialog() {
               <PriceAgent prompt={prompt} onAnswer={(text) => (setAnswer(text), setMsg(t('{n} Preise gefunden – bitte kurz prüfen und übernehmen.', { n: parsePriceAnswer(text).length })))} />
               <h3>{t('Oder per Chat')}</h3>
               <textarea readOnly value={prompt} rows={12} />
-              <button onClick={() => void copyText(prompt).then((ok) => setMsg(ok ? t('Prompt kopiert.') : t('Kopieren hat nicht geklappt – Text unten markieren und kopieren.')))}>📋 {t('Prompt kopieren')}</button>
+              <button onClick={() => void copyText(prompt).then((ok) => setMsg(ok ? t('Prompt kopiert.') : t('Kopieren hat nicht geklappt – Text unten markieren und kopieren.')))}><Sym k="kopieren" /> {t('Prompt kopieren')}</button>
               <h3>{t('Antwort einfügen')}</h3>
               <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={8} placeholder={t('id;preis_eur;einheit;produktname;url\nkvh-80x80;6,49;m;Konsta KVH 80×80;https://…')} />
               <div className="row">
@@ -300,7 +301,9 @@ function PriceAgent({ prompt, onAnswer }: { prompt: string; onAnswer: (text: str
   if (!open)
     return (
       <div className="agent-box">
-        <button onClick={() => setOpen(true)}>🔎 {t('Direkt recherchieren lassen')}</button>
+        <button onClick={() => setOpen(true)}>
+        <Sym k="suchen" /> {t('Direkt recherchieren lassen')}
+      </button>
         <span className="hint"> {t('mit eigenem Claude-API-Schlüssel, dauert einige Minuten')}</span>
       </div>
     )

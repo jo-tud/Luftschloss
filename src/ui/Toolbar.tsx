@@ -4,7 +4,7 @@ import { useDerived, useStore, type Layers } from '../state/store'
 import { useCheckCounts } from './Checks'
 import { eur } from './fields'
 import { ProjectMenu } from './Project'
-import { CircleHelp, DraftingCompass, Ellipsis, Globe, Ico, Info, Layers as LayersIcon, Menu, MousePointer2, Play, ReceiptEuro, RectangleHorizontal, RectangleVertical, Redo2, Scale, TabletSmartphone, Undo2 } from './icons'
+import { CircleHelp, DraftingCompass, Ellipsis, Globe, Ico, Info, Layers as LayersIcon, Menu, MousePointer2, Play, ReceiptEuro, RectangleHorizontal, RectangleVertical, Redo2, Scale, Sym, TabletSmartphone, Undo2 } from './icons'
 
 const LAYER_LABEL: Record<keyof Layers, string> = {
   joints: tk('Verbindungen'),
@@ -146,7 +146,15 @@ export function Toolbar() {
         aria-label={t('Eigenschaften und Prüfung: {e} Fehler, {w} Warnungen', { e: counts.fehler, w: counts.warnung })}
       >
         <Ico i={Info} />
-        {counts.fehler > 0 ? <span className="b fehler">⛔ {counts.fehler}</span> : counts.warnung > 0 ? <span className="b warnung">⚠ {counts.warnung}</span> : null}
+        {counts.fehler > 0 ? (
+          <span className="b fehler">
+            <Sym k="fehler" size={11} /> {counts.fehler}
+          </span>
+        ) : counts.warnung > 0 ? (
+          <span className="b warnung">
+            <Sym k="warnung" size={11} /> {counts.warnung}
+          </span>
+        ) : null}
       </button>
       <span className="wide-only">
         <LangSelect />
@@ -168,7 +176,8 @@ function SunControl() {
     <div className="sun-control" onClick={(e) => e.stopPropagation()}>
       <label className="check">
         <input type="checkbox" checked={hour !== null} onChange={(e) => set({ sunHour: e.target.checked ? 15 : null })} />
-        <span>☀ {t('Sonnenlicht')}{hour !== null ? ` · ${fmt(hour)}` : ''}</span>
+        <span>
+          <Sym k="sonne" /> {t('Sonnenlicht')}{hour !== null ? ` · ${fmt(hour)}` : ''}</span>
       </label>
       {hour !== null && <input type="range" min={6} max={20} step={0.25} value={hour} onChange={(e) => set({ sunHour: Number(e.target.value) })} aria-label={t('Uhrzeit')} />}
     </div>

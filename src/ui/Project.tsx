@@ -4,7 +4,7 @@ import en from '../i18n/en'
 import { emptyProject, testProject } from '../model/defaults'
 import type { Project } from '../model/types'
 import { migrate, useStore } from '../state/store'
-import { Compass, Ico } from './icons'
+import { Compass, Ico, Sym } from './icons'
 
 export function exportProject(p: Project) {
   const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' })
@@ -61,7 +61,9 @@ export function ProjectActions() {
       <button onClick={() => exportProject(p)}>{t('Projekt speichern als Datei (.json)')}</button>
       <button onClick={importProject}>{t('Projektdatei öffnen…')}</button>
       <button onClick={loadExample}>{t('Beispielzimmer laden')}</button>
-      <button onClick={openWizard}>🧭 {t('Planungsassistent')}</button>
+      <button onClick={openWizard}>
+          <Sym k="assistent" /> {t('Planungsassistent')}
+        </button>
       <button onClick={newEmptyRoom}>{t('Neues, leeres Zimmer')}</button>
     </div>
   )
@@ -79,13 +81,15 @@ export function ProjectMenu() {
       <summary title={t('Projekt: {name} · {status}', { name: tr(p.name), status })}>
         <span className="proj">{tr(p.name)}</span>
         <span className={`saved${savedAt < 0 ? ' err' : ''}`} aria-label={status}>
-          {savedAt < 0 ? '⚠' : '✓'}
+          <Sym k={savedAt < 0 ? 'warnung' : 'ok'} size={13} />
         </span>
         <span className="lbl"> ▾</span>
       </summary>
       <div className="menu" onClick={close}>
         <p className="hint">{status}</p>
-        <button onClick={openWizard}>🧭 {t('Planungsassistent')}</button>
+        <button onClick={openWizard}>
+          <Sym k="assistent" /> {t('Planungsassistent')}
+        </button>
         <button onClick={newEmptyRoom}>{t('Neues, leeres Zimmer')}</button>
         <button onClick={importProject}>{t('Öffnen…')}</button>
         <button onClick={() => exportProject(p)}>{t('Als Datei speichern')}</button>
