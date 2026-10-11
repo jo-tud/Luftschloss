@@ -148,7 +148,7 @@ export function bedCentre(r: Resolved, m: Member): Vec3 | undefined {
 
 const BOLTS = new Set(['schlossschraube', 'bettschraube'])
 /** Stöße mit Schrauben ins Hirnholz bzw. durch das durchlaufende Holz */
-const SCREWED = new Set(['holzbauschraube', 'ausklinkung', 'auflage', 'winkel'])
+const SCREWED = new Set(['holzbauschraube', 'ausklinkung', 'auflage'])
 
 /**
  * Verbindungsarten, deren Befestigungsmittel hier aus der Geometrie entstehen. Liefern sie an einem
@@ -270,7 +270,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
    * Schrauben in den Löchern eines Blechs (Mitte c, Schenkelrichtung l, Breite w, Normale nach außen n).
    * 5 × 50 ins Kantholz; auf einem dünnen Brett (wood mm) kurze 4 × 16, sonst kämen sie hinten heraus.
    */
-  const plateScrews = (c: Vec3, l: Vec3, w: Vec3, n: Vec3, W: number, when: FastenerWhen, g?: number, wood = 80, leg = 90, shiftW = 0) => {
+  const plateScrews = (c: Vec3, l: Vec3, w: Vec3, n: Vec3, W: number, when: FastenerWhen, g?: number, wood = 80, leg = 90) => {
     const short = wood < 45
     // Lochbild über die Schenkellänge verteilt (bei 90 mm: −18, 8, 30 mm um die Mitte)
     for (const [a, b] of [
@@ -280,7 +280,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       [0.33 * leg, -0.25],
       [0.33 * leg, 0.25],
     ] as const)
-      out.push({ joint: j.key, kind: 'schraube', head: at(c, [l, a], [w, b * W + shiftW], [n, 1.3]), dir: neg(n), length: short ? 16 : 50, d: short ? 4 : 5, when, item: short ? 'schraube-4x16' : 'schraube-5x50', group: g })
+      out.push({ joint: j.key, kind: 'schraube', head: at(c, [l, a], [w, b * W], [n, 1.3]), dir: neg(n), length: short ? 16 : 50, d: short ? 4 : 5, when, item: short ? 'schraube-4x16' : 'schraube-5x50', group: g })
   }
   let group = 0
   const plate = (center: Vec3, lenAx: Vec3, thickAx: Vec3, wideAx: Vec3, L: number, W: number, when: FastenerWhen) =>
@@ -471,9 +471,9 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         out[out.length - 1].item = 'winkel-90'
         plate(at(corner, [tDir, legT / 2], [into, 1.25]), tDir, into, wDir, legT, wd, 'nachher')
         plateScrews(at(corner, [into, 45], [tDir, 1.25]), into, wDir, tDir, wd, 'nachher', group, chord(E, nDir))
-        // am Eckpfosten mit Winkeln aus zwei Richtungen: Schrauben der einen Richtung 8 mm versetzt (das
-        // Lochbild hat dafür Spiel), damit sie sich im Pfosten nicht treffen
-        plateScrews(at(corner, [tDir, legT / 2], [into, 1.25]), tDir, wDir, into, wd, 'nachher', group, Math.min(chord(Tm, into), width2(range(Tm, into))), legT, crossing(j, E, Tm, byId, r, SCREWED) < 0 ? 8 * (wDir.z < 0 ? -1 : 1) : 0)
+        // Schrauben sitzen immer in den Löchern des Winkels; die kurzen Winkelschrauben aus zwei Richtungen
+        // am Eckpfosten dürfen sich nahekommen (sie werden nicht vorgebohrt)
+        plateScrews(at(corner, [tDir, legT / 2], [into, 1.25]), tDir, wDir, into, wd, 'nachher', group, Math.min(chord(Tm, into), width2(range(Tm, into))), legT)
         group++
       }
     } else {
@@ -715,9 +715,12 @@ function segDist(p0: Vec3, p1: Vec3, q0: Vec3, q1: Vec3): number {
 
 const DRILLED = new Set(['bolzen', 'bettschraube', 'schraube', 'holznagel', 'duebel'])
 
-/** Bohrungen bzw. Schrauben zweier Verbindungen, die sich im Holz treffen (zweite Richtung am Eckpfosten) */
+/**
+ * Bohrungen zweier Verbindungen, die sich im Holz treffen (zweite Richtung am Eckpfosten). Nur
+ * vorgebohrte Befestiger zählen; kurze Winkelschrauben ohne Vorbohrung dürfen sich nahekommen.
+ */
 export function fastenerClashes(r: Resolved): { joints: [string, string]; members: string[] }[] {
-  const fs = allFasteners(r).filter((f) => DRILLED.has(f.kind))
+  const fs = allFasteners(r).filter((f) => DRILLED.has(f.kind) && (f.drill ?? 0) > 0)
   const jointOf = new Map(r.joints.map((j) => [j.key, j]))
   const out: { joints: [string, string]; members: string[] }[] = []
   const seen = new Set<string>()
