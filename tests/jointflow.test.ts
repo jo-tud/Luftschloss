@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { testProject } from '../src/model/defaults'
-import { memberAxes, memberBoxes } from '../src/model/geometry'
+import { memberAxes, memberBoxes, memberLength } from '../src/model/geometry'
 import { resolveProject } from '../src/model/resolve'
 import { JOINT_GUIDE } from '../src/model/jointGuide'
 import { JOINT_TYPES, jointOptions } from '../src/model/joints'
-import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, fastenerClashes, jointFasteners } from '../src/model/fasteners'
+import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, fastenerClashes, fastenerGrip, jointFasteners } from '../src/model/fasteners'
 import { cutOverlaps, memberSolids, prismCorners } from '../src/model/joinery'
 import { analyze } from '../src/analysis/checks'
 import { progressAt, timeline } from '../src/model/jointTimeline'
@@ -270,7 +270,7 @@ describe('Eckpfosten', () => {
 })
 
 describe('Haltegriff und Wange', () => {
-  it('Griff an der Zarge verbolzt, Wange seitlich am Griff verbolzt und mit dem Kopfschnitt an der Zarge', () => {
+  it('Griff an der Zarge verbolzt, Wange seitlich am Griff verschraubt und mit dem Kopfschnitt an der Zarge', () => {
     const p = testProject()
     const r = resolveProject(p)
     const ids = analyze(p, r).findings.map((f) => f.id)
@@ -281,7 +281,10 @@ describe('Haltegriff und Wange', () => {
       return jointFasteners(j, byId, r).filter((f) => f.kind === 'bolzen').length
     }
     expect(bolts((k) => k.includes('leiter-griff-0') && k.includes('zarge'))).toBeGreaterThan(0)
-    expect(bolts((k) => k.includes('leiter-griff-0') && k.includes('leiter-holm-0'))).toBeGreaterThan(0)
+    // Wange von innen an den Griff geschraubt (für einen Bolzen ist der Griff zu schmal)
+    const gw = r.joints.find((x) => x.key.includes('leiter-griff-0') && x.key.includes('leiter-holm-0'))!
+    expect(gw.typeId).toBe('holzbauschraube')
+    expect(jointFasteners(gw, byId, r).filter((f) => f.kind === 'schraube').length).toBe(2)
     // Kopfschnitt lotrecht an der Zarge, Oberkante bündig, Fußschnitt waagrecht auf dem Boden
     for (const i of [0, 1]) {
       const head = r.joints.find((x) => x.key.includes(`leiter-holm-${i}`) && x.key.includes('zarge-vorne'))!
@@ -401,5 +404,59 @@ describe('Rahmen und Montage (Praxisprüfung)', () => {
     const walls = new Set(posts.map((m) => m.notches!.map((n) => n.reason).join()))
     if (walls.size > 1) expect(new Set(posts.map((m) => byMember.get(m.id))).size).toBeGreaterThan(1)
     expect(parts.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Geländer, Griff, Knagge, Einkauf (Praxisprüfung)', () => {
+  const variants: Record<string, unknown>[] = [{}, { frameStyle: 'aussen' }, { frameStyle: 'aufgelegt', deck: 'platte', deckCatalogId: 'osb-22' }, { guard: 'staebe' }, { ladder: 'treppe', ladderCatalogId: 'kvh-60x160' }, { lowerBed: true }]
+  it('keine Schraube läuft durch Luft oder greift unter 6 · d', () => {
+    for (const v of variants) {
+      const p = testProject()
+      const b = p.assemblies[0].params
+      p.assemblies[0].params = keepWallContact(p.room, b, { ...b, ...v } as typeof b)
+      expect(fastenerGrip(resolveProject(p)), JSON.stringify(v)).toEqual([])
+    }
+  })
+
+  it('Haltegriff: M8 an der Zarge, Bolzen mindestens 80 mm vom Zargenende; „lose“ wird nicht angeboten', () => {
+    const r = resolveProject(testProject())
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const j = r.joints.find((x) => x.key.includes('leiter-griff-0') && x.key.includes('zarge'))!
+    const bolts = jointFasteners(j, byId, r).filter((f) => f.kind === 'bolzen')
+    expect(bolts.length).toBeGreaterThan(0)
+    expect(bolts.every((f) => f.d === 8 && f.item!.startsWith('schlossschraube-m8'))).toBe(true)
+    const rail = byId.get(j.a)!.role === 'zarge' ? byId.get(j.a)! : byId.get(j.b)!
+    const ax = memberAxes(rail)[0]
+    const u = (q: { x: number; y: number; z: number }) => (q.x - rail.start.x) * ax.x + (q.y - rail.start.y) * ax.y + (q.z - rail.start.z) * ax.z
+    for (const f of bolts) expect(Math.min(u(f.head), memberLength(rail) - u(f.head))).toBeGreaterThanOrEqual(80 - 1)
+    const opts = jointOptions({ kind: j.kind, a: byId.get(j.a)!, b: byId.get(j.b)! })
+    expect(opts.find((o) => o.type.id === 'lose')?.reason).toBeDefined()
+  })
+
+  it('Knagge an allen Zargen: 2 × 2 Schrauben, Zugschraube durch den Pfosten, nichts kreuzt sich', () => {
+    const p = testProject()
+    const r0 = resolveProject(p)
+    const b0 = new Map(r0.members.map((m) => [m.id, m]))
+    p.joints = r0.joints.filter((j) => j.ending && b0.get(j.ending)?.role === 'zarge' && [j.a, j.b].some((id) => b0.get(id)?.role === 'pfosten')).map((j) => ({ key: j.key, typeId: 'knagge' }))
+    const r = resolveProject(p)
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const ks = r.joints.filter((j) => j.typeId === 'knagge')
+    expect(ks.length).toBeGreaterThan(4)
+    for (const j of ks) {
+      const fs = jointFasteners(j, byId, r)
+      expect(fs.filter((f) => f.when === 'vorher').length).toBe(4)
+      expect(fs.some((f) => f.when === 'nachher' && f.item?.startsWith('schraube-8x'))).toBe(true)
+      expect(jointPlan(j, byId, r)!.vars.n).toBe(4)
+    }
+    expect(fastenerClashes(r)).toEqual([])
+  })
+
+  it('Einkauf: eine große Scheibe DIN 440 je Bolzen', () => {
+    const p = testProject()
+    const r = resolveProject(p)
+    const bolts = allFasteners(r).filter((f) => f.kind === 'bolzen').length
+    const bom = computeBom(p, r)
+    const washers = bom.hardware.filter((h) => h.item.id.startsWith('scheibe-din440')).reduce((s, h) => s + h.qty, 0)
+    expect(washers).toBe(bolts)
   })
 })

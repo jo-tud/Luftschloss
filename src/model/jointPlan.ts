@@ -1,7 +1,7 @@
-import { tk } from '../i18n'
+import { t, tk } from '../i18n'
 import { BED_NUT_DEPTH, bedCentre, ladderCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
-import { dot, len, memberAxes, memberLength, norm, scale, sub, v } from './geometry'
+import { cross, dot, len, memberAxes, memberLength, norm, scale, sub, v } from './geometry'
 import { allCuts, assemblyDir, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
 import { guideKey, JOINT_GUIDE, type GuideEntry } from './jointGuide'
 import { jointType, type JointType } from './joints'
@@ -67,7 +67,9 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
   const fasteners = jointFasteners(j, byId, r)
   // durchgebolzt mit nur einem Bolzen: eigene Anleitung
   const single = j.typeId === 'schlossschraube' && !stoss && fasteners.filter((f) => f.kind === 'bolzen').length === 1
-  const guide = (single ? JOINT_GUIDE['schlossschraube-1'] : JOINT_GUIDE[key]) ?? JOINT_GUIDE[j.typeId]
+  // Auflage mit Schrauben von unten (Stütze steht auf der Zarge): eigene Anleitung
+  const fromBelow = j.typeId === 'auflage' && fasteners.some((f) => f.kind === 'schraube' && f.dir.z > 0.5)
+  const guide = (single ? JOINT_GUIDE['schlossschraube-1'] : fromBelow ? JOINT_GUIDE['auflage-unten'] : JOINT_GUIDE[key]) ?? JOINT_GUIDE[j.typeId]
   const cuts = jointCuts(j, byId)
   const vars: Record<string, string | number> = { E: E?.name ?? '', T: T?.name ?? '' }
   for (const [k, x] of Object.entries(cuts?.dims ?? {})) vars[k] = x
@@ -78,6 +80,9 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.n = bolts.length
     vars.bohr = f.drill ?? 11
     vars.laenge = buyLength(f.item) ?? r0(f.length)
+    vars.m = `M${r0(f.d)}`
+    // große Scheibe DIN 440: R 9 × 28 für M8, R 11 × 34 für M10
+    vars.scheibe = f.d <= 8 ? 28 : 34
     vars.abstand = bolts.length > 1 ? r0(len(sub(bolts[0].head, bolts[1].head))) : 0
     vars.nut = f.kind === 'bettschraube' ? BED_NUT_DEPTH : CROSS_NUT_DEPTH
     vars.tasche = r0(f.crossNut?.depth ?? E.b / 2 + 12)
@@ -110,6 +115,12 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     if (any) vars.size = `${any.d} × ${buyLength(any.item) ?? r0(any.length)}`
   }
   if (j.typeId === 'winkel') vars.n = fasteners.filter((f) => f.kind === 'schraube').length / 2 || 10
+  if (j.typeId === 'knagge') {
+    // Schrauben der Knagge (vorher) und die Zugschraube durch den Pfosten (danach)
+    vars.n = fasteners.filter((f) => f.kind === 'schraube' && f.when === 'vorher').length
+    const tie = fasteners.find((f) => f.kind === 'schraube' && f.when === 'nachher')
+    if (tie?.item) vars.size = `${tie.d} × ${buyLength(tie.item) ?? r0(tie.length)}`
+  }
   if (j.typeId === 'holzduebel') {
     const d = fasteners.filter((f) => f.kind === 'duebel')
     vars.abstand = d.length > 1 ? r0(len(sub(d[0].head, d[1].head))) : 0
@@ -150,7 +161,7 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
   if (j.typeId === 'versatz' && !vars.size) vars.size = '8 × 160'
 
   // ohne berechnete Geometrie (ungewöhnliche Lage): übliche Werte, damit die Anleitung lesbar bleibt
-  const DEFAULTS: Record<string, string | number> = { winkel: 70, erste: 200, teilung: 225, hoehe: 60, oben: 40, unten: 30, tasche: 36, tiefe: 15, n: 2, size: '8 × 160', grip: 72, abstand: 50, rand: 40, bohr: 11, laenge: 180, nut: CROSS_NUT_DEPTH }
+  const DEFAULTS: Record<string, string | number> = { m: 'M10', scheibe: 34, winkel: 70, erste: 200, teilung: 225, hoehe: 60, oben: 40, unten: 30, tasche: 36, tiefe: 15, n: 2, size: '8 × 160', grip: 72, abstand: 50, rand: 40, bohr: 11, laenge: 180, nut: CROSS_NUT_DEPTH }
   for (const st of guide.steps)
     for (const m of st.t.matchAll(/\{(\w+)\}/g)) if (!(m[1] in vars)) vars[m[1]] = DEFAULTS[m[1]] ?? '–'
   const effort: JointEffort = { difficulty: type.difficulty, minutes: type.minutes, drill: type.drill, hard: type.hard }
@@ -178,9 +189,25 @@ export function jointVariant(typeId: string, j: DetectedJoint, byId: Map<string,
   const B = byId.get(j.b)
   const stoss = !!j.ending && !!A && !!B && !!jointFrame(j, A, B)?.pE
   if (typeId === 'schlossschraube' && stoss) return { name: STOSS_NAME, difficulty: 2, tools: STOSS_TOOLS }
+  if (typeId === 'schlossschraube' && A && B) {
+    // durchgebolzt: Bohrerlänge nach der Dicke beider Hölzer (+ 60 mm Schaft), Handelslängen 235/320/460;
+    // Holz unter 50 mm bekommt M8 (Bohrer Ø 9, Schlüssel 13)
+    const c = cross(memberAxes(A)[0], memberAxes(B)[0])
+    if (len(c) > 0.3) {
+      const ax = norm(c)
+      const thick = (m: Member) => { const a = memberAxes(m); return Math.abs(dot(ax, a[1])) * m.b + Math.abs(dot(ax, a[2])) * m.h }
+      const through = thick(A) + thick(B)
+      const m8 = Math.min(A.b, A.h, B.b, B.h) < 50
+      const l = [235, 320, 460].find((x) => x >= through + 60) ?? 460
+      const tools = type.tools.map((x) => (x === BOLT_BIT ? t('Schlangenbohrer Ø {d} × {l} mm', { d: m8 ? 9 : 11, l }) : x === BOLT_KEY ? t('Gabelschlüssel {sw}', { sw: m8 ? 13 : 17 }) : x))
+      return { name: type.name, difficulty: type.difficulty, tools }
+    }
+  }
   return { name: type.name, difficulty: type.difficulty, tools: type.tools }
 }
 
+const BOLT_BIT = tk('Schlangenbohrer Ø 11 mm, lang genug')
+const BOLT_KEY = tk('Gabelschlüssel 17')
 const STOSS_HARD = tk('Durch den Pfosten lang und gerade ins Hirnholz bohren, bis die Bohrung in der Tasche ankommt.')
 const STOSS_NAME = tk('Bolzenstoß M10: Sechskantschraube, Mutter in einer Tasche (2 Stück)')
 const STOSS_TOOLS = [tk('Bohrmaschine'), tk('Schlangenbohrer Ø 11 × 250 mm'), tk('Forstnerbohrer Ø 35 mm'), tk('Zwingen'), tk('Ratsche mit Nuss 17'), tk('Anschlagwinkel')]

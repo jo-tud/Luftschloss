@@ -10,7 +10,7 @@ import { WALL_IDS } from '../model/types'
 import { analyzeDoors, analyzeWindows, type DoorResult, type SwingResult } from './openings'
 import { transportCheck } from './assembly'
 import { cutOverlaps } from '../model/joinery'
-import { fastenerClashes } from '../model/fasteners'
+import { fastenerClashes, fastenerGrip } from '../model/fasteners'
 import { outsideRails } from '../model/loftbed'
 
 export type Severity = 'fehler' | 'warnung' | 'hinweis'
@@ -216,6 +216,21 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const pair = [...c.joints].sort().join('#')
     const at = c.members[0]
     add({ id: `befestiger-kreuzung:${pair}`, severity: 'warnung', category: CAT.stabil, title: at ? t('Schrauben bzw. Bolzen zweier Verbindungen treffen sich in {part}', { part: memberName(memberById.get(at)) }) : t('Schrauben bzw. Bolzen zweier Verbindungen treffen sich'), detail: at ? t('Die Befestigungsmittel der Verbindungen zu {a} und {b} kreuzen sich. Eine Verbindung in der Höhe versetzen oder eine andere Verbindungsart wählen.', { a: partner(c.joints[0], at), b: partner(c.joints[1], at) }) : undefined, targets: c.members })
+  }
+  for (const g of fastenerGrip(r)) {
+    const j = r.joints.find((x) => x.key === g.joint)
+    const other = j ? memberById.get(j.a === g.member ? j.b : j.a) : undefined
+    add({
+      id: `befestiger-halt:${g.joint}`,
+      severity: 'warnung',
+      category: CAT.stabil,
+      title: t('{part}: Schraube greift zu wenig', { part: memberName(memberById.get(g.member)) }),
+      detail:
+        g.air > 12
+          ? t('Eine Schraube der Verbindung zu {a} läuft {air} mm durch Luft. Andere Lage oder andere Verbindungsart wählen.', { a: memberName(other), air: g.air })
+          : t('Eine Schraube der Verbindung zu {a} greift nur {grip} mm im tragenden Holz, nötig sind mindestens {need} mm (6 · d). Längere Schraube oder andere Verbindungsart wählen.', { a: memberName(other), grip: g.grip, need: g.need }),
+      targets: [g.member],
+    })
   }
   for (const d of r.deepNotches) {
     add({ id: `kerbe:${d.memberId}:${notchKey(d.reason)}`, severity: 'fehler', category: CAT.stabil, title: t('{part}: Ausklinkung für {reason} zu tief', { part: memberName(memberById.get(d.memberId)), reason: tr(d.reason) }), detail: t('Nötig wären {depth}, sinnvoll höchstens {max} (halber Querschnitt). Bauteil von der Wand abrücken oder kürzen.', { depth: fmtCm(d.depth), max: fmtCm(d.max) }), targets: [d.memberId] })

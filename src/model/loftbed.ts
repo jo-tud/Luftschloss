@@ -309,6 +309,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const yStart = (s: Side) => (aussen ? 0 : hasPost(s === 'links' ? 'BL' : 'BR') ? p : isWall('hinten') || !isWall(s) ? rb : 0) // i18n-ok
   const yEnd = (s: Side) => Wo - (aussen ? 0 : hasPost(s === 'links' ? 'FL' : 'FR') ? p : isWall('vorne') || !isWall(s) ? rb : 0) // i18n-ok
   const zc = railBottom + rh / 2
+  /** Lage der Zarge einer Seite entlang der Seite (in Laufrichtung von sideFrame) */
+  const railSpan = (s: Side): [Mm, Mm] =>
+    s === 'vorne' ? [xStart(s), xEnd(s)] : s === 'hinten' ? [Lo - xEnd(s), Lo - xStart(s)] : s === 'links' ? [yStart(s), yEnd(s)] : [Wo - yEnd(s), Wo - yStart(s)] // i18n-ok
 
   // Breite Liegeflächen mit Latten brauchen einen Mittelträger, der auf den Querzargen liegt
   // Fugen zwischen mehreren Matratzen (nebeneinander: längs laufend bei y, hintereinander: quer bei x)
@@ -649,11 +652,14 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   if (P.ladder !== 'keine') {
     const side = P.ladderSide
     const frame = sideFrame(side, Lo, Wo)
-    const a0 = Math.max(0, Math.min(P.ladderOffset, frame.length - P.ladderWidth))
-    const a1 = a0 + P.ladderWidth
     const sb = stile.b
     const sh = stile.h
     const angle = P.ladder === 'senkrecht' ? 90 : P.ladder === 'treppe' ? Math.min(P.ladderAngle, 50) : P.ladder === 'stufen' ? Math.min(P.ladderAngle, 70) : P.ladderAngle
+    // Haltegriffe der schrägen Leiter: ihr Bolzen sitzt mindestens 80 mm vom Zargenende (DIN EN 1995, a3,t)
+    const [r0, r1] = railSpan(side)
+    const gripRoom = angle >= 89.9 || r1 - r0 < P.ladderWidth + 2 * (80 + guard.b / 2) ? 0 : 80 + guard.b / 2
+    const a0 = Math.max(0, gripRoom ? r0 + gripRoom : 0, Math.min(P.ladderOffset, (gripRoom ? r1 - gripRoom : frame.length) - P.ladderWidth))
+    const a1 = a0 + P.ladderWidth
     const rad = (angle * Math.PI) / 180
     const tanA = Math.tan(rad)
     // Schräge Wange: oben lotrecht geschnitten, liegt mit dem Kopfschnitt an der Zarge an, unten
@@ -693,6 +699,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         // senkrechte Haltegriffe neben der Wange (außerhalb der Öffnung), außen an der Zarge verbolzt. Die
         // Wange liegt seitlich am Griff an und wird mit ihm verbolzt: dafür reicht der Griff so weit
         // hinunter, dass ein Bolzen mittig in der Wange Platz hat (80 mm unter der Wangenachse)
+        // Griff hochkant (74 nach außen, steif gegen Ziehen), an der Zarge mit M8 verbolzt; die Wange wird von
+        // innen mit Schrauben an den Griff geschraubt
         const [gx, gy] = alongSide(side, guard.b, guard.h)
         const ga = i === 0 ? a - sb / 2 - guard.b / 2 : a + sb / 2 + guard.b / 2
         const gz0 = Math.min(railBottomAt(side) - 40, zHead - (guard.h / 2) * tanA - 80)
@@ -743,8 +751,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       const g0 = endGap(c0)
       const g1 = frame.length - endGap(c1)
       // Lage der Zarge dieser Seite entlang der Seite (dort wird der Geländerpfosten angeschraubt)
-      const railAlong: [Mm, Mm] =
-        s === 'vorne' ? [xStart(s), xEnd(s)] : s === 'hinten' ? [Lo - xEnd(s), Lo - xStart(s)] : s === 'links' ? [yStart(s), yEnd(s)] : [Wo - yEnd(s), Wo - yStart(s)] // i18n-ok
+      const railAlong = railSpan(s)
       const gb = guard.b
       const gh = guard.h
       const inPlane = gb / 2
@@ -769,6 +776,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         const infill = P.guard === 'bretter' ? 18 : gb
         const lengthwise = s === 'vorne' || s === 'hinten'
         // innen: an der Längsseite in eine Lattenlücke setzen, an der Querseite flach an die Zarge
+        // innen: an der Längsseite in eine Lattenlücke setzen, an der Querseite flach an die Zarge;
+        // außen hochkant (74 nach außen, steif gegen Drücken), mit M8 verbolzt
         const [sx, sy] = inside && !lengthwise ? alongSide(s, gh, gb) : alongSide(s, gb, gh)
         const depth = inside && !lengthwise ? gb : gh
         const out = inside ? -(infill + depth / 2) : gh / 2
