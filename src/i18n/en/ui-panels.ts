@@ -415,7 +415,7 @@ const en: Record<string, string> = {
   'Bretter oder Latten': 'Boards or battens',
   'Schmale Latten ergeben mehr Reihen; der Spalt bleibt höchstens 6 cm': 'Narrow battens give more rows; the gap stays at most 6 cm',
   "Aufgelegt": "Laid on top",
-  "Zargen außen": "Rails outside",
+  "Zargen außen am Pfosten": "Rails outside the posts",
   "Zargen stumpf zwischen den Pfosten, Bolzen mit Mutter in einer Tasche. Glatte Außenseite; die Bohrungen müssen genau treffen.": "Rails butt between the posts, bolts with a nut in a pocket. Flush outside; the holes have to meet exactly.",
   "Querträger liegen oben auf den Zargen statt dazwischen: leicht zu fügen. Die Zargen sitzen dafür tiefer.": "Cross beams sit on top of the rails instead of between them: easy to fit. The rails sit lower in return.",
   "Zargen außen an den Pfosten, quer durchgebolzt: am leichtesten zu bohren. Die Querzargen sitzen eine Zargenhöhe tiefer.": "Rails on the outside of the posts, bolted through: easiest to drill. The end rails sit one rail height lower.",

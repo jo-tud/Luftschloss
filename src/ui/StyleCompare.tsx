@@ -18,7 +18,7 @@ import { eur } from './fields'
 const STYLE_NAME: Record<FrameStyle, string> = {
   zargen: tk('Zargen zwischen den Pfosten'),
   aufgelegt: tk('Aufgelegt'),
-  aussen: tk('Zargen außen'),
+  aussen: tk('Zargen außen am Pfosten'),
 }
 
 const STYLE_NOTE: Record<FrameStyle, string> = {
