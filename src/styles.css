@@ -1338,6 +1338,82 @@ table.compare td {
   width: min(1200px, 96vw);
   max-height: 94vh;
 }
+.modal.compare {
+  width: min(1200px, 96vw);
+  max-height: 94vh;
+}
+.compare-grid {
+  display: grid;
+  gap: 12px;
+}
+.compare-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.compare-col.current {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.modal-body .compare-col h3 {
+  margin: 0;
+}
+.compare-view {
+  height: 220px;
+  border-radius: 6px;
+  overflow: hidden;
+  touch-action: none;
+}
+.compare-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  min-height: 3.6em;
+}
+.compare-col dl {
+  margin: 0;
+}
+.compare-col dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.compare-col dl > div.best {
+  background: #e3f4ea;
+}
+.compare-col dl > div.best dd {
+  color: var(--ok);
+  font-weight: 600;
+}
+.compare-col dt {
+  color: var(--muted);
+}
+.compare-col dd {
+  margin: 0;
+  text-align: right;
+}
+.compare-col button.primary,
+.compare-current {
+  margin-top: auto;
+  min-height: 44px;
+}
+.compare-current {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--accent);
+}
+@media (max-width: 760px) {
+  .compare-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
 .plan-body h3 {
   margin-top: 22px;
   border-bottom: 1px solid var(--line);
