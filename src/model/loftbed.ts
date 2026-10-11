@@ -631,9 +631,12 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         add(`leiter-holm-${i}`, 'holm', P.ladderCatalogId, pt(a, run + sh / 2, 0), pt(a, sh / 2, H), sb, sh, {
           name: t('Treppenwange {n}', { n: i + 1 }),
         })
-        // senkrechte Haltegriffe an der Öffnung
+        // senkrechte Haltegriffe neben der Wange (außerhalb der Öffnung, nicht in ihr), außen an der Zarge
+        // verbolzt: bis 40 mm unter die Zarge, damit der untere Bolzen weit genug vom Griffende sitzt
         const [gx, gy] = alongSide(side, guard.b, guard.h)
-        add(`leiter-griff-${i}`, 'holm', P.guardCatalogId, pt(a, guard.h / 2, railTop), pt(a, guard.h / 2, guardTop + 150), gx, gy, {
+        // 5 mm Luft zur Wange: der Griff hängt an Zarge und Handlauf, nicht an der Wangenkante
+        const ga = i === 0 ? a - sb / 2 - guard.b / 2 - 5 : a + sb / 2 + guard.b / 2 + 5
+        add(`leiter-griff-${i}`, 'holm', P.guardCatalogId, pt(ga, guard.h / 2, railBottom - 40), pt(ga, guard.h / 2, guardTop + 150), gx, gy, {
           name: t('Haltegriff {n}', { n: i + 1 }),
         })
       }

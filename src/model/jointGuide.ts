@@ -58,6 +58,18 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     ],
     mistakes: [tk('Zu nah am Holzende: Mindestens 80 mm zum belasteten Ende, sonst kann das Holz aufreißen.'), tk('Zu fest angezogen: Die Scheibe drückt sich ins Holz – große Scheiben verwenden, mit Gefühl anziehen.'), tk('Kein Leim in die Bohrungen: Die Verbindung soll zerlegbar bleiben.')],
   },
+  // durchgebolzt mit nur einem Bolzen (wenig Überdeckung oder Platz neben einem Stoß)
+  'schlossschraube-1': {
+    how: tk('Ein Gewindebolzen M10 geht quer durch beide Hölzer und wird mit großer Scheibe und Mutter angezogen. Für mehr Halt fehlt hier die Überdeckung; zusammen mit den anderen Verbindungen des Teils hält das.'),
+    steps: [
+      S(tk('Bolzenmitte anreißen: mittig in der Überdeckung, mindestens {rand} mm vom Rand. Das Kreuz mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
+      S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
+      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.')),
+      S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
+      S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
+    ],
+    mistakes: [tk('Zu nah am Holzende: Mindestens 80 mm zum belasteten Ende, sonst kann das Holz aufreißen.'), tk('Zu fest angezogen: Die Scheibe drückt sich ins Holz – große Scheiben verwenden, mit Gefühl anziehen.')],
+  },
   'schlossschraube-stoss': {
     how: tk('Zwei Sechskantschrauben M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter, die in einer Tasche auf der Innenseite sitzt – das Prinzip der Bettschraube, mit Teilen aus dem Baumarkt. Zerlegbar.'),
     steps: [

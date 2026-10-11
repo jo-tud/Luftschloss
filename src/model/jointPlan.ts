@@ -64,8 +64,10 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
   const T = frame?.T ?? (E === A ? B : A)
   const stoss = !!frame?.pE && !!j.ending
   const key = guideKey(j.typeId, stoss && (j.typeId === 'schlossschraube' || j.typeId === 'holzbauschraube'))
-  const guide = JOINT_GUIDE[key] ?? JOINT_GUIDE[j.typeId]
   const fasteners = jointFasteners(j, byId, r)
+  // durchgebolzt mit nur einem Bolzen: eigene Anleitung
+  const single = j.typeId === 'schlossschraube' && !stoss && fasteners.filter((f) => f.kind === 'bolzen').length === 1
+  const guide = (single ? JOINT_GUIDE['schlossschraube-1'] : JOINT_GUIDE[key]) ?? JOINT_GUIDE[j.typeId]
   const cuts = jointCuts(j, byId)
   const vars: Record<string, string | number> = { E: E?.name ?? '', T: T?.name ?? '' }
   for (const [k, x] of Object.entries(cuts?.dims ?? {})) vars[k] = x

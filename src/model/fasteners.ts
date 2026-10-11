@@ -329,7 +329,19 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const b = boltM10(tHead - tNut)
       // nur Bolzen, die wirklich durch beide Hölzer gehen (schräge Hölzer überdecken sich nicht rechteckig)
       const hits = (q: Vec3) => [A, B].every((m) => { const [m0, m1] = range(m, ax); return inside(m, at(q, [ax, (m0 + m1) / 2 - dot(q, ax)])) })
-      const bases = offs.map((k) => at(mid, [e, k])).filter(hits)
+      // Bolzen stumpfer Stöße an denselben Hölzern (Zargenende am Pfosten) nicht kreuzen
+      // (Bolzen und Schrauben stumpfer Stöße hängen nicht von durchgebolzten Verbindungen ab)
+      const avoid = r.joints
+        .filter((o) => o.key !== j.key && (BOLTS.has(o.typeId) || SCREWED.has(o.typeId)) && o.ending && [o.a, o.b].some((id) => id === A.id || id === B.id))
+        .flatMap((o) => jointFasteners(o, byId, r))
+        .filter((f) => f.crossNut || (f.kind === 'schraube' && (f.drill ?? 0) > 0 && f.first !== undefined))
+      const free = (q: Vec3) => {
+        const h = at(q, [dOut, tHead])
+        const t = at(h, [dOut, -(tHead - tNut)])
+        return avoid.every((f) => segDist(h, t, f.head, add(f.head, scale(f.dir, f.length))) >= (d + f.d) / 2 + 2)
+      }
+      const sets = [offs, ...[0, -5, 5, -10, 10, -15, 15, -30, 30].map((k) => [k])]
+      const bases = sets.map((ks) => ks.map((k) => at(mid, [e, k])).filter(hits)).find((qs) => qs.length && qs.every(free)) ?? offs.map((k) => at(mid, [e, k])).filter(hits)
       for (const base of bases.length ? bases : [mid])
         push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d, when: 'nachher', nut: true, item: b.item, drill: 11 })
       return out

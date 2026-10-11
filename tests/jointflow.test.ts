@@ -247,3 +247,16 @@ describe('Eckpfosten', () => {
     expect(analyze(p, r).findings.some((f) => f.id.startsWith('ueberschneidung:'))).toBe(true)
   })
 })
+
+describe('Haltegriff', () => {
+  it('steht neben der Wange, nicht in ihr, und ist an der Zarge verbolzt', () => {
+    const p = testProject()
+    const r = resolveProject(p)
+    const ids = analyze(p, r).findings.map((f) => f.id)
+    expect(ids.filter((i) => i.startsWith('kreuzung:') && i.includes('griff'))).toEqual([])
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const j = r.joints.find((x) => x.key.includes('leiter-griff-0') && x.key.includes('zarge'))!
+    expect(jointFasteners(j, byId, r).filter((f) => f.kind === 'bolzen').length).toBeGreaterThan(0)
+    expect(r.joints.some((x) => x.key.includes('leiter-griff-0') && x.key.includes('leiter-holm'))).toBe(false)
+  })
+})
