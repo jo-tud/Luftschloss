@@ -7,7 +7,8 @@ import { fmtCm, memberLength, type OBB } from '../model/geometry'
 import { assemblyDir, clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from '../ui/JointGuide'
-import { jointPlan } from '../model/jointPlan'
+import { jointDrawings, jointPlan } from '../model/jointPlan'
+import { printTemplate, WorkDrawing } from '../ui/WorkDrawing'
 import type { GuideStep } from '../model/jointGuide'
 import { HOLD, progressAt, stepTimes, timeline } from '../model/jointTimeline'
 import { Ico } from '../ui/icons'
@@ -304,11 +305,14 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
   const clock = useRef<StepClock>({ t: still ? 1e6 : 0, playing: !still, stopAt: Infinity })
   const [step, setStep] = useState(0)
   const [playing, setPlaying] = useState(!still)
+  const [mode, setMode] = useState<'3d' | 'zeichnung'>('3d')
+  const drawings = useMemo(() => (plan && mode === 'zeichnung' ? jointDrawings(plan, j, byId, d.resolved, (m) => tr(m.name ?? m.role)) : []), [plan, mode, j, byId, d])
   const pick = (i: number) => {
     const [a, b] = stepTimes(steps, i)
     // ohne Bewegung gleich das Ergebnis des Schritts zeigen
     clock.current = still ? { t: b - 1e-3, playing: false, stopAt: Infinity } : { t: a, playing: true, stopAt: b }
     setPlaying(!still)
+    setMode('3d')
   }
   const toggle = () => {
     const c = clock.current
@@ -318,30 +322,49 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
   }
   return (
     <div className="joint-body">
-      <div className="joint-canvas">
-        <Canvas shadows="percentage" camera={{ position: cam.toArray(), fov: 40, near: 0.01, far: 20 }}>
-          <color attach="background" args={['#f4f5f7']} />
-          <DetailScene
-            j={j}
-            ending={ending}
-            through={through}
-            steps={steps}
-            clock={clock}
-            onStep={(i) => {
-              setStep(i)
-              setPlaying(clock.current.playing)
-            }}
-          />
-        </Canvas>
-        {steps.length > 0 && (
-          <div className="joint-player">
-            <button onClick={toggle} aria-label={playing ? t('Anhalten') : t('Abspielen')} title={playing ? t('Anhalten') : t('Abspielen')}>
-              {playing ? <Ico i={Pause} /> : <Ico i={Play} />}
-            </button>
-            <span>{t('Schritt {i} von {n}', { i: step + 1, n: steps.length })}</span>
+      <div className="joint-left">
+        <div className="seg joint-tabs" role="tablist">
+          <button role="tab" aria-selected={mode === '3d'} className={mode === '3d' ? 'on' : ''} onClick={() => setMode('3d')}>
+            {t('3D-Ablauf')}
+          </button>
+          <button role="tab" aria-selected={mode === 'zeichnung'} className={mode === 'zeichnung' ? 'on' : ''} onClick={() => setMode('zeichnung')}>
+            {t('Werkstattzeichnung')}
+          </button>
+        </div>
+        {mode === '3d' ? (
+          <div className="joint-canvas">
+            <Canvas shadows="percentage" camera={{ position: cam.toArray(), fov: 40, near: 0.01, far: 20 }}>
+              <color attach="background" args={['#f4f5f7']} />
+              <DetailScene
+                j={j}
+                ending={ending}
+                through={through}
+                steps={steps}
+                clock={clock}
+                onStep={(i) => {
+                  setStep(i)
+                  setPlaying(clock.current.playing)
+                }}
+              />
+            </Canvas>
+            {steps.length > 0 && (
+              <div className="joint-player">
+                <button onClick={toggle} aria-label={playing ? t('Anhalten') : t('Abspielen')} title={playing ? t('Anhalten') : t('Abspielen')}>
+                  {playing ? <Ico i={Pause} /> : <Ico i={Play} />}
+                </button>
+                <span>{t('Schritt {i} von {n}', { i: step + 1, n: steps.length })}</span>
+              </div>
+            )}
+            <span className="hint">{t('Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen')}</span>
+          </div>
+        ) : (
+          <div className="joint-drawings">
+            {drawings.map((dr) => (
+              <WorkDrawing key={dr.member.id} d={dr} title={tr(dr.member.name ?? dr.member.role)} onTemplate={() => printTemplate(dr, tr(dr.member.name ?? dr.member.role))} />
+            ))}
+            <p className="hint">{t('Maße in mm, steigend vom Bezug (Ende) und von der Bezugskante (unten). Schraffiert: Abfall. Gestrichelt: verdeckte Kanten und Bohrungen.')}</p>
           </div>
         )}
-        <span className="hint">{t('Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen')}</span>
       </div>
       <div className="joint-info">
         {children}

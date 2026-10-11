@@ -5,7 +5,7 @@ import { JOINT_GUIDE } from '../src/model/jointGuide'
 import { JOINT_TYPES, jointOptions } from '../src/model/joints'
 import { jointFasteners } from '../src/model/fasteners'
 import { progressAt, timeline } from '../src/model/jointTimeline'
-import { fill, jointPlan } from '../src/model/jointPlan'
+import { fill, jointDrawings, jointPlan } from '../src/model/jointPlan'
 import { computeBom } from '../src/analysis/bom'
 
 describe('Ablauf einer Verbindung', () => {
@@ -111,5 +111,36 @@ describe('Arbeitsplan einer Verbindung', () => {
     const inBom = bom.hardware.filter((h) => h.item.id.startsWith('schlossschraube')).reduce((s, h) => s + h.qty, 0)
     expect(inBom).toBe(bolts.length)
     expect(bolts.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Werkstattzeichnung', () => {
+  const setup = (typeId: string) => {
+    const r0 = resolveProject(testProject())
+    const j0 = r0.joints.find((j) => j.key === 'bett-1:pfosten-BL|bett-1:zarge-hinten')!
+    const q = testProject()
+    q.joints = [{ key: j0.key, typeId }]
+    const r = resolveProject(q)
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const j = r.joints.find((x) => x.key === j0.key)!
+    const plan = jointPlan(j, byId, r)!
+    return { plan, d: jointDrawings(plan, j, byId, r, (m) => m.name ?? m.id) }
+  }
+
+  it('Stoß mit Quermutter: Querbohrung 80 mm vom Ende, Bolzenbohrungen im Verbund durch den Pfosten', () => {
+    const { d } = setup('schlossschraube')
+    const [E, T] = d
+    expect(E.holes.some((h) => h.d === 25 && h.x === 80)).toBe(true)
+    const through = T.holes.filter((h) => h.d === 11)
+    expect(through.length).toBe(2)
+    expect(through.every((h) => h.through && h.with)).toBe(true)
+  })
+
+  it('Zapfen: Brust und Zapfendicke sind bemaßt, das Zapfenloch erscheint als Abfall', () => {
+    const { plan, d } = setup('zapfen')
+    const [E, T] = d
+    expect(E.views.some((v) => v.dimX.includes(plan.cuts!.dims.laenge))).toBe(true)
+    expect(T.views.some((v) => v.waste.length > 0)).toBe(true)
+    expect(T.refName.key).toBe('oberes Ende')
   })
 })

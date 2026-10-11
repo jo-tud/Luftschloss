@@ -1,7 +1,8 @@
 import { tk } from '../i18n'
 import { CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
-import { dot, len, memberAxes, memberLength, sub } from './geometry'
-import { jointCuts, jointFrame, type JointCuts, type JointFrame } from './joinery'
+import { partDrawing, type PartDrawing, type Text } from './drawing'
+import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
+import { jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
 import { guideKey, JOINT_GUIDE, type GuideEntry } from './jointGuide'
 import { jointType, type JointType } from './joints'
 import type { DetectedJoint, Resolved } from './resolve'
@@ -126,4 +127,60 @@ const STOSS_HARD = tk('Längsbohrung muss die Querbohrung der Mutter treffen.')
 /** Text mit Platzhaltern füllen (für Tests und Druck; Anzeige über t() mit denselben Werten) */
 export function fill(text: string, vars: Record<string, string | number>): string {
   return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m))
+}
+
+/**
+ * Werkstattzeichnungen der beiden Teile einer Verbindung (anzusetzendes Teil zuerst), mit den
+ * Bearbeitungen und Bohrungen nur dieser Verbindung. label: Name eines Teils für „im Verbund mit …“.
+ */
+export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<string, Member>, r: Resolved, label: (m: Member) => string): PartDrawing[] {
+  const out: PartDrawing[] = []
+  // Ausdehnung beider Teile entlang ihrer Achse, mit Zapfen und Blatt (für „im Verbund mit …“)
+  const ranges = new Map<string, Range>()
+  for (const m of [plan.E, plan.T]) {
+    if (!m) continue
+    let lo = 0
+    let hi = memberLength(m)
+    for (const b of plan.cuts?.members.get(m.id)?.add ?? []) {
+      lo = Math.min(lo, b[0][0])
+      hi = Math.max(hi, b[0][1])
+    }
+    ranges.set(m.id, [lo, hi])
+  }
+  const others = new Map([...byId].filter(([id]) => id === j.a || id === j.b))
+  for (const m of [plan.E, plan.T]) {
+    if (!m || m.round) continue
+    const other = m === plan.E ? plan.T : plan.E
+    const toward = plan.frame ? scale(plan.frame.out, m === plan.E ? 1 : -1) : undefined
+    out.push(
+      partDrawing(m, plan.cuts?.members.get(m.id), {
+        at: j.pos,
+        fasteners: plan.fasteners,
+        others,
+        ranges,
+        label,
+        toward,
+        towardName: other ? label(other) : undefined,
+        endName: (atStart) => endName(m, atStart, r, label),
+      }),
+    )
+  }
+  return out
+}
+
+/** Bezugsende benennen: oben bzw. unten bei stehenden Hölzern, sonst nach dem Teil, an dem es endet */
+export function endName(m: Member, atStart: boolean, r: Resolved, label: (m: Member) => string): Text {
+  const p = atStart ? m.start : m.end
+  const q = atStart ? m.end : m.start
+  const ax = memberAxes(m)[0]
+  if (Math.abs(ax.z) > 0.7) return { key: p.z < q.z ? tk('unteres Ende') : tk('oberes Ende') }
+  const reach = Math.max(m.b, m.h) * 1.5
+  const byId = new Map(r.members.map((x) => [x.id, x]))
+  for (const jj of r.joints) {
+    if (jj.a !== m.id && jj.b !== m.id) continue
+    if (len(sub(jj.pos, p)) > reach) continue
+    const o = byId.get(jj.a === m.id ? jj.b : jj.a)
+    if (o) return { key: tk('Ende an {teil}'), vars: { teil: label(o) } }
+  }
+  return { key: tk('Bezugsende') }
 }

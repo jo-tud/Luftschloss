@@ -23,6 +23,7 @@
   Bauteile taugt, entscheidet `unsuitable()` in `src/model/joints.ts`; Wirkprinzip und Herstellungsschritte stehen in
   `src/model/jointGuide.ts`. Schrauben, Bolzen, Dübel und Bleche (Lage und wann sie im Bauablauf
   dazukommen) nur in `src/model/fasteners.ts`; 3D-Beschläge (`src/views/hardware.ts`) und der Schrittablauf im
-  Verbindungsdetail (`src/model/jointTimeline.ts`) lesen daraus.
+  Verbindungsdetail (`src/model/jointTimeline.ts`) lesen daraus. Anleitung mit Maßen und Aufwand: `src/model/jointPlan.ts`,
+  bemaßte Werkstattzeichnung und Bohrtabelle: `src/model/drawing.ts`.
 - **Visuelle Qualität** (M8) ist umgesetzt; offene Punkte in SPEZIFIKATION.md, Kapitel 13.
 - Online-Version: GitHub Pages über `.github/workflows/pages.yml` (Push auf `main`), Adresse https://jo-tud.github.io/Luftschloss/. Keine Laufzeit-Downloads von fremden CDNs (Offline-PWA).

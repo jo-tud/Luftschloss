@@ -102,7 +102,6 @@ const en: Record<string, string> = {
   'Schlossschrauben M10, durchgebolzt (2 Stück)': 'Carriage bolts M10, through-bolted (2 pcs)',
   'Robust und zerlegbar. Abscheren ca. 5,7 kN char. je Bolzen bei 60 mm Holz. Nach einigen Wochen nachziehen.':
     'Robust and demountable. Shear approx. 5.7 kN char. per bolt in 60 mm timber. Retighten after a few weeks.',
-  'Holzbauschrauben 8×160 (2–4 Stück)': 'Structural screws 8×160 (2–4 pcs)',
   'Schnell und günstig. Abscheren ca. 3,3 kN char. je Schraube. Mindestholzdicke 30 mm.':
     'Quick and cheap. Shear approx. 3.3 kN char. per screw. Minimum timber thickness 30 mm.',
   'Bettschraube mit Zylindermutter': 'Bed bolt with barrel nut',
@@ -231,5 +230,6 @@ const en: Record<string, string> = {
   'Richtpreise Hornbach, Stand 2025/26': 'Hornbach guide prices, as of 2025/26',
   'Liegefläche, Brett {n}': 'Deck, board {n}',
   'Die Hölzer liegen fast parallel – hier hilft nur, sie seitlich durch die Überdeckung zu verschrauben oder zu verbolzen.': 'The timbers are almost parallel – the only option is to screw or bolt them sideways through the overlap.',
+  'Tellerkopfschrauben 8 mm (2–3 Stück, Länge nach Holzdicke)': 'Washer-head screws 8 mm (2–3, length to suit the timber)',
 }
 export default en

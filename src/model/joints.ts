@@ -94,7 +94,7 @@ export const JOINT_TYPES: JointType[] = [
   },
   {
     id: 'holzbauschraube',
-    name: tk('Holzbauschrauben 8×160 (2–4 Stück)'),
+    name: tk('Tellerkopfschrauben 8 mm (2–3 Stück, Länge nach Holzdicke)'),
     group: 'schraube',
     kinds: ['t-stoss', 'auflage', 'beischlag', 'kreuzung', 'ecke', 'strebe'],
     difficulty: 1,

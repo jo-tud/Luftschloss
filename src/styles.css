@@ -1098,10 +1098,79 @@ table.bom tr.group td {
   gap: 14px;
   padding: 12px 16px;
 }
-.joint-canvas {
+.joint-left {
   position: sticky;
   top: 0;
   align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.joint-tabs {
+  align-self: flex-start;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.joint-tabs button {
+  border-color: transparent;
+  background: transparent;
+}
+.joint-tabs button.on {
+  background: var(--panel);
+  border-color: var(--line);
+  font-weight: 600;
+}
+.joint-drawings {
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.work-drawing {
+  margin-bottom: 18px;
+}
+.wd-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.wd-head button {
+  margin-left: auto;
+}
+.work-drawing figure {
+  margin: 6px 0 10px;
+}
+.work-drawing figcaption {
+  font-size: 13px;
+  font-weight: 600;
+}
+.wd-svg {
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+}
+.wd-holes {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+.wd-holes th,
+.wd-holes td {
+  border-bottom: 1px solid var(--line);
+  padding: 3px 6px;
+  text-align: left;
+}
+.joint-canvas {
+  position: relative;
   height: 420px;
   border-radius: 10px;
   overflow: hidden;
@@ -1347,8 +1416,8 @@ table.compare td {
 }
 .pl-joints {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 .pl-joint {
   display: grid;
@@ -1357,7 +1426,26 @@ table.compare td {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px;
+}
+.pl-drawings {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+}
+.pl-drawings figure,
+.pl-drawings table {
   break-inside: avoid;
+}
+@media print {
+  .wd-head button {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .pl-joint {
+    grid-template-columns: 1fr;
+  }
 }
 .pl-sketch {
   width: 260px;
