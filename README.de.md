@@ -33,7 +33,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 | ![Statik](docs/screenshots/de/statik.jpg) | ![Ich-Perspektive](docs/screenshots/de/ich-perspektive.jpg) |
 | **Hält das?** Eine vereinfachte Statik rechnet das ganze Gestell durch: Ausnutzung jedes Balkens, Wackeln, Belastung beim Toben. | **Wie fühlt es sich an?** In der Ich-Perspektive stehst du an der Tür, sitzt unter dem Bett oder liegst auf der Matratze. |
 | ![Bauplan](docs/screenshots/de/bauplan.jpg) | ![Material](docs/screenshots/de/material.jpg) |
-| **Bauplan zum Ausdrucken:** Ansichten mit Maßen, Teileliste mit Nummern, Skizzen der Verbindungen, Montageschritte. | **Einkaufsliste:** Holz in Hornbach-Handelslängen, Zuschnittplan, Schrauben und Winkel, Richtpreise, Export als CSV. |
+| **Bauplan zum Ausdrucken:** Ansichten mit Maßen, Teileliste mit Nummern, Skizzen der Verbindungen, Montageschritte. | **Einkaufsliste:** Holz in Hornbach-Handelslängen, Zuschnittplan für Stangen und Platten, Schrauben und Winkel, Richtpreise, Export als CSV. |
 
 **Außerdem:**
 

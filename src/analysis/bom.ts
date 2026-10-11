@@ -1,10 +1,11 @@
-import { getLang, locale, t, tr } from '../i18n'
+import { getLang, locale, t, tk, tr } from '../i18n'
 import { HARDWARE, PRICE_STAND, catalogItem, type HardwareItem, type SheetItem, type TimberItem } from '../model/catalog'
 import { fmtCm, fmtM, memberLength } from '../model/geometry'
 import { cutLengths } from '../model/joinery'
 import { jointType } from '../model/joints'
 import type { Resolved } from '../model/resolve'
 import type { Panel, Project } from '../model/types'
+import { packSheets, type SheetLayout, type SheetPiece } from './sheetcut'
 
 export const KERF = 3
 
@@ -30,6 +31,8 @@ export interface SheetLine {
   format: { l: number; w: number; price: number }
   note: string
   price: number
+  /** Zuschnitt je Platte (nur gesägte Plattenwerkstoffe) */
+  layouts?: SheetLayout[]
 }
 
 export interface HardwareLine {
@@ -127,9 +130,11 @@ export function computeBom(p: Project, r: Resolved): Bom {
     sheetPanels.set(item.id, [...(sheetPanels.get(item.id) ?? []), pa])
   }
   // je Material und Format eine Zeile: Platten verschiedener Größe brauchen ggf. verschiedene Formate
-  const byFormat = new Map<string, { item: SheetItem; fmt: SheetItem['formats'][number]; count: number; notes: Set<string> }>()
+  const byFormat = new Map<string, { item: SheetItem; fmt: SheetItem['formats'][number]; count: number; notes: Set<string>; layouts?: SheetLayout[] }>()
   for (const [id, list] of sheetPanels) {
     const item = catalogItem(id) as SheetItem
+    // gesägte Platten gemeinsam auf die Formate verteilen (2D-Zuschnitt)
+    const sawn: SheetPiece[] = []
     for (const pa of list) {
       const { a, b } = panelSize(pa)
       let fmt = item.formats[0]
@@ -153,11 +158,8 @@ export function computeBom(p: Project, r: Resolved): Bom {
         fmt = { l: 1000, w: 1000, price: item.formats[0].price / ((item.formats[0].l * item.formats[0].w) / 1e6) }
         note = t('Meterware nach Maß (m²)')
       } else {
-        const best = item.formats.map((f) => ({ f, n: sheetsNeeded(a, b, f.l, f.w) })).sort((x, y) => x.n * x.f.price - y.n * y.f.price)[0]
-        fmt = best.f
-        n = best.n
-        note = best.n > 1 ? t('Stoß über einem Querträger') : ''
-        cuts += 2
+        sawn.push({ label: pa.name ?? tk('Platte'), l: Math.round(Math.max(a, b)), w: Math.round(Math.min(a, b)) })
+        continue
       }
       const key = `${id}@${fmt.l}x${fmt.w}`
       const line = byFormat.get(key) ?? { item, fmt, count: 0, notes: new Set<string>() }
@@ -165,10 +167,22 @@ export function computeBom(p: Project, r: Resolved): Bom {
       if (note) line.notes.add(note)
       byFormat.set(key, line)
     }
+    const layouts = packSheets(sawn, item.formats)
+    const split = layouts.some((s) => s.pieces.some((pc) => pc.part))
+    for (const sh of layouts) {
+      const key = `${id}@${sh.format.l}x${sh.format.w}`
+      const line = byFormat.get(key) ?? { item, fmt: item.formats.find((f) => f.l === sh.format.l && f.w === sh.format.w)!, count: 0, notes: new Set<string>() }
+      line.count += 1
+      line.layouts = [...(line.layouts ?? []), sh]
+      if (split) line.notes.add(t('Stoß über einem Querträger'))
+      // je Teil zwei Schnitte (Länge und Breite), höchstens so viele wie nötig
+      cuts += sh.pieces.length * 2
+      byFormat.set(key, line)
+    }
   }
   for (const [key, l] of byFormat) {
     const unit = priceOf(p, key, l.fmt.price)
-    sheets.push({ item: l.item, count: l.count, format: l.fmt, note: [...l.notes].join(', '), price: l.count * unit })
+    sheets.push({ item: l.item, count: l.count, format: l.fmt, note: [...l.notes].join(', '), price: l.count * unit, layouts: l.layouts })
   }
 
   for (const j of r.joints) {
@@ -211,11 +225,6 @@ function panelSize(pa: Panel): { a: number; b: number } {
   const xs = pa.outline.map((q) => q.x)
   const ys = pa.outline.map((q) => q.y)
   return { a: Math.max(...xs) - Math.min(...xs), b: Math.max(...ys) - Math.min(...ys) }
-}
-
-function sheetsNeeded(a: number, b: number, l: number, w: number): number {
-  const fit = (x: number, y: number) => Math.ceil(x / l) * Math.ceil(y / w)
-  return Math.min(fit(a, b), fit(b, a))
 }
 
 /** Prompt zum Kopieren in einen KI-Chat mit Websuche: liefert eine Preistabelle zum Zurückfügen. */

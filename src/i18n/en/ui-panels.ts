@@ -395,5 +395,9 @@ const en: Record<string, string> = {
   'Auf Möbel setzen': 'Rest on furniture',
   'Auf Regal/Schrank': 'On shelves/cabinets',
   'Ohne Pfosten: Der Rahmen liegt auf zwei stabilen Regalen unter Kopf- und Fußende. Regale verschrauben und an der Wand sichern.': 'No posts: the frame rests on two sturdy shelves under the head and foot ends. Screw the shelves to the frame and secure them to the wall.',
+  'Platten: Guillotine-Schnitte (jeder Schnitt geht durch das ganze Reststück, wie beim Baumarkt-Zuschnitt), Sägefuge 4 mm, Teile dürfen quer liegen.': 'Sheets: guillotine cuts (every cut runs right through the remaining piece, as at the DIY store cutting service), 4 mm saw kerf, parts may be turned.',
+  'Zuschnitt {l} × {w}': 'Cutting plan {l} × {w}',
+  '{n} Teile · {pct} % genutzt': '{n} parts · {pct} % used',
+  '1 Teil · {pct} % genutzt': '1 part · {pct} % used',
 }
 export default en
