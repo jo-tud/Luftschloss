@@ -12,7 +12,7 @@ function defaultsOf(patch: Partial<LoftBedParams>) {
   return r.joints.map((j) => {
     const a = byId.get(j.a)!
     const b = byId.get(j.b)!
-    return { j, why: unsuitable(j.typeId, { kind: j.kind, a, b, ending: j.ending ? byId.get(j.ending) : undefined }) }
+    return { j, a, b, why: unsuitable(j.typeId, { kind: j.kind, a, b, ending: j.ending ? byId.get(j.ending) : undefined }) }
   })
 }
 
@@ -32,8 +32,10 @@ describe('Praxistaugliche Verbindungen', () => {
 
   it('Gratnut nur für Bretter und Stufen, Stecken nur für Rundstäbe', () => {
     const all = defaultsOf({ ladder: 'stufen' })
-    const step = all.find(({ j }) => j.typeId === 'gratnut')!
+    // Stufen: Vorgabe gerade Nut, die Gratnut bleibt wählbar
+    const step = all.find(({ j }) => j.typeId === 'nut')!
     expect(step).toBeDefined()
+    expect(unsuitable('gratnut', { kind: 't-stoss', a: step.a, b: step.b, ending: step.a.role === 'stufe' ? step.a : step.b })).toBeUndefined()
     const p = testProject()
     const r = resolveProject(p)
     const byId = new Map(r.members.map((m) => [m.id, m]))

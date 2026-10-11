@@ -82,6 +82,57 @@ export function memberLength(m: Pick<Member, 'start' | 'end'>): number {
   return dist(m.start, m.end)
 }
 
+/**
+ * Quader eines Stabs mit schrägen Endschnitten (für die Suche nach Berührungen): an den Enden in
+ * schmale Streifen quer zur Schnittebene zerlegt, jeder reicht bis an den Schnitt. So berührt der
+ * Kopfschnitt die Zarge, und nichts ragt über den Schnitt hinaus.
+ */
+export function memberReach(m: Member, n = 8): OBB[] {
+  const boxes = memberBoxes(m)
+  if (!m.ends || (!m.ends.start && !m.ends.end)) return boxes
+  const axes = memberAxes(m)
+  const L = memberLength(m)
+  const loc = (q: Vec3, a: Vec3) => q.x * a.x + q.y * a.y + q.z * a.z
+  const plane = (nv: Vec3 | undefined, at: number) => {
+    if (!nv) return undefined
+    const ln = axes.map((a) => loc(nv, a))
+    return Math.abs(ln[0]) < 0.05 ? undefined : { ln, at }
+  }
+  const ps = plane(m.ends.start, 0)
+  const pe = plane(m.ends.end, L)
+  const p = (ps ?? pe)!.ln[1] ** 2 >= (ps ?? pe)!.ln[2] ** 2 ? 1 : 2
+  // Lage des Schnitts entlang der Achse bei Querlage x (Achse p), q liegt in der Ebene
+  const uAt = (pl: { ln: number[]; at: number }, x: number) => pl.at - (pl.ln[p] * x) / pl.ln[0]
+  const out: OBB[] = []
+  for (const o of boxes) {
+    const rel = sub(o.center, m.start)
+    const c = axes.map((a) => loc(rel, a))
+    const u0 = c[0] - o.half[0]
+    const u1 = c[0] + o.half[0]
+    const atS = ps && u0 <= 0.5
+    const atE = pe && u1 >= L - 0.5
+    if (!atS && !atE) {
+      out.push(o)
+      continue
+    }
+    const hp = o.half[p]
+    for (let k = 0; k < n; k++) {
+      const x0 = c[p] - hp + (2 * hp * k) / n
+      const x1 = x0 + (2 * hp) / n
+      const a = atS ? Math.max(uAt(ps!, x0), uAt(ps!, x1)) : u0
+      const b = atE ? Math.min(uAt(pe!, x0), uAt(pe!, x1)) : u1
+      if (b - a < 1) continue
+      const half: [number, number, number] = [(b - a) / 2, o.half[1], o.half[2]]
+      half[p] = hp / n
+      const cc = [...c]
+      cc[0] = (a + b) / 2
+      cc[p] = (x0 + x1) / 2
+      out.push({ center: add(add(add(m.start, scale(axes[0], cc[0])), scale(axes[1], cc[1])), scale(axes[2], cc[2])), axes: o.axes, half })
+    }
+  }
+  return out
+}
+
 export function memberOBB(m: Pick<Member, 'start' | 'end' | 'roll' | 'b' | 'h'>): OBB {
   const axes = memberAxes(m)
   return {

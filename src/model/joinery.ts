@@ -782,8 +782,27 @@ export function cutLengths(joints: DetectedJoint[], members: Member[]): Map<stri
   for (const m of members) {
     const L = memberLength(m)
     const mc = cuts.members.get(m.id)
-    if (!mc && !m.shape) {
+    if (!mc && !m.shape && !m.ends) {
       out.set(m.id, L)
+      continue
+    }
+    if (m.ends) {
+      // schräge Endschnitte: Länge über die Spitzen
+      const sol = memberSolids(m, mc)
+      let a = Infinity
+      let b = -Infinity
+      for (const o of sol.boxes) {
+        const lb = toLocal(m, o)
+        a = Math.min(a, lb[0][0])
+        b = Math.max(b, lb[0][1])
+      }
+      for (const p of sol.prisms)
+        for (const q of [...prismCorners(p).bottom, ...prismCorners(p).top]) {
+          const u = dot(sub(q, m.start), memberAxes(m)[0])
+          a = Math.min(a, u)
+          b = Math.max(b, u)
+        }
+      out.set(m.id, b - a)
       continue
     }
     const [ax] = memberAxes(m)
@@ -810,7 +829,98 @@ export function cutLengths(joints: DetectedJoint[], members: Member[]): Map<stri
 /** Darstellungskörper eines Stabs: Quader (mit Verbindungen) und Prismen; eigene Form (Kopfband) zuerst */
 export function memberSolids(m: Member, mc: MemberCut | undefined): { boxes: OBB[]; prisms: Prism[] } {
   if (m.shape) return { boxes: [], prisms: [m.shape, ...(mc?.prisms ?? [])] }
-  return { boxes: mc ? cutMemberBoxes(m, mc) : memberBoxes(m), prisms: mc?.prisms ?? [] }
+  const c = clipEnds(m, mc ? cutMemberBoxes(m, mc) : memberBoxes(m))
+  return { boxes: c.boxes, prisms: [...c.prisms, ...(mc?.prisms ?? [])] }
+}
+
+/** Vieleck (x, y) auf die Halbebene a·x + b·y ≤ d beschneiden (Sutherland-Hodgman) */
+function clipPoly(poly: [number, number][], a: number, b: number, d: number): [number, number][] {
+  const out: [number, number][] = []
+  const f = (q: [number, number]) => a * q[0] + b * q[1] - d
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i]
+    const q = poly[(i + 1) % poly.length]
+    const fp = f(p)
+    const fq = f(q)
+    if (fp <= 1e-9) out.push(p)
+    if ((fp < -1e-9 && fq > 1e-9) || (fp > 1e-9 && fq < -1e-9)) {
+      const t = fp / (fp - fq)
+      out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t])
+    }
+  }
+  return out
+}
+
+/**
+ * Schräge Endschnitte (Member.ends): Quader an den Enden bis über die Schnittebene verlängern und dort
+ * als Prismen beschneiden. Die Ebenen liegen in der Ebene aus Stabachse und einer Querachse p, die
+ * Prismen sind entlang der anderen Querachse extrudiert.
+ */
+function clipEnds(m: Member, boxes: OBB[]): { boxes: OBB[]; prisms: Prism[] } {
+  const ends = m.ends
+  if (!ends || (!ends.start && !ends.end)) return { boxes, prisms: [] }
+  const axes = memberAxes(m)
+  const L = memberLength(m)
+  const planes: { n: number[]; d: number; atStart: boolean }[] = []
+  for (const [n, at] of [
+    [ends.start, 0],
+    [ends.end, L],
+  ] as const) {
+    if (!n) continue
+    const ln = axes.map((a) => dot(n, a))
+    if (Math.abs(ln[0]) < 0.05) continue
+    planes.push({ n: ln, d: ln[0] * at, atStart: at === 0 })
+  }
+  if (!planes.length) return { boxes, prisms: [] }
+  const p = Math.abs(planes[0].n[1]) >= Math.abs(planes[0].n[2]) ? 1 : 2
+  const q = 3 - p
+  const base = toLocal(m, memberBoxes(m)[0])
+  const hp = Math.max(Math.abs(base[p][0]), Math.abs(base[p][1]))
+  const ext = (atStart: boolean) => {
+    const pl = planes.find((x) => x.atStart === atStart)
+    return pl ? (Math.abs(pl.n[p]) * hp) / Math.abs(pl.n[0]) : 0
+  }
+  const extS = ext(true)
+  const extE = ext(false)
+  // Bereich, den keiner der Schnitte berührt: dort bleiben die Quader (Bohrungen, Bemaßung)
+  const inner = (atStart: boolean) => (planes.some((x) => x.atStart === atStart) ? (atStart ? extS : L - extE) : atStart ? -Infinity : Infinity)
+  const uIn0 = inner(true)
+  const uIn1 = inner(false)
+  const box = (lb: LocalBox): OBB => {
+    const c = lb.map((r) => (r[0] + r[1]) / 2)
+    return { center: add(add(add(m.start, scale(axes[0], c[0])), scale(axes[1], c[1])), scale(axes[2], c[2])), axes: [axes[0], axes[1], axes[2]], half: [(lb[0][1] - lb[0][0]) / 2, (lb[1][1] - lb[1][0]) / 2, (lb[2][1] - lb[2][0]) / 2] }
+  }
+  const out: OBB[] = []
+  const prisms: Prism[] = []
+  for (const o of boxes) {
+    const lb = toLocal(m, o)
+    const atS = lb[0][0] <= 0.5 && uIn0 > -Infinity
+    const atE = lb[0][1] >= L - 0.5 && uIn1 < Infinity
+    if (!atS && !atE) {
+      out.push(o)
+      continue
+    }
+    // Mittelteil als Quader, die Enden über die Schnitte hinaus verlängert und als Prismen beschnitten
+    const m0 = atS ? Math.max(lb[0][0], uIn0) : lb[0][0]
+    const m1 = atE ? Math.min(lb[0][1], uIn1) : lb[0][1]
+    if (m1 - m0 > 0.5) out.push(box([[m0, m1], lb[1], lb[2]]))
+    const pieces: [number, number][] = []
+    if (atS) pieces.push([Math.min(lb[0][0], -extS), Math.min(m0, m1)])
+    if (atE) pieces.push([Math.max(m1, m0), Math.max(lb[0][1], L + extE)])
+    for (const [u0, u1] of pieces) {
+      if (u1 - u0 < 0.5) continue
+      let poly: [number, number][] = [
+        [u0, lb[p][0]],
+        [u1, lb[p][0]],
+        [u1, lb[p][1]],
+        [u0, lb[p][1]],
+      ]
+      for (const pl of planes) poly = clipPoly(poly, pl.n[0], pl.n[p], pl.d)
+      if (poly.length < 3) continue
+      prisms.push({ origin: m.start, eu: axes[0], ev: axes[p], en: axes[q], poly, range: lb[q] })
+    }
+  }
+  return { boxes: out, prisms }
 }
 
 /**

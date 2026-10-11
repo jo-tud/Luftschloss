@@ -133,7 +133,7 @@ Beim ersten Start lädt das **Beispielzimmer** (`testProject()` in `src/model/de
 | Galerie mit Mittelstütze | ✅ | Lange Hochebene, eine Stütze in der Mitte jeder Längsseite |
 | Zwei Kinder oben | ✅ | Zwei Matratzen nebeneinander, Mittelträger unter der Fuge |
 | Netz-Hochebene | ✅ mit Warnung | Begehbares Netz, kräftige Zargen |
-| Bett auf Regal, Podest | ◻ | |
+| Bett auf Regal/Schrank | ✅ | Pfosten entfallen, der Rahmen liegt auf den Möbeln (Statik: Oberseiten als Auflager). Podest ◻ |
 
 Parameter sind:
 - **Bauweise:** Querträger zwischen Zargen, **aufgelegt** oder **Zargen außen am Pfosten, durchgebolzt** (nur mit vier Pfosten, `outsideRails()` in `src/model/loftbed.ts`); freie Ecke auf Pfosten oder **von der Decke abgehängt**
@@ -145,7 +145,7 @@ Parameter sind:
 - Liegefläche: **Latten lose aufgelegt** (Standard), Rollrost, Lattenrost, Platte, Dielen, begehbares Netz. **Breite Leimholzbretter** (Platte aus Leimholz, Bauweise mit Zargen): Bretter quer von Zarge zu Zarge, Mischung der Handelsbreiten 60/40 cm mit möglichst wenig Brettern und Verschnitt (`src/model/deckBoards.ts`), unter jedem Stoß ein Querträger, Zuschnitt aus 1200er Platten.
 - Geländer: **Bretter** (Standard), Rundstäbe, Vollfläche, Netz, Seil oder keins; Höhe und Seiten
 - Ecken ohne Pfosten (an der Wand oder abgehängt) schließt der Rahmen selbst, Zarge an Zarge. Endet dort ein Geländer, hält es ein Geländerpfosten, der wie eine Zwischenstütze außen an die Zarge gebolzt ist (an einer Wandseite innen auf der Zarge). Kein kurzes Pfostenstück zwischen den Zargen.
-- Leiter: **Stufenleiter** (Standard), senkrecht, schräg oder Treppe; Seite, Position, Breite, Neigung, Hölzer
+- Leiter: **Stufenleiter** (Standard), senkrecht, schräg oder Treppe; Seite, Position, Breite, Neigung, Hölzer. Schräge Wangen sind oben **lotrecht** und unten **waagrecht** geschnitten (`Member.ends`): Der Kopfschnitt liegt an der Zarge an (Verbindung „Wange mit Kopfschnitt angelehnt“), seitlich ist die Wange mit dem Haltegriff verbolzt, der an der Zarge sitzt; die Achse trifft die Zarge so hoch, dass auch die oberste Stufe ganz auf der Wange liegt. Stufen standardmäßig in einer **geraden Nut** (Gratnut wählbar, nur geleimt), eine Nut je Stufe auch bei zwei Trittbrettern; die Treppe bekommt eine Wange 60 × 160, sonst warnt die Prüfung „Treppenwange zu schmal“.
 
 ### 5.2 Verbindungstypen ✅
 
@@ -153,7 +153,7 @@ Parameter sind:
 |---|---|
 | Stahl | Winkel mit Sicke, Balkenschuh, Seilbefestigung, Gewindestange |
 | Schrauben | Schlossschrauben M10 durchgebolzt; als stumpfer Stoß Sechskantschraube M10 mit Mutter in einer Tasche (Forstner Ø 35), Tellerkopfschrauben 8 mm (Länge nach Holzdicke), Bettschraube mit Zylindermutter |
-| Holz | Stumpfe Auflage, Auflagerleiste, Knagge (stehender Klotz unter dem Träger), lose aufgelegt, Ausklinkung/Einlassung, Überblattung, Schwalbenschwanzblatt, Zapfen mit Holznagel, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Stufe in gerader Nut, Kopfband auf Gehrung (verschraubt), Kopfband eingelassen (Versatz) |
+| Holz | Stumpfe Auflage, Auflagerleiste, Knagge (stehender Klotz unter dem Träger), lose aufgelegt, Ausklinkung/Einlassung, Überblattung, Schwalbenschwanzblatt, Zapfen mit Holznagel, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Stufe in gerader Nut, Wange mit Kopfschnitt angelehnt, Kopfband auf Gehrung (verschraubt), Kopfband eingelassen (Versatz) |
 
 Jeder Typ trägt:
 - Schwierigkeit in drei Stufen wie in Heimwerker-Anleitungen (leicht, mittel, schwer), Zeit je Verbindung für Anfänger und Geübte, Anspruch beim Bohren (kaum Bohrungen, rechtwinklig bohren, Bohrungen müssen sich treffen) und was es schwer macht. Werkzeug als Mindestausstattung, dazu „komfortabler mit“ (z. B. Oberfräse). Quelle: `docs/recherche/verbindungen-anleitungen.md`.

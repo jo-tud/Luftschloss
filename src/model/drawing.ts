@@ -151,6 +151,8 @@ export interface DrawOpts {
   endName?: (atStart: boolean) => Text
   /** Mitte des Betts: Seiten heißen dann Innen- bzw. Außenseite */
   center?: Vec3
+  /** Teil der Leiter: innen heißt dann „zu den Stufen“ */
+  ladder?: boolean
   /** Mittellinien von Nuten: Punkt auf der Fläche, Richtung der Nut, Außennormale der Fläche (Welt) */
   lines?: { p: Vec3; d: Vec3; n: Vec3 }[]
   /** ganzes Teil zeichnen (Teile-Arbeitsplan) statt eines Ausschnitts um die Verbindung */
@@ -226,6 +228,7 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
     const faceW = k === 1 ? m.h : m.b
     const otherW = k === 1 ? m.b : m.h
     if (inner !== undefined && faceW < otherW / 1.3) return inner ? { key: tk('Schmalseite innen') } : { key: tk('Schmalseite außen') }
+    if (inner !== undefined && o.ladder) return inner ? { key: tk('Innenseite (zu den Stufen)') } : { key: tk('Außenseite') }
     if (inner !== undefined) return inner ? { key: tk('Innenseite (zur Bettmitte)') } : { key: tk('Außenseite') }
     return undefined
   }
@@ -240,7 +243,18 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
   const side = (ax: 1 | 2): 1 | -1 => {
     const d = towardDot(ax)
     if (Math.abs(d) > 0.3) return d > 0 ? 1 : -1
-    return horizontal && ax === 2 ? (axes[2].z >= 0 ? 1 : -1) : 1
+    if (horizontal && ax === 2) return axes[2].z >= 0 ? 1 : -1
+    // ohne Bezugsteil: die Seite, zu der die meisten Ausnehmungen offen sind (Nuten der zweiten Wange)
+    const h = half[ax - 1]
+    let plus = 0
+    let minus = 0
+    for (const s of subs) {
+      const up = s[ax][1] >= h - EPS
+      const down = s[ax][0] <= -h + EPS
+      if (up && !down) plus++
+      else if (down && !up) minus++
+    }
+    return minus > plus ? -1 : 1
   }
   const VIEWS: { key: ViewKey; ax: 1 | 2 }[] = [
     // Blick entlang v zeigt u × w, Blick entlang w zeigt u × v
@@ -321,6 +335,13 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
           if (Math.hypot(a[0] - b[0], a[1] - b[1]) > 0.5) edges.push({ a, b })
         }
       }
+      // Kanten zwischen Grund- und Deckfläche (in der Ansicht von der Seite sichtbar, z. B. ein schräger Endschnitt)
+      for (let i = 0; i < p.bottom.length; i++) {
+        const a: [number, number] = [X(p.bottom[i][0]), Y(p.bottom[i][yAx])]
+        const b: [number, number] = [X(p.top[i][0]), Y(p.top[i][yAx])]
+        if (Math.max(a[0], b[0]) < xa || Math.min(a[0], b[0]) > xb) continue
+        if (Math.hypot(a[0] - b[0], a[1] - b[1]) > 0.5) edges.push({ a, b })
+      }
     }
     // Mittellinien schräger Nuten auf der Fläche, auf die man schaut, mit Winkel zur Längskante
     const lines: View2D['lines'] = []
@@ -339,6 +360,20 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
       const b = P((yHalf - pl[yAx]) / dl[yAx])
       const deg = Math.round((Math.atan2(Math.abs(b[1] - a[1]), Math.abs(b[0] - a[0])) * 180) / Math.PI)
       lines.push({ a, b, deg })
+    }
+    // schräge Endschnitte (Kopf- und Fußschnitt einer Wange) mit Winkel zur Längskante
+    for (const [n, uAt] of [
+      [m.ends?.start, 0],
+      [m.ends?.end, L],
+    ] as const) {
+      if (!n) continue
+      const nl = [0, 1, 2].map((k) => dot(n, axes[k]))
+      if (Math.abs(nl[0]) < 0.05 || Math.abs(nl[yAx]) < 0.05) continue
+      const P = (y: number): [number, number] => [X(uAt - (nl[yAx] * y) / nl[0]), Y(y)]
+      const a = P(-yHalf)
+      const b = P(yHalf)
+      if (Math.max(a[0], b[0]) < xa - 1 || Math.min(a[0], b[0]) > xb + 1) continue
+      lines.push({ a, b, deg: Math.round((Math.atan2(Math.abs(b[1] - a[1]), Math.abs(b[0] - a[0])) * 180) / Math.PI) })
     }
     // Bohrungen
     const holes: DrawHole[] = []
@@ -482,7 +517,10 @@ function holeList(m: Member, fasteners: Fastener[], others: Member[], boxes: Loc
     const d = f.drill ?? f.d
     // Holzschrauben ohne Vorbohrung (5 × 50 in Blechen) nicht in die Bohrtabelle
     if (f.kind === 'schraube' && !f.drill) continue
-    const h = add(f.head, f.dir, f.length, d)
+    // Schraube mit Durchgangsloch: im Teil mit dem Kopf das größere Loch
+    const lh = local(m, f.head)
+    const headHere = boxes.some((b) => [0, 1, 2].every((k) => lh[k] >= b[k][0] - 1 && lh[k] <= b[k][1] + 1))
+    const h = add(f.head, f.dir, f.length, f.drillFirst && headHere ? f.drillFirst : d)
     // Bolzen und Holznägel gehen durch mehrere Teile: zusammengespannt in einem Zug bohren
     if (h && (f.kind === 'bolzen' || f.kind === 'bettschraube' || f.kind === 'holznagel')) h.with = drilledWith(f, others, ranges).filter((id) => id !== m.id)
     if (h && f.crossNut) {

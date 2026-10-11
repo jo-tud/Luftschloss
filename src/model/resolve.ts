@@ -1,5 +1,5 @@
 import { t, tk } from '../i18n'
-import { add, dot, memberAxes, memberBoxes, memberLength, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
+import { add, dot, memberAxes, memberBoxes, memberLength, memberReach, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
 import { defaultJointType, typesForKind, unsuitable } from './joints'
 import { generateLoftBed, outsideRails, type BedFixing, type BedInfo } from './loftbed'
 import { timber } from './catalog'
@@ -195,7 +195,8 @@ function inflate(o: OBB, by: number): OBB {
 }
 
 export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
-  const boxes = new Map(members.map((m) => [m.id, memberBoxes(m)]))
+  // schräg angeschnittene Wangen: mit den Spitzen der Schnitte, sonst fände der Kopfschnitt die Zarge nicht
+  const boxes = new Map(members.map((m) => [m.id, memberReach(m)]))
   const bounds = new Map(members.map((m) => [m.id, boxes.get(m.id)!.map(obbBounds)]))
   const choices = new Map(p.joints.map((j) => [j.key, j.typeId]))
   const out: DetectedJoint[] = []
@@ -218,7 +219,9 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         typeId = endingMember?.round || (A.round && B.round) ? 'stecken' : defaultJointType(kindInfo.kind, p.settings.jointPreference)
         const upper = kindInfo.kind === 'auflage' ? (endingMember ?? (A.start.z + A.end.z > B.start.z + B.end.z ? A : B)) : undefined
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'quertraeger') typeId = 'balkenschuh'
-        if (kindInfo.kind === 't-stoss' && endingMember?.role === 'stufe') typeId = 'gratnut'
+        // Stufen in eine gerade Nut: tragfähig und für Heimwerker machbar (Gratnut bleibt wählbar)
+        if (kindInfo.kind === 't-stoss' && endingMember?.role === 'stufe') typeId = 'nut'
+        if (kindInfo.kind === 't-stoss' && endingMember?.ends) typeId = 'anlage'
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'holm' && !endingMember.round && p.settings.jointPreference !== 'wenig-metall') typeId = 'holzbauschraube'
         // Latten liegen lose: weder auf noch unter ihnen wird geschraubt (z. B. Unterholm des Geländers auf den Latten)
         if (upper && (A.role === 'leiste' || B.role === 'leiste')) typeId = 'lose'
@@ -243,8 +246,30 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
 
 function classify(A: Member, B: Member, boxesA: OBB[], boxesB: OBB[], penetration: number): { kind: JointKind; pos: Vec3; ending?: 'a' | 'b' } {
   const near = (q: Vec3, bs: OBB[]) => Math.min(...bs.map((o) => pointOBBDistance(q, o)))
-  const aEndPt = [A.start, A.end].find((q) => near(q, boxesB) < 3)
-  const bEndPt = [B.start, B.end].find((q) => near(q, boxesA) < 3)
+  // Schräg angeschnittenes Ende (Wangenkopf): Punkte auf der Schnittlinie prüfen, nicht nur die Achse
+  const cutFace = (M: Member, other: OBB[]): Vec3 | undefined => {
+    const axes = memberAxes(M)
+    for (const [n, base] of [
+      [M.ends?.start, M.start],
+      [M.ends?.end, M.end],
+    ] as const) {
+      if (!n) continue
+      const ln = axes.map((a) => dot(n, a))
+      if (Math.abs(ln[0]) < 0.05) continue
+      const p = Math.abs(ln[1]) >= Math.abs(ln[2]) ? 1 : 2
+      const hp = (p === 1 ? M.b : M.h) / 2
+      const hits: Vec3[] = []
+      for (let k = -4; k <= 4; k++) {
+        const pp = (hp * k) / 4
+        const q = add(add(base, scale(axes[0], -(ln[p] * pp) / ln[0])), scale(axes[p], pp))
+        if (near(q, other) < 3) hits.push(q)
+      }
+      if (hits.length) return scale(hits.reduce((s, q) => add(s, q), v(0, 0, 0)), 1 / hits.length)
+    }
+    return undefined
+  }
+  const aEndPt = [A.start, A.end].find((q) => near(q, boxesB) < 3) ?? cutFace(A, boxesB)
+  const bEndPt = [B.start, B.end].find((q) => near(q, boxesA) < 3) ?? cutFace(B, boxesA)
   const [ax] = memberAxes(A)
   const [bx] = memberAxes(B)
   const parallel = Math.abs(dot(ax, bx)) > 0.99

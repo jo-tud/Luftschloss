@@ -1,6 +1,6 @@
 import { t, tk } from '../i18n'
 import { catalogItem, sheet, timber } from './catalog'
-import { clipHalf, rotate2, v } from './geometry'
+import { clipHalf, rotate2, scale, v } from './geometry'
 import type { Assembly, LoftBedParams, Member, MemberRole, MemberShape, Mm, Panel, Side, Vec3 } from './types'
 import { deckBoards } from './deckBoards'
 
@@ -160,6 +160,12 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const toWorld = (q: Vec3): Vec3 => {
     const r = rotate2(P.mirror ? Lo - q.x : q.x, q.y, P.rotation)
     return v(Math.round((P.x + r.x) * 10) / 10, Math.round((P.y + r.y) * 10) / 10, q.z)
+  }
+  /** Richtung vom Bett- ins Weltsystem */
+  const dirW = (d: Vec3) => {
+    const o = toWorld(v(0, 0, 0))
+    const q = toWorld(v(d.x * 1000, d.y * 1000, d.z * 1000))
+    return v((q.x - o.x) / 1000, (q.y - o.y) / 1000, (q.z - o.z) / 1000)
   }
   const to2 = (x: number, y: number) => {
     const w = toWorld(v(x, y, 0))
@@ -472,11 +478,6 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const w = bt.h
     const band = w * Math.SQRT2
     const c = L - w / Math.SQRT2
-    const dirW = (d: Vec3) => {
-      const o = toWorld(v(0, 0, 0))
-      const q = toWorld(v(d.x * 1000, d.y * 1000, d.z * 1000))
-      return v((q.x - o.x) / 1000, (q.y - o.y) / 1000, (q.z - o.z) / 1000)
-    }
     const brace = (key: string, name: string, corner: Vec3, along: Vec3, across: Vec3) => {
       const down = v(0, 0, -1)
       const s0 = v(corner.x + down.x * c, corner.y + down.y * c, corner.z + down.z * c)
@@ -648,11 +649,28 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const sb = stile.b
     const sh = stile.h
     const angle = P.ladder === 'senkrecht' ? 90 : P.ladder === 'treppe' ? Math.min(P.ladderAngle, 50) : P.ladder === 'stufen' ? Math.min(P.ladderAngle, 70) : P.ladderAngle
-    const run = angle >= 89.9 ? 0 : H / Math.tan((angle * Math.PI) / 180)
+    const rad = (angle * Math.PI) / 180
+    const tanA = Math.tan(rad)
+    // Schräge Wange: oben lotrecht geschnitten, liegt mit dem Kopfschnitt an der Zarge an, unten
+    // waagrecht geschnitten auf dem Boden. Die Achse trifft die Zarge so hoch, dass auch die oberste
+    // Stufe noch ganz auf der Wange liegt (10 mm vor dem Kopfschnitt); die Spitze steht dann etwas
+    // über der Zarge, neben der Öffnung
+    const headLen = angle >= 89.9 ? 0 : sh / Math.cos(rad)
+    const stepTarget = P.ladder === 'senkrecht' || P.ladder === 'schraeg' ? 260 : 220
+    const steps = Math.max(2, Math.round(H / stepTarget))
+    const treadDepth = P.ladder === 'treppe' ? 190 : P.ladder === 'stufen' ? 94 : rung.h
+    const zHead = Math.max(railBottomAt(side) + rh - headLen / 2, (H / steps) * (steps - 1) + (treadDepth / 2 + 10) * tanA)
+    const axisOut = (z: number) => (angle >= 89.9 ? sh / 2 : (zHead - z) / tanA)
+    const footOut = angle >= 89.9 ? sh : axisOut(0) + sh / (2 * Math.sin(rad))
     const pt = (along: number, out: number, z: number) => {
       const q = frame.at(along, out)
       return v(q.x, q.y, z)
     }
+    const outDir = (() => {
+      const q0 = frame.at(0, 0)
+      const q1 = frame.at(0, 1)
+      return v(q1.x - q0.x, q1.y - q0.y, 0)
+    })()
     opening = [a0 + sb, a1 - sb]
     accessWidth = a1 - a0 - 2 * sb
     // Holme
@@ -663,26 +681,26 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
           name: t('Leiterholm {n}', { n: i + 1 }),
         })
       } else {
-        add(`leiter-holm-${i}`, 'holm', P.ladderCatalogId, pt(a, run + sh / 2, 0), pt(a, sh / 2, H), sb, sh, {
+        add(`leiter-holm-${i}`, 'holm', P.ladderCatalogId, pt(a, axisOut(0), 0), pt(a, 0, zHead), sb, sh, {
           name: t('Treppenwange {n}', { n: i + 1 }),
+          ends: { start: dirW(v(0, 0, -1)), end: dirW(scale(outDir, -1)) },
         })
-        // senkrechte Haltegriffe neben der Wange (außerhalb der Öffnung, nicht in ihr), außen an der Zarge
-        // verbolzt: bis 40 mm unter die Zarge, damit der untere Bolzen weit genug vom Griffende sitzt
+        // senkrechte Haltegriffe neben der Wange (außerhalb der Öffnung), außen an der Zarge verbolzt. Die
+        // Wange liegt seitlich am Griff an und wird mit ihm verbolzt: dafür reicht der Griff so weit
+        // hinunter, dass ein Bolzen mittig in der Wange Platz hat (80 mm unter der Wangenachse)
         const [gx, gy] = alongSide(side, guard.b, guard.h)
-        // 5 mm Luft zur Wange: der Griff hängt an Zarge und Handlauf, nicht an der Wangenkante
-        const ga = i === 0 ? a - sb / 2 - guard.b / 2 - 5 : a + sb / 2 + guard.b / 2 + 5
-        add(`leiter-griff-${i}`, 'holm', P.guardCatalogId, pt(ga, guard.h / 2, railBottomAt(side) - 40), pt(ga, guard.h / 2, guardTop + 150), gx, gy, {
+        const ga = i === 0 ? a - sb / 2 - guard.b / 2 : a + sb / 2 + guard.b / 2
+        const gz0 = Math.min(railBottomAt(side) - 40, zHead - (guard.h / 2) * tanA - 80)
+        add(`leiter-griff-${i}`, 'holm', P.guardCatalogId, pt(ga, guard.h / 2, gz0), pt(ga, guard.h / 2, guardTop + 150), gx, gy, {
           name: t('Haltegriff {n}', { n: i + 1 }),
         })
       }
     }
     // Sprossen oder Stufen
-    const stepTarget = P.ladder === 'senkrecht' || P.ladder === 'schraeg' ? 260 : 220
-    const steps = Math.max(2, Math.round(H / stepTarget))
     rungPitch = H / steps
     for (let i = 1; i < steps; i++) {
       const z = rungPitch * i
-      const out = run * (1 - z / H) + sh / 2
+      const out = axisOut(z)
       if (P.ladder === 'senkrecht' || P.ladder === 'schraeg') {
         add(`leiter-sprosse-${i}`, 'sprosse', P.rungCatalogId, pt(a0 + sb, out, z), pt(a1 - sb, out, z), rung.b, rung.h, {
           name: t('Sprosse {n}', { n: i }),
@@ -696,8 +714,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         }
       }
     }
-    standPts = [frame.at(a0, 0), frame.at(a1, 0), frame.at(a1, run + sh), frame.at(a0, run + sh)]
-    const reach = run + sh + 600
+    standPts = [frame.at(a0, 0), frame.at(a1, 0), frame.at(a1, footOut), frame.at(a0, footOut)]
+    const reach = footOut + 600
     ladderFootprint = [frame.at(a0, 0), frame.at(a1, 0), frame.at(a1, reach), frame.at(a0, reach)].map((q) => to2(q.x, q.y))
   }
 

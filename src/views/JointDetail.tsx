@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
-import { assemblyDir, clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
+import { assemblyDir, clipBoxesNear, cutLengths, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial, JointSafety } from '../ui/JointGuide'
 import { jointDrawings, jointPlan } from '../model/jointPlan'
@@ -409,6 +409,11 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
   const [playing, setPlaying] = useState(!still)
   const [mode, setMode] = useState<'3d' | 'zeichnung'>('3d')
   const drawings = useMemo(() => (plan && mode === 'zeichnung' ? jointDrawings(plan, j, byId, d.resolved, (m) => tr(m.name ?? m.role)) : []), [plan, mode, j, byId, d])
+  // Zuschnitt beider Teile aus allen ihren Verbindungen (mit Federn, Zapfen und schrägen Endschnitten)
+  const cutLen = useMemo(() => {
+    const ids = new Set([ending?.id, through?.id])
+    return cutLengths(d.resolved.joints.filter((x) => ids.has(x.a) || ids.has(x.b)), d.resolved.members)
+  }, [d, ending, through])
   const pick = (i: number) => {
     const [a, b] = stepTimes(steps, i)
     // ohne Bewegung gleich das Ergebnis des Schritts zeigen
@@ -493,9 +498,9 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
             {plan.effort.drill > 0 && <DrillHelp />}
             {plan.type.residualSection < 1 && <p className="hint">{t('Restquerschnitt an der Verbindung ca. {p} %.', { p: Math.round(plan.type.residualSection * 100) })}</p>}
             <p className="hint">
-              {tr(ending?.name ?? '')}: {ending ? t('{item}, Länge {len}', { item: tr(catalogItem(ending.catalogId)?.name ?? ''), len: fmtCm(memberLength(ending)) }) : ''}
+              {tr(ending?.name ?? '')}: {ending ? t('{item}, Länge {len}', { item: tr(catalogItem(ending.catalogId)?.name ?? ''), len: fmtCm(cutLen.get(ending.id) ?? memberLength(ending)) }) : ''}
               <br />
-              {tr(through?.name ?? '')}: {through ? t('{item}, Länge {len}', { item: tr(catalogItem(through.catalogId)?.name ?? ''), len: fmtCm(memberLength(through)) }) : ''}
+              {tr(through?.name ?? '')}: {through ? t('{item}, Länge {len}', { item: tr(catalogItem(through.catalogId)?.name ?? ''), len: fmtCm(cutLen.get(through.id) ?? memberLength(through)) }) : ''}
             </p>
           </>
         )}

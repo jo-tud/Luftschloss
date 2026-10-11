@@ -105,6 +105,8 @@ const en: Record<string, string> = {
   'DIN EN 747 empfiehlt für Kinderbetten 30–40 cm.': 'DIN EN 747 recommends 30–40 cm for children’s beds.',
   'Sprossenabstand {pitch}': 'Rung spacing {pitch}',
   'Richtwert: 25 cm ± 5 cm, alle gleich.': 'Guide value: 25 cm ± 5 cm, all equal.',
+  'Treppenwange zu schmal für die Stufen': 'Stair stringer too narrow for the treads',
+  'Waagrecht misst die Wange nur {w} mm, die Stufe ist {s} mm tief – vorne bzw. hinten liegt sie nicht auf. Breitere Wange wählen (Treppe: KVH 60 × 160).': 'Measured horizontally the stringer is only {w} mm, the tread is {s} mm deep – it is not supported at the front or back. Choose a wider stringer (stair: KVH 60 × 160).',
   'Rundsprossen sind barfuß unbequem': 'Round rungs are uncomfortable barefoot',
   'Heimwerker-Erfahrung: flache Stufen in Gratnuten sind deutlich angenehmer (Leitertyp „Stufenleiter“).': 'DIY experience: flat treads in housing grooves are much more comfortable (ladder type “Step ladder”).',
   'Spalt {gap} zwischen Bett ({side}) und Wand': 'Gap of {gap} between bed ({side}) and wall',

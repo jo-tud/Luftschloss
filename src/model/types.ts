@@ -203,6 +203,12 @@ export interface Member {
    * (eu, ev) ab origin, extrudiert entlang en über range. Statik und Kollision nutzen weiter den Quader.
    */
   shape?: MemberShape
+  /**
+   * Schräge Endschnitte (Kopf- und Fußschnitt einer Wange): äußere Normale der Schnittebene durch
+   * start bzw. end, in der Ebene aus Stabachse und einer Querachse. Darstellung, Zuschnitt und
+   * Zeichnung folgen dem Schnitt; Statik und Kollision nutzen weiter den Quader.
+   */
+  ends?: { start?: Vec3; end?: Vec3 }
   assemblyId?: string
   partKey?: string
   /** Selbst konstruiertes Bett, zu dem dieses freie Teil gehört */
