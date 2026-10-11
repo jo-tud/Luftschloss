@@ -114,6 +114,8 @@ const en: Record<string, string> = {
 
   // --- Stabilität ---
   'Freistehendes Gestell ohne Aussteifung': 'Free-standing frame without bracing',
+  'Zwei Bolzen je Anschluss halten die Ecke nur halbsteif. Das Bett an der Wand befestigen (Kippsicherung) oder Zargen zwischen den Pfosten mit Kopfbändern wählen.':
+    'Two bolts per connection make the corner only semi-rigid. Fix the bed to the wall (anti-tip fixing) or choose rails between the posts with knee braces.',
   'Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).': 'Angle brackets and joist hangers act as hinges. Switch on knee braces or fix the bed to the wall at 2 posts (anti-tip fixing).',
   'Abgehängte Konstruktion: besondere Sorgfalt': 'Suspended construction: take particular care',
   'Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.': 'Only from a load-bearing ceiling (concrete/timber joists, not cornice), ceiling anchors from a specialist supplier, wall ledgers with heavy-duty wall plugs.',

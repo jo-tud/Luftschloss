@@ -1,7 +1,8 @@
 import { t, tk } from '../i18n'
 import { add, dot, memberAxes, memberBoxes, memberLength, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
 import { defaultJointType, typesForKind, unsuitable } from './joints'
-import { generateLoftBed, type BedFixing, type BedInfo } from './loftbed'
+import { generateLoftBed, outsideRails, type BedFixing, type BedInfo } from './loftbed'
+import { timber } from './catalog'
 import { cornice, corniceIntrusion } from './room'
 import type { Assembly, JointKind, Member, Notch, Panel, Project, Room, Vec3, WallId } from './types'
 import { WALL_IDS } from './types'
@@ -56,9 +57,13 @@ export function resolveProject(p: Project): Resolved {
     panels.push(...g.panels)
     fixings.push(...g.fixings)
     if (a.params.type === 'freistehend') {
+      // Zargen außen: zwischen Pfosten und Wand liegt die Zarge, sie wird an der Wand befestigt
+      const aussen = outsideRails(a.params)
+      const reach = 40 + (aussen ? timber(a.params.railCatalogId).b : 0)
       for (const m of g.members.filter((x) => x.role === 'pfosten' && x.start.z < 1)) {
-        if (nearestWall(p.room, m).gap < 40) {
-          fixings.push({ memberId: m.id, target: 'wand', hardwareId: 'rahmenduebel-10', count: 2, note: t('Kippsicherung: Pfosten mit Winkel an der Wand befestigen') })
+        if (nearestWall(p.room, m).gap < reach) {
+          const note = aussen ? t('Kippsicherung: Zarge am Pfosten mit Rahmendübeln an der Wand befestigen') : t('Kippsicherung: Pfosten mit Winkel an der Wand befestigen')
+          fixings.push({ memberId: m.id, target: 'wand', hardwareId: 'rahmenduebel-10', count: 2, note })
         }
       }
     }

@@ -11,6 +11,7 @@ import { analyzeDoors, analyzeWindows, type DoorResult, type SwingResult } from 
 import { transportCheck } from './assembly'
 import { cutOverlaps } from '../model/joinery'
 import { fastenerClashes } from '../model/fasteners'
+import { outsideRails } from '../model/loftbed'
 
 export type Severity = 'fehler' | 'warnung' | 'hinweis'
 
@@ -332,7 +333,19 @@ export function analyze(p: Project, r: Resolved): Analysis {
 
     // Stabilität
     const wallFix = r.fixings.filter((f) => f.memberId.startsWith(`${a.id}:`) && f.target === 'wand')
-    if (P.type === 'freistehend' && P.cornerSupport !== 'moebel' && !P.braces && wallFix.length === 0) add({ id: `wackeln:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Freistehendes Gestell ohne Aussteifung'), detail: t('Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).'), targets: [a.id] })
+    // Zargen außen: keine Kopfbänder, die durchgebolzten Zargen steifen nur wenig aus
+    const aussen = outsideRails(P)
+    if (P.type === 'freistehend' && P.cornerSupport !== 'moebel' && (!P.braces || aussen) && wallFix.length === 0)
+      add({
+        id: `wackeln:${a.id}`,
+        severity: 'warnung',
+        category: CAT.stabil,
+        title: t('Freistehendes Gestell ohne Aussteifung'),
+        detail: aussen
+          ? t('Zwei Bolzen je Anschluss halten die Ecke nur halbsteif. Das Bett an der Wand befestigen (Kippsicherung) oder Zargen zwischen den Pfosten mit Kopfbändern wählen.')
+          : t('Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).'),
+        targets: [a.id],
+      })
     if (P.type === 'abgehaengt') add({ id: `abgehaengt:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Abgehängte Konstruktion: besondere Sorgfalt'), detail: t('Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.'), targets: [a.id] })
     if (P.type === 'deckenhoch' && room.ceiling === 'holzbalken') add({ id: `decke-holz:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Verspannung gegen Holzbalkendecke'), detail: t('Pfosten möglichst unter einem Deckenbalken verspannen und mit Lastverteilbrett arbeiten; Stuck nicht berühren.'), targets: [a.id] })
     if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: CAT.raum, title: tn(wallFix.reduce((s, f) => s + f.count, 0), tk('1 Bohrung in der Wand'), tk('{n} Bohrungen in der Wand')), detail: t('Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.'), targets: [a.id] })

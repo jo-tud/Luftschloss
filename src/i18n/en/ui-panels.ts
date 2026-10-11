@@ -62,6 +62,13 @@ const en: Record<string, string> = {
   'Bauweise': 'Construction',
   'Querträger zwischen Zargen': 'Cross beams between side rails',
   'Aufgelegt (Träger + Latten drauf)': 'Laid on top (beams + slats on top)',
+  'Zargen zwischen den Pfosten': 'Rails between the posts',
+  'Zargen außen am Pfosten, durchgebolzt': 'Rails outside the posts, bolted through',
+  'Zargen außen: Die Pfosten stehen eine Zargendicke eingerückt, die Zargen laufen außen durch und werden mit Schlossschrauben durch die Pfosten gebolzt. Die Querzargen sitzen eine Zargenhöhe tiefer, damit sich die Bolzen nicht kreuzen; das Geländer hält eigene Pfosten außen an den Zargen.':
+    'Rails outside: the posts are set in by one rail thickness, the rails run past them on the outside and are bolted through the posts with carriage bolts. The end rails sit one rail height lower so the bolts do not cross; the guard rail has its own posts on the outside of the rails.',
+  'Zargen außen gibt es nur bei freistehenden oder deckenhohen Betten mit vier Pfosten und ohne Netz – hier bleiben die Zargen zwischen den Pfosten.':
+    'Rails outside are only available for freestanding or floor-to-ceiling beds with four posts and no net – here the rails stay between the posts.',
+  'Kopfbänder: bei Zargen außen nicht vorgesehen – das Bett an der Wand befestigen (Kippsicherung).': 'Knee braces: not provided with rails outside – fix the bed to the wall (anti-tip fixing).',
   'Aufgelegt: Querträger bzw. Latten liegen oben auf Wand- und Frontbalken': 'Laid on top: cross beams or slats rest on top of the wall ledger and front beam',
   'Freie Ecken getragen von': 'Free corners supported by',
   'Abhängung von der Decke': 'Suspension from the ceiling',

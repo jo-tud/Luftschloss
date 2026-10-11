@@ -318,8 +318,10 @@ export interface LoftBedParams {
    * zargen: Querträger hängen zwischen den Zargen (Balkenschuh, Winkel).
    * aufgelegt: Querträger bzw. Latten liegen oben auf Wandbalken und Frontbalken – die
    * einfachste und tragfähigste Bauweise, besonders an massiven Wänden.
+   * aussen: Zargen außen an den Pfosten vorbei, durchgebolzt; die Pfosten stehen um eine Zargendicke
+   * eingerückt, die Querzargen eine Zargenhöhe tiefer (nur mit vier Pfosten, siehe outsideRails).
    */
-  frameStyle: 'zargen' | 'aufgelegt'
+  frameStyle: 'zargen' | 'aufgelegt' | 'aussen'
   /**
    * Freie Ecken: auf Pfosten, von der Decke abgehängt (Wand- und Eckbetten) oder ohne Pfosten auf
    * Regalen bzw. Schränken liegend (der Rahmen schließt sich dann selbst)
