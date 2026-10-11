@@ -197,5 +197,6 @@ const en: Record<string, string> = {
   "Schrauben bzw. Bolzen zweier Verbindungen treffen sich in {part}": "Screws or bolts of two joints meet in {part}",
   "Schrauben bzw. Bolzen zweier Verbindungen treffen sich": "Screws or bolts of two joints meet",
   "Die Befestigungsmittel der Verbindungen zu {a} und {b} kreuzen sich. Eine Verbindung in der Höhe versetzen oder eine andere Verbindungsart wählen.": "The fasteners of the joints to {a} and {b} cross. Offset one joint in height or choose another joint type.",
+  "Erste und letzte Latte sofort an beiden Enden auf die Zargen schrauben (je 2 Schrauben, vorbohren), dann alle übrigen. Erst danach hält das Gestell quer zusammen.": "Screw the first and last batten onto the rails at both ends straight away (2 screws each, pre-drill), then all the others. Only then does the frame hold together crosswise.",
 }
 export default en

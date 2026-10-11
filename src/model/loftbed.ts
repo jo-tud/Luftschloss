@@ -304,10 +304,14 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   }
 
   // --- Zargen und Wandriegel -----------------------------------------------------------
-  const xStart = (s: Side) => (aussen ? 0 : hasPost(s === 'hinten' ? 'BL' : 'FL') ? p : isWall('links') && !isWall(s) ? rb : 0) // i18n-ok
-  const xEnd = (s: Side) => Lo - (aussen ? 0 : hasPost(s === 'hinten' ? 'BR' : 'FR') ? p : isWall('rechts') && !isWall(s) ? rb : 0) // i18n-ok
-  const yStart = (s: Side) => (aussen ? 0 : hasPost(s === 'links' ? 'BL' : 'BR') ? p : isWall('hinten') || !isWall(s) ? rb : 0) // i18n-ok
-  const yEnd = (s: Side) => Wo - (aussen ? 0 : hasPost(s === 'links' ? 'FL' : 'FR') ? p : isWall('vorne') || !isWall(s) ? rb : 0) // i18n-ok
+  // Ecken ohne Pfosten: die freie Zarge läuft durch, der Wandriegel stößt stumpf dagegen. So geht der
+  // Bolzen von außen durch die freie Zarge, die Mutterntasche liegt auf der Raumseite des Wandriegels –
+  // andersherum säße der Kopf zwischen Wandriegel und Wand. Ohne Wand (oder an zwei Wänden) laufen die
+  // Längszargen durch
+  const xStart = (s: Side) => (aussen ? 0 : hasPost(s === 'hinten' ? 'BL' : 'FL') ? p : isWall(s) && !isWall('links') ? rb : 0) // i18n-ok
+  const xEnd = (s: Side) => Lo - (aussen ? 0 : hasPost(s === 'hinten' ? 'BR' : 'FR') ? p : isWall(s) && !isWall('rechts') ? rb : 0) // i18n-ok
+  const yStart = (s: Side) => (aussen ? 0 : hasPost(s === 'links' ? 'BL' : 'BR') ? p : isWall('hinten') && !isWall(s) ? 0 : rb) // i18n-ok
+  const yEnd = (s: Side) => Wo - (aussen ? 0 : hasPost(s === 'links' ? 'FL' : 'FR') ? p : isWall('vorne') && !isWall(s) ? 0 : rb) // i18n-ok
   const zc = railBottom + rh / 2
   /** Lage der Zarge einer Seite entlang der Seite (in Laufrichtung von sideFrame) */
   const railSpan = (s: Side): [Mm, Mm] =>
@@ -324,7 +328,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
   const rost = P.deck === 'rollrost' || P.deck === 'lattenrost'
   const midYs = carriersLR || !(P.deck === 'latten' || rost) ? [] : seamYs.length ? seamYs : P.deck === 'latten' && Wo - 2 * rb > 1250 ? [Wo / 2] : []
   const wideSlats = midYs.length > 0
-  const keepRail = (s: Side) => !aufgelegt || isWall(s) || carrierSides.includes(s) || ((s === 'links' || s === 'rechts') && wideSlats)
+  // aufgelegt: Querzargen nur, wo sie etwas tragen – auch das Geländer dieser Seite (ohne Zarge hinge
+  // es nur an Handlauf und Brettern)
+  const keepRail = (s: Side) => !aufgelegt || isWall(s) || carrierSides.includes(s) || guardOn(s) || ((s === 'links' || s === 'rechts') && wideSlats)
   for (const s of ['hinten', 'vorne'] as Side[]) {
     if (!keepRail(s)) continue
     const y = s === 'hinten' ? rb / 2 : Wo - rb / 2
@@ -455,7 +461,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     for (let i = 0; i < n; i++) {
       const a = a0 + ((a1 - a0) * i) / (n - 1)
       const zc2 = deckTopOfFrame - joist.h / 2
-      const [s0, e0] = carriersLR ? [v(0, a, zc2), v(Lo, a, zc2)] : [v(a, 0, zc2), v(a, Wo, zc2)]
+      // 5 mm vor der Außenkante enden (wie die Latten), damit außen angeschraubte Geländerstützen frei bleiben
+      const [s0, e0] = carriersLR ? [v(5, a, zc2), v(Lo - 5, a, zc2)] : [v(a, 5, zc2), v(a, Wo - 5, zc2)]
       add(`quertraeger-${i + 1}`, 'quertraeger', P.joistCatalogId, s0, e0, joist.b, joist.h, { name: t('Querträger {n} (aufgelegt)', { n: i + 1 }) })
     }
   } else if (P.deck === 'platte' || P.deck === 'dielen') {
@@ -655,9 +662,16 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     const sb = stile.b
     const sh = stile.h
     const angle = P.ladder === 'senkrecht' ? 90 : P.ladder === 'treppe' ? Math.min(P.ladderAngle, 50) : P.ladder === 'stufen' ? Math.min(P.ladderAngle, 70) : P.ladderAngle
-    // Haltegriffe der schrägen Leiter: ihr Bolzen sitzt mindestens 80 mm vom Zargenende (DIN EN 1995, a3,t)
-    const [r0, r1] = railSpan(side)
-    const gripRoom = angle >= 89.9 || r1 - r0 < P.ladderWidth + 2 * (80 + guard.b / 2) ? 0 : 80 + guard.b / 2
+    // Haltegriffe der schrägen Leiter: ihr Bolzen sitzt mindestens 130 mm neben der Pfosteninnenkante.
+    // So bleibt er frei von der Mutterntasche des Eckstoßes (80 mm vom Zargenende, Ø 35) und bei
+    // „Zargen außen“ vom Pfosten samt Bolzenköpfen, die der Griff sonst überdecken würde
+    const GRIP_CLEAR = 130
+    const [s0, s1] = railSpan(side)
+    const r0 = Math.max(s0, pIn)
+    const r1 = Math.min(s1, frame.length - pIn)
+    // senkrechte Leiter: der Holm selbst ist an die Zarge gebolzt, seine Achse hält denselben Abstand
+    const room = angle >= 89.9 ? GRIP_CLEAR - stile.b / 2 : GRIP_CLEAR + guard.b / 2
+    const gripRoom = r1 - r0 < P.ladderWidth + 2 * room ? 0 : room
     const a0 = Math.max(0, gripRoom ? r0 + gripRoom : 0, Math.min(P.ladderOffset, (gripRoom ? r1 - gripRoom : frame.length) - P.ladderWidth))
     const a1 = a0 + P.ladderWidth
     const rad = (angle * Math.PI) / 180
@@ -815,7 +829,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         const ends: [Corner, number][] = []
         // 5 mm Abstand zum Zargenende, damit der Pfosten nur an seiner Zarge anliegt; bei Zargen außen
         // hinter dem eingerückten Pfosten, damit die Bolzen innen nicht auf ihn treffen
-        const clear = aussen ? pIn + 5 : 0
+        // sonst neben der Zarge bzw. dem Wandriegel der Nachbarseite: innen steht der Pfosten selbst
+        // dort, außen liegt innen die Mutter seines Bolzens (Scheibe Ø 28)
+        const clear = aussen ? pIn + 5 : rb + 5 + (inside ? 0 : 16)
         // Endet das Feld an der Leiteröffnung, hält dort der Haltegriff bzw. Holm; der Pfosten muss davor Platz haben
         const ladderRoom = stile.b + guard.b + 10
         const free0 = opening && P.ladderSide === s && s0 === opening[1] ? s0 + ladderRoom : s0

@@ -135,7 +135,10 @@ describe('Wandbalken-Bauweise', () => {
     const joists = g.members.filter((m) => m.role === 'quertraeger')
     expect(back.role).toBe('wandriegel')
     expect(joists.length).toBeGreaterThan(2)
-    expect(g.members.some((m) => m.partKey === 'zarge-links')).toBe(false)
+    // Querzarge nur, wo das Geländer an ihr hängt
+    expect(g.members.some((m) => m.partKey === 'zarge-links')).toBe(a.params.guard !== 'keins' && a.params.guardSides.links)
+    const ohne = generateLoftBed({ ...a, params: { ...a.params, guard: 'keins' } }, 2600)
+    expect(ohne.members.some((m) => m.partKey === 'zarge-links')).toBe(false)
     for (const j of joists) expect(j.start.z - j.h / 2).toBeCloseTo(back.start.z + back.h / 2)
     const r = resolveProject({ ...testProject(), assemblies: [a] })
     expect(r.joints.some((j) => j.kind === 'auflage' && (j.a === back.id || j.b === back.id))).toBe(true)

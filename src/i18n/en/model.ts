@@ -283,5 +283,6 @@ const en: Record<string, string> = {
   "Ein Klotz aus Kantholz, stehend unter das Trägerende an den Pfosten geschraubt; der Träger liegt darauf. Tragfähiger als eine kurze waagrechte Leiste.": "A block of squared timber screwed upright to the post under the end of the beam; the beam rests on it. Stronger than a short horizontal ledger.",
   "Nur für liegende Träger an einem stehenden Pfosten.": "Only for horizontal beams on an upright post.",
   "Unter dem Träger ist am Pfosten kein Platz für eine Knagge.": "There is no room for a cleat on the post below the beam.",
+  "Der Kopf säße zwischen Wandbalken und Wand – am Wandbalken nur von der Raumseite befestigen (Balkenschuh, Winkel, Leiste).": "The head would sit between the wall beam and the wall – fix to the wall beam from the room side only (joist hanger, angle bracket, ledger).",
 }
 export default en

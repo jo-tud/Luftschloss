@@ -238,8 +238,11 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         // Wange am Haltegriff: von innen mit Holzbauschrauben (für einen Bolzen ist der Griff zu schmal)
         if (kindInfo.kind === 'beischlag' && [A, B].some((m) => m.partKey?.startsWith('leiter-holm')) && [A, B].some((m) => m.partKey?.startsWith('leiter-griff'))) typeId = 'holzbauschraube'
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'holm' && !endingMember.round && p.settings.jointPreference !== 'wenig-metall') typeId = 'holzbauschraube'
-        // Latten liegen lose: weder auf noch unter ihnen wird geschraubt (z. B. Unterholm des Geländers auf den Latten)
-        if (upper && (A.role === 'leiste' || B.role === 'leiste')) typeId = 'lose'
+        // Latten liegen lose: weder auf noch unter ihnen wird geschraubt (z. B. Unterholm des Geländers auf den Latten).
+        // Aufgelegt fehlen die Querzargen: dann halten die verschraubten Latten die beiden Seitenrahmen zusammen
+        const lattenAuf = (m: Member) => m.role === 'leiste' && m.assemblyId && p.assemblies.find((x) => x.id === m.assemblyId)?.params.frameStyle === 'aufgelegt'
+        const tragend = (m: Member) => m.role === 'zarge' || m.role === 'wandriegel' || m.role === 'quertraeger'
+        if (upper && (A.role === 'leiste' || B.role === 'leiste')) typeId = (lattenAuf(A) && tragend(B)) || (lattenAuf(B) && tragend(A)) ? 'auflage' : 'lose'
         // Zargen außen: an der Ecke liegt die Längszarge nur auf der Querzarge – gehalten wird beides von den
         // Bolzen am Pfosten, für eine Schraube ist in der 60 × 60 großen Überdeckung kein Platz
         if (kindInfo.kind === 'auflage' && A.role === 'zarge' && B.role === 'zarge') typeId = 'lose'
