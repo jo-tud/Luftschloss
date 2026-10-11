@@ -140,6 +140,7 @@ Parameter sind:
 - Mehrere Matratzen: Anzahl, nebeneinander oder hintereinander, Abstand
 - Etagenbett (untere Liegefläche mit Höhe), Mittelstützen
 - Hölzer für Pfosten, Zargen und Querträger
+- **Einzelne Teile der Vorlage abweichend** (Eigenschaften des Teils: Holz und Länge, `Assembly.overrides`), ohne es herauszulösen; bleibt bei Änderungen am Bett erhalten, „Zurücksetzen“ stellt die Vorlage wieder her. Geländer „Bretter“: Brett oder Latte wählbar, Anzahl der Reihen aus Höhe und höchstens 6 cm Spalt.
 - Liegefläche: **Latten lose aufgelegt** (Standard), Rollrost, Lattenrost, Platte, Dielen, begehbares Netz. **Breite Leimholzbretter** (Platte aus Leimholz, Bauweise mit Zargen): Bretter quer von Zarge zu Zarge, Mischung der Handelsbreiten 60/40 cm mit möglichst wenig Brettern und Verschnitt (`src/model/deckBoards.ts`), unter jedem Stoß ein Querträger, Zuschnitt aus 1200er Platten.
 - Geländer: **Bretter** (Standard), Rundstäbe, Vollfläche, Netz, Seil oder keins; Höhe und Seiten
 - Ecken ohne Pfosten (an der Wand oder abgehängt) schließt der Rahmen selbst, Zarge an Zarge. Endet dort ein Geländer, hält es ein Geländerpfosten, der wie eine Zwischenstütze außen an die Zarge gebolzt ist (an einer Wandseite innen auf der Zarge). Kein kurzes Pfostenstück zwischen den Zargen.

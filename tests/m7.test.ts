@@ -135,3 +135,40 @@ describe('Eckpfosten ohne Geländer', () => {
     expect(top(p, 'pfosten-BL')).toBe(P.deckHeight + P.guardHeight)
   })
 })
+
+describe('Teile der Vorlage einzeln ändern', () => {
+  it('Haltegriff aus anderem Holz und kürzer, ohne ihn herauszulösen', () => {
+    const p = testProject()
+    p.assemblies[0].params.ladder = 'stufen'
+    const grip = (q: Project) => resolveProject(q).members.find((m) => m.partKey === 'leiter-griff-0')!
+    const before = grip(p)
+    const L0 = Math.hypot(before.end.x - before.start.x, before.end.y - before.start.y, before.end.z - before.start.z)
+    p.assemblies[0].overrides = { 'leiter-griff-0': { catalogId: 'geh-44x74', length: L0 - 200 } }
+    const after = grip(p)
+    expect(after.catalogId).toBe('geh-44x74')
+    expect(Math.min(after.b, after.h)).toBe(44)
+    expect(Math.hypot(after.end.x - after.start.x, after.end.y - after.start.y, after.end.z - after.start.z)).toBeCloseTo(L0 - 200, 0)
+    expect(after.start).toEqual(before.start)
+    // bleibt bei anderen Änderungen am Bett erhalten
+    p.assemblies[0].params.deckHeight += 50
+    expect(grip(p).catalogId).toBe('geh-44x74')
+  })
+
+  it('Geländer aus Latten statt Brett: mehr Reihen, Spalt höchstens 6 cm', () => {
+    const p = testProject()
+    p.assemblies[0].params.guard = 'bretter'
+    const rows = (q: Project) => resolveProject(q).members.filter((m) => m.partKey?.startsWith('brett-vorne'))
+    const wide = rows(p).length
+    p.assemblies[0].params.guardBoardCatalogId = 'latte-24x48'
+    const slats = rows(p)
+    expect(slats.length).toBeGreaterThan(wide)
+    expect(slats.every((m) => m.catalogId === 'latte-24x48')).toBe(true)
+    // Reihen überlappen nicht (auch nicht bei breiten Brettern)
+    for (const list of [slats, rows({ ...p, assemblies: [{ ...p.assemblies[0], params: { ...p.assemblies[0].params, guardBoardCatalogId: undefined } }] })]) {
+      const seg = list.filter((m) => m.partKey!.startsWith(list[0].partKey!.replace(/-\d+$/, '')))
+      const zs = seg.map((m) => [m.start.z - m.h / 2, m.start.z + m.h / 2]).sort((a, b) => a[0] - b[0])
+      for (let i = 1; i < zs.length; i++) expect(zs[i][0]).toBeGreaterThanOrEqual(zs[i - 1][1] - 0.5)
+    }
+    expect(analyze(p, resolveProject(p)).findings.some((f) => f.id.startsWith('spalt') && f.severity === 'fehler')).toBe(false)
+  })
+})

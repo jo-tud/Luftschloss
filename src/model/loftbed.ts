@@ -169,6 +169,18 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     extra: Partial<Member> = {},
   ): Member | undefined {
     if (detached.has(key)) return undefined
+    // abweichendes Holz bzw. Länge für dieses Teil (Querschnitt in gleicher Lage: schmale Seite bleibt schmal)
+    const ov = a.overrides?.[key]
+    const alt = ov?.catalogId ? catalogItem(ov.catalogId) : undefined
+    if (alt?.kind === 'stab') {
+      const [lo, hi] = alt.b <= alt.h ? [alt.b, alt.h] : [alt.h, alt.b]
+      ;[b, h] = b <= h ? [lo, hi] : [hi, lo]
+      catalogId = alt.id
+    }
+    if (ov?.length && ov.length > 10) {
+      const d = Math.hypot(e.x - s.x, e.y - s.y, e.z - s.z)
+      if (d > 1) e = v(s.x + ((e.x - s.x) * ov.length) / d, s.y + ((e.y - s.y) * ov.length) / d, s.z + ((e.z - s.z) * ov.length) / d)
+    }
     const item = catalogItem(catalogId)
     const m: Member = {
       id: `${a.id}:${key}`,
@@ -739,15 +751,20 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
             break
           }
           case 'bretter': {
-            // So viele Bretter, dass kein Spalt (auch der unter dem Handlauf) über 60 mm liegt, gleichmäßig verteilt
+            // So viele Bretter bzw. Latten, dass kein Spalt (auch der unter dem Handlauf) über 60 mm liegt,
+            // gleichmäßig verteilt
+            const bt = timber(P.guardBoardCatalogId ?? 'leimholz-fi-18x200')
+            const thick = Math.min(bt.b, bt.h)
+            const wide = Math.max(bt.b, bt.h)
             const maxGap = 60
             const space = innerTop - H
-            const n = Math.max(1, Math.ceil((space - maxGap) / (200 + maxGap)))
-            const board = Math.min(200, Math.max(40, space - 2 * 10))
+            const n = Math.max(1, Math.ceil((space - maxGap) / (wide + maxGap)))
+            // passen die Bretter nicht mit mindestens 1 cm Luft, werden sie schmaler gesägt
+            const board = Math.max(20, Math.min(wide, (space - (n + 1) * 10) / n))
             const gap = Math.max(0, (space - n * board) / (n + 1))
             for (let i = 0; i < n; i++) {
               const zc2 = H + gap * (i + 1) + board * i + board / 2
-              add(`brett-${key}-${i}`, 'holm', 'leimholz-fi-18x200', pt(s0, zc2, -9), pt(s1, zc2, -9), 18, board, { name: t('Geländerbrett {s}', { s: sideLabel(s) }) })
+              add(`brett-${key}-${i}`, 'holm', bt.id, pt(s0, zc2, -thick / 2), pt(s1, zc2, -thick / 2), thick, board, { name: t('Geländerbrett {s}', { s: sideLabel(s) }) })
             }
             rodGap = rodGap === undefined ? gap : Math.max(rodGap, gap)
             break

@@ -403,5 +403,11 @@ const en: Record<string, string> = {
   '1 × {w} (aus {f} gesägt)': '1 × {w} (ripped from {f})',
   'Eckpfosten ohne Geländer an der Liegefläche enden lassen': 'End corner posts without a guard rail at the deck',
   'Schließt an einer Ecke auf keiner Seite ein Geländer an, muss der Pfosten nicht höher sein als die Liegefläche': 'If no guard rail joins a corner on either side, the post need not rise above the deck',
+  'Vom Anfang des Teils aus gemessen; das andere Ende wandert mit': 'Measured from the start of the part; the other end moves along',
+  'Abweichend von der Vorlage.': 'Differs from the template.',
+  'Holz und Länge gelten nur für dieses Teil; alles andere folgt weiter den Bett-Einstellungen.': 'Timber and length apply to this part only; everything else keeps following the bed settings.',
+  'Zurücksetzen': 'Reset',
+  'Bretter oder Latten': 'Boards or battens',
+  'Schmale Latten ergeben mehr Reihen; der Spalt bleibt höchstens 6 cm': 'Narrow battens give more rows; the gap stays at most 6 cm',
 }
 export default en
