@@ -318,8 +318,11 @@ export interface LoftBedParams {
    * einfachste und tragfähigste Bauweise, besonders an massiven Wänden.
    */
   frameStyle: 'zargen' | 'aufgelegt'
-  /** Freie Ecken bei Wand- und Eckbetten: auf Pfosten oder von der Decke abgehängt */
-  cornerSupport: 'pfosten' | 'decke'
+  /**
+   * Freie Ecken: auf Pfosten, von der Decke abgehängt (Wand- und Eckbetten) oder ohne Pfosten auf
+   * Regalen bzw. Schränken liegend (der Rahmen schließt sich dann selbst)
+   */
+  cornerSupport: 'pfosten' | 'decke' | 'moebel'
   /**
    * Anschluss an Wände mit Sockelleiste: Gestell um die Leistentiefe abrücken oder Pfosten
    * an der Wand ausklinken. Stuck oben wird bei deckenhohen Pfosten immer ausgeklinkt.

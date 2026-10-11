@@ -15,6 +15,7 @@ const en: Record<string, string> = {
 
   // --- Bauarten (BED_TYPE_LABEL) ---
   'Freistehend, 4 Pfosten': 'Freestanding, 4 posts',
+  'Auf Regal/Schrank, ohne Pfosten': 'On shelves/cabinets, no posts',
   'Deckenhoch verspannt, 4 Pfosten': 'Floor-to-ceiling, 4 posts',
   'Wandseitig, 2 Pfosten': 'Wall-mounted, 2 posts',
   'Eckhochbett, 1 Pfosten': 'Corner loft bed, 1 post',

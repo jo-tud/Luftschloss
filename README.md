@@ -38,7 +38,7 @@ Everything runs in your browser – free, no sign-up. Your data stays on your de
 
 **And there's more:**
 
-- **Lots of designs:** freestanding, against the wall, corner bed, floor-to-ceiling tension-mounted, wall to wall, mid-height, bunk bed, gallery, net platform – and two kids side by side on two mattresses.
+- **Lots of designs:** freestanding, against the wall, corner bed, floor-to-ceiling tension-mounted, wall to wall, mid-height, bunk bed, gallery, net platform, resting on shelves or cabinets – and two kids side by side on two mattresses.
 - **Real carpentry joints:** half-lap, mortise and tenon with peg, dovetail lap, sliding dovetail, housing, round bar in a hole, ledger strip, mitred and housed knee braces. Click a joint to see it as an exploded 3D detail with an explanation of how it works and the steps to make it; the build plan shows it as an isometric sketch.
 - **Checklist with explanations:** window sashes that bump into the frame, too little headroom, gaps in the guard rail, the wrong anchors in stud walls … These are all recommendations you can consciously acknowledge and dismiss.
 - **Your loft bed in a photo of your room:** load a photo, tap a few corners – the planned bed appears in the photo in correct perspective.

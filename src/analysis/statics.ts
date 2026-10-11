@@ -2,7 +2,7 @@ import { locale, t, tr } from '../i18n'
 import { STRENGTH, catalogItem, type StrengthClass } from '../model/catalog'
 import { add, dot, memberAxes, memberLength, scale, sub, v } from '../model/geometry'
 import { jointType } from '../model/joints'
-import { inWallOpening, memberWall } from '../model/room'
+import { furnitureBearings, inWallOpening, memberWall } from '../model/room'
 import type { Resolved } from '../model/resolve'
 import type { Member, Panel, Project, Vec3 } from '../model/types'
 import { solveFrame, type FrameElement, type FrameLink, type FrameModel, type FrameResult, type FrameSupport, type LoadCase } from './frame'
@@ -130,6 +130,9 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
       stationT.get(id)!.push(Math.max(0, Math.min(memberLength(m), t)))
     }
   }
+  // Auflager auf Regal/Schrank: Anfang, Mitte und Ende des aufliegenden Abschnitts
+  const bearings = furnitureBearings(p, members)
+  for (const b of bearings) stationT.get(b.memberId)!.push(b.t0, (b.t0 + b.t1) / 2, b.t1)
   // Lastflächen (Matratzen bzw. freie Platten) und ihre Träger
   const surfaces = loadSurfaces(r)
   const carrierIds = new Set<string>()
@@ -224,6 +227,8 @@ export function computeStatics(p: Project, r: Resolved, override?: { memberId: s
       }
     }
   }
+  // auf dem Möbel verschraubt: hält senkrecht und seitlich
+  for (const b of bearings) for (const s of stations.get(b.memberId)!) if (s.t >= b.t0 - 1 && s.t <= b.t1 + 1) supports.push({ node: s.node, fix: T3 })
   if (!supports.length) warnings.push(t('Keine Auflager gefunden'))
 
   const model: FrameModel = { nodes, elements, links, supports }

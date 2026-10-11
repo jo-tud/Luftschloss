@@ -6,8 +6,9 @@ import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { JointTypeSelect } from './JointTypeSelect'
 import { GroupProps, MultiProps } from './GroupProps'
-import { BED_TYPE_LABEL } from '../model/loftbed'
+import { BED_TYPE_LABEL, bedTypeLabel } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
+import { deckOnFurniture } from '../model/placement'
 import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, Project, Side, WallId, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
@@ -222,7 +223,8 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
   const wallToWall = a.params.type === 'nische'
   const styleMatters = a.params.deck === 'platte' || a.params.deck === 'dielen' || a.params.deck === 'lattenrost' || (a.params.deck === 'latten' && wallToWall)
   const P = a.params
-  const roomHeight = useStore((s) => s.project.room.height)
+  const p = useStore((s) => s.project)
+  const roomHeight = p.room.height
   const info = d.resolved.beds.get(a.id)
   const clearance = d.analysis.clearances.find((c) => c.assemblyId === a.id)
   const setP = (patch: Partial<LoftBedParams>, key?: string) =>
@@ -247,7 +249,7 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
           <ObjectHeader
             icon="🛏"
             title={tr(a.name)}
-            sub={tr(BED_TYPE_LABEL[P.type])}
+            sub={tr(bedTypeLabel(P))}
             actions={[
               focusAction(a.id),
               {
@@ -392,16 +394,37 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
         ) : (
           <p className="hint">{t('Bauweise: bei Latten bzw. Netz ohne Wahl – erst mit Platte, Dielen oder Lattenrost gibt es Querträger, die zwischen den Zargen hängen oder oben aufliegen.')}</p>
         )}
-        {(P.type === 'wandseitig' || P.type === 'eck') && (
+        {P.type !== 'deckenhoch' && P.type !== 'abgehaengt' && (
           <Sel
-            label={t('Freie Ecke getragen von')}
+            label={t('Freie Ecken getragen von')}
             value={P.cornerSupport}
             options={[
               ['pfosten', t('Pfosten')],
-              ['decke', t('Abhängung von der Decke')],
+              ...(P.type === 'wandseitig' || P.type === 'eck' ? ([['decke', t('Abhängung von der Decke')]] as [LoftBedParams['cornerSupport'], string][]) : []),
+              ['moebel', t('Regal oder Schrank darunter')],
             ]}
-            onChange={(v) => setP({ cornerSupport: v })}
+            onChange={(v) => {
+              const fit = v === 'moebel' ? deckOnFurniture(p, { ...a, params: { ...P, cornerSupport: v } }) : undefined
+              setP(fit ? { cornerSupport: v, deckHeight: fit } : { cornerSupport: v })
+            }}
+            title={t('Ohne Pfosten liegt der Rahmen auf Schränken oder Regalen; diese unter Möbel einfügen')}
           />
+        )}
+        {P.cornerSupport === 'moebel' && P.type !== 'deckenhoch' && P.type !== 'abgehaengt' && (
+          <button
+            className="link"
+            onClick={() => {
+              const fit = deckOnFurniture(p, a)
+              if (fit) setP({ deckHeight: fit })
+              else {
+                useStore.setState({ toast: t('Unter dem Bett steht kein Regal, Schrank oder Kommode.') })
+                setTimeout(() => useStore.setState({ toast: null }), 3000)
+              }
+            }}
+            title={t('Liegehöhe so anpassen, dass der Rahmen auf der Oberseite der Möbel darunter liegt')}
+          >
+            {t('Auf Möbel setzen')}
+          </button>
         )}
         <Check label={t('Kopfbänder (Aussteifung)')} value={P.braces} onChange={(v) => setP({ braces: v })} />
         {P.braces && (

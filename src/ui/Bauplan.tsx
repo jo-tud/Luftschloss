@@ -5,7 +5,7 @@ import { catalogItem } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, obbCorners } from '../model/geometry'
 import { prismCorners } from '../model/joinery'
 import { JOINT_TYPES, jointType } from '../model/joints'
-import { BED_TYPE_LABEL } from '../model/loftbed'
+import { bedTypeLabel } from '../model/loftbed'
 import type { Member, Vec3 } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
@@ -195,7 +195,7 @@ export function BauplanDialog() {
                     <tr>
                       <th>{t('Bauart')}</th>
                       <td>
-                        {tr(BED_TYPE_LABEL[a.params.type])}
+                        {tr(bedTypeLabel(a.params))}
                         {a.params.frameStyle === 'aufgelegt' ? `, ${t('aufgelegt')}` : ''}
                       </td>
                     </tr>

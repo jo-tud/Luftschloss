@@ -221,6 +221,9 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     }
   }
 
+  // Auf Regal/Schrank: keine Pfosten, der Rahmen liegt auf den Möbeln (Auflager siehe statics.ts)
+  if (P.cornerSupport === 'moebel' && P.type !== 'deckenhoch' && P.type !== 'abgehaengt') for (const c of ['BL', 'BR', 'FL', 'FR'] as Corner[]) fullPost[c] = false
+
   const guardOn = (s: Side) => P.guard !== 'keins' && P.guardSides[s] && !isWall(s)
   const cornerSides: Record<Corner, [Side, Side]> = {
     BL: ['hinten', 'links'], // i18n-ok
@@ -856,3 +859,9 @@ export const BED_TYPE_LABEL: Record<LoftBedParams['type'], string> = {
   abgehaengt: tk('Abgehängt (Wand + Decke)'),
 }
 
+
+/** Bauart für Listen und Kopfzeilen; ohne Pfosten auf Möbeln eigens benannt */
+export function bedTypeLabel(P: LoftBedParams): string {
+  if (P.cornerSupport === 'moebel' && P.type !== 'deckenhoch' && P.type !== 'abgehaengt') return tk('Auf Regal/Schrank, ohne Pfosten')
+  return BED_TYPE_LABEL[P.type]
+}

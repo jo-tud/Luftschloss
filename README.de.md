@@ -37,7 +37,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 
 **Außerdem:**
 
-- **Viele Bauarten:** freistehend, an der Wand, Eckbett, deckenhoch verspannt, Wand zu Wand, Halbhoch, Etagenbett, Galerie, Netz-Hochebene – und zwei Kinder nebeneinander auf zwei Matratzen.
+- **Viele Bauarten:** freistehend, an der Wand, Eckbett, deckenhoch verspannt, Wand zu Wand, Halbhoch, Etagenbett, Galerie, Netz-Hochebene, auf Regalen oder Schränken – und zwei Kinder nebeneinander auf zwei Matratzen.
 - **Echte Holzverbindungen:** Überblattung, Zapfen mit Holznagel, Schwalbenschwanzblatt, Gratnut, Einlassung, Rundstab in Bohrung, Auflagerleiste, Kopfbänder auf Gehrung und eingelassen. Ein Klick auf eine Verbindung zeigt sie als 3D-Explosion mit Erklärung, wie sie wirkt, und den Arbeitsschritten; im Bauplan erscheint sie als isometrische Skizze.
 - **Prüfliste mit Erklärungen:** Fensterflügel, die anstoßen, zu wenig Kopfraum, Lücken im Geländer, falsche Dübel in Leichtbauwänden … Alles sind Empfehlungen, die du bewusst „zur Kenntnis nehmen“ kannst.
 - **Dein Hochbett im Foto deines Zimmers:** Foto laden, ein paar Ecken antippen – das geplante Bett erscheint perspektivisch richtig im Foto.

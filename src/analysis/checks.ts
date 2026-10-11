@@ -2,7 +2,7 @@ import { locale, t, tk, tn, tr } from '../i18n'
 import { catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { LOADS, NET_SAG, netEdgePull } from './statics'
-import { cornice, corniceIntrusion, memberWall, roomObstacles } from '../model/room'
+import { cornice, corniceIntrusion, furnitureBearings, memberWall, roomObstacles } from '../model/room'
 import { ceilingIntrusion, ceilingPlanes, ceilingRange } from '../model/ceiling'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project, Side, Vec3 } from '../model/types'
@@ -315,7 +315,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
 
     // Stabilität
     const wallFix = r.fixings.filter((f) => f.memberId.startsWith(`${a.id}:`) && f.target === 'wand')
-    if (P.type === 'freistehend' && !P.braces && wallFix.length === 0) add({ id: `wackeln:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Freistehendes Gestell ohne Aussteifung'), detail: t('Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).'), targets: [a.id] })
+    if (P.type === 'freistehend' && P.cornerSupport !== 'moebel' && !P.braces && wallFix.length === 0) add({ id: `wackeln:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Freistehendes Gestell ohne Aussteifung'), detail: t('Winkel und Balkenschuhe wirken als Gelenk. Kopfbänder einschalten oder das Bett mit 2 Pfosten an der Wand befestigen (Kippsicherung).'), targets: [a.id] })
     if (P.type === 'abgehaengt') add({ id: `abgehaengt:${a.id}`, severity: 'warnung', category: CAT.stabil, title: t('Abgehängte Konstruktion: besondere Sorgfalt'), detail: t('Nur an tragfähiger Decke (Beton/Holzbalken, nicht Stuck), Deckenanker vom Fachhandel, Wandriegel mit Schwerlastdübeln.'), targets: [a.id] })
     if (P.type === 'deckenhoch' && room.ceiling === 'holzbalken') add({ id: `decke-holz:${a.id}`, severity: 'hinweis', category: CAT.stabil, title: t('Verspannung gegen Holzbalkendecke'), detail: t('Pfosten möglichst unter einem Deckenbalken verspannen und mit Lastverteilbrett arbeiten; Stuck nicht berühren.'), targets: [a.id] })
     if (wallFix.length && p.settings.rentalMode) add({ id: `miete:${a.id}`, severity: 'hinweis', category: CAT.raum, title: tn(wallFix.reduce((s, f) => s + f.count, 0), tk('1 Bohrung in der Wand'), tk('{n} Bohrungen in der Wand')), detail: t('Mietwohnung: Dübellöcher für eine Kippsicherung sind üblich; größere Eingriffe mit dem Vermieter abstimmen.'), targets: [a.id] })
@@ -449,6 +449,33 @@ export function analyze(p: Project, r: Resolved): Analysis {
       }
       if (prof === 'kinder') add({ id: `alter:${g.id}`, severity: 'hinweis', category: CAT.sicherheit, title: t('Oben schlafen erst ab 6 Jahren'), targets: [g.id] })
     }
+  }
+
+  // --- Bett auf Regal/Schrank -----------------------------------------------------------
+  const bearings = furnitureBearings(p, r.members)
+  for (const a of p.assemblies) {
+    if (a.params.cornerSupport !== 'moebel' || a.params.type === 'deckenhoch' || a.params.type === 'abgehaengt') continue
+    if (!bearings.some((b) => memberById.get(b.memberId)?.assemblyId === a.id))
+      add({
+        id: `moebel-auflage:${a.id}`,
+        severity: 'fehler',
+        category: CAT.stabil,
+        title: t('{bed} liegt auf keinem Regal oder Schrank', { bed: tr(a.name) }),
+        detail: t('Ohne Pfosten braucht das Bett Möbel darunter: Regal oder Schrank unter die Enden stellen (Reiter Möbel) und in den Eigenschaften „Auf Möbel setzen“ wählen.'),
+        targets: [a.id],
+      })
+  }
+  for (const fid of new Set(bearings.map((b) => b.furnitureId))) {
+    const fu = p.furniture.find((x) => x.id === fid)!
+    const owners = [...new Set(bearings.filter((b) => b.furnitureId === fid).map((b) => memberById.get(b.memberId)?.assemblyId ?? memberById.get(b.memberId)?.groupId ?? b.memberId))]
+    add({
+      id: `moebel-traeger:${fid}`,
+      severity: 'warnung',
+      category: CAT.stabil,
+      title: t('{name} trägt das Bett', { name: tr(fu.name) }),
+      detail: t('Nur stabile Korpusse (Spanplatte ab 16 mm, Rückwand eingenutet oder verschraubt); Fachböden und dünne Oberseiten nicht als Auflager nehmen. Rahmen mit dem Korpus verschrauben und das Möbel an der Wand gegen Kippen sichern. Möbel aus dem Möbelhaus sind meist nicht für Personenlast gedacht – Herstellerangaben prüfen.'),
+      targets: [fid, ...owners],
+    })
   }
 
   // --- Material ----------------------------------------------------------------------

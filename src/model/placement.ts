@@ -1,8 +1,11 @@
 import { analyze } from '../analysis/checks'
 import { defaultBedParams } from './defaults'
 import { resolveProject } from './resolve'
-import { bedOuterSize } from './loftbed'
-import type { BedType, LoftBedParams, Project, Room } from './types'
+import { bedOuterSize, generateLoftBed } from './loftbed'
+import { memberBoxes, obbBounds, rotate2, uid } from './geometry'
+import { BEARING_FURNITURE } from './room'
+import { tk } from '../i18n'
+import type { Assembly, BedType, Furniture, LoftBedParams, Project, Room } from './types'
 
 /** Ecke des Raums, in die ein neues Bett gestellt wird (Wand A bzw. C, Ende an Wand D bzw. B) */
 export type Corner = 'AD' | 'AB' | 'CB' | 'CD'
@@ -61,4 +64,43 @@ export function bestCorner(p: Project, type: BedType, patch: Partial<LoftBedPara
     if (!best || score < best.score) best = { c, score }
   }
   return best?.c ?? 'AD'
+}
+
+/**
+ * Liegehöhe, bei der der Rahmen eines Betts ohne Pfosten auf den Schränken bzw. Regalen darunter
+ * aufliegt (höchste Oberseite unter dem Bett). undefined, wenn dort kein solches Möbel steht.
+ */
+export function deckOnFurniture(p: Project, a: Assembly): number | undefined {
+  const g = generateLoftBed(a, p.room.height, p.room)
+  const frame = g.members.filter((m) => (m.role === 'zarge' || m.role === 'wandriegel') && Math.abs(m.start.z - m.end.z) < 5)
+  if (!frame.length) return undefined
+  const bottom = Math.min(...frame.map((m) => obbBounds(memberBoxes(m)[0]).min.z))
+  const xs = g.info.footprint.map((q) => q.x)
+  const ys = g.info.footprint.map((q) => q.y)
+  const fp = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }
+  const under = p.furniture.filter((fu) => {
+    if (!BEARING_FURNITURE.includes(fu.kind)) return false
+    const rot = fu.rotation === 90 || fu.rotation === 270
+    const sx = rot ? fu.sy : fu.sx
+    const sy = rot ? fu.sx : fu.sy
+    return Math.min(fp.x1, fu.x + sx) - Math.max(fp.x0, fu.x) > 50 && Math.min(fp.y1, fu.y + sy) - Math.max(fp.y0, fu.y) > 50
+  })
+  if (!under.length) return undefined
+  const top = Math.max(...under.map((fu) => fu.z + fu.sz))
+  return Math.round(a.params.deckHeight + top - bottom)
+}
+
+/** Zwei Regale unter Kopf- und Fußende eines Betts (Vorlage „Auf Regal/Schrank“) */
+export function shelvesUnderBed(P: LoftBedParams, height = 1500, depth = 400): Furniture[] {
+  const { length: Lo, width: Wo } = bedOuterSize(P)
+  const world = (x: number, y: number) => {
+    const r = rotate2(P.mirror ? Lo - x : x, y, P.rotation)
+    return { x: P.x + r.x, y: P.y + r.y }
+  }
+  return [0, Lo - depth].map((x0) => {
+    const c = [world(x0, 0), world(x0 + depth, Wo)]
+    const x = Math.round(Math.min(c[0].x, c[1].x))
+    const y = Math.round(Math.min(c[0].y, c[1].y))
+    return { id: uid('regal'), kind: 'regal', name: tk('Regal'), x, y, z: 0, sx: Math.round(Math.abs(c[1].x - c[0].x)), sy: Math.round(Math.abs(c[1].y - c[0].y)), sz: height, rotation: 0 }
+  })
 }

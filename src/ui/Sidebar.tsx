@@ -1,10 +1,10 @@
 import { locale, t, tk, tr } from '../i18n'
-import { bestCorner, placeBed, type Corner } from '../model/placement'
+import { bestCorner, deckOnFurniture, placeBed, shelvesUnderBed, type Corner } from '../model/placement'
 import { Ico, Plus } from './icons'
 import { openWizard } from './Project'
 import { uid } from '../model/geometry'
 import { SLOPE_ANGLE } from '../model/ceiling'
-import { BED_TYPE_LABEL } from '../model/loftbed'
+import { bedTypeLabel } from '../model/loftbed'
 import type { BedType, CeilingMaterial, LoftBedParams, CorniceProfile, FloorMaterial, Furniture, FurnitureKind, Project, WallId, WallMaterial, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useStore } from '../state/store'
@@ -388,6 +388,7 @@ const PRESETS: Preset[] = [
   { key: 'etage', label: tk('Etagenbett'), hint: tk('Zwei Betten übereinander zwischen vier Pfosten. Unten 0,30 m, oben so hoch, dass man unten aufrecht sitzt.'), type: 'freistehend', patch: { lowerBed: true, deckHeight: 1550, braces: false } },
   { key: 'galerie', label: tk('Galerie mit Mittelstütze'), hint: tk('Lange Hochebene (2,80 × 1,40 m) zum Spielen oder für zwei Matratzen. Eine Stütze in der Mitte jeder Längsseite.'), type: 'wandseitig', patch: { mattressLength: 2800, mattressWidth: 1400, midPosts: 1, frameStyle: 'aufgelegt', railCatalogId: 'kvh-80x160', joistCatalogId: 'kvh-60x120' } },
   { key: 'netz', label: tk('Netz-Hochebene'), hint: tk('Begehbares Netz zum Chillen, 2,00 × 1,40 m. Das Netz zieht stark nach innen – daher kräftige Zargen 12×12 cm. Für Geübte.'), type: 'freistehend', patch: { deck: 'netz', deckCatalogId: 'netz-begehbar', mattressWidth: 1400, railCatalogId: 'kvh-120x120', postCatalogId: 'kvh-120x120', ladder: 'senkrecht' } },
+  { key: 'regal', label: tk('Auf Regal/Schrank'), hint: tk('Ohne Pfosten: Der Rahmen liegt auf zwei stabilen Regalen unter Kopf- und Fußende. Regale verschrauben und an der Wand sichern.'), type: 'freistehend', patch: { cornerSupport: 'moebel', braces: false } },
   { key: 'abgehaengt', label: tk('Wandbalken + Decke'), hint: tk('Wandbalken hinten, vorne an Gewindestangen von der Decke. Nur mit besonderer Sorgfalt.'), type: 'abgehaengt', patch: { frameStyle: 'aufgelegt' } },
 ]
 
@@ -402,7 +403,16 @@ function BedTab() {
   const insert = (preset: Preset, corner: Corner) => {
     const params = placeBed(p.room, preset.type, preset.patch, corner)
     const id = uid('bett')
-    update((d) => void d.assemblies.push({ id, kind: 'hochbett', name: preset.label, params, detached: [] }))
+    // Bett auf Regalen: die Regale gleich mit hinstellen und die Liegehöhe darauf abstimmen
+    const shelves = preset.patch.cornerSupport === 'moebel' ? shelvesUnderBed(params) : []
+    if (shelves.length) {
+      const asm = { id, kind: 'hochbett' as const, name: preset.label, params, detached: [] }
+      params.deckHeight = deckOnFurniture({ ...p, furniture: [...p.furniture, ...shelves] }, asm) ?? params.deckHeight
+    }
+    update((d) => {
+      d.assemblies.push({ id, kind: 'hochbett', name: preset.label, params, detached: [] })
+      d.furniture.push(...shelves)
+    })
     select({ kind: 'assembly', id })
     // neues Bett ins Bild holen
     setTimeout(() => useStore.getState().focus(id), 50)
@@ -413,7 +423,7 @@ function BedTab() {
         <ul className="list">
           {p.assemblies.map((a) => (
             <li key={a.id} className={sel?.id === a.id ? 'on' : ''} {...activate(() => (select({ kind: 'assembly', id: a.id }), useStore.getState().focus(a.id)))}>
-              🛏 {tr(a.name)} <small>{tr(BED_TYPE_LABEL[a.params.type])}</small>
+              🛏 {tr(a.name)} <small>{tr(bedTypeLabel(a.params))}</small>
             </li>
           ))}
           {p.groups.map((g) => {
@@ -446,7 +456,7 @@ function BedTab() {
         <div className="templates">
           {PRESETS.map((pr) => (
             <div key={pr.key} className="template">
-              <TemplateIcon type={pr.type} aufgelegt={pr.patch.frameStyle === 'aufgelegt'} hang={pr.patch.cornerSupport === 'decke' || pr.type === 'abgehaengt'} lower={pr.patch.lowerBed} net={pr.patch.deck === 'netz'} two={(pr.patch.mattressCount ?? 1) > 1} mid={!!pr.patch.midPosts} low={pr.patch.deckHeight === 1200} />
+              <TemplateIcon shelf={pr.patch.cornerSupport === 'moebel'} type={pr.type} aufgelegt={pr.patch.frameStyle === 'aufgelegt'} hang={pr.patch.cornerSupport === 'decke' || pr.type === 'abgehaengt'} lower={pr.patch.lowerBed} net={pr.patch.deck === 'netz'} two={(pr.patch.mattressCount ?? 1) > 1} mid={!!pr.patch.midPosts} low={pr.patch.deckHeight === 1200} />
               <div>
                 <b>{tr(pr.label)}</b>
                 <p>{tr(pr.hint)}</p>
@@ -463,8 +473,24 @@ function BedTab() {
   )
 }
 
-function TemplateIcon({ type, aufgelegt, hang, lower, net, mid, low, two }: { type: BedType; aufgelegt?: boolean; hang?: boolean; lower?: boolean; net?: boolean; mid?: boolean; low?: boolean; two?: boolean }) {
+function TemplateIcon({ type, aufgelegt, hang, lower, net, mid, low, two, shelf }: { type: BedType; aufgelegt?: boolean; hang?: boolean; lower?: boolean; net?: boolean; mid?: boolean; low?: boolean; two?: boolean; shelf?: boolean }) {
   const post = (x: number, h = 44) => <rect x={x} y={52 - h} width={5} height={h} fill="#b07a3b" />
+  if (shelf)
+    return (
+      <svg viewBox="0 0 64 56" width="56" height="49" className="ticon" aria-hidden>
+        <line x1="0" y1="53" x2="64" y2="53" stroke="#999" />
+        {[3, 47].map((x) => (
+          <g key={x}>
+            <rect x={x} y="26" width="14" height="27" fill="#e9e2d6" stroke="#9b8f7c" strokeWidth="1" />
+            {[33, 40, 47].map((y) => (
+              <line key={y} x1={x} y1={y} x2={x + 14} y2={y} stroke="#9b8f7c" strokeWidth="1" />
+            ))}
+          </g>
+        ))}
+        <rect x="3" y="20" width="58" height="6" fill="#d9a566" />
+        <rect x="8" y="15" width="48" height="5" fill="#eef" stroke="#99a" strokeWidth="0.5" />
+      </svg>
+    )
   if (low)
     return (
       <svg viewBox="0 0 64 56" width="56" height="49" className="ticon" aria-hidden>

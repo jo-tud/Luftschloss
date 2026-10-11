@@ -181,5 +181,9 @@ const en: Record<string, string> = {
   "{name}: Liegefläche fehlt": "{name}: no sleeping surface",
   "Ohne Liegefläche fehlen die Lasten für die Statik und die Prüfungen für Kopfraum und Absturzsicherung. Bett auswählen → „Liegefläche erkennen“.": "Without a sleeping surface the statics has no loads, and headroom and fall protection are not checked. Select the bed → “Detect sleeping surface”.",
   "Geländer mindestens 16 cm über der Matratze vorsehen.": "Plan a guard rail at least 16 cm above the mattress.",
+  '{bed} liegt auf keinem Regal oder Schrank': '{bed} does not rest on any shelf or cabinet',
+  'Ohne Pfosten braucht das Bett Möbel darunter: Regal oder Schrank unter die Enden stellen (Reiter Möbel) und in den Eigenschaften „Auf Möbel setzen“ wählen.': 'Without posts the bed needs furniture underneath: put a shelf or cabinet under the ends (Furniture tab) and choose “Rest on furniture” in the properties.',
+  '{name} trägt das Bett': '{name} carries the bed',
+  'Nur stabile Korpusse (Spanplatte ab 16 mm, Rückwand eingenutet oder verschraubt); Fachböden und dünne Oberseiten nicht als Auflager nehmen. Rahmen mit dem Korpus verschrauben und das Möbel an der Wand gegen Kippen sichern. Möbel aus dem Möbelhaus sind meist nicht für Personenlast gedacht – Herstellerangaben prüfen.': 'Only sturdy carcasses (chipboard 16 mm or more, back panel grooved in or screwed); do not use shelves or thin tops as bearings. Screw the frame to the carcass and secure the furniture to the wall against tipping. Shop-bought furniture is usually not designed to carry people – check the manufacturer’s data.',
 }
 export default en

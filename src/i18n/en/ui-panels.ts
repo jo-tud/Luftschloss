@@ -63,7 +63,7 @@ const en: Record<string, string> = {
   'Querträger zwischen Zargen': 'Cross beams between side rails',
   'Aufgelegt (Träger + Latten drauf)': 'Laid on top (beams + slats on top)',
   'Aufgelegt: Querträger bzw. Latten liegen oben auf Wand- und Frontbalken': 'Laid on top: cross beams or slats rest on top of the wall ledger and front beam',
-  'Freie Ecke getragen von': 'Free corner supported by',
+  'Freie Ecken getragen von': 'Free corners supported by',
   'Abhängung von der Decke': 'Suspension from the ceiling',
   'Kopfbänder (Aussteifung)': 'Knee braces (bracing)',
   'Mittelstützen je freier Längsseite': 'Centre posts per free long side',
@@ -388,5 +388,12 @@ const en: Record<string, string> = {
   'Ausgesparte Ecke für einen L-förmigen Raum; Wand, Breite und Tiefe danach anpassen': 'Cut-out corner for an L-shaped room; adjust wall, width and depth afterwards',
   'Tiefe in den Raum': 'Depth into the room',
   'Vom Boden bis zur Decke; in einer Ecke ergibt das einen L-förmigen Raum': 'From floor to ceiling; in a corner this makes an L-shaped room',
+  'Regal oder Schrank darunter': 'Shelf or cabinet underneath',
+  'Ohne Pfosten liegt der Rahmen auf Schränken oder Regalen; diese unter Möbel einfügen': 'Without posts the frame rests on cabinets or shelves; add them under Furniture',
+  'Unter dem Bett steht kein Regal, Schrank oder Kommode.': 'There is no shelf, cabinet or chest of drawers under the bed.',
+  'Liegehöhe so anpassen, dass der Rahmen auf der Oberseite der Möbel darunter liegt': 'Adjust the deck height so the frame rests on top of the furniture below',
+  'Auf Möbel setzen': 'Rest on furniture',
+  'Auf Regal/Schrank': 'On shelves/cabinets',
+  'Ohne Pfosten: Der Rahmen liegt auf zwei stabilen Regalen unter Kopf- und Fußende. Regale verschrauben und an der Wand sichern.': 'No posts: the frame rests on two sturdy shelves under the head and foot ends. Screw the shelves to the frame and secure them to the wall.',
 }
 export default en
