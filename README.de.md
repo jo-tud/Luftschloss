@@ -1,5 +1,7 @@
 **Deutsch** · [English](README.md)
 
+<img src="public/icon.svg" width="72" height="72" alt="Luftschloss-Logo">
+
 # Luftschloss 🏰 – plane dein Hochbett im echten Zimmer
 
 **Du willst ein Hochbett selbst bauen?** Luftschloss zeigt dir vorher in 3D, ob es passt: ob die Fenster noch aufgehen, ob man darunter stehen kann, wo der Stuck im Weg ist. Am Ende bekommst du eine Einkaufsliste in echten Baumarkt-Längen und einen Bauplan zum Ausdrucken.
