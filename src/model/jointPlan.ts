@@ -2,11 +2,11 @@ import { tk } from '../i18n'
 import { BED_NUT_DEPTH, bedCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
 import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
-import { allCuts, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
+import { allCuts, assemblyDir, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
 import { guideKey, JOINT_GUIDE, type GuideEntry } from './jointGuide'
 import { jointType, type JointType } from './joints'
 import type { DetectedJoint, Resolved } from './resolve'
-import type { Member } from './types'
+import type { Member, Vec3 } from './types'
 
 /**
  * Arbeitsplan einer konkreten Verbindung: welche Anleitung gilt, mit welchen Maßen, wie aufwendig
@@ -209,8 +209,24 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
         towardName: other ? label(other) : undefined,
         endName: (atStart) => endName(m, atStart, r, label),
         center: bedCentre(r, m),
+        lines: housingLines(m, [j], byId),
       }),
     )
+  }
+  return out
+}
+
+/** Mittellinien der Gratnuten, die in m eingeschnitten sind (Wange einer Treppe) */
+function housingLines(m: Member, joints: DetectedJoint[], byId: Map<string, Member>): { p: Vec3; d: Vec3; n: Vec3 }[] {
+  const out: { p: Vec3; d: Vec3; n: Vec3 }[] = []
+  for (const j of joints) {
+    if (j.typeId !== 'gratnut') continue
+    const A = byId.get(j.a)
+    const B = byId.get(j.b)
+    const F = A && B ? jointFrame(j, A, B) : undefined
+    if (!F || F.T.id !== m.id) continue
+    // F.out zeigt von E in T hinein: die Nut liegt auf der Fläche mit Normale −F.out
+    out.push({ p: j.pos, d: assemblyDir(j, F), n: scale(F.out, -1) })
   }
   return out
 }
@@ -253,7 +269,8 @@ export function partWorkDrawing(m: Member, r: Resolved, label: (m: Member) => st
     full: true,
     refAtStart: vertical ? m.start.z <= m.end.z : true,
     endName: (atStart) => endName(m, atStart, r, label),
-        center: bedCentre(r, m),
+    center: bedCentre(r, m),
+    lines: housingLines(m, mine, byId),
   })
   const any = d.holes.length > 0 || d.views.some((v) => v.waste.length > 0 || v.hidden.length > 0) || !!cut?.add.length
   return any ? d : undefined

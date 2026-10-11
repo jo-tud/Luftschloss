@@ -587,17 +587,20 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     if (F.pE && type !== 'kopfband' && F.depth <= 3 * Math.max(Tm.b, Tm.h)) {
       // durch T ins Hirnholz von E: Kopf auf der Außenseite von T; im Hirnholz hält das Gewinde schlechter
       const far = F.face + F.depth
-      // übereinander entlang der breiten Seite von E (Randabstand 4·d, untereinander 5·d)
-      const alongS = eS[1] - eS[0] >= eA[1] - eA[0]
-      const wide = alongS ? eS : eA
+      // übereinander entlang der breiten Seite von E (Randabstand 4·d, untereinander 5·d), entlang der
+      // echten Querschnittsachse von E – bei schrägem T (Treppenwange) stehen across/side schief dazu
+      const axE = memberAxes(E)
+      const wideAx = E.b >= E.h ? axE[1] : axE[2]
+      const W = Math.max(E.b, E.h)
+      const centre = pt(far, mid(eA), mid(eS))
       // Platz für drei Schrauben (2 × 4·d Rand + 2 × 5·d Abstand bei d = 8), sonst zwei
-      const span = wide[1] - wide[0] - 64
+      const span = W - 64
       const m = type === 'holzbauschraube' && span >= 80 ? 3 : 2
       // zweiter Stoß quer dazu am selben Holz (Handläufe am Eckpfosten): um 6 mm gegeneinander versetzen
-      const cr = crossing(j, E, Tm, byId, r, SCREWED) * ((alongS ? side : across).z < 0 ? -1 : 1)
+      const cr = crossing(j, E, Tm, byId, r, SCREWED) * (wideAx.z < 0 ? -1 : 1)
       for (let i = 0; i < m; i++) {
-        const q = (span >= 40 ? wide[0] + 32 + (span * i) / (m - 1) : wide[0] + (wide[1] - wide[0]) * (0.3 + (0.4 * i) / (m - 1))) + cr * 6
-        put8(alongS ? pt(far, mid(eA), q) : pt(far, q, mid(eS)), into, F.depth, memberLength(E))
+        const q = (span >= 40 ? 32 + (span * i) / (m - 1) : W * (0.3 + (0.4 * i) / (m - 1))) - W / 2 + cr * 6
+        put8(at(centre, [wideAx, q]), into, F.depth, memberLength(E))
       }
     } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(E, o)) <= 1.5 * Math.max(E.b, E.h)) {
       // aufliegend bzw. angelegt: durch E in T, Kopf auf E

@@ -51,6 +51,8 @@ export interface View2D {
   broken: { left: boolean; right: boolean }
   /** Länge der Querachse (für die Beschriftung „b“ bzw. „h“) */
   across: number
+  /** Mittellinien schräger Nuten (Gratnut an der Wange) mit Winkel zur Längskante in Grad */
+  lines: { a: [number, number]; b: [number, number]; deg: number }[]
 }
 
 export interface HoleRow {
@@ -149,6 +151,8 @@ export interface DrawOpts {
   endName?: (atStart: boolean) => Text
   /** Mitte des Betts: Seiten heißen dann Innen- bzw. Außenseite */
   center?: Vec3
+  /** Mittellinien von Nuten: Punkt auf der Fläche, Richtung der Nut, Außennormale der Fläche (Welt) */
+  lines?: { p: Vec3; d: Vec3; n: Vec3 }[]
   /** ganzes Teil zeichnen (Teile-Arbeitsplan) statt eines Ausschnitts um die Verbindung */
   full?: boolean
   /** Bezugsende vorgeben (sonst das Ende näher an der Verbindung) */
@@ -217,6 +221,11 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
       if (tw > 0) return inner ? { key: tk('Innenseite, zu {name}'), vars: { name: o.towardName! } } : { key: tk('Außenseite, zu {name}'), vars: { name: o.towardName! } }
       return inner ? { key: tk('Innenseite, gegenüber {name}'), vars: { name: o.towardName! } } : { key: tk('Außenseite, gegenüber {name}'), vars: { name: o.towardName! } }
     }
+    // schmale Fläche eines hochkant stehenden Holzes (Kante einer Treppenwange, eines Bretts)
+    const k = Math.abs(dot(n, axes[1])) >= Math.abs(dot(n, axes[2])) ? 1 : 2
+    const faceW = k === 1 ? m.h : m.b
+    const otherW = k === 1 ? m.b : m.h
+    if (inner !== undefined && faceW < otherW / 1.3) return inner ? { key: tk('Schmalseite innen') } : { key: tk('Schmalseite außen') }
     if (inner !== undefined) return inner ? { key: tk('Innenseite (zur Bettmitte)') } : { key: tk('Außenseite') }
     return undefined
   }
@@ -313,6 +322,24 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
         }
       }
     }
+    // Mittellinien schräger Nuten auf der Fläche, auf die man schaut, mit Winkel zur Längskante
+    const lines: View2D['lines'] = []
+    const lineX: number[] = []
+    for (const ln of o.lines ?? []) {
+      const pl = local(m, ln.p)
+      const xc = X(pl[0])
+      if (xc < xa - 1 || xc > xb + 1) continue
+      // Nutmitte in jeder Ansicht bemaßen, die Linie nur auf der Fläche zeichnen, in der die Nut liegt
+      lineX.push(r1(xc))
+      if (dot(ln.n, scale(axes[vw.ax], sg)) < 0.7) continue
+      const dl = [0, 1, 2].map((k) => dot(ln.d, axes[k]))
+      if (Math.abs(dl[yAx]) < 1e-6) continue
+      const P = (t: number): [number, number] => [X(pl[0] + t * dl[0]), Y(pl[yAx] + t * dl[yAx])]
+      const a = P((-yHalf - pl[yAx]) / dl[yAx])
+      const b = P((yHalf - pl[yAx]) / dl[yAx])
+      const deg = Math.round((Math.atan2(Math.abs(b[1] - a[1]), Math.abs(b[0] - a[0])) * 180) / Math.PI)
+      lines.push({ a, b, deg })
+    }
     // Bohrungen
     const holes: DrawHole[] = []
     for (const h of holesLocal) {
@@ -346,6 +373,12 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
         dx.add(r1(h.x))
         dy.add(r1(h.y))
       }
+    // schräge Nuten: statt der vielen Stufen der angenäherten Ausnehmung nur die Nutmitten bemaßen
+    if (lineX.length) {
+      for (const x of [...dx]) if (x !== 0 && x !== r1(total) && !holes.some((h) => h.round && r1(h.x) === x)) dx.delete(x)
+      for (const y of [...dy]) if (y !== 0 && y !== r1(2 * yHalf) && !holes.some((h) => h.round && r1(h.y) === y)) dy.delete(y)
+      lineX.forEach((x) => dx.add(x))
+    }
     views.push({
       key: vw.key,
       title: title(vw.ax),
@@ -359,6 +392,7 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
       dimY: [...dy].filter((y) => y >= -0.5 && y <= 2 * yHalf + 0.5).sort((a, b) => a - b),
       broken: { left: xa > 0, right: xb < total },
       across: 2 * yHalf,
+      lines,
     })
   }
   // Bereiche ohne sichtbare Bearbeitung auf dieser Seite weglassen (es bleibt mindestens eine Ansicht je Bereich)

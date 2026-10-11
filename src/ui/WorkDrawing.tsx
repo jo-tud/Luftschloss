@@ -66,6 +66,15 @@ function ViewSvg({ v, dims = true, fs = FS, refName }: { v: View2D; dims?: boole
       {v.holes.map((h, i) => (
         <Hole key={i} h={h} />
       ))}
+      {v.lines.map((l, i) => (
+        <g key={`l${i}`}>
+          {/* Mittellinie der Nut (Strich-Punkt) mit Winkel zur Längskante */}
+          <line x1={l.a[0]} y1={-l.a[1]} x2={l.b[0]} y2={-l.b[1]} stroke="#b4561a" strokeWidth={0.5} strokeDasharray="6 1.5 1 1.5" />
+          <text x={(l.a[0] + l.b[0]) / 2 + 2} y={-Math.max(l.a[1], l.b[1]) - 1} fontSize={fs} fill="#b4561a" fontFamily="system-ui, sans-serif">
+            {l.deg}°
+          </text>
+        </g>
+      ))}
       {v.broken.left && <path d={`M${xa},${2}l-3,${-H * 0.25 - 2}l6,${-H * 0.25}l-6,${-H * 0.25}l6,${-H * 0.25}l-3,${-2}`} stroke="#59606a" strokeWidth={0.5} fill="none" />}
       {v.broken.right && <path d={`M${xb},${2}l-3,${-H * 0.25 - 2}l6,${-H * 0.25}l-6,${-H * 0.25}l6,${-H * 0.25}l-3,${-2}`} stroke="#59606a" strokeWidth={0.5} fill="none" />}
       {dims && (
@@ -249,6 +258,10 @@ function renderStatic(v: View2D): string {
         const b = Math.min(xb, w.x[1])
         return `<rect x="${a}" y="${-w.y[1]}" width="${b - a}" height="${w.y[1] - w.y[0]}" fill="#f2d3b3" stroke="#000" stroke-width="0.3"/>`
       }),
+    // Nutmitten als Anrisslinie mit Winkel
+    ...v.lines
+      .filter((l) => Math.max(l.a[0], l.b[0]) >= xa && Math.min(l.a[0], l.b[0]) <= xb)
+      .map((l) => `<line x1="${l.a[0]}" y1="${-l.a[1]}" x2="${l.b[0]}" y2="${-l.b[1]}" stroke="#000" stroke-width="0.3" stroke-dasharray="6 1.5 1 1.5"/><text x="${(l.a[0] + l.b[0]) / 2 + 2}" y="${-Math.max(l.a[1], l.b[1]) - 1}" font-size="2.8">${l.deg}°</text>`),
     ...v.holes
       .filter((h) => h.round && h.x >= xa - 1 && h.x <= xb + 1)
       .map((h) => {
