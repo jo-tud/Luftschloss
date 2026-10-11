@@ -11,7 +11,8 @@ import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
 import { CutPlan } from './Material'
 import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from './JointGuide'
-import { jointPlan, type JointPlan } from '../model/jointPlan'
+import { jointDrawings, jointPlan, type JointPlan } from '../model/jointPlan'
+import { printTemplate, WorkDrawing } from './WorkDrawing'
 import { JointIso } from './JointSketch'
 import { staticsFindings } from './Statics'
 import { Sym } from './icons'
@@ -167,19 +168,30 @@ export function BauplanDialog() {
   const vertical = new Set(data.parts.filter((pt) => pt.roles.some((r) => r === 'pfosten' || r === 'holm' || r === 'zarge' || r === 'wandriegel' || r === 'strebe' || r === 'stufe')).map((pt) => pt.no))
   const horizontal = new Set(data.parts.filter((pt) => !vertical.has(pt.no)).map((pt) => pt.no))
   // je Verbindungsart und gleichen Maßen eine Anleitung; Teile mit ihren Nummern aus der Teileliste
-  const jointsByType = new Map<string, { plan: JointPlan; list: typeof d.resolved.joints; es: Set<string>; ts: Set<string> }>()
+  type Names = Map<string, Set<number>>
+  const jointsByType = new Map<string, { plan: JointPlan; list: typeof d.resolved.joints; es: Names; ts: Names }>()
   const label = (m?: Member) => (m ? `${tr(partBaseName(m.name ?? m.role))} (${t('Nr. {n}', { n: data.byMember.get(m.id) ?? '?' })})` : '')
+  const note = (names: Names, m?: Member) => {
+    if (!m) return
+    const base = tr(partBaseName(m.name ?? m.role))
+    names.set(base, (names.get(base) ?? new Set<number>()).add(data.byMember.get(m.id) ?? 0))
+  }
+  // gleiche Teile zusammenfassen: „Handlauf (Nr. 8, 10) bzw. Geländerbrett (Nr. 9, 11)“
+  const joinNames = (names: Names) =>
+    [...names]
+      .map(([base, nos]) => `${base} (${t('Nr. {n}', { n: [...nos].sort((a, b) => a - b).join(', ') })})`)
+      .join(t(' bzw. '))
   for (const j of d.resolved.joints) {
     const plan = jointPlan(j, data.byId, d.resolved)
     if (!plan) continue
     const k = `${j.typeId}|${plan.stoss}|${JSON.stringify({ ...plan.vars, E: '', T: '' })}`
-    const g = jointsByType.get(k) ?? { plan, list: [], es: new Set<string>(), ts: new Set<string>() }
+    const g = jointsByType.get(k) ?? { plan, list: [] as typeof d.resolved.joints, es: new Map() as Names, ts: new Map() as Names }
     g.list.push(j)
-    g.es.add(label(plan.E))
-    g.ts.add(label(plan.T))
+    note(g.es, plan.E)
+    note(g.ts, plan.T)
     jointsByType.set(k, g)
   }
-  for (const g of jointsByType.values()) g.plan.labels = { E: [...g.es].join(t(' bzw. ')), T: [...g.ts].join(t(' bzw. ')) }
+  for (const g of jointsByType.values()) g.plan.labels = { E: joinNames(g.es), T: joinNames(g.ts) }
   const open = [...d.analysis.findings, ...staticsFindings(p, statics)].filter((f) => f.severity !== 'hinweis' && !p.settings.acknowledged.includes(f.id))
   const transport = transportCheck(p, d.resolved)
   const clearance = a ? d.analysis.clearances.find((c) => c.assemblyId === a.id) : undefined
@@ -323,6 +335,11 @@ export function BauplanDialog() {
                     <p className="hint">
                       {t('Werkzeug:')} {plan.type.tools.map(tr).join(', ')}
                     </p>
+                  </div>
+                  <div className="pl-drawings">
+                    {jointDrawings(plan, sample, data.byId, d.resolved, label).map((dr) => (
+                      <WorkDrawing key={dr.member.id} d={dr} title={label(dr.member)} onTemplate={() => printTemplate(dr, label(dr.member))} />
+                    ))}
                   </div>
                 </div>
               )
