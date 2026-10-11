@@ -104,3 +104,41 @@ export function shelvesUnderBed(P: LoftBedParams, height = 1500, depth = 400): F
     return { id: uid('regal'), kind: 'regal', name: tk('Regal'), x, y, z: 0, sx: Math.round(Math.abs(c[1].x - c[0].x)), sy: Math.round(Math.abs(c[1].y - c[0].y)), sz: height, rotation: 0 }
   })
 }
+
+/** Außenmaße des Gestells im Grundriss (ohne Leiter) */
+export function bedBounds(P: LoftBedParams): { minX: number; maxX: number; minY: number; maxY: number } {
+  const { length: Lo, width: Wo } = bedOuterSize(P)
+  const pts = [
+    [0, 0],
+    [Lo, 0],
+    [Lo, Wo],
+    [0, Wo],
+  ].map(([x, y]) => {
+    const r = rotate2(P.mirror ? Lo - x : x, y, P.rotation)
+    return { x: P.x + r.x, y: P.y + r.y }
+  })
+  const xs = pts.map((q) => q.x)
+  const ys = pts.map((q) => q.y)
+  return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
+}
+
+/**
+ * Ändern sich die Außenmaße (dickere Pfosten, andere Matratze), wächst das Bett von seiner Bezugsecke
+ * aus – an einer Wand stehende Seiten würden in die Wand wandern. Deshalb bleibt der Abstand zu den
+ * Wänden erhalten, an denen das Bett vorher stand (bis 5 cm, z. B. abgerückt um die Sockelleiste).
+ */
+export function keepWallContact(room: Room, before: LoftBedParams, after: LoftBedParams): LoftBedParams {
+  const b = bedBounds(before)
+  const a = bedBounds(after)
+  const tol = 50
+  const shift = (lo: number, hi: number, aLo: number, aHi: number, max: number) => {
+    const atLo = lo < tol
+    const atHi = max - hi < tol
+    if (atHi && !atLo) return hi - aHi
+    if (atLo && !atHi) return lo - aLo
+    return 0
+  }
+  const dx = shift(b.minX, b.maxX, a.minX, a.maxX, room.length)
+  const dy = shift(b.minY, b.maxY, a.minY, a.maxY, room.width)
+  return dx || dy ? { ...after, x: Math.round(after.x + dx), y: Math.round(after.y + dy) } : after
+}

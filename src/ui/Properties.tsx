@@ -8,7 +8,7 @@ import { JointTypeSelect } from './JointTypeSelect'
 import { GroupProps, MultiProps } from './GroupProps'
 import { BED_TYPE_LABEL, bedTypeLabel } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
-import { deckOnFurniture } from '../model/placement'
+import { deckOnFurniture, keepWallContact } from '../model/placement'
 import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, Project, Side, WallId, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
@@ -230,7 +230,10 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
   const setP = (patch: Partial<LoftBedParams>, key?: string) =>
     update((dd) => {
       const x = dd.assemblies.find((y) => y.id === a.id)!
+      const before = { ...x.params }
       Object.assign(x.params, patch)
+      // Bett bleibt an seinen Wänden stehen, wenn es durch die Änderung größer oder kleiner wird
+      if (!('x' in patch) && !('y' in patch) && !('rotation' in patch) && !('mirror' in patch)) Object.assign(x.params, keepWallContact(dd.room, before, x.params))
     }, key)
   const shift = d.resolved.shifts.find((s) => s.assemblyId === a.id)
   const show = (k: BedSection) => !only || only === k
