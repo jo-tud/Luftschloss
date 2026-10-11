@@ -62,8 +62,21 @@ export function resolveProject(p: Project): Resolved {
       const reach = 40 + (aussen ? timber(a.params.railCatalogId).b : 0)
       for (const m of g.members.filter((x) => x.role === 'pfosten' && x.start.z < 1)) {
         if (nearestWall(p.room, m).gap < reach) {
-          const note = aussen ? t('Kippsicherung: Zarge am Pfosten mit Rahmendübeln an der Wand befestigen') : t('Kippsicherung: Pfosten mit Winkel an der Wand befestigen')
-          fixings.push({ memberId: m.id, target: 'wand', hardwareId: 'rahmenduebel-10', count: 2, note })
+          // knapp unter der Liegefläche; bei Zargen außen durch die Zarge (60 mm) – dafür längere Dübel
+          if (aussen)
+            fixings.push({ memberId: m.id, target: 'wand', hardwareId: 'rahmenduebel-10x140', count: 2, note: t('Kippsicherung: Zarge am Pfosten knapp unter der Liegefläche mit 2 Rahmendübeln 10 × 140 an der Wand befestigen (durch die Zarge)') })
+          else
+            fixings.push({
+              memberId: m.id,
+              target: 'wand',
+              hardwareId: 'rahmenduebel-10',
+              count: 2,
+              note: t('Kippsicherung: Pfosten knapp unter der Liegefläche mit einem Winkel 90 × 90 (5 Schrauben 5 × 50) und 2 Rahmendübeln 10 × 115 an der Wand befestigen'),
+              extra: [
+                { id: 'winkel-90', count: 1 },
+                { id: 'schraube-5x50', count: 5 },
+              ],
+            })
         }
       }
     }
@@ -225,6 +238,9 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         if (kindInfo.kind === 't-stoss' && endingMember?.role === 'holm' && !endingMember.round && p.settings.jointPreference !== 'wenig-metall') typeId = 'holzbauschraube'
         // Latten liegen lose: weder auf noch unter ihnen wird geschraubt (z. B. Unterholm des Geländers auf den Latten)
         if (upper && (A.role === 'leiste' || B.role === 'leiste')) typeId = 'lose'
+        // Zargen außen: an der Ecke liegt die Längszarge nur auf der Querzarge – gehalten wird beides von den
+        // Bolzen am Pfosten, für eine Schraube ist in der 60 × 60 großen Überdeckung kein Platz
+        if (kindInfo.kind === 'auflage' && A.role === 'zarge' && B.role === 'zarge') typeId = 'lose'
         // Geländerbretter werden angeschraubt, nicht gebolzt; Latten liegen nur lose an
         if (kindInfo.kind === 'beischlag' && (A.catalogId.startsWith('leimholz') || B.catalogId.startsWith('leimholz'))) typeId = 'holzbauschraube'
         if (kindInfo.kind === 'beischlag' && (A.role === 'leiste' || B.role === 'leiste' || (A.role === 'stufe' && B.role === 'stufe'))) typeId = 'lose' // Trittbretter einer Stufe liegen nebeneinander auf den Wangen

@@ -1287,12 +1287,17 @@ function BoltHardware({ d }: { d: Derived }) {
     const stepOf = new Map<string, { step: number; parts: number }>()
     steps.forEach((st, i) => st.joints.forEach((k) => stepOf.set(k, { step: i, parts: st.memberIds.length + st.panelIds.length })))
     const all = allFasteners(d.resolved)
-    const byStep = new Map<number, typeof all>()
+    // Beschläge, die vor dem Fügen sitzen (Balkenschuh, Knagge), erscheinen gleich zu Beginn des Schritts
+    const byStep = new Map<string, typeof all>()
     for (const f of all) {
       const s2 = stepOf.get(f.joint)?.step ?? -1
-      byStep.set(s2, [...(byStep.get(s2) ?? []), f])
+      const k = `${s2}|${f.when === 'vorher' ? 1 : 0}`
+      byStep.set(k, [...(byStep.get(k) ?? []), f])
     }
-    return [...byStep].map(([step, list]) => ({ step, parts: steps[step] ? steps[step].memberIds.length + steps[step].panelIds.length : 0, meshes: make(fastenerInstances(list, false)) }))
+    return [...byStep].map(([k, list]) => {
+      const [step, early] = k.split('|').map(Number)
+      return { key: k, step, early: early === 1, parts: steps[step] ? steps[step].memberIds.length + steps[step].panelIds.length : 0, meshes: make(fastenerInstances(list, false)) }
+    })
   }, [d, project])
   // Instanzpuffer freigeben; Geometrie und Material sind geteilt und bleiben
   useDispose(useMemo(() => groups.flatMap((g) => g.meshes), [groups]))
@@ -1306,7 +1311,7 @@ function BoltHardware({ d }: { d: Derived }) {
         o.visible = !b
         return
       }
-      if (g.step < b.step) o.visible = true
+      if (g.step < b.step || (g.early && g.step === b.step)) o.visible = true
       else if (g.step > b.step) o.visible = false
       else {
         // nach dem Landen des letzten Teils dieses Schritts
@@ -1318,7 +1323,7 @@ function BoltHardware({ d }: { d: Derived }) {
   return (
     <group>
       {groups.map((g, i) => (
-        <group key={g.step} ref={(o) => void (refs.current[i] = o)}>
+        <group key={g.key} ref={(o) => void (refs.current[i] = o)}>
           {g.meshes.map((m, k) => (
             <primitive key={k} object={m} />
           ))}

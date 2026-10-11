@@ -234,7 +234,7 @@ export function hexM10(first: number, nutDepth = CROSS_NUT_DEPTH, bore = POCKET_
  * eigenen im Pfosten kreuzen. +1 = obere Lage, −1 = um d + 6 mm tiefer gesetzte Lage (der Abstand
  * zur Unterkante sinkt dann unter 3·d; besser wäre, die Querzargen tiefer zu setzen).
  */
-export function boltHeights(h: number, d: number, crossing: number): number[] {
+export function boltHeights(h: number, d: number, crossing: number, drop = 0): number[] {
   const top = h / 2 - 4 * d
   const bot = -h / 2 + 3 * d
   const avail = top - bot
@@ -243,7 +243,8 @@ export function boltHeights(h: number, d: number, crossing: number): number[] {
   if (crossing === 0) return avail >= 4 * d ? [top, bot] : [(top + bot) / 2]
   if (avail < 4 * d) return [(top + bot) / 2 + (crossing * gap) / 2]
   const s = Math.max(4 * d, avail - gap)
-  const t0 = crossing > 0 ? top : top - gap
+  // sitzt das untere Holz um drop tiefer, rücken seine Bolzen in ihm um drop nach oben (gleiche Höhe im Pfosten)
+  const t0 = crossing > 0 ? top : Math.min(top, top - gap + drop)
   return [t0, t0 - s]
 }
 
@@ -252,6 +253,11 @@ export function boltHeights(h: number, d: number, crossing: number): number[] {
  * gleicher Höhe, dessen Bolzen bzw. Schrauben die eigenen kreuzen würden? 0 nein, sonst ±1 (Lage)
  */
 function crossing(j: DetectedJoint, E: Member, T: Member, byId: Map<string, Member>, r: Resolved, types: Set<string>): number {
+  return crossInfo(j, E, T, byId, r, types).s
+}
+
+/** wie crossing, dazu: um wie viel E tiefer sitzt als das andere Holz (dann liegt E unten, s = −1) */
+function crossInfo(j: DetectedJoint, E: Member, T: Member, byId: Map<string, Member>, r: Resolved, types: Set<string>): { s: number; drop: number } {
   const aE = memberAxes(E)[0]
   const zr = (m: Member): [number, number] => range(m, v(0, 0, 1))
   const [z0, z1] = zr(E)
@@ -263,9 +269,10 @@ function crossing(j: DetectedJoint, E: Member, T: Member, byId: Map<string, Memb
     if (Math.abs(dot(memberAxes(E2)[0], aE)) > 0.5) continue
     const [y0, y1] = zr(E2)
     if (Math.min(z1, y1) - Math.max(z0, y0) < 20) continue
-    return Math.abs(aE.x) >= Math.abs(aE.y) ? 1 : -1
+    if (Math.abs(z0 - y0) > 1) return z0 < y0 ? { s: -1, drop: y0 - z0 } : { s: 1, drop: 0 }
+    return { s: Math.abs(aE.x) >= Math.abs(aE.y) ? 1 : -1, drop: 0 }
   }
-  return 0
+  return { s: 0, drop: 0 }
 }
 
 /** Befestigungsmittel einer Verbindung */
@@ -383,7 +390,8 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const nutDepth = bett ? BED_NUT_DEPTH : CROSS_NUT_DEPTH
     // Höhen von unten nach oben gemessen (Oberkante ist der beanspruchte Rand)
     const hDir = axesE[2].z < -0.1 ? neg(axesE[2]) : axesE[2]
-    const heights = boltHeights(E.h, 2 * rad, crossing(j, E, Tm, byId, r, BOLTS))
+    const ci = crossInfo(j, E, Tm, byId, r, BOLTS)
+    const heights = boltHeights(E.h, 2 * rad, ci.s, ci.drop)
     const bc = bedCentre(r, E)
     const sd = bc && dot(v(bc.x - pE.x, bc.y - pE.y, 0), axesE[1]) < 0 ? -1 : 1
     const sideDir = scale(axesE[1], sd)
@@ -403,7 +411,8 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         when: 'nachher',
         crossNut: bett
           ? { at: at(base, [into, nutDepth]), dir: sideDir, outer: E.b / 2, inner: E.b * 0.1, bore: 10, depth: E.b / 2 + 12 }
-          : { at: at(base, [into, nutDepth]), dir: sideDir, outer: E.b / 2, inner: -6, bore: POCKET_D, depth: E.b / 2 + 6 },
+          : // Tasche 12 mm über die Mitte: Scheibe Ø 20 und Mutter passen ganz unter die Bolzenachse
+            { at: at(base, [into, nutDepth]), dir: sideDir, outer: E.b / 2, inner: -12, bore: POCKET_D, depth: E.b / 2 + 12 },
         item,
         drill: bett ? 9 : 11,
       })

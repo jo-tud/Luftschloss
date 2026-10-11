@@ -70,8 +70,8 @@ const en: Record<string, string> = {
   'Seil {s}': 'Rope {s}',
 
   // --- Auflösung, Raum (resolve.ts, room.ts) ---
-  'Kippsicherung: Zarge am Pfosten mit Rahmendübeln an der Wand befestigen': 'Anti-tip: fix the rail at the post to the wall with frame plugs',
-  'Kippsicherung: Pfosten mit Winkel an der Wand befestigen': 'Anti-tip: fix the post to the wall with an angle bracket',
+  "Kippsicherung: Zarge am Pfosten knapp unter der Liegefläche mit 2 Rahmendübeln 10 × 140 an der Wand befestigen (durch die Zarge)": "Anti-tip: fix the rail at the post to the wall just below the sleeping surface with 2 frame plugs 10 × 140 (through the rail)",
+  "Kippsicherung: Pfosten knapp unter der Liegefläche mit einem Winkel 90 × 90 (5 Schrauben 5 × 50) und 2 Rahmendübeln 10 × 115 an der Wand befestigen": "Anti-tip: fix the post to the wall just below the sleeping surface with a 90 × 90 angle bracket (5 screws 5 × 50) and 2 frame plugs 10 × 115",
   'Sockelleiste Wand {id}': 'Skirting board on wall {id}',
   'Stuck Wand {id}': 'Cornice on wall {id}',
   '{name}: Laibung': '{name}: reveal',
@@ -216,7 +216,8 @@ const en: Record<string, string> = {
   'Bettschraube M8 mit Zylindermutter': 'Bed bolt M8 with barrel nut',
   'Gewindestange M10 verzinkt (je 1 m)': 'Threaded rod M10, galvanised (per 1 m)',
   'Lochband 20 mm × 10 m': 'Perforated strap 20 mm × 10 m',
-  'Rahmendübel 10 × 115 mit Schraube': 'Frame fixing 10 × 115 with screw',
+  "Rahmendübel 10 × 115 mit Schraube": "Frame plug 10 × 115 with screw",
+  "Rahmendübel 10 × 140 mit Schraube": "Frame plug 10 × 140 with screw",
   'Stellfuß / Gewindespindel M16 für Deckenverspannung': 'Adjustable foot / threaded spindle M16 for bracing against the ceiling',
   'Holzdübel Buche 10 × 40, Packung 100': 'Beech wooden dowels 10 × 40, pack of 100',
   'Polypropylen-Seil Ø 12 mm (Meterware)': 'Polypropylene rope Ø 12 mm (by the metre)',

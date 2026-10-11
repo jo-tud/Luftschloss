@@ -53,7 +53,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     steps: [
       S(tk('Bolzenmitten anreißen: {abstand} mm auseinander, mindestens {rand} mm vom Rand. Die Kreuze mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
       S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.'), 'bohren'),
+      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm), in einem Zug von der Kopfseite: Schlangenbohrer, ein Reststück hinten als Opferholz gegen Ausriss. Liegt das Teil flach, senkrecht von oben bohren.'), 'bohren'),
       S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
     ],
@@ -65,7 +65,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     steps: [
       S(tk('Bolzenmitte anreißen: mittig in der Überdeckung, mindestens {rand} mm vom Rand. Das Kreuz mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
       S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.'), 'bohren'),
+      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm), in einem Zug von der Kopfseite: Schlangenbohrer, ein Reststück hinten als Opferholz gegen Ausriss. Liegt das Teil flach, senkrecht von oben bohren.'), 'bohren'),
       S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
     ],
@@ -75,9 +75,9 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Zwei Sechskantschrauben M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter, die in einer Tasche auf der Innenseite sitzt – das Prinzip der Bettschraube, mit Teilen aus dem Baumarkt. Zerlegbar.'),
     steps: [
       S(tk('An {E} anreißen: Bolzenachsen {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke. Auf der Innenseite die Taschenmitten {nut} mm vom Ende auf denselben Höhen.')),
-      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 6 mm über die Mitte der Dicke hinaus. Die Wand zum Hirnholz hin mit dem Beitel 25 mm breit rund 3 mm tief plan und rechtwinklig abstechen, damit Scheibe und Mutter flach anliegen. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.'), 'bohren'),
+      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 12 mm über die Mitte der Dicke hinaus, damit Scheibe und Mutter ganz unter die Bolzenachse passen. Liegen zwei Taschen übereinander, den Steg dazwischen ausstemmen: eine Langtasche. Die Wand zum Hirnholz hin mit dem Beitel 25 mm breit rund 3 mm tief plan und rechtwinklig abstechen, damit Scheibe und Mutter flach anliegen. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.'), 'bohren'),
       S(tk('{E} an {T} ansetzen und halten – eine Zwinge greift am stumpfen Stoß nicht: einen Leistenrest als Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen; beim liegend vormontierten Rahmen mit Spanngurt oder langer Zwinge von Pfosten zu Pfosten zuziehen. Winkel prüfen. Die Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer).'), 'bohren'),
+      S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer). Gerader wird es, wenn {T} vorher allein am Boden mit einem Führungsklotz senkrecht durchgebohrt wird.'), 'bohren'),
       S(tk('Scheibe Ø 20 (DIN 125) und Mutter mit zwei Fingern an die plane Wand der Tasche halten, Sechskantschraube M10 × {laenge} mit großer Scheibe (Ø 34 mm) von außen durchstecken und mit der Ratsche anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen.')),
     ],
@@ -85,7 +85,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
       tk('Schlossschraube statt Sechskantschraube: Ihr Vierkant dreht im Hirnholz mit – sie lässt sich so nicht anziehen.'),
       tk('Tasche zu nah am Ende: Unter 80 mm kann das Hirnholz vor der Mutter ausreißen.'),
       tk('Bolzen zu nah am Rand: mindestens 40 mm zur belasteten Oberkante, 30 mm zur Unterkante.'),
-      tk('Bolzen zweier Stöße am selben Eckpfosten kreuzen sich: in der Höhe versetzen – hier sitzen die der einen Richtung 16 mm tiefer. Mehr Luft gibt es, wenn die Querzargen 60 mm tiefer sitzen.'),
+      tk('Bolzen zweier Stöße am selben Eckpfosten kreuzen sich: in der Höhe versetzen – hier sitzen die der einen Richtung 16 mm tiefer. Tragen die Querzargen nichts, sitzen sie 6 mm tiefer, so bleiben auch dort 30 mm zur Unterkante.'),
     ],
   },
   holzbauschraube: {
@@ -193,10 +193,10 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     mistakes: [tk('Gegenlöcher versetzt: Immer mit Dübelspitzen übertragen, nie getrennt messen.'), tk('Zu tief gebohrt: Der Dübel verschwindet, die Teile ziehen nicht zusammen – Tiefenstopp verwenden.')],
   },
   lose: {
-    how: tk('Die Latten liegen einfach auf den Zargen und werden nur durch ihr Gewicht und die Matratze gehalten. Filz- oder Gummistreifen verhindern Quietschen; eine Schraube je Latte verhindert Verrutschen.'),
+    how: tk('Das Teil liegt nur auf und wird durch sein Gewicht und die übrigen Verbindungen gehalten – Latten durch die Matratze, die Zargenecke bei Zargen außen durch die Bolzen am Pfosten. Filz- oder Gummistreifen verhindern Quietschen.'),
     steps: [
-      S(tk('Filz- oder Gummistreifen auf die Zargen kleben.')),
-      S(tk('Latten im gleichen Abstand auflegen (Abstandsklotz verwenden).'), 'fuegen'),
+      S(tk('Filz- oder Gummistreifen auf die Auflagefläche kleben.')),
+      S(tk('Auflegen; Latten mit einem Abstandsklotz im gleichen Abstand.'), 'fuegen'),
       S(tk('Optional je Latte eine Schraube 5 × 50 gegen Verrutschen.'), 'befestigen'),
     ],
     mistakes: [tk('Ungleiche Abstände: Einen Abstandsklotz zuschneiden und jede Latte daran anlegen.')],
@@ -319,7 +319,7 @@ export const DRILL_HELP: string[] = [
   tk('Anreißen vom Nullpunkt: Alle Maße vom Bezugsende und von der Bezugskante aus messen, nicht von Loch zu Loch – sonst summieren sich Fehler.'),
   tk('Lochmitte als Kreuz anreißen und mit einem Nagel ankörnen, damit der Bohrer nicht wegläuft. Die Linien mit dem Anschlagwinkel um das Holz herum auf die Gegenseite führen.'),
   tk('Im Verbund bohren: Wo ein Bolzen durch zwei Hölzer geht, beide zusammenspannen und in einem Zug durchbohren. Dann fluchten die Löcher, auch wenn die Bohrung etwas schief ist.'),
-  tk('Von beiden Seiten bohren: Von jeder Seite bis zur Mitte bohren. Ein schiefer Bohrer trifft so höchstens halb so weit daneben.'),
+  tk('Bolzenlöcher in einem Zug bohren, nicht von beiden Seiten: Bei Ø 11 für M10 bleibt nur 0,5 mm Spiel, zwei Halbbohrungen treffen sich selten so genau.'),
   tk('Führungswinkel bauen: Zwei gerade Leistenreste rechtwinklig zu einem L verleimen und hochkant neben die Bohrstelle stellen. Der Bohrer läuft in der Innenecke und steht so in beiden Richtungen senkrecht.'),
   tk('Peilen: Zwei Anschlagwinkel im rechten Winkel zueinander neben die Bohrstelle stellen und den Bohrer an beiden ausrichten – oder eine zweite Person schaut von der Seite.'),
   tk('Bohrtiefe mit einem Streifen Klebeband am Bohrer markieren. Bei langen Bohrungen oft herausziehen und die Späne entfernen.'),

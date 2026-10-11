@@ -18,7 +18,7 @@ const JOINERY_LABEL: Record<string, string> = {
 }
 import { jointVariant } from '../model/jointPlan'
 import type { Resolved } from '../model/resolve'
-import type { Member, Project } from '../model/types'
+import type { Member, Project, Vec3 } from '../model/types'
 
 /** Gleiche Teile (Material, Länge, Querschnitt, Bearbeitung) bekommen dieselbe Nummer. */
 export interface PartType {
@@ -62,6 +62,12 @@ function holeKey(m: Member, fs: Fastener[]): string {
       holes.push([dot(r, ax[0]), dot(r, ax[1]), dot(r, ax[2]), dot(f.dir, ax[0]), dot(f.dir, ax[1]), dot(f.dir, ax[2]), f.drill])
       break
     }
+  }
+  // Ausklinkungen (Sockelleiste, Stuck) mit ihrer Seite: Pfosten an verschiedenen Wänden sind verschiedene Teile
+  for (const n of m.notches ?? []) {
+    const s = n.side[0] === '+' ? 1 : -1
+    const onB = n.side[1] === 'b'
+    holes.push([n.along + n.length / 2, onB ? (s * m.b) / 2 : 0, onB ? 0 : (s * m.h) / 2, 0, onB ? s : 0, onB ? 0 : s, -Math.round(n.depth)])
   }
   if (!holes.length) return ''
   const square = Math.abs(m.b - m.h) < 1
@@ -147,10 +153,11 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     ids.forEach((id) => used.add(id))
     return ids
   }
+  // Werkzeug nur für Verbindungen, die in diesem Schritt entstehen (beide Teile stehen dann)
   const toolsFor = (ids: string[]) => {
     const set = new Set<string>()
     const idSet = new Set(ids)
-    for (const j of r.joints) if (idSet.has(j.a) || idSet.has(j.b)) jointVariant(j.typeId, j, byId)?.tools.forEach((x) => set.add(tr(x)))
+    for (const j of r.joints) if ((idSet.has(j.a) || idSet.has(j.b)) && used.has(j.a) && used.has(j.b)) jointVariant(j.typeId, j, byId)?.tools.forEach((x) => set.add(tr(x)))
     return [...set]
   }
   const push = (title: string, text: string, ids: string[], panelIds: string[] = [], always = false) => {
@@ -158,7 +165,8 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     steps.push({ title, text, memberIds: ids, panelIds, tools: toolsFor(ids), joints: [] })
   }
   const isLadder = (m: Member) => !!m.partKey?.startsWith('leiter-')
-  const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && !isLadder(m)) || (m.role === 'pfosten' && Math.min(m.start.z, m.end.z) >= 5)
+  // Haltegriffe gehören zum Geländer (Handlauf und Bretter hängen an ihnen); die Wange wird danach an ihnen verbolzt
+  const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && (!isLadder(m) || !!m.partKey?.startsWith('leiter-griff'))) || (m.role === 'pfosten' && Math.min(m.start.z, m.end.z) >= 5)
   const ceilingWarn = r.members.some((m) => m.role === 'pfosten' && [m.start, m.end].some((q) => q.z > ceilingAt(p.room, q.x, q.y) - 60))
   const byId = new Map(r.members.map((m) => [m.id, m]))
   const floorPost = (m: Member) => m.role === 'pfosten' && Math.min(m.start.z, m.end.z) < 5
@@ -201,22 +209,28 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   if (frames.length >= 2 && !r.members.some((m) => m.role === 'wandriegel')) {
     frames.forEach((f, i) => {
       const diag = frameDiagonal(f, byId)
+      const inset = postInset(f, byId)
       const ids = take((m) => f.posts.has(m.id) || f.zargen.includes(m.id))
       push(
         t('Seitenrahmen {i} am Boden vormontieren', { i: i + 1 }),
         t('Pfosten und Zarge flach auf Unterlagen legen, Lage anreißen und festspannen. Rechtwinklig ausrichten: Diagonalen messen, sie müssen auf 3 mm gleich sein. Dann die Verbindungen herstellen – Bolzenlöcher jetzt im Verbund bohren.') +
+          (inset > 5 ? ' ' + t('Die Pfosten sitzen {d} mm vom Zargenende eingerückt – dort liegt später die Querzarge.', { d: inset }) : '') +
           (diag ? ' ' + t('Sollmaß der Diagonalen (Pfostenfuß außen bis Oberkante Zarge am anderen Pfosten außen): {d} mm.', { d: diag }) : '') +
           (i === 0 ? ' ' + t('Ausklinkungen für Sockelleiste und Stuck vorher sägen.') : ''),
         ids,
       )
     })
     const planDiag = footprintDiagonal([...new Set(frames.flatMap((f) => [...f.posts]))].map((id) => byId.get(id)!))
+    const atWall = r.fixings.some((f) => f.target === 'wand')
     push(
       t('Aufrichten und verbinden'),
-      t('Mit einem Helfer beide Rahmen aufrichten und mit Hilfslatten abstützen. Querzargen ansetzen, festspannen, die Verbindungen herstellen (Bolzen höhenversetzt zu den ersten). Pfosten mit der Wasserwaage ins Lot stellen und die Diagonalen in der Draufsicht prüfen.') +
+      (atWall ? t('Das Bett steht später an der Wand: etwa 60 cm davor aufbauen, alle Bolzen bohren und anziehen und erst dann anschieben – an der Wand kommt man an Köpfe und Muttern nicht heran (zum Nachziehen kurz abrücken).') + ' ' : '') +
+        t('Mit einem Helfer beide Rahmen aufrichten und mit Hilfslatten abstützen. Querzargen bzw. die ersten Querträger ansetzen, festspannen, die Verbindungen herstellen (Bolzen höhenversetzt zu den ersten). Pfosten mit der Wasserwaage ins Lot stellen und die Diagonalen in der Draufsicht prüfen.') +
         (planDiag ? ' ' + t('Sollmaß in der Draufsicht (Pfostenecke außen zu Pfostenecke außen): {d} mm.', { d: planDiag }) : '') +
         (ceilingWarn ? ' ' + t('Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.') : ''),
       take((m) => m.role === 'zarge' || floorPost(m)),
+      [],
+      true,
     )
   } else {
     push(
@@ -231,14 +245,17 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   push(t('Abhängung montieren'), t('Gewindestangen in tragfähige Decke (Balken!) verankern, unten mit Unterlegscheibe und Mutter.'), take((m) => m.catalogId === 'gewindestange-m10'))
   push(t('Aussteifung'), t('Kopfbänder 45° zuschneiden und verschrauben – erst danach steht das Gestell steif.'), take((m) => m.role === 'strebe'))
   const fixings = r.fixings.filter((f) => f.target === 'wand' && r.members.find((m) => m.id === f.memberId)?.role === 'pfosten')
-  if (fixings.length)
-    steps.push({ title: t('Kippsicherung'), text: t('{n} Pfosten mit Winkel und Rahmendübel an der Wand befestigen.', { n: fixings.length }), memberIds: [], panelIds: [], tools: [t('Bohrmaschine'), t('Steinbohrer 10 mm')], joints: [] })
+  if (fixings.length) {
+    // Text aus der Befestigung selbst (Winkel bzw. durch die Zarge), je Art einmal
+    const notes = [...new Set(fixings.map((f) => f.note))]
+    steps.push({ title: t('Kippsicherung'), text: notes.map((n) => t('{n} ×: {note}.', { n: fixings.filter((f) => f.note === n).length, note: n })).join(' '), memberIds: [], panelIds: [], tools: [t('Bohrmaschine'), t('Steinbohrer 10 mm')], joints: [] })
+  }
   push(t('Querträger'), t('Querträger einsetzen bzw. auflegen und befestigen.'), take((m) => m.role === 'quertraeger'))
   const decks = r.panels.filter((x) => !x.vertical && x.kind !== 'matratze').map((x) => x.id)
   push(t('Liegefläche'), t('Latten bzw. Platte auflegen, ausrichten und gegen Verrutschen sichern. Filzstreifen gegen Quietschen.'), take((m) => m.role === 'leiste'), decks)
   const guardPanels = r.panels.filter((x) => x.vertical).map((x) => x.id)
   push(t('Geländer'), t('Geländerpfosten, Handläufe und Füllung montieren. Lücken höchstens 7,5 cm.'), take(isGuard), guardPanels)
-  push(t('Leiter bzw. Treppe'), t('Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen, Diagonalen prüfen), dann einhängen bzw. anschrauben und gegen Verrutschen sichern.'), take(isLadder))
+  push(t('Leiter bzw. Treppe'), t('Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen und verschrauben, Diagonalen prüfen). Anstellen: Fuß flach auf den Boden, Kopfschnitt an die Zarge, seitlich an die Haltegriffe – dann mit den Griffen verbolzen.'), take(isLadder))
   push(t('Restliche Teile'), t('Übrige Teile nach Plan montieren.'), take(() => true))
   const mattress = r.panels.filter((x) => x.kind === 'matratze').map((x) => x.id)
   push(t('Matratze'), t('Matratze einlegen. Probeliegen: Wackelt etwas, Schrauben und Bolzen nachziehen.'), [], mattress)
@@ -254,6 +271,22 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     steps[Math.max(a, b)].joints.push(j.key)
   }
   return steps
+}
+
+/** Zargen außen: wie weit die Pfosten vom Zargenende eingerückt sitzen (0 bei Zargen zwischen den Pfosten) */
+function postInset(f: { zargen: string[]; posts: Set<string> }, byId: Map<string, Member>): number {
+  const z = byId.get(f.zargen[0])
+  if (!z) return 0
+  const a = memberAxes(z)[0]
+  const at = (q: Vec3) => q.x * a.x + q.y * a.y + q.z * a.z
+  const r0 = Math.min(at(z.start), at(z.end))
+  const r1 = Math.max(at(z.start), at(z.end))
+  const posts = [...f.posts].map((id) => byId.get(id)!).filter(Boolean)
+  if (!posts.length) return 0
+  const half = (m: Member) => Math.abs(memberAxes(m)[1].x * a.x + memberAxes(m)[1].y * a.y) * (m.b / 2) + Math.abs(memberAxes(m)[2].x * a.x + memberAxes(m)[2].y * a.y) * (m.h / 2)
+  const lo = Math.min(...posts.map((m) => at(m.start) - half(m)))
+  const hi = Math.max(...posts.map((m) => at(m.start) + half(m)))
+  return Math.round(Math.min(lo - r0, r1 - hi))
 }
 
 /**

@@ -1,7 +1,7 @@
 import { tk } from '../i18n'
 import { BED_NUT_DEPTH, bedCentre, ladderCentre, boltEdge, CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
-import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
+import { dot, len, memberAxes, memberLength, norm, scale, sub, v } from './geometry'
 import { allCuts, assemblyDir, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
 import { guideKey, JOINT_GUIDE, type GuideEntry } from './jointGuide'
 import { jointType, type JointType } from './joints'
@@ -226,6 +226,9 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
         endName: (atStart) => endName(m, atStart, r, label),
         center: ladderCentre(r, m) ?? bedCentre(r, m),
         ladder: m.partKey?.startsWith('leiter-'),
+        bedAxes: bedAxes(r, m),
+        // stehende Hölzer überall vom Fuß aus bemaßen (wie im Teile-Arbeitsplan)
+        refAtStart: Math.abs(memberAxes(m)[0].z) > 0.7 ? m.start.z <= m.end.z : undefined,
         lines: housingLines(m, [j], byId),
       }),
     )
@@ -235,6 +238,15 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
     if (full) out[out.length - 1].length = full
   }
   return out
+}
+
+/** Achsen des Betts in Welt: x vom linken zum rechten Ende, y von hinten nach vorne */
+function bedAxes(r: Resolved, m: Member): [Vec3, Vec3] | undefined {
+  const fp = m.assemblyId ? r.beds.get(m.assemblyId)?.footprint : undefined
+  if (!fp || fp.length < 4) return undefined
+  const ex = norm(v(fp[1].x - fp[0].x, fp[1].y - fp[0].y, 0))
+  const ey = norm(v(fp[3].x - fp[0].x, fp[3].y - fp[0].y, 0))
+  return [ex, ey]
 }
 
 /** Mittellinien der Gratnuten, die in m eingeschnitten sind (Wange einer Treppe) */
@@ -292,6 +304,7 @@ export function partWorkDrawing(m: Member, r: Resolved, label: (m: Member) => st
     endName: (atStart) => endName(m, atStart, r, label),
     center: ladderCentre(r, m) ?? bedCentre(r, m),
     ladder: m.partKey?.startsWith('leiter-'),
+    bedAxes: bedAxes(r, m),
     lines: housingLines(m, mine, byId),
   })
   const any = d.holes.length > 0 || d.views.some((v) => v.waste.length > 0 || v.hidden.length > 0) || !!cut?.add.length

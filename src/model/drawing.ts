@@ -53,6 +53,8 @@ export interface View2D {
   across: number
   /** Mittellinien schräger Nuten (Gratnut an der Wange) mit Winkel zur Längskante in Grad */
   lines: { a: [number, number]; b: [number, number]; deg: number }[]
+  /** Fläche an der Bezugskante (y = 0): von dort werden die Querabstände gemessen */
+  yRef?: Text
 }
 
 export interface HoleRow {
@@ -153,6 +155,8 @@ export interface DrawOpts {
   center?: Vec3
   /** Teil der Leiter: innen heißt dann „zu den Stufen“ */
   ladder?: boolean
+  /** Achsen des Betts (Welt): x nach rechts, y nach vorne – Seiten stehender Hölzer heißen danach */
+  bedAxes?: [Vec3, Vec3]
   /** Mittellinien von Nuten: Punkt auf der Fläche, Richtung der Nut, Außennormale der Fläche (Welt) */
   lines?: { p: Vec3; d: Vec3; n: Vec3 }[]
   /** ganzes Teil zeichnen (Teile-Arbeitsplan) statt eines Ausschnitts um die Verbindung */
@@ -202,6 +206,15 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
   // Ausnehmungen (Abfall): Teile des Grundquerschnitts, die nicht mehr da sind
   const base: LocalBox[] = memberBoxes(m).map((o: OBB) => toLocal(m, o))
   const subs: LocalBox[] = (cut?.sub ?? []).map((s) => s)
+  // Ausklinkungen (Sockelleiste, Stuck) als Abfall zeichnen
+  for (const n of m.notches ?? []) {
+    const sgn = n.side[0] === '+' ? 1 : -1
+    const k = n.side[1] === 'b' ? 1 : 2
+    const hw = k === 1 ? m.b / 2 : m.h / 2
+    const box: LocalBox = [[n.along, n.along + n.length], [-m.b / 2, m.b / 2], [-m.h / 2, m.h / 2]]
+    box[k] = sgn > 0 ? [hw - n.depth, hw] : [-hw, -hw + n.depth]
+    subs.push(box)
+  }
 
   const views: View2D[] = []
   const axes = memberAxes(m)
@@ -218,6 +231,16 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
     const tw = o.toward && o.towardName ? dot(n, o.toward) : 0
     const io = o.center ? dot(v(n.x, n.y, 0), v(o.center.x - mid.x, o.center.y - mid.y, 0)) : 0
     const inner = io > 1e-6 ? true : io < -1e-6 ? false : undefined
+    // stehende Hölzer im Teile-Arbeitsplan: Seiten nach dem Bett benennen (vorne, hinten, links, rechts)
+    if (!o.toward && !o.ladder && o.bedAxes && Math.abs(axes[0].z) > 0.7) {
+      const [ex, ey] = o.bedAxes
+      const dx = dot(n, ex)
+      const dy = dot(n, ey)
+      if (dx > 0.7) return { key: tk('Seite rechts') }
+      if (dx < -0.7) return { key: tk('Seite links') }
+      if (dy > 0.7) return { key: tk('Seite vorne') }
+      if (dy < -0.7) return { key: tk('Seite hinten') }
+    }
     if (Math.abs(tw) > 0.7) {
       if (inner === undefined) return tw > 0 ? { key: tk('Seite zu {name}'), vars: { name: o.towardName! } } : { key: tk('Seite gegenüber {name}'), vars: { name: o.towardName! } }
       if (tw > 0) return inner ? { key: tk('Innenseite, zu {name}'), vars: { name: o.towardName! } } : { key: tk('Außenseite, zu {name}'), vars: { name: o.towardName! } }
@@ -428,6 +451,7 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
       broken: { left: xa > 0, right: xb < total },
       across: 2 * yHalf,
       lines,
+      yRef: faceText(scale(axes[yAx], -1)),
     })
   }
   // Bereiche ohne sichtbare Bearbeitung auf dieser Seite weglassen (es bleibt mindestens eine Ansicht je Bereich)

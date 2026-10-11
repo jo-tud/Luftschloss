@@ -197,7 +197,10 @@ export function computeBom(p: Project, r: Resolved): Bom {
     if (items.length) for (const f of items) addHw(f.item!, 1, name)
     else if (!MODELED.has(j.typeId)) for (const h of jt.hardware) addHw(h.id, h.qty, name)
   }
-  for (const f of r.fixings) addHw(f.hardwareId, f.count, tr(f.note))
+  for (const f of r.fixings) {
+    addHw(f.hardwareId, f.count, tr(f.note))
+    for (const x of f.extra ?? []) addHw(x.id, x.count, tr(f.note))
+  }
   // Liegefläche verschrauben
   for (const pa of r.panels) {
     if (pa.kind === 'platte' || pa.kind === 'dielen') {
