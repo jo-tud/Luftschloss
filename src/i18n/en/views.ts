@@ -123,5 +123,7 @@ const en: Record<string, string> = {
   "Außenseite, gegenüber {name}": "Outside, facing away from {name}",
   "Innenseite (zur Bettmitte)": "Inside (towards the bed centre)",
   "Außenseite": "Outside",
+  "Schmalseite innen": "Narrow face inside",
+  "Schmalseite außen": "Narrow face outside",
 }
 export default en

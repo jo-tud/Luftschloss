@@ -272,5 +272,10 @@ describe('Gratnut-Treppe', () => {
     const { breit, schmal, tiefe } = plan.cuts!.dims
     expect(Math.abs((breit - schmal) / 2 - tiefe * Math.tan((14 * Math.PI) / 180))).toBeLessThan(1)
     expect(plan.fasteners.every((f) => f.item === 'schraube-6x80')).toBe(true)
+    // Wangenzeichnung: Nutmitte als Linie mit Winkel zur Wangenkante
+    const wange = jointDrawings(plan, j, byId, r, (m) => m.name ?? m.role).find((d) => d.member.id === plan.T!.id)!
+    const lines = wange.views.flatMap((v) => v.lines)
+    expect(lines.length).toBeGreaterThan(0)
+    expect(Math.abs(lines[0].deg - Number(plan.vars.winkel))).toBeLessThanOrEqual(1)
   })
 })
