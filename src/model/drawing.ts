@@ -1,6 +1,6 @@
 import { tk } from '../i18n'
 import type { Fastener } from './fasteners'
-import { dot, memberAxes, memberBoxes, memberLength, sub, type OBB } from './geometry'
+import { add, dot, memberAxes, memberBoxes, memberLength, scale, sub, v, type OBB } from './geometry'
 import { memberSolids, prismCorners, toLocal, type LocalBox, type MemberCut, type Range } from './joinery'
 import type { Member, Vec3 } from './types'
 
@@ -147,6 +147,8 @@ export interface DrawOpts {
   towardName?: string
   /** Name des Bezugsendes (am Anfang bzw. Ende des Stabs) */
   endName?: (atStart: boolean) => Text
+  /** Mitte des Betts: Seiten heißen dann Innen- bzw. Außenseite */
+  center?: Vec3
   /** ganzes Teil zeichnen (Teile-Arbeitsplan) statt eines Ausschnitts um die Verbindung */
   full?: boolean
   /** Bezugsende vorgeben (sonst das Ende näher an der Verbindung) */
@@ -199,8 +201,28 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
   const axes = memberAxes(m)
   const horizontal = Math.abs(axes[0].z) < 0.5
   const towardDot = (ax: 1 | 2) => (o.toward ? dot(o.toward, axes[ax]) : 0)
+  const mid = add(m.start, scale(axes[0], L / 2))
+  /**
+   * Name der Fläche mit der Außennormalen n (Welt): oben/unten, innen (zur Bettmitte) bzw. außen,
+   * dazu „zu“ bzw. „gegenüber“ dem anderen Teil der Verbindung – so liegt die Schablone auf der richtigen Seite
+   */
+  const faceText = (n: Vec3): Text | undefined => {
+    if (n.z > 0.7) return { key: tk('Oberseite') }
+    if (n.z < -0.7) return { key: tk('Unterseite') }
+    const tw = o.toward && o.towardName ? dot(n, o.toward) : 0
+    const io = o.center ? dot(v(n.x, n.y, 0), v(o.center.x - mid.x, o.center.y - mid.y, 0)) : 0
+    const inner = io > 1e-6 ? true : io < -1e-6 ? false : undefined
+    if (Math.abs(tw) > 0.7) {
+      if (inner === undefined) return tw > 0 ? { key: tk('Seite zu {name}'), vars: { name: o.towardName! } } : { key: tk('Seite gegenüber {name}'), vars: { name: o.towardName! } }
+      if (tw > 0) return inner ? { key: tk('Innenseite, zu {name}'), vars: { name: o.towardName! } } : { key: tk('Außenseite, zu {name}'), vars: { name: o.towardName! } }
+      return inner ? { key: tk('Innenseite, gegenüber {name}'), vars: { name: o.towardName! } } : { key: tk('Außenseite, gegenüber {name}'), vars: { name: o.towardName! } }
+    }
+    if (inner !== undefined) return inner ? { key: tk('Innenseite (zur Bettmitte)') } : { key: tk('Außenseite') }
+    return undefined
+  }
   const title = (ax: 1 | 2): Text => {
-    if (o.toward && o.towardName && Math.abs(towardDot(ax)) > 0.7) return { key: tk('Seite zu {name}'), vars: { name: o.towardName } }
+    const named = faceText(scale(axes[ax], side(ax)))
+    if (named) return named
     if (horizontal) return ax === 2 ? { key: tk('Ansicht von oben') } : { key: tk('Ansicht von der Seite') }
     if (o.toward && o.towardName) return { key: tk('Seite daneben') }
     return { key: m.h > m.b ? (ax === 1 ? tk('Breitseite') : tk('Schmalseite')) : ax === 1 ? tk('Seite 1') : tk('Seite 2') }
@@ -349,7 +371,9 @@ export function partDrawing(m: Member, cut: MemberCut | undefined, o: DrawOpts):
   const holes: HoleRow[] = []
   const faceName = (h: LocalHole): Text => {
     if (Math.abs(h.dir[0]) > 0.9) return { key: tk('Stirnseite') }
-    return title(Math.abs(h.dir[1]) >= Math.abs(h.dir[2]) ? 1 : 2)
+    // die Fläche, durch die gebohrt wird: Außennormale entgegen der Bohrrichtung
+    const n = scale(add(add(scale(axes[0], h.dir[0]), scale(axes[1], h.dir[1])), scale(axes[2], h.dir[2])), -1)
+    return faceText(n) ?? title(Math.abs(h.dir[1]) >= Math.abs(h.dir[2]) ? 1 : 2)
   }
   for (const h of holesLocal) {
     const faceAx = Math.abs(h.dir[1]) >= Math.abs(h.dir[2]) ? 1 : 2

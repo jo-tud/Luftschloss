@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { t, tr } from '../i18n'
 import { buildSteps } from '../analysis/assembly'
-import { jointType } from '../model/joints'
+import { jointVariant } from '../model/jointPlan'
 import { useDerived, useStore } from '../state/store'
 
 /** Abspieler für die Aufbau-Animation: Schritt für Schritt fliegen die Teile an ihren Platz. */
@@ -64,12 +64,13 @@ export function StepJoints({ keys }: { keys: string[] }) {
   const set = useStore((s) => s.set)
   const groups = useMemo(() => {
     const byKey = new Map(d.resolved.joints.map((j) => [j.key, j]))
-    const g = new Map<string, { typeId: string; keys: string[] }>()
+    const byId = new Map(d.resolved.members.map((m) => [m.id, m]))
+    const g = new Map<string, { typeId: string; name: string; keys: string[] }>()
     for (const k of keys) {
       const j = byKey.get(k)
       if (!j) continue
       const id = `${j.typeId}|${j.ending ? 1 : 0}`
-      const e = g.get(id) ?? { typeId: j.typeId, keys: [] }
+      const e = g.get(id) ?? { typeId: j.typeId, name: jointVariant(j.typeId, j, byId)?.name ?? j.typeId, keys: [] }
       e.keys.push(k)
       g.set(id, e)
     }
@@ -81,7 +82,7 @@ export function StepJoints({ keys }: { keys: string[] }) {
       <span className="muted">{t('Verbindungen in diesem Schritt:')}</span>
       {groups.map((g) => (
         <button key={g.keys[0]} className="chip" onClick={() => set({ jointDetail: g.keys[0] })} title={t('Anleitung und Werkstattzeichnung öffnen')}>
-          {g.keys.length} × {tr(jointType(g.typeId)?.name ?? g.typeId)}
+          {g.keys.length} × {tr(g.name)}
         </button>
       ))}
     </div>

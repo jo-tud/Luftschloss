@@ -452,6 +452,9 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
     }
     case 'bettschraube':
       return thin(E) < 44 ? tk('Holz zu dünn für die Quermutter der Bettschraube (mindestens 44 mm).') : undefined
+    case 'ausklinkung':
+      // die Einlassung wird wie der stumpfe Stoß ins Hirnholz verschraubt – bei Brettern spaltet das
+      return jm.ending && thin(E) < 30 && !rope ? tk('Brett zu dünn für Schrauben ins Hirnholz – Stufen in eine Gratnut, Bretter mit Winkeln oder seitlich überlappend befestigen.') : undefined
     case 'holzbauschraube':
       // ins Hirnholz eines Bretts: Schraube höchstens 1/3 der Dicke und kaum Randabstand – das spaltet
       return jm.ending && thin(E) < 30 && !rope ? tk('Brett zu dünn für Schrauben ins Hirnholz – besser mit Winkeln, einer Einlassung oder seitlich überlappend befestigen.') : undefined

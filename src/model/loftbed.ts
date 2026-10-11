@@ -709,7 +709,8 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         const [sx, sy] = inside && !lengthwise ? alongSide(s, gh, gb) : alongSide(s, gb, gh)
         const depth = inside && !lengthwise ? gb : gh
         const out = inside ? -(infill + depth / 2) : gh / 2
-        const z0 = inside ? (P.deck === 'latten' || netDeck ? railTop : H) : railBottom
+        // außen 40 mm unter die Zarge verlängert: der untere Bolzen sitzt so ≥ 7·d vom Stützenende (DIN EN 1995)
+        const z0 = inside ? (P.deck === 'latten' || netDeck ? railTop : H) : railBottom - 40
         // innen endet die Stütze unter dem Handlauf, der auf ihr aufliegt
         const z1 = inside ? guardTop - gh : guardTop
         const along = inside && !lengthwise ? gh : gb

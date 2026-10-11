@@ -114,5 +114,14 @@ const en: Record<string, string> = {
   'Ausschnitt {a}–{b} mm': 'section {a}–{b} mm',
   "Tasche für Mutter und Scheibe": "Pocket for nut and washer",
   "Sicherheit:": "Safety:",
+  "Oberseite": "Top face",
+  "Unterseite": "Bottom face",
+  "Seite gegenüber {name}": "Side facing away from {name}",
+  "Innenseite, zu {name}": "Inside, towards {name}",
+  "Außenseite, zu {name}": "Outside, towards {name}",
+  "Innenseite, gegenüber {name}": "Inside, facing away from {name}",
+  "Außenseite, gegenüber {name}": "Outside, facing away from {name}",
+  "Innenseite (zur Bettmitte)": "Inside (towards the bed centre)",
+  "Außenseite": "Outside",
 }
 export default en

@@ -1,7 +1,8 @@
 import { t, tk, tr } from '../i18n'
 import { catalogItem } from '../model/catalog'
 import { ceilingAt } from '../model/ceiling'
-import { memberAxes, memberLength } from '../model/geometry'
+import { dot, memberAxes, memberBoxes, memberLength, sub } from '../model/geometry'
+import { allFasteners, type Fastener } from '../model/fasteners'
 import { CARPENTRY, cutLengths } from '../model/joinery'
 
 const JOINERY_LABEL: Record<string, string> = {
@@ -13,7 +14,7 @@ const JOINERY_LABEL: Record<string, string> = {
   stecken: tk('Bohrung bzw. Stab'),
   auflagerleiste: tk('Auflagerleiste'),
 }
-import { jointType } from '../model/joints'
+import { jointVariant } from '../model/jointPlan'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project } from '../model/types'
 
@@ -34,9 +35,47 @@ export interface PartType {
   roles: string[]
 }
 
-function partKey(m: Member, len: number, joinery: string): string {
+function partKey(m: Member, len: number, joinery: string, holes: string): string {
   const notches = (m.notches ?? []).map((n) => `${n.reason.split(' ')[0]}:${Math.round(n.length)}x${Math.round(n.depth)}`).sort().join(',')
-  return `${m.catalogId}|${Math.round(len)}|${Math.min(m.b, m.h)}x${Math.max(m.b, m.h)}|${notches}|${joinery}`
+  return `${m.catalogId}|${Math.round(len)}|${Math.min(m.b, m.h)}x${Math.max(m.b, m.h)}|${notches}|${joinery}|${holes}`
+}
+
+/**
+ * Bohrbild eines Teils als Schlüssel: Eintrittspunkte, Richtung und Ø aller Bohrungen in Stabkoordinaten,
+ * unabhängig davon, wie herum das Teil liegt (Enden getauscht, um die Achse gedreht). Gespiegelte
+ * Teile (links/rechts) bekommen so eine eigene Nummer und eine eigene Zeichnung.
+ */
+function holeKey(m: Member, fs: Fastener[]): string {
+  const ax = memberAxes(m)
+  const L = memberLength(m)
+  const boxes = memberBoxes(m)
+  const inM = (p: { x: number; y: number; z: number }) => boxes.some((o) => o.axes.every((a, i) => Math.abs(dot(sub(p, o.center), a)) <= o.half[i] + 0.5))
+  const holes: number[][] = []
+  for (const f of fs) {
+    if (!f.drill || f.kind === 'blech' || f.kind === 'stangenmutter') continue
+    for (let k = 0; k <= 40; k++) {
+      const q = { x: f.head.x + (f.dir.x * f.length * k) / 40, y: f.head.y + (f.dir.y * f.length * k) / 40, z: f.head.z + (f.dir.z * f.length * k) / 40 }
+      if (!inM(q)) continue
+      const r = sub(q, m.start)
+      holes.push([dot(r, ax[0]), dot(r, ax[1]), dot(r, ax[2]), dot(f.dir, ax[0]), dot(f.dir, ax[1]), dot(f.dir, ax[2]), f.drill])
+      break
+    }
+  }
+  if (!holes.length) return ''
+  const square = Math.abs(m.b - m.h) < 1
+  const sig = (flip: boolean, rot: number) =>
+    holes
+      .map(([u, v, w, du, dv, dw, d]) => {
+        // Ende tauschen = 180° um die w-Achse drehen, dann rot · 90° um die Stabachse
+        let [U, V, W, dU, dV, dW] = flip ? [L - u, -v, w, -du, -dv, dw] : [u, v, w, du, dv, dw]
+        for (let i = 0; i < rot; i++) [V, W, dV, dW] = [-W, V, -dW, dV]
+        return [U, V, W].map((x) => Math.round(x / 2) * 2).join(',') + '>' + [dU, dV, dW].map((x) => Math.round(x * 10)).join(',') + '/' + d
+      })
+      .sort()
+      .join(';')
+  const all: string[] = []
+  for (const flip of [false, true]) for (const rot of square ? [0, 1, 2, 3] : [0, 2]) all.push(sig(flip, rot))
+  return all.sort()[0]
 }
 
 export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<string, number> } {
@@ -47,8 +86,15 @@ export function partTypes(r: Resolved): { parts: PartType[]; byMember: Map<strin
   const joinery = new Map<string, string[]>()
   for (const j of r.joints)
     if (CARPENTRY.has(j.typeId)) for (const id of [j.a, j.b]) joinery.set(id, [...(joinery.get(id) ?? []), JOINERY_LABEL[j.typeId] ?? j.typeId])
+  // Befestigungsmittel je Bauteil (für das Bohrbild)
+  const fsOf = new Map<string, Fastener[]>()
+  const jointOf = new Map(r.joints.map((j) => [j.key, j]))
+  for (const f of allFasteners(r)) {
+    const j = jointOf.get(f.joint)
+    if (j) for (const id of [j.a, j.b]) fsOf.set(id, [...(fsOf.get(id) ?? []), f])
+  }
   for (const m of r.members) {
-    const k = partKey(m, len(m), (joinery.get(m.id) ?? []).sort().join(','))
+    const k = partKey(m, len(m), (joinery.get(m.id) ?? []).sort().join(','), holeKey(m, fsOf.get(m.id) ?? []))
     groups.set(k, [...(groups.get(k) ?? []), m])
   }
   const roleOrder = ['pfosten', 'wandriegel', 'zarge', 'quertraeger', 'strebe', 'leiste', 'holm', 'stab', 'stufe', 'sprosse', 'sonstiges']
@@ -102,7 +148,7 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   const toolsFor = (ids: string[]) => {
     const set = new Set<string>()
     const idSet = new Set(ids)
-    for (const j of r.joints) if (idSet.has(j.a) || idSet.has(j.b)) jointType(j.typeId)?.tools.forEach((x) => set.add(tr(x)))
+    for (const j of r.joints) if (idSet.has(j.a) || idSet.has(j.b)) jointVariant(j.typeId, j, byId)?.tools.forEach((x) => set.add(tr(x)))
     return [...set]
   }
   const push = (title: string, text: string, ids: string[], panelIds: string[] = [], always = false) => {

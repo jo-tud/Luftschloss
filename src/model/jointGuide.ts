@@ -62,10 +62,10 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Zwei Sechskantschrauben M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter, die in einer Tasche auf der Innenseite sitzt – das Prinzip der Bettschraube, mit Teilen aus dem Baumarkt. Zerlegbar.'),
     steps: [
       S(tk('An {E} anreißen: Bolzenachsen {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke. Auf der Innenseite die Taschenmitten {nut} mm vom Ende auf denselben Höhen.')),
-      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 6 mm über die Mitte der Dicke hinaus. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.')),
+      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 6 mm über die Mitte der Dicke hinaus. Die Wand zum Hirnholz hin mit dem Beitel 25 mm breit rund 3 mm tief plan und rechtwinklig abstechen, damit Scheibe und Mutter flach anliegen. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.')),
       S(tk('{E} an {T} ansetzen, mit Montageklotz bzw. Zwinge auf Höhe halten, Winkel prüfen und spaltfrei festspannen. Die Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
       S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer).')),
-      S(tk('Scheibe und Mutter mit zwei Fingern in die Tasche halten, Sechskantschraube M10 × {laenge} mit großer Scheibe (Ø 34 mm) von außen durchstecken und mit der Ratsche anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
+      S(tk('Scheibe Ø 20 (DIN 125) und Mutter mit zwei Fingern an die plane Wand der Tasche halten, Sechskantschraube M10 × {laenge} mit großer Scheibe (Ø 34 mm) von außen durchstecken und mit der Ratsche anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen.')),
     ],
     mistakes: [
