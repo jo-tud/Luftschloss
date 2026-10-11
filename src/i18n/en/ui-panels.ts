@@ -376,5 +376,10 @@ const en: Record<string, string> = {
   '1 Teil': '1 part',
   '1 Quelle': '1 source',
   '1 Hinweis zum Prüfen': '1 point to check',
+  'Dachschräge': 'Sloped ceiling',
+  'Schräge über Wand {w}': 'Slope above wall {w}',
+  'Kniestock': 'Knee wall',
+  'Höhe der senkrechten Wand bis zum Beginn der Schräge': 'Height of the vertical wall up to where the slope starts',
+  'Dachneigung gegen die Waagrechte': 'Roof pitch from horizontal',
 }
 export default en

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { fmtCm, memberBoxes, obbBounds, wallFrame } from '../model/geometry'
+import { flatSpans, wallTop } from '../model/ceiling'
 import { cornice } from '../model/room'
 import type { Project, WallId } from '../model/types'
 import { WALL_IDS } from '../model/types'
@@ -30,6 +31,13 @@ function unfoldPoint(p: Project, wall: WallId, s: number, z: number): { x: numbe
 
 function wallRect(p: Project, wall: WallId, s0: number, s1: number, z0: number, z1: number): string {
   const pts = [unfoldPoint(p, wall, s0, z0), unfoldPoint(p, wall, s1, z0), unfoldPoint(p, wall, s1, z1), unfoldPoint(p, wall, s0, z1)]
+  return pts.map((q) => `${q.x},${-q.y}`).join(' ')
+}
+
+/** Wandfläche bis zur Decke; unter einer Dachschräge mit schräger Oberkante */
+function wallOutline(p: Project, wall: WallId): string {
+  const f = wallFrame(p.room, wall)
+  const pts = [unfoldPoint(p, wall, 0, 0), unfoldPoint(p, wall, f.length, 0), ...wallTop(p.room, wall).reverse().map((q) => unfoldPoint(p, wall, q.s, q.z))]
   return pts.map((q) => `${q.x},${-q.y}`).join(' ')
 }
 
@@ -108,8 +116,8 @@ export function UnfoldView() {
           const c = cornice(r, w)
           return (
             <g key={w}>
-              <polygon points={wallRect(p, w, 0, f.length, 0, H)} className="uf-wall" />
-              {c.enabled && <polygon points={wallRect(p, w, 0, f.length, H - c.height, H)} fill="url(#stuck)" className="uf-stuck" />}
+              <polygon points={wallOutline(p, w)} className="uf-wall" />
+              {c.enabled && flatSpans(r, w).map(([s0, s1]) => <polygon key={s0} points={wallRect(p, w, s0, s1, H - c.height, H)} fill="url(#stuck)" className="uf-stuck" />)}
               {r.skirting.enabled && <polygon points={wallRect(p, w, 0, f.length, 0, r.skirting.height)} className="uf-skirting" />}
               <WallLabel p={p} wall={w} />
             </g>

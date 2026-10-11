@@ -2,9 +2,13 @@ import { t, tr } from '../i18n'
 import { aabbOBB, add, cross, memberBoxes, norm, obbBounds, scale, v, wallFrame, type OBB, type WallFrame } from './geometry'
 import type { CorniceProfile, DoorObj, Furniture, Member, Project, Room, Vec3, WallId, WindowObj } from './types'
 import { WALL_IDS } from './types'
+import { ceilingAt, ceilingPlanes } from './ceiling'
 
+/** Stuckleiste einer Wand; unter einer Dachschräge gibt es keine */
 export function cornice(room: Room, wall: WallId): CorniceProfile {
-  return room.corniceOverrides[wall] ?? room.cornice
+  const c = room.corniceOverrides[wall] ?? room.cornice
+  const s = room.slopes?.[wall]
+  return s && s.kneeHeight < room.height && c.enabled ? { ...c, enabled: false } : c
 }
 
 /** Quader in Wandkoordinaten: s entlang der Wand, d in den Raum, z Höhe */
@@ -223,6 +227,9 @@ export function roomObstacles(p: Project): Obstacle[] {
  */
 export function corniceIntrusion(room: Room, q: Vec3): { depth: number; wall: WallId } | undefined {
   let best: { depth: number; wall: WallId } | undefined
+  const planes = ceilingPlanes(room)
+  // Stuck nur unter der flachen Decke
+  if (planes.length > 1 && ceilingAt(room, q.x, q.y, planes) < room.height - 1) return undefined
   for (const id of WALL_IDS) {
     const c = cornice(room, id)
     if (!c.enabled) continue

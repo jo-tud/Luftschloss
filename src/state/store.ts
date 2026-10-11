@@ -156,6 +156,7 @@ export function migrate(p: Project): Project {
       corniceOverrides: r.corniceOverrides ?? {},
       skirting: { ...base.room.skirting, ...r.skirting },
       rosettes: arr(r.rosettes),
+      slopes: r.slopes && typeof r.slopes === 'object' ? r.slopes : {},
     },
     wallObjects: arr(p.wallObjects),
     furniture: arr(p.furniture),

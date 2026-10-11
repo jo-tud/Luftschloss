@@ -1,5 +1,6 @@
 import { t, tk, tr } from '../i18n'
 import { catalogItem } from '../model/catalog'
+import { ceilingAt } from '../model/ceiling'
 import { memberLength } from '../model/geometry'
 import { CARPENTRY, cutLengths } from '../model/joinery'
 
@@ -107,7 +108,7 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   }
   const isLadder = (m: Member) => !!m.partKey?.startsWith('leiter-')
   const isGuard = (m: Member) => m.role === 'stab' || (m.role === 'holm' && !isLadder(m)) || (m.role === 'pfosten' && Math.min(m.start.z, m.end.z) >= 5)
-  const ceilingWarn = r.members.some((m) => m.role === 'pfosten' && Math.max(m.start.z, m.end.z) > p.room.height - 60)
+  const ceilingWarn = r.members.some((m) => m.role === 'pfosten' && [m.start, m.end].some((q) => q.z > ceilingAt(p.room, q.x, q.y) - 60))
 
   push(t('Wandbalken anbringen'), t('Wandbalken waagrecht ausrichten (Wasserwaage), anzeichnen, bohren und mit Schwerlastdübeln oder Betonschrauben ca. alle 40 cm befestigen.'), take((m) => m.role === 'wandriegel'))
   push(
