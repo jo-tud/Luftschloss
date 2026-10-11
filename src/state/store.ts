@@ -91,6 +91,8 @@ interface State {
   /** Aufbau-Animation: aktueller Schritt und Startzeit (performance.now) */
   build: { step: number; start: number; auto: boolean } | null
   showPlan: boolean
+  /** Bauweisen-Vergleich für dieses Bett geöffnet */
+  compareStyles: string | null
   /** Planungsassistent geöffnet */
   showWizard: boolean
   showShare: boolean
@@ -236,6 +238,7 @@ export const useStore = create<State>((set, get) => ({
   wobble: false,
   build: null,
   showPlan: false,
+  compareStyles: null,
   showWizard: false,
   showShare: false,
   server: null,

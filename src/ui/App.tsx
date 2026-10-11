@@ -8,6 +8,7 @@ import { Viewport } from '../views/Viewport'
 import { Checks, CountBadges, useCheckCounts } from './Checks'
 import { Num } from './fields'
 import { MaterialDialog } from './Material'
+import { StyleCompareDialog } from './StyleCompare'
 import { Properties } from './Properties'
 import { Sidebar } from './Sidebar'
 import { StaticsRunner } from './Statics'
@@ -73,6 +74,7 @@ export function App() {
       <JointDetailDialog />
       <BauplanDialog />
       <WizardDialog />
+      <StyleCompareDialog />
       <Help />
     </div>
   )
@@ -318,7 +320,7 @@ function useShortcuts() {
       // Esc schließt zuerst Dialoge und Schubladen, dann Aufbau/Statik, sonst Werkzeug abbrechen
       if (e.key === 'Escape') {
         if (s.jointDetail) return s.set({ jointDetail: null })
-        if (s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard) return s.set({ showHelp: false, showShare: false, showMaterial: false, showPlan: false, showWizard: false })
+        if (s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || s.compareStyles) return s.set({ showHelp: false, showShare: false, showMaterial: false, showPlan: false, showWizard: false, compareStyles: null })
         if (s.leftOpen || s.rightOpen) return s.set({ leftOpen: false, rightOpen: false })
         if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
         if (s.build) return s.set({ build: null })
@@ -327,7 +329,7 @@ function useShortcuts() {
       if ((e.target as HTMLElement)?.closest('input, textarea, select')) return
       if (e.key === '?' && s.showHelp) return s.set({ showHelp: false })
       // Hinter einem offenen Dialog keine Tastenkürzel (sonst z. B. Entf löscht das Bett dahinter)
-      if (s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || s.jointDetail) return
+      if (s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || s.compareStyles || s.jointDetail) return
       const k = e.key.toLowerCase()
       if ((e.ctrlKey || e.metaKey) && k === 'z') {
         e.preventDefault()
@@ -379,7 +381,7 @@ function useShortcuts() {
 
 /** Fokus beim Öffnen eines Dialogs auf dessen Schließen-Knopf, beim Schließen zurück */
 function useDialogFocus() {
-  const open = useStore((s) => s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || !!s.jointDetail)
+  const open = useStore((s) => s.showHelp || s.showShare || s.showMaterial || s.showPlan || s.showWizard || !!s.compareStyles || !!s.jointDetail)
   useEffect(() => {
     if (!open) return
     const before = document.activeElement as HTMLElement | null

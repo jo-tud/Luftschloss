@@ -339,7 +339,7 @@ Gesammelt und laufend ergänzt:
 4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.
 5. **Vom leeren Zimmer zum geprüften Entwurf.** Der Planungsassistent fragt in wenigen Schritten Raum und Decke, Wände, Öffnungen, Schläfer, Nutzung darunter und Befestigung ab und schlägt bis zu drei geprüfte, gewichtete Entwürfe vor, die direkt weiter anpassbar sind. ✅ umgesetzt (M9)
 6. **Kopfraum-Karte unter der Schräge.** Die Matratze färbt sich nach der Höhe bis zur Decke, die beste Stelle zum Aufsetzen ist markiert; so sieht man sofort, wo das Kopfende hingehört. ◻ Idee
-7. **Bauweisen im Vergleich.** Zargen zwischen den Pfosten, aufgelegt oder außen durchgebolzt: dasselbe Bett in allen Bauweisen nebeneinander in 3D, mit Preis, Wackeln, Bohrlöchern und Aufbauzeit; ein Klick übernimmt die gewählte. ◻ Idee
+7. **Bauweisen im Vergleich.** Zargen zwischen den Pfosten, aufgelegt oder außen durchgebolzt: dasselbe Bett in allen Bauweisen nebeneinander in 3D, mit Preis, Wackeln, Bohrlöchern und Aufbauzeit; ein Klick übernimmt die gewählte. Umgesetzt als Dialog „Bauweisen vergleichen“ (Eigenschaften → Hölzer): je Bauweise eine kleine 3D-Ansicht (alle drehen gemeinsam), Preis, Wackeln, Bohrungen, Teile, Arbeitszeit der Verbindungen, Durchgang unter dem Bett und höchste Ausnutzung; Rechnung in `src/analysis/compare.ts`. ✅
 
 ---
 

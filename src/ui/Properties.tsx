@@ -416,6 +416,11 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
         ) : (
           <p className="hint">{t('Bauweise: bei Latten bzw. Netz ohne Wahl – erst mit Platte, Dielen oder Lattenrost gibt es Querträger, die zwischen den Zargen hängen oder oben aufliegen.')}</p>
         )}
+        {(styleMatters || canOutside) && (
+          <button className="link" onClick={() => useStore.getState().set({ compareStyles: a.id })} title={t('Dasselbe Bett in jeder Bauweise nebeneinander: Preis, Wackeln, Bohrungen, Arbeitszeit')}>
+            {t('Bauweisen vergleichen')}
+          </button>
+        )}
         {aussen && <p className="hint">{t('Zargen außen: Die Pfosten stehen eine Zargendicke eingerückt, die Zargen laufen außen durch und werden mit Schlossschrauben durch die Pfosten gebolzt. Die Querzargen sitzen eine Zargenhöhe tiefer, damit sich die Bolzen nicht kreuzen – an den Kopfenden ist der Durchgang darunter um diese Höhe niedriger; das Geländer hält eigene Pfosten außen an den Zargen.')}</p>}
         {P.frameStyle === 'aussen' && !canOutside && <p className="hint">{t('Zargen außen gibt es nur bei freistehenden oder deckenhohen Betten mit vier Pfosten und ohne Netz – hier bleiben die Zargen zwischen den Pfosten.')}</p>}
         {P.type !== 'deckenhoch' && P.type !== 'abgehaengt' && (
