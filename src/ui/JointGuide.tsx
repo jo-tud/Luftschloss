@@ -1,5 +1,7 @@
-import { t, tr } from '../i18n'
-import { JOINT_GUIDE } from '../model/jointGuide'
+import { t, tk, tr, trv } from '../i18n'
+import { DRILL_HELP } from '../model/jointGuide'
+import type { JointPlan } from '../model/jointPlan'
+import { catalogItem } from '../model/catalog'
 import { assemblyDir, CARPENTRY, jointFrame } from '../model/joinery'
 import type { DetectedJoint } from '../model/resolve'
 import type { Member } from '../model/types'
@@ -20,13 +22,48 @@ export function assemblyHint(j: DetectedJoint, byId: Map<string, Member>): strin
   return t('Fügen: das helle Teil von der Seite einschieben.')
 }
 
+/** Platzhalter einer Anleitung für die Anzeige: Bauteilnamen übersetzen */
+export function guideVars(plan: JointPlan): Record<string, string | number> {
+  return { ...plan.vars, E: plan.labels?.E ?? tr(String(plan.vars.E ?? '')), T: plan.labels?.T ?? tr(String(plan.vars.T ?? '')) }
+}
+
+const LEVEL = [tk('leicht'), tk('mittel'), tk('schwer')]
+const DRILL = [tk('kaum Bohrungen'), tk('rechtwinklig bohren'), tk('Bohrungen müssen sich treffen')]
+
+/** Aufwand: Schwierigkeit, Zeit, Anspruch beim Bohren, was es schwer macht */
+export function JointEffortInfo({ plan }: { plan: JointPlan }) {
+  const e = plan.effort
+  return (
+    <p className="joint-effort">
+      <b>{t('Schwierigkeit:')}</b> {tr(LEVEL[e.difficulty - 1])} ({e.difficulty}/3) · <b>{t('Zeit:')}</b> {t('ca. {a} min (Anfänger), {b} min (geübt)', { a: e.minutes[0], b: e.minutes[1] })} · <b>{t('Bohren:')}</b> {tr(DRILL[e.drill])}
+      <br />
+      <span className="muted">{tr(e.hard)}</span>
+    </p>
+  )
+}
+
+/** Bohren und Anreißen ohne Bohrständer (aufklappbar) */
+export function DrillHelp({ open }: { open?: boolean }) {
+  return (
+    <details className="drill-help" open={open}>
+      <summary>{t('Gerade bohren ohne Bohrständer')}</summary>
+      <ul>
+        {DRILL_HELP.map((x, i) => (
+          <li key={i}>{tr(x)}</li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
 /**
- * Erklärung und Arbeitsschritte einer Verbindungsart. Mit onPick (Verbindungsdetail) sind die
- * Schritte anklickbar und spielen den Schritt in der 3D-Ansicht ab; current ist hervorgehoben.
+ * Erklärung, Arbeitsschritte mit den Maßen dieser Verbindung und typische Fehler. Mit onPick
+ * (Verbindungsdetail) sind die Schritte anklickbar und spielen den Schritt in der 3D-Ansicht ab;
+ * current ist hervorgehoben.
  */
-export function JointGuide({ typeId, hint, current, onPick }: { typeId: string; hint?: string; current?: number; onPick?: (i: number) => void }) {
-  const g = JOINT_GUIDE[typeId]
-  if (!g) return null
+export function JointGuide({ plan, hint, current, onPick }: { plan: JointPlan; hint?: string; current?: number; onPick?: (i: number) => void }) {
+  const g = plan.guide
+  const vars = guideVars(plan)
   return (
     <div className="joint-guide">
       <p>
@@ -39,14 +76,37 @@ export function JointGuide({ typeId, hint, current, onPick }: { typeId: string; 
           <li key={i} className={i === current ? 'current' : undefined}>
             {onPick ? (
               <button className="step" onClick={() => onPick(i)} aria-current={i === current ? 'step' : undefined}>
-                {tr(s.t)}
+                {trv(s.t, vars)}
               </button>
             ) : (
-              tr(s.t)
+              trv(s.t, vars)
             )}
           </li>
         ))}
       </ol>
+      {g.mistakes.length > 0 && (
+        <>
+          <b>{t('Typische Fehler:')}</b>
+          <ul className="joint-mistakes">
+            {g.mistakes.map((m, i) => (
+              <li key={i}>{tr(m)}</li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
+  )
+}
+
+/** Material dieser Verbindung, gezählt aus den Befestigungsmitteln (wie in der Einkaufsliste) */
+export function JointMaterial({ plan }: { plan: JointPlan }) {
+  const counts = new Map<string, number>()
+  for (const f of plan.fasteners) if (f.item) counts.set(f.item, (counts.get(f.item) ?? 0) + 1)
+  const list = counts.size ? [...counts].map(([id, qty]) => ({ id, qty })) : plan.type.hardware
+  if (!list.length) return null
+  return (
+    <p>
+      <b>{t('Material je Verbindung:')}</b> {list.map((h) => `${h.qty} × ${tr(catalogItem(h.id)?.name ?? h.id)}`).join(', ')}
+    </p>
   )
 }

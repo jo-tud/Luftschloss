@@ -53,9 +53,35 @@ export interface Fastener {
   plate?: { axes: [Vec3, Vec3, Vec3]; thick: number }
   /** Teile mit derselben Gruppe kommen zusammen an (die zwei Schenkel eines Winkels) */
   group?: number
+  /** Katalogartikel für die Einkaufsliste (je Befestigungsmittel einmal; bei Winkeln am ersten Schenkel) */
+  item?: string
+  /** Vorbohren bzw. Bohrung: Durchmesser in mm (0 = ohne) */
+  drill?: number
+  /** Schraube: so viel Holz durchdringt sie, bevor sie ins tragende Holz greift */
+  first?: number
 }
 
+/** Mindestens so tief muss das Gewinde einer 8er-Schraube im tragenden Holz sitzen (9·d, volle Tragfähigkeit) */
+export const SCREW_GRIP_8 = 72
+
+/** Kürzeste Tellerkopfschraube 8 mm, die durch first mm Holz noch grip mm ins tragende Holz reicht */
+export function screw8(first: number, grip = SCREW_GRIP_8): { length: number; item: string } {
+  for (const L of [160, 200, 240]) if (L - first >= grip) return { length: L, item: `schraube-8x${L}` }
+  return { length: 240, item: 'schraube-8x240' }
+}
+
+/** Kürzeste Schlossschraube M10, die durch beide Hölzer samt Scheibe und Mutter reicht */
+export function boltM10(through: number): { length: number; item: string } {
+  const need = through + 15
+  for (const L of [160, 180, 200, 240]) if (L >= need) return { length: L, item: L === 180 ? 'schlossschraube-m10' : `schlossschraube-m10x${L}` }
+  return { length: 240, item: 'schlossschraube-m10x240' }
+}
+
+/** Abstand der Quermutter vom Hirnholzende (a3,t = 80 mm für M10, DIN EN 1995) */
+export const CROSS_NUT_DEPTH = 80
+
 const neg = (a: Vec3): Vec3 => scale(a, -1)
+const width2 = (r: [number, number]) => r[1] - r[0]
 const at = (base: Vec3, ...terms: [Vec3, number][]): Vec3 => terms.reduce((q, [d, k]) => add(q, scale(d, k)), base)
 
 /** Ausdehnung eines Stabs entlang einer Richtung (mit Ausklinkungen) */
@@ -86,7 +112,19 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
   const B = byId.get(j.b)
   if (!A || !B) return out
   const push = (f: Omit<Fastener, 'joint'>) => out.push({ joint: j.key, ...f })
-  const screw = (head: Vec3, dir: Vec3, length: number, radius: number, when: FastenerWhen = 'nachher') => push({ kind: 'schraube', head, dir, length, d: radius * 2, when })
+  const screw = (head: Vec3, dir: Vec3, length: number, radius: number, when: FastenerWhen = 'nachher', item?: string, drill?: number) =>
+    push({ kind: 'schraube', head, dir, length, d: radius * 2, when, item, drill })
+  /** Schrauben 5 × 50 in den Löchern eines Blechs (Mitte c, Schenkelrichtung l, Breite w, Normale nach außen n) */
+  const plateScrews = (c: Vec3, l: Vec3, w: Vec3, n: Vec3, W: number, when: FastenerWhen, g?: number) => {
+    for (const [a, b] of [
+      [-18, -0.25],
+      [-18, 0.25],
+      [8, 0],
+      [30, -0.25],
+      [30, 0.25],
+    ] as const)
+      out.push({ joint: j.key, kind: 'schraube', head: at(c, [l, a], [w, b * W], [n, 1.3]), dir: neg(n), length: 50, d: 5, when, item: 'schraube-5x50', group: g })
+  }
   let group = 0
   const plate = (center: Vec3, lenAx: Vec3, thickAx: Vec3, wideAx: Vec3, L: number, W: number, when: FastenerWhen) =>
     push({ kind: 'blech', head: center, dir: thickAx, length: L, d: W, when, plate: { axes: [lenAx, thickAx, wideAx], thick: 2.5 }, group })
@@ -128,9 +166,10 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const e = long1 ? e1 : e2
       const span = long1 ? o1[1] - o1[0] : o2[1] - o2[0]
       const spread = Math.min(span * 0.25, 60)
+      const b = boltM10(tHead - tNut)
       for (const k of [-1, 1]) {
         const base = at(mid, [e, spread * k])
-        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d: 2 * rad, when: 'nachher', nut: true })
+        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d: 2 * rad, when: 'nachher', nut: true, item: b.item, drill: 11 })
       }
       return out
     }
@@ -150,13 +189,14 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const [t0, t1] = range(Tm, o)
     const tHead = t1 - dot(pE, o)
     if (tHead < 5 || t0 - dot(pE, o) > 5) return out
-    const nutDepth = 70
+    const nutDepth = CROSS_NUT_DEPTH
     // Bolzen gegeneinander versetzt, damit sich zwei Stöße am selben Pfosten nicht kreuzen
     const hDir = axesE[2]
     const shift = Math.abs(aE.x) >= Math.abs(aE.y) ? 0.1 : -0.1
     const bc = bedCentre(r, E)
     const sd = bc && dot(v(bc.x - pE.x, bc.y - pE.y, 0), axesE[1]) < 0 ? -1 : 1
     const sideDir = scale(axesE[1], sd)
+    const item = j.typeId === 'bettschraube' ? 'bettschraube-m8' : boltM10(tHead + nutDepth).item
     for (const k of [-0.25, 0.25]) {
       const base = at(pE, [hDir, (k + shift) * E.h])
       push({
@@ -167,6 +207,8 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         d: 2 * rad,
         when: 'nachher',
         crossNut: { at: at(base, [into, nutDepth]), dir: sideDir, outer: E.b / 2, inner: E.b * 0.1 },
+        item,
+        drill: j.typeId === 'bettschraube' ? 9 : 11,
       })
     }
     return out
@@ -197,7 +239,10 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         const corner = at(v(0, 0, 0), [aE, c], [sdir, edge], [F.into, tTop])
         const p0 = at(corner, [aE, -dot(corner, aE) + c])
         plate(at(p0, [F.into, 45], [o, 1.25]), F.into, o, aE, 90, wd, 'nachher')
+        out[out.length - 1].item = 'winkel-90'
         plate(at(p0, [o, 45], [F.into, 1.25]), o, F.into, aE, 90, wd, 'nachher')
+        plateScrews(at(p0, [F.into, 45], [o, 1.25]), F.into, aE, o, wd, 'nachher', group)
+        plateScrews(at(p0, [o, 45], [F.into, 1.25]), o, aE, F.into, wd, 'nachher', group)
         group++
       }
       return out
@@ -227,7 +272,10 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         const corner = at(base, [aT, s2 * h])
         const tDir = scale(aT, s2)
         plate(at(corner, [into, 45], [tDir, 1.25]), into, tDir, ax, 90, wd, 'nachher')
+        out[out.length - 1].item = 'winkel-90'
         plate(at(corner, [tDir, 45], [into, 1.25]), tDir, into, ax, 90, wd, 'nachher')
+        plateScrews(at(corner, [into, 45], [tDir, 1.25]), into, ax, tDir, wd, 'nachher', group)
+        plateScrews(at(corner, [tDir, 45], [into, 1.25]), tDir, ax, into, wd, 'nachher', group)
         group++
       }
     } else {
@@ -238,10 +286,16 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const hb = E.b / 2
       const hh = E.h / 2
       plate(at(base, [down, hh + 1.25], [into, 45]), into, down, sideAx, 90, E.b + 5, 'vorher')
+      out[out.length - 1].item = 'balkenschuh-60'
       for (const k of [-1, 1]) {
         const sdir = scale(sideAx, k)
         plate(at(base, [sdir, hb + 1.25], [into, 45], [down, hh * 0.15]), into, sdir, axesE[2], 90, E.h * 0.85, 'vorher')
         plate(at(base, [sdir, hb + 22], [into, -1.25], [down, hh * 0.15]), sdir, into, axesE[2], 40, E.h * 0.85, 'vorher')
+        // Lasche: 3 Schrauben in den Hauptträger (vorher), Seite: 3 Schrauben in den Querträger (nachher)
+        for (const z of [-0.3, 0, 0.3]) {
+          out.push({ joint: j.key, kind: 'schraube', head: at(base, [sdir, hb + 22], [into, 0.2], [down, hh * 0.15 + z * E.h * 0.85]), dir: neg(into), length: 50, d: 5, when: 'vorher', item: 'schraube-5x50' })
+          out.push({ joint: j.key, kind: 'schraube', head: at(base, [sdir, hb + 2.6], [into, 45 + (z > 0 ? 20 : z < 0 ? -20 : 0)], [down, hh * 0.15 + z * E.h * 0.6]), dir: neg(sdir), length: 50, d: 5, when: 'nachher', item: 'schraube-5x50' })
+        }
       }
     }
     return out
@@ -286,42 +340,54 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const p0: [number, number] = [PA[0] + (PB[0] - PA[0]) * f, PA[1] + (PB[1] - PA[1]) * f]
       const head = world(exit(p0))
       const toFace = face - dot(head, n)
-      screw(head, n, toFace + Math.min(90, F.depth * 0.8), type === 'kopfband' ? 3 : 4)
+      // 6 × 100, wenn sie noch 54 mm (9·d) in Pfosten bzw. Zarge greift, sonst Tellerkopf 8 mm
+      if (type === 'kopfband' && toFace + 54 <= 100) screw(head, n, 100, 3, 'nachher', 'schraube-6x100', 4)
+      else {
+        const sz = screw8(toFace)
+        screw(head, n, sz.length, 4, 'nachher', sz.item, 6)
+      }
+      out[out.length - 1].first = toFace
     }
     if (type === 'holzduebel')
       for (const f of [0.3, 0.7]) {
         const c = world([PA[0] + (PB[0] - PA[0]) * f, PA[1] + (PB[1] - PA[1]) * f])
-        push({ kind: 'duebel', head: at(c, [n, -35]), dir: n, length: 70, d: 10, when: 'mit' }) // i18n-ok
+        push({ kind: 'duebel', head: at(c, [n, -19]), dir: n, length: 40, d: 10, when: 'mit', item: 'holzduebel-10', drill: 10 }) // i18n-ok
       }
     return out
   }
   if (type === 'holzbauschraube' || type === 'auflage' || type === 'kopfband' || type === 'ausklinkung' || type === 'gratnut') {
     if (E.round || Tm.round) return out
     const n = type === 'holzbauschraube' && F.pE ? 3 : 2
-    const L = type === 'gratnut' ? 50 : 160
-    const r0 = type === 'gratnut' ? 2.5 : 4
     const oS = overlap(eS, range(Tm, side))
     const oA = overlap(eA, tA)
-    if (F.pE && type !== 'kopfband') {
-      // durch T ins Hirnholz von E: Kopf auf der Außenseite von T
+    /** Schraube durch first mm Holz: Länge so, dass sie tief genug im tragenden Holz sitzt; Ø 6 nur im ersten Holz vorbohren */
+    const put8 = (head: Vec3, dir: Vec3, first: number, grip?: number) => {
+      if (type === 'gratnut') return screw(head, dir, 50, 2.5, 'nachher', 'schraube-5x50', 3)
+      const sz = screw8(first, grip)
+      screw(head, dir, sz.length, 4, 'nachher', sz.item, 6)
+      out[out.length - 1].first = first
+    }
+    // stumpfer Stoß nur, wenn die Hölzer wirklich quer zueinander stehen (nicht fast parallel wie Leitergriff und Holm)
+    if (F.pE && type !== 'kopfband' && F.depth <= 3 * Math.max(Tm.b, Tm.h)) {
+      // durch T ins Hirnholz von E: Kopf auf der Außenseite von T; im Hirnholz hält das Gewinde schlechter
       const far = F.face + F.depth
       for (let i = 0; i < n; i++) {
         const f = 0.25 + (0.5 * i) / (n - 1)
-        screw(pt(far, mid(eA), eS[0] + (eS[1] - eS[0]) * f), into, L, r0)
+        put8(pt(far, mid(eA), eS[0] + (eS[1] - eS[0]) * f), into, F.depth, 90)
       }
-    } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10) {
+    } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(E, o)) <= 1.5 * Math.max(E.b, E.h)) {
       // aufliegend bzw. angelegt: durch E in T, Kopf auf E
-      const e0 = range(E, o)[0]
+      const er = range(E, o)
       const longS = oS[1] - oS[0] >= oA[1] - oA[0]
       for (const k of [-0.25, 0.25]) {
         const sd = longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS)
         const ac = longS ? mid(oA) : mid(oA) + (oA[1] - oA[0]) * k
-        screw(pt(e0, ac, sd), o, L, r0)
+        put8(pt(er[0], ac, sd), o, er[1] - er[0])
       }
     } else {
       // Kopfband u. Ä.: quer durch die Überdeckung
       const o0 = overlap(range(E, o), range(Tm, o))
-      for (const k of [-0.2, 0.2]) screw(pt(mid(o0), eA[1], mid(eS) + (eS[1] - eS[0]) * k), neg(across), L, r0)
+      for (const k of [-0.2, 0.2]) put8(pt(mid(o0), eA[1], mid(eS) + (eS[1] - eS[0]) * k), neg(across), eA[1] - eA[0])
     }
   } else if (type === 'ueberblattung') {
     // zwei Schrauben quer durch das Blatt, diagonal versetzt
@@ -334,17 +400,25 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const lapC = at(A.start, [axesA[0], (subA[0][0] + subA[0][1]) / 2], [axesA[1], (subA[1][0] + subA[1][1]) / 2], [axesA[2], (subA[2][0] + subA[2][1]) / 2])
     const ext = (d: Vec3) => [0, 1, 2].reduce((sum, k) => sum + Math.abs(dot(axesA[k], d)) * (subA[k][1] - subA[k][0]), 0)
     const top = Math.max(range(A, cr)[1], range(B, cr)[1])
+    // so lang wie möglich, ohne unten auszutreten
+    const bottom = Math.min(range(A, cr)[0], range(B, cr)[0])
+    const thick = top - bottom
+    const sz = thick - 8 >= 100 ? { L: 100, r: 3, item: 'schraube-6x100' } : thick - 8 >= 80 ? { L: 80, r: 3, item: 'schraube-6x80' } : { L: 50, r: 2.5, item: 'schraube-5x50' }
     for (const k of [-0.22, 0.22]) {
       const p0 = at(lapC, [axesA[0], ext(axesA[0]) * k], [e2, -ext(e2) * k])
-      screw(at(p0, [cr, top - dot(p0, cr)]), neg(cr), 80, 4)
+      screw(at(p0, [cr, top - dot(p0, cr)]), neg(cr), sz.L, sz.r, 'nachher', sz.item, 4)
     }
   } else if (type === 'zapfen' && F.pE) {
     // Holznagel quer durch Zapfenloch und Zapfen, Stirnseiten sichtbar
     const L = F.depth < 50 ? F.depth : F.depth * 0.75
     const oo = F.face + L * 0.5
+    // zwei Buchendübel Ø 10 × 40, von beiden Seiten durch Zapfenloch und Zapfen geschlagen
     const a = pt(oo, tA[0] - 1.5, mid(eS))
     const b = pt(oo, tA[1] + 1.5, mid(eS))
-    push({ kind: 'holznagel', head: a, dir: norm(sub(b, a)), length: len(sub(b, a)), d: 16, when: 'nachher' })
+    const dab = norm(sub(b, a))
+    const pinL = Math.min(40, len(sub(b, a)) / 2)
+    push({ kind: 'holznagel', head: a, dir: dab, length: pinL, d: 10, when: 'nachher', item: 'holzduebel-10', drill: 10 })
+    push({ kind: 'holznagel', head: b, dir: neg(dab), length: pinL, d: 10, when: 'nachher', item: 'holzduebel-10', drill: 10 })
   } else if (type === 'schwalbenschwanz' && F.pE) {
     const dd = F.depth * 0.6
     // zwei Holznägel durch das Blatt, Stirnseite außen sichtbar
@@ -353,16 +427,17 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     for (const k of [-0.18, 0.18]) {
       const a = pt(F.face + dd * 0.5, outer, mid(eS) + (eS[1] - eS[0]) * k)
       const b = pt(F.face + dd * 0.5, mid(eA) + (mid(eA) - outer) * 0.3, mid(eS) + (eS[1] - eS[0]) * k)
-      push({ kind: 'holznagel', head: a, dir: norm(sub(b, a)), length: len(sub(b, a)), d: 10, when: 'nachher' })
+      push({ kind: 'holznagel', head: a, dir: norm(sub(b, a)), length: len(sub(b, a)), d: 10, when: 'nachher', item: 'holzduebel-10', drill: 10 })
     }
   } else if (type === 'holzduebel' && F.pE) {
-    for (const k of [-0.25, 0.25]) push({ kind: 'duebel', head: pt(F.face - 40, mid(eA), mid(eS) + (eS[1] - eS[0]) * k), dir: o, length: 80, d: 10, when: 'mit' }) // i18n-ok
+    for (const k of [-0.25, 0.25]) push({ kind: 'duebel', head: pt(F.face - 19, mid(eA), mid(eS) + (eS[1] - eS[0]) * k), dir: o, length: 40, d: 10, when: 'mit', item: 'holzduebel-10', drill: 10 }) // i18n-ok
   } else if (type === 'auflagerleiste') {
     // Die Leiste wird zuerst an das durchlaufende Holz geschraubt, dann der Träger aufgelegt
     const c = jointCuts(j, byId)
     const lst = c?.extras[0]
     if (!lst) return out
-    for (const k of [-0.35, 0, 0.35]) screw(at(lst.center, [lst.axes[0], -lst.half[0]], [lst.axes[1], lst.half[1] * 2 * k]), lst.axes[0], 50, 2.5, 'vorher')
+    // 6 × 100: 40 mm Leiste, 60 mm im tragenden Holz (mindestens 9·d = 54 mm)
+    for (const k of [-0.35, 0, 0.35]) screw(at(lst.center, [lst.axes[0], -lst.half[0]], [lst.axes[1], lst.half[1] * 2 * k]), lst.axes[0], 100, 3, 'vorher', 'schraube-6x100', 4)
   } else if (type === 'gewindestange') {
     // Mutter und Scheibe auf beiden Seiten des Holzes, das die Stange hält
     const rodM = E.catalogId.startsWith('gewindestange') ? E : Tm.catalogId.startsWith('gewindestange') ? Tm : undefined

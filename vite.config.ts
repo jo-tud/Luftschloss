@@ -43,5 +43,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/setup.ts'],
+    // einige Tests rechnen viele Entwürfe samt Statik; bei voller Parallel-Last dauert das länger als 5 s
+    testTimeout: 30000,
   },
 })

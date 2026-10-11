@@ -153,16 +153,12 @@ const en: Record<string, string> = {
   Forstnerbohrer: 'Forstner bit',
   'Forstner- oder Holzbohrer in Stabdicke': 'Forstner or wood drill bit matching the bar diameter',
   Bohrschablone: 'Drilling jig',
-  'Handkreissäge oder Japansäge': 'Circular saw or Japanese saw',
   Handkreissäge: 'Circular saw',
   Stechbeitel: 'Chisel',
   Stemmeisen: 'Mortise chisel',
   Holzleim: 'Wood glue',
   Feinsäge: 'Fine-tooth saw',
-  'Schmiege (1:6 Nadelholz)': 'Sliding bevel (1:6 for softwood)',
   Dübelhilfe: 'Dowelling jig',
-  'Oberfräse mit Führung oder Tauchsäge': 'Router with guide or plunge saw',
-  'Kapp- oder Gehrungssäge (45°)': 'Mitre saw (45°)',
 
   // Stoßarten (JOINT_KIND_LABEL)
   Eckstoß: 'Corner joint',
@@ -209,7 +205,14 @@ const en: Record<string, string> = {
   'Balkenschuh innen, passend zum Querschnitt': 'Joist hanger, internal flanges, to suit the cross-section',
   'Holzbauschraube / Winkelschraube 5×50, Packung 250': 'Structural screw / angle bracket screw 5×50, pack of 250',
   'Tellerkopf-Holzbauschraube 8×160, Packung 50': 'Washer-head structural screw 8×160, pack of 50',
+  'Tellerkopf-Holzbauschraube 8×200, Packung 50': 'Washer-head structural screw 8×200, pack of 50',
+  'Tellerkopf-Holzbauschraube 8×240, Packung 50': 'Washer-head structural screw 8×240, pack of 50',
+  'Holzbauschraube 6×100, Packung 100': 'Construction screw 6×100, pack of 100',
+  'Holzbauschraube 6×80, Packung 100': 'Construction screw 6×80, pack of 100',
   'Schlossschraube M10 × 180 mit Mutter und U-Scheibe': 'Carriage bolt M10 × 180 with nut and washer',
+  'Schlossschraube M10 × 160 mit Mutter und U-Scheibe': 'Carriage bolt M10 × 160 with nut and washer',
+  'Schlossschraube M10 × 200 mit Mutter und U-Scheibe': 'Carriage bolt M10 × 200 with nut and washer',
+  'Schlossschraube M10 × 240 mit Mutter und U-Scheibe': 'Carriage bolt M10 × 240 with nut and washer',
   'Bettschraube M8 mit Zylindermutter': 'Bed bolt M8 with barrel nut',
   'Gewindestange M10 verzinkt (je 1 m)': 'Threaded rod M10, galvanised (per 1 m)',
   'Lochband 20 mm × 10 m': 'Perforated strap 20 mm × 10 m',
@@ -227,5 +230,6 @@ const en: Record<string, string> = {
   'Rundstäbe': 'Round bars',
   'Richtpreise Hornbach, Stand 2025/26': 'Hornbach guide prices, as of 2025/26',
   'Liegefläche, Brett {n}': 'Deck, board {n}',
+  'Die Hölzer liegen fast parallel – hier hilft nur, sie seitlich durch die Überdeckung zu verschrauben oder zu verbolzen.': 'The timbers are almost parallel – the only option is to screw or bolt them sideways through the overlap.',
 }
 export default en
