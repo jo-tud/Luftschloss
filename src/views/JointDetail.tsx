@@ -1,49 +1,68 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, type ComponentRef } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode } from 'react'
 import * as THREE from 'three'
 import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
 import { assemblyDir, clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { assemblyHint, JointGuide } from '../ui/JointGuide'
+import { JOINT_GUIDE, type GuideStep } from '../model/jointGuide'
+import { HOLD, progressAt, stepTimes, timeline } from '../model/jointTimeline'
+import { Ico } from '../ui/icons'
+import { Pause, Play } from 'lucide-react'
+import { jointFasteners, type Fastener } from '../model/fasteners'
+import { add, norm, scale, sub, v } from '../model/geometry'
+import type { Vec3 } from '../model/types'
 import { JointTypeSelect } from '../ui/JointTypeSelect'
 import type { DetectedJoint } from '../model/resolve'
 import type { Member } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { t, tr } from '../i18n'
-import { hardwareInstances } from './hardware'
+import { fastenerInstances, type HardwareLists } from './hardware'
 import { woodKindFor } from './materials'
 import { Box, COLORS, HoleDisc, PrismMesh, headGeo, metal, nutGeo, pinMat, plateGeo, pocketMat, washerGeo } from './Scene'
 import { reducedMotion } from './motion'
 
-/** Beschläge einer Verbindung als Instanzen, wie in der 3D-Ansicht, dazu Schäfte und Dübel */
-function useHardware(key: string) {
-  const d = useDerived()
-  const hw = useMemo(() => {
-    const h = hardwareInstances(d.resolved, { only: key, rods: true })
-    const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material) => {
-      if (!list.length) return null
-      const im = new THREE.InstancedMesh(geo, mat, list.length)
-      list.forEach((m, i) => im.setMatrixAt(i, m))
-      im.castShadow = true
-      return im
-    }
-    const fixed = [
-      make(headGeo, h.heads, metal),
-      make(washerGeo, h.washers, metal),
-      make(nutGeo, h.nuts, metal),
-      make(plateGeo, h.plates, metal),
-      make(washerGeo, h.pockets, pocketMat),
-      make(washerGeo, h.screws, metal),
-      make(washerGeo, h.rods, metal),
-      make(washerGeo, h.pins, pinMat),
-    ].filter(Boolean) as THREE.InstancedMesh[]
-    const moving = [make(washerGeo, h.dowels, pinMat)].filter(Boolean) as THREE.InstancedMesh[]
-    return { fixed, moving }
-  }, [d, key])
-  useEffect(() => () => [...hw.fixed, ...hw.moving].forEach((m) => m.dispose()), [hw])
-  return hw
+/** Instanzen einer Liste, als fertige Meshes (werden beim Wechsel freigegeben) */
+function meshes(h: HardwareLists): THREE.InstancedMesh[] {
+  const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material) => {
+    if (!list.length) return null
+    const im = new THREE.InstancedMesh(geo, mat, list.length)
+    list.forEach((m, i) => im.setMatrixAt(i, m))
+    im.castShadow = true
+    return im
+  }
+  return [
+    make(headGeo, h.heads, metal),
+    make(washerGeo, h.washers, metal),
+    make(nutGeo, h.nuts, metal),
+    make(plateGeo, h.plates, metal),
+    make(washerGeo, h.pockets, pocketMat),
+    make(washerGeo, h.screws, metal),
+    make(washerGeo, h.rods, metal),
+    make(washerGeo, h.pins, pinMat),
+    make(washerGeo, h.dowels, pinMat),
+  ].filter(Boolean) as THREE.InstancedMesh[]
+}
+
+/** Fortschritt innerhalb eines Fensters [a, b] von k */
+const win = (k: number, a: number, b: number) => Math.min(1, Math.max(0, (k - a) / (b - a)))
+
+interface Mover {
+  meshes: THREE.InstancedMesh[]
+  /** Anflug aus dieser Lage (mm, Modellkoordinaten), am Ziel 0 */
+  from: Vec3
+  phase: 'vorher' | 'befestigen'
+  chunk: number
+  win: [number, number]
+}
+
+export interface StepClock {
+  t: number
+  playing: boolean
+  /** anhalten, sobald t diese Zeit erreicht (ein einzelner Schritt wird abgespielt) */
+  stopAt: number
 }
 
 function Pieces({ m, boxes, prisms, color }: { m: Member; boxes: OBB[]; prisms: Prism[]; color: string }) {
@@ -60,28 +79,91 @@ function Pieces({ m, boxes, prisms, color }: { m: Member; boxes: OBB[]; prisms: 
   )
 }
 
-function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member; through?: Member }) {
+const toThree = (d: Vec3) => new THREE.Vector3(d.x, d.z, -d.y).multiplyScalar(0.001)
+
+function DetailScene({ j, ending, through, steps, clock, onStep }: { j: DetectedJoint; ending?: Member; through?: Member; steps: GuideStep[]; clock: { current: StepClock }; onStep: (i: number) => void }) {
   const d = useDerived()
   const moving = useRef<THREE.Group>(null)
+  const extrasRef = useRef<THREE.Group>(null)
+  const moverRefs = useRef<(THREE.Group | null)[]>([])
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
-  const t0 = useRef(performance.now())
+  const last = useRef(performance.now())
+  const shown = useRef(-1)
   const byId = useMemo(() => new Map(d.resolved.members.map((m) => [m.id, m])), [d])
   const A = byId.get(j.a)
   const B = byId.get(j.b)
   const frame = useMemo(() => (A && B ? jointFrame(j, A, B) : undefined), [j, A, B])
   const cuts = useMemo(() => jointCuts(j, byId), [j, byId])
-  const hw = useHardware(j.key)
-  // Teile langsam auseinander- und wieder zusammenfahren, in der Richtung, in der sich die
-  // Verbindung fügen lässt. 2 mm Fuge auch im zusammengesetzten Zustand: sonst flimmern die
-  // aufeinanderliegenden Flächen.
-  const dir = useMemo(() => {
-    const d = frame ? assemblyDir(j, frame) : { x: 0, y: 0, z: 1 }
-    return new THREE.Vector3(d.x, d.z, -d.y)
-  }, [j, frame])
+  const tl = useMemo(() => timeline(steps), [steps])
+  // Richtung, in der sich die Verbindung fügen lässt; 2 mm Fuge auch im zusammengesetzten Zustand,
+  // sonst flimmern die aufeinanderliegenden Flächen
+  const dir = useMemo(() => toThree(frame ? assemblyDir(j, frame) : v(0, 0, 1)).normalize(), [j, frame])
+  const fasteners = useMemo(() => jointFasteners(j, byId, d.resolved), [j, byId, d])
+  const parts = useMemo(() => {
+    // fest am anzusetzenden Teil: Dübel und die Querbohrungen für Muttern
+    const withE = [...meshes(fastenerInstances(fasteners.filter((f) => f.when === 'mit'), true)), ...meshes(fastenerInstances(fasteners, true, 'tasche'))]
+    const movers: Mover[] = []
+    const out = frame?.out ?? v(0, 0, -1)
+    for (const f of fasteners.filter((x) => x.when === 'vorher'))
+      movers.push({ meshes: meshes(fastenerInstances([f], true, 'kern')), from: f.kind === 'blech' ? scale(out, -80) : scale(f.dir, -(f.length + 30)), phase: 'vorher', chunk: 0, win: cuts?.extras.length ? [0.5, 1] : [0, 1] })
+    // nach dem Fügen: in Einheiten (Schraube, Bolzen, Winkel aus zwei Schenkeln) auf die Schritte verteilt
+    const later = fasteners.filter((x) => x.when === 'nachher')
+    const units: Fastener[][] = []
+    for (const f of later) {
+      const prev = units[units.length - 1]
+      if (prev && f.group !== undefined && prev[0].group === f.group) prev.push(f)
+      else units.push([f])
+    }
+    const n = Math.max(1, tl.chunks)
+    units.forEach((u, ui) => {
+      const chunk = Math.min(n - 1, Math.floor((ui * n) / units.length))
+      if (u[0].kind === 'blech') {
+        const c = scale(u.reduce((s2, f) => add(s2, f.head), v(0, 0, 0)), 1 / u.length)
+        movers.push({ meshes: meshes(fastenerInstances(u, true, 'kern')), from: scale(norm(sub(c, j.pos)), 70), phase: 'befestigen', chunk, win: [0, 1] })
+        return
+      }
+      for (const f of u) {
+        const kern: [number, number] = f.crossNut ? [0.3, 1] : f.nut ? [0, 0.65] : [0, 1]
+        if (f.crossNut) movers.push({ meshes: meshes(fastenerInstances([f], true, 'quermutter')), from: scale(f.crossNut.dir, 60), phase: 'befestigen', chunk, win: [0, 0.35] })
+        movers.push({ meshes: meshes(fastenerInstances([f], true, 'kern')), from: scale(f.dir, -(Math.min(f.length, 200) + 40)), phase: 'befestigen', chunk, win: kern })
+        if (f.nut) movers.push({ meshes: meshes(fastenerInstances([f], true, 'mutter')), from: scale(f.dir, 50), phase: 'befestigen', chunk, win: [0.6, 1] })
+      }
+    })
+    return { withE, movers }
+  }, [fasteners, frame, cuts, tl.chunks, j.pos])
+  useEffect(() => () => [...parts.withE, ...parts.movers.flatMap((m) => m.meshes)].forEach((m) => m.dispose()), [parts])
   useFrame(() => {
-    const t = (performance.now() - t0.current) / 1000
-    const k = reducedMotion() ? 0.6 : (Math.sin(t * 1.1 - Math.PI / 2) + 1) / 2
-    if (moving.current) moving.current.position.copy(dir).multiplyScalar(0.002 + 0.11 * k)
+    const now = performance.now()
+    const c = clock.current
+    const dt = Math.min(0.1, (now - last.current) / 1000)
+    last.current = now
+    if (c.playing) {
+      c.t += dt
+      if (c.t >= c.stopAt) {
+        c.t = c.stopAt
+        c.playing = false
+        c.stopAt = Infinity
+      } else if (c.t >= tl.total) c.t = 0
+    }
+    const p = progressAt(tl.segs, Math.min(c.t, tl.total - HOLD))
+    if (p.step !== shown.current) {
+      shown.current = p.step
+      onStep(p.step)
+    }
+    if (moving.current) moving.current.position.copy(dir).multiplyScalar(0.002 + 0.12 * (1 - p.fuegen))
+    if (extrasRef.current) {
+      const k = win(p.vorher, 0, 0.6)
+      extrasRef.current.visible = k > 0
+      extrasRef.current.position.copy(toThree(scale(frame?.out ?? v(0, 0, -1), -80 * (1 - k))))
+    }
+    parts.movers.forEach((m, i) => {
+      const g = moverRefs.current[i]
+      if (!g) return
+      const base = m.phase === 'vorher' ? p.vorher : (p.chunk[m.chunk] ?? 0)
+      const k = win(base, m.win[0], m.win[1])
+      g.visible = k > 0
+      g.position.copy(toThree(scale(m.from, 1 - k)))
+    })
   })
   const center = useMemo(() => new THREE.Vector3(j.pos.x, j.pos.z, -j.pos.y).multiplyScalar(0.001), [j])
   // Licht auf den Knoten gerichtet, Schattenkamera eng darum: sonst grobe, flackernde Schatten
@@ -130,19 +212,25 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
         onEnd={() => controls.current && (controls.current.enableZoom = true)}
       />
       {piece(Tm, COLORS.wood)}
-      {cuts?.extras.map((o, i) => (
-        <Box key={`x${i}`} o={o} color={COLORS.woodLight} edges wood="latte" />
-      ))}
+      <group ref={extrasRef}>
+        {cuts?.extras.map((o, i) => (
+          <Box key={`x${i}`} o={o} color={COLORS.woodLight} edges wood="latte" />
+        ))}
+      </group>
       {cuts?.holes.map((h, i) => (
         <HoleDisc key={`h${i}`} at={h.at} normal={h.normal} r={h.r} />
       ))}
-      {hw.fixed.map((m, i) => (
-        <primitive key={`f${i}`} object={m} />
+      {parts.movers.map((m, i) => (
+        <group key={`m${i}`} ref={(g) => void (moverRefs.current[i] = g)} visible={false}>
+          {m.meshes.map((x, k) => (
+            <primitive key={k} object={x} />
+          ))}
+        </group>
       ))}
       <group ref={moving}>
         {piece(E, COLORS.woodLight)}
-        {hw.moving.map((m, i) => (
-          <primitive key={`m${i}`} object={m} />
+        {parts.withE.map((m, i) => (
+          <primitive key={`e${i}`} object={m} />
         ))}
       </group>
     </>
@@ -183,15 +271,7 @@ export function JointDetailDialog() {
             ✕
           </button>
         </header>
-        <div className="joint-body">
-          <div className="joint-canvas">
-            <Canvas key={j.key} shadows="percentage" camera={{ position: cam.toArray(), fov: 40, near: 0.01, far: 20 }}>
-              <color attach="background" args={['#f4f5f7']} />
-              <DetailScene key={`${j.key}|${j.typeId}`} j={j} ending={ending} through={through} />
-            </Canvas>
-            <span className="hint">{t('Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen')}</span>
-          </div>
-          <div className="joint-info">
+        <JointDetailBody key={`${j.key}|${j.typeId}`} j={j} ending={ending} through={through} cam={cam}>
             <label className="field stacked">
               <span>{t('Verbindung')}</span>
               <JointTypeSelect
@@ -209,7 +289,6 @@ export function JointDetailDialog() {
             {jt && (
               <>
                 <p>{tr(jt.note)}</p>
-                <JointGuide typeId={jt.id} hint={assemblyHint(j, byId)} />
                 <p>
                   <b>{t('Schwierigkeit:')}</b> {'●'.repeat(jt.difficulty)}
                   {'○'.repeat(3 - jt.difficulty)} · {jt.removable ? t('zerlegbar') : t('fest')} · {t('wirkt {s}', { s: stiffnessLabel(jt.stiffness) })}
@@ -231,8 +310,63 @@ export function JointDetailDialog() {
               {tr(through?.name ?? '')}: {through ? t('{item}, Länge {len}', { item: tr(catalogItem(through.catalogId)?.name ?? ''), len: fmtCm(memberLength(through)) }) : ''}
             </p>
             <p className="hint">{t('Die Werkstattskizze mit Maßen steht im Bauplan unter „Verbindungen“.')}</p>
+        </JointDetailBody>
+      </div>
+    </div>
+  )
+}
+
+/** 3D-Ablauf und Anleitung; der aktuelle Schritt ist in beiden hervorgehoben */
+function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoint; ending?: Member; through?: Member; cam: THREE.Vector3; children: ReactNode }) {
+  const d = useDerived()
+  const steps = JOINT_GUIDE[j.typeId]?.steps ?? []
+  const still = reducedMotion()
+  const clock = useRef<StepClock>({ t: still ? 1e6 : 0, playing: !still, stopAt: Infinity })
+  const [step, setStep] = useState(0)
+  const [playing, setPlaying] = useState(!still)
+  const byId = new Map(d.resolved.members.map((m) => [m.id, m]))
+  const pick = (i: number) => {
+    const [a, b] = stepTimes(steps, i)
+    // ohne Bewegung gleich das Ergebnis des Schritts zeigen
+    clock.current = still ? { t: b - 1e-3, playing: false, stopAt: Infinity } : { t: a, playing: true, stopAt: b }
+    setPlaying(!still)
+  }
+  const toggle = () => {
+    const c = clock.current
+    c.playing = !c.playing
+    c.stopAt = Infinity
+    setPlaying(c.playing)
+  }
+  return (
+    <div className="joint-body">
+      <div className="joint-canvas">
+        <Canvas shadows="percentage" camera={{ position: cam.toArray(), fov: 40, near: 0.01, far: 20 }}>
+          <color attach="background" args={['#f4f5f7']} />
+          <DetailScene
+            j={j}
+            ending={ending}
+            through={through}
+            steps={steps}
+            clock={clock}
+            onStep={(i) => {
+              setStep(i)
+              setPlaying(clock.current.playing)
+            }}
+          />
+        </Canvas>
+        {steps.length > 0 && (
+          <div className="joint-player">
+            <button onClick={toggle} aria-label={playing ? t('Anhalten') : t('Abspielen')} title={playing ? t('Anhalten') : t('Abspielen')}>
+              {playing ? <Ico i={Pause} /> : <Ico i={Play} />}
+            </button>
+            <span>{t('Schritt {i} von {n}', { i: step + 1, n: steps.length })}</span>
           </div>
-        </div>
+        )}
+        <span className="hint">{t('Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen')}</span>
+      </div>
+      <div className="joint-info">
+        {children}
+        <JointGuide typeId={j.typeId} hint={assemblyHint(j, byId)} current={step} onPick={pick} />
       </div>
     </div>
   )

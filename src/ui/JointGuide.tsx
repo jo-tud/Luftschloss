@@ -20,8 +20,11 @@ export function assemblyHint(j: DetectedJoint, byId: Map<string, Member>): strin
   return t('Fügen: das helle Teil von der Seite einschieben.')
 }
 
-/** Erklärung und Arbeitsschritte einer Verbindungsart */
-export function JointGuide({ typeId, hint }: { typeId: string; hint?: string }) {
+/**
+ * Erklärung und Arbeitsschritte einer Verbindungsart. Mit onPick (Verbindungsdetail) sind die
+ * Schritte anklickbar und spielen den Schritt in der 3D-Ansicht ab; current ist hervorgehoben.
+ */
+export function JointGuide({ typeId, hint, current, onPick }: { typeId: string; hint?: string; current?: number; onPick?: (i: number) => void }) {
   const g = JOINT_GUIDE[typeId]
   if (!g) return null
   return (
@@ -33,7 +36,15 @@ export function JointGuide({ typeId, hint }: { typeId: string; hint?: string }) 
       <b>{t('So wird es gemacht:')}</b>
       <ol>
         {g.steps.map((s, i) => (
-          <li key={i}>{tr(s)}</li>
+          <li key={i} className={i === current ? 'current' : undefined}>
+            {onPick ? (
+              <button className="step" onClick={() => onPick(i)} aria-current={i === current ? 'step' : undefined}>
+                {tr(s.t)}
+              </button>
+            ) : (
+              tr(s.t)
+            )}
+          </li>
         ))}
       </ol>
     </div>

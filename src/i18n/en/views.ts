@@ -79,5 +79,8 @@ const en: Record<string, string> = {
   'Pfosten': 'Post',
   'Balken': 'Beam',
   "Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen": "Drag = rotate · middle button = pan · wheel = zoom",
+  'Anhalten': 'Pause',
+  'Abspielen': 'Play',
+  'Schritt {i} von {n}': 'Step {i} of {n}',
 }
 export default en

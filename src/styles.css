@@ -2362,6 +2362,49 @@ button.wide {
 .joint-guide li {
   margin: 2px 0;
 }
+.joint-guide li.current::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+.joint-guide button.step {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.joint-guide button.step:hover {
+  background: var(--bg);
+}
+.joint-guide button.step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.joint-guide li.current button.step {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+@media (pointer: coarse) {
+  .joint-guide button.step {
+    min-height: 44px;
+  }
+}
+.joint-player {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
 .joint-hint {
   font-weight: 600;
   color: var(--accent, #2a6f97);
