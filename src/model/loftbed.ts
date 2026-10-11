@@ -829,9 +829,10 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
         const ends: [Corner, number][] = []
         // 5 mm Abstand zum Zargenende, damit der Pfosten nur an seiner Zarge anliegt; bei Zargen außen
         // hinter dem eingerückten Pfosten, damit die Bolzen innen nicht auf ihn treffen
-        // sonst neben der Zarge bzw. dem Wandriegel der Nachbarseite: innen steht der Pfosten selbst
-        // dort, außen liegt innen die Mutter seines Bolzens (Scheibe Ø 28)
-        const clear = aussen ? pIn + 5 : rb + 5 + (inside ? 0 : 16)
+        // sonst neben der Zarge bzw. dem Wandriegel der Nachbarseite: innen steht der Pfosten selbst dort,
+        // hinter dem Schenkel eines Winkels in der Rahmenecke (90 mm); außen liegt innen die Mutter seines
+        // Bolzens (Scheibe Ø 28)
+        const clear = aussen ? pIn + 5 : rb + 5 + (inside ? 95 : 16)
         // Endet das Feld an der Leiteröffnung, hält dort der Haltegriff bzw. Holm; der Pfosten muss davor Platz haben
         const ladderRoom = stile.b + guard.b + 10
         const free0 = opening && P.ladderSide === s && s0 === opening[1] ? s0 + ladderRoom : s0
