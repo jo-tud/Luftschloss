@@ -970,6 +970,10 @@ table.bom tr.group td {
   fill: #fff;
   stroke: #999;
 }
+.uf-obj.vorsprung polygon {
+  fill: #d9d4cb;
+  stroke: #8f877a;
+}
 .uf-obj.blocked polygon {
   stroke: var(--err);
 }

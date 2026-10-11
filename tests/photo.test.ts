@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { projectPoint, referencePoints, solvePhotoCam, solvePhotoCamWithOpenings, type PhotoCam } from '../src/analysis/photo'
 import { testProject } from '../src/model/defaults'
+import type { WindowObj } from '../src/model/types'
 
 describe('Foto-Abgleich', () => {
   it('findet eine bekannte Kamera aus 6 Punkten wieder', () => {
@@ -25,7 +26,7 @@ describe('Foto-Abgleich', () => {
 
   it('schätzt falsch eingetragene Fenstermaße aus dem Foto nach', () => {
     const real = testProject()
-    const fl = real.wallObjects.find((o) => o.id === 'fenster-links')!
+    const fl = real.wallObjects.find((o) => o.id === 'fenster-links')! as WindowObj
     fl.offset = 600
     fl.height = 2150
     const w = 2000

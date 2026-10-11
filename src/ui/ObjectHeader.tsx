@@ -89,3 +89,6 @@ export function FindingsHint({ ids, prefix }: { ids: string[]; prefix?: string }
     </button>
   )
 }
+
+/** Symbol je Wandobjekt (Liste und Kopf der Eigenschaften) */
+export const WALL_OBJECT_ICON: Record<string, string> = { fenster: '🪟', tuer: '🚪', heizkoerper: '♨', steckdose: '🔌', vorsprung: '▮' }

@@ -14,7 +14,7 @@ import { useDerived, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
 import { deleteLabel, deleteSelection } from './actions'
 import { Copy, Crosshair, Ico, RotateCcw, RotateCw, Scissors, Trash2, Ungroup } from './icons'
-import { FindingsHint, ObjectHeader, type HeaderAction } from './ObjectHeader'
+import { FindingsHint, ObjectHeader, WALL_OBJECT_ICON, type HeaderAction } from './ObjectHeader'
 
 export function Properties() {
   return <PropertiesBody />
@@ -53,7 +53,6 @@ const LADDER_SHORT: Record<LadderType, string> = {
   keine: tk('keine'), // i18n-ok
 }
 
-const WALL_OBJECT_ICON: Record<string, string> = { fenster: '🪟', tuer: '🚪', heizkoerper: '♨', steckdose: '🔌' }
 
 type BedSection = 'masse' | 'lage' | 'hoelzer' | 'liegeflaeche' | 'gelaender' | 'leiter'
 
@@ -797,6 +796,7 @@ function WallObjectProps({ id }: { id: string }) {
             <Num label={t('Freiraum oben')} value={o.convectionClearance} unit="mm" onChange={(v) => setO((x) => void (x.kind === 'heizkoerper' && (x.convectionClearance = v)))} />
           </>
         )}
+        {o.kind === 'vorsprung' && <Num label={t('Tiefe in den Raum')} value={o.depth} onChange={(v) => setO((x) => void (x.kind === 'vorsprung' && (x.depth = v)))} min={20} title={t('Vom Boden bis zur Decke; in einer Ecke ergibt das einen L-förmigen Raum')} />}
         {o.kind === 'steckdose' && <Num label={t('Höhe über Boden')} value={o.bottom} onChange={(v) => setO((x) => void (x.kind === 'steckdose' && (x.bottom = v)))} />}
       </Section>
     </div>

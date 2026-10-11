@@ -1,8 +1,8 @@
 import { t, tr } from '../i18n'
 import { aabbOBB, add, cross, memberBoxes, norm, obbBounds, scale, v, wallFrame, type OBB, type WallFrame } from './geometry'
-import type { CorniceProfile, DoorObj, Furniture, Member, Project, Room, Vec3, WallId, WindowObj } from './types'
+import type { CorniceProfile, DoorObj, Furniture, Member, ProjectionObj, Project, Room, Vec3, WallId, WindowObj } from './types'
 import { WALL_IDS } from './types'
-import { ceilingAt, ceilingPlanes } from './ceiling'
+import { ceilingAt, ceilingPlanes, ceilingRange } from './ceiling'
 
 /** Stuckleiste einer Wand; unter einer Dachschräge gibt es keine */
 export function cornice(room: Room, wall: WallId): CorniceProfile {
@@ -129,6 +129,7 @@ export type ObstacleKind =
   | 'lampe'
   | 'moebel'
   | 'person'
+  | 'vorsprung'
 
 export interface Obstacle {
   id: string
@@ -143,6 +144,14 @@ export function furnitureBox(fu: Furniture): OBB {
   const sx = rot ? fu.sy : fu.sx
   const sy = rot ? fu.sx : fu.sy
   return aabbOBB(v(fu.x, fu.y, fu.z), v(fu.x + sx, fu.y + sy, fu.z + fu.sz))
+}
+
+/** Mauervorsprung als Quader vom Boden bis zur Decke (unter einer Schräge bis zu ihrer höchsten Stelle) */
+export function projectionBox(room: Room, o: ProjectionObj): OBB {
+  const f = wallFrame(room, o.wall)
+  const b = obbBounds(wallBox(f, o.offset, o.offset + o.width, 0, o.depth, 0, 1))
+  const top = ceilingRange(room, { minX: b.min.x, maxX: b.max.x, minY: b.min.y, maxY: b.max.y }).max
+  return wallBox(f, o.offset, o.offset + o.width, 0, o.depth, 0, top)
 }
 
 /** Alle festen Hindernisse im Raum (ohne Wände/Decke/Boden und ohne Stuck, der eigens geprüft wird). */
@@ -180,6 +189,8 @@ export function roomObstacles(p: Project): Obstacle[] {
       })
     } else if (o.kind === 'steckdose') {
       out.push({ id: `${o.id}:dose`, ownerId: o.id, label: o.name, kind: 'steckdose', box: wallBox(f, o.offset, o.offset + o.width, 0, 12, o.bottom, o.bottom + o.height) })
+    } else if (o.kind === 'vorsprung') {
+      out.push({ id: `${o.id}:mauer`, ownerId: o.id, label: o.name, kind: 'vorsprung', box: projectionBox(room, o) })
     }
   }
   if (room.skirting.enabled) {

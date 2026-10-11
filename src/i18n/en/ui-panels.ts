@@ -381,5 +381,12 @@ const en: Record<string, string> = {
   'Kniestock': 'Knee wall',
   'Höhe der senkrechten Wand bis zum Beginn der Schräge': 'Height of the vertical wall up to where the slope starts',
   'Dachneigung gegen die Waagrechte': 'Roof pitch from horizontal',
+  'Vorsprung': 'Projection',
+  'Raumecke': 'Room corner',
+  'Raumecke (L-Form)': 'Room corner (L shape)',
+  'Kamin, Pfeiler oder Schacht vom Boden bis zur Decke': 'Chimney, pillar or duct from floor to ceiling',
+  'Ausgesparte Ecke für einen L-förmigen Raum; Wand, Breite und Tiefe danach anpassen': 'Cut-out corner for an L-shaped room; adjust wall, width and depth afterwards',
+  'Tiefe in den Raum': 'Depth into the room',
+  'Vom Boden bis zur Decke; in einer Ecke ergibt das einen L-förmigen Raum': 'From floor to ceiling; in a corner this makes an L-shaped room',
 }
 export default en

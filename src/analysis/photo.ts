@@ -1,7 +1,7 @@
 import { t, tr } from '../i18n'
 import { wallFrame } from '../model/geometry'
 import { cornice } from '../model/room'
-import type { Project, Vec3, WallId } from '../model/types'
+import type { DoorObj, Project, Vec3, WallId, WindowObj } from '../model/types'
 
 /**
  * Foto-Abgleich: Aus 4–8 angeklickten Raumpunkten im Foto werden Kamerastandort, Blickrichtung
@@ -260,7 +260,7 @@ export function solvePhotoCamWithOpenings(
   })
   const first = solvePhotoCam(project, full, w, h)
   if (!first) return null
-  const openings = project.wallObjects.filter((o) => (o.kind === 'fenster' || o.kind === 'tuer') && obs.some((x) => x.id.startsWith(`${o.id}-`)))
+  const openings = project.wallObjects.filter((o): o is WindowObj | DoorObj => (o.kind === 'fenster' || o.kind === 'tuer') && obs.some((x) => x.id.startsWith(`${o.id}-`)))
   if (!openings.length) return { ...first, openings: [] }
   const r = project.room
   const b: Bounds = { L: r.length, W: r.width, H: r.height }

@@ -29,7 +29,7 @@ Alles läuft im Browser, kostenlos und ohne Anmeldung. Deine Daten bleiben auf d
 | | |
 |---|---|
 | ![Seitenansicht mit Fenster](docs/screenshots/de/seitenansicht-fenster.jpg) | ![Draufsicht](docs/screenshots/de/draufsicht.jpg) |
-| **Dein Zimmer, wie es wirklich ist:** Fenster mit Flügeln und Fensterbank, Heizkörper, Tür, Steckdosen, Stuck, Deckenrosette mit Lampe, Sockelleisten, Dachschrägen. | **Bett einsetzen und anpassen:** Vorlage wählen, in die Ecke schieben, Abstand zu jeder Wand eintippen. Alles bleibt jederzeit änderbar. |
+| **Dein Zimmer, wie es wirklich ist:** Fenster mit Flügeln und Fensterbank, Heizkörper, Tür, Steckdosen, Stuck, Deckenrosette mit Lampe, Sockelleisten, Dachschrägen, Kaminvorsprünge und L-förmige Räume. | **Bett einsetzen und anpassen:** Vorlage wählen, in die Ecke schieben, Abstand zu jeder Wand eintippen. Alles bleibt jederzeit änderbar. |
 | ![Statik](docs/screenshots/de/statik.jpg) | ![Ich-Perspektive](docs/screenshots/de/ich-perspektive.jpg) |
 | **Hält das?** Eine vereinfachte Statik rechnet das ganze Gestell durch: Ausnutzung jedes Balkens, Wackeln, Belastung beim Toben. | **Wie fühlt es sich an?** In der Ich-Perspektive stehst du an der Tür, sitzt unter dem Bett oder liegst auf der Matratze. |
 | ![Bauplan](docs/screenshots/de/bauplan.jpg) | ![Material](docs/screenshots/de/material.jpg) |
