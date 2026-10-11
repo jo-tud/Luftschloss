@@ -218,7 +218,11 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
       S(tk('Erst die Nut fertig machen, dann die Feder an der Stufe anarbeiten: beidseitig {schulter} mm Schulter, an der Schulter {schmal} mm, vorn {breit} mm breit. An einem Reststück probieren.')),
       S(tk('Stufe von der Seite einschieben (nur vorne leimen). Je Seite 2 Schrauben 6 × 80 durch die Wange ins Hirnholz der Stufe, 25–30 mm von vorn und hinten, mittig in der Dicke; die Stufe Ø 4 mm vorbohren.'), 'fuegen', 'befestigen'),
     ],
-    mistakes: [tk('Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
+    mistakes: [
+      tk('Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.'),
+      tk('Nut zu tief: höchstens ein Drittel der Wangendicke.'),
+      tk('Zwei Trittbretter je Stufe: eine durchgehende Nut für beide – das vordere Brett zuerst ganz durchschieben, dann das hintere nachschieben.'),
+    ],
   },
   nut: {
     how: tk('Die Stufe liegt in voller Dicke in einer geraden Nut quer in der Wange. Die Nut trägt die Last, Schrauben durch die Wange halten die Stufe in der Nut. Einfacher herzustellen als eine Gratnut.'),

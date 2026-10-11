@@ -261,6 +261,19 @@ describe('Haltegriff', () => {
   })
 })
 
+describe('Lose Latten', () => {
+  it('Unterholm des Stäbe-Geländers liegt lose auf den Latten, seine Befestiger treffen sich nicht', () => {
+    const p = testProject()
+    p.assemblies[0].params.guard = 'staebe'
+    const r = resolveProject(p)
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const onSlats = r.joints.filter((j) => [j.a, j.b].some((id) => byId.get(id)!.role === 'leiste') && [j.a, j.b].some((id) => byId.get(id)!.partKey?.startsWith('unterholm')))
+    expect(onSlats.length).toBeGreaterThan(0)
+    expect(onSlats.every((j) => j.typeId === 'lose')).toBe(true)
+    expect(fastenerClashes(r)).toEqual([])
+  })
+})
+
 describe('Gratnut-Treppe', () => {
   it('nennt Winkel, Teilung und erste Nut; Flanken wie ein 14°-Fräser; Sicherung 6 × 80', () => {
     const r = resolveProject(testProject())
@@ -277,5 +290,15 @@ describe('Gratnut-Treppe', () => {
     const lines = wange.views.flatMap((v) => v.lines)
     expect(lines.length).toBeGreaterThan(0)
     expect(Math.abs(lines[0].deg - Number(plan.vars.winkel))).toBeLessThanOrEqual(1)
+  })
+
+  it('Treppe mit zwei Trittbrettern je Stufe: beide in einer gemeinsamen Nut, keine Überschneidung gemeldet', () => {
+    const p = testProject()
+    p.assemblies[0].params.ladder = 'treppe'
+    const r = resolveProject(p)
+    const steps = r.joints.filter((j) => j.typeId === 'gratnut')
+    expect(steps.length).toBeGreaterThan(8)
+    expect(cutOverlaps(r.joints, r.members)).toEqual([])
+    expect(analyze(p, r).findings.filter((f) => f.id.startsWith('ueberschneidung:'))).toEqual([])
   })
 })
