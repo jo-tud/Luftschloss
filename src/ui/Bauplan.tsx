@@ -249,9 +249,9 @@ export function BauplanDialog() {
                   </tbody>
                 </table>
               )}
-              {transport.door && transport.longest > transport.door && (
+              {transport.tilt && transport.longest > transport.tilt && (
                 <p className="warn">
-                  {t('Längstes Teil {len} ({name}) passt nicht durch die Tür (Diagonale {door}). Im Zimmer zuschneiden oder teilen.', { len: fmtM(transport.longest), name: tr(transport.name), door: fmtM(transport.door) })}
+                  {t('Längstes Teil {len} ({name}) lässt sich kaum ins Zimmer tragen: hinter der Tür {depth} Platz, angehoben etwa {tilt}. Teilen oder durchs Fenster.', { len: fmtM(transport.longest), name: tr(transport.name), depth: fmtM(transport.depth!), tilt: fmtM(transport.tilt) })}
                 </p>
               )}
             </div>

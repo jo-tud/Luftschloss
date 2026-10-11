@@ -204,8 +204,6 @@ const en: Record<string, string> = {
   'steif': 'rigid',
   'spürbar': 'noticeable sway',
   'wackelt': 'wobbly',
-  'Längstes Teil {len} ({name}) passt nicht durch die Tür (Diagonale {door}). Im Zimmer zuschneiden oder teilen.':
-    'Longest part {len} ({name}) does not fit through the door (diagonal {door}). Cut it in the room or split it.',
   '3D-Ansicht': '3D view',
   'Ansicht von vorne': 'Front view',
   'Ansicht von der Seite': 'Side view',
@@ -227,5 +225,6 @@ const en: Record<string, string> = {
   'Offene Punkte aus der Prüfung': 'Open issues from the check',
   'Erstellt mit Luftschloss. Planungshilfe ohne Gewähr – ersetzt keine Tragwerksplanung. Maße vor dem Zuschnitt am Bau prüfen.':
     'Created with Luftschloss. Planning aid without warranty – does not replace structural engineering. Check dimensions on site before cutting.',
+  'Längstes Teil {len} ({name}) lässt sich kaum ins Zimmer tragen: hinter der Tür {depth} Platz, angehoben etwa {tilt}. Teilen oder durchs Fenster.': 'Longest part {len} ({name}) will hardly go into the room: {depth} behind the door, about {tilt} when lifted. Split it or pass it through the window.',
 }
 export default en

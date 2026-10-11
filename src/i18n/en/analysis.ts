@@ -143,10 +143,6 @@ const en: Record<string, string> = {
   'Wird später als C16 gerechnet. Für tragende Teile KVH (C24) empfehlen; Stücke mit großen Ästen oder Rissen aussortieren.': 'Calculated as C16. KVH (C24) is recommended for load-bearing parts; reject pieces with large knots or cracks.',
   'Bauteile durchdringen sich': 'Parts intersect',
   'Überblattung wählen oder Bauteile versetzen.': 'Choose a halving joint or offset the parts.',
-  '{name} ({length}) passt nicht durch die Tür': '{name} ({length}) does not fit through the door',
-  'Türdiagonale ca. {diag}. Holz erst im Zimmer zuschneiden oder das Teil teilen (Stoß über einem Auflager). Auch Flur und Treppenhaus bedenken.': 'Door diagonal approx. {diag}. Cut the timber to length in the room or split the part (joint over a support). Also consider the hallway and stairwell.',
-  '{name} ({length}) nur schräg durch die Tür': '{name} ({length}) only fits diagonally through the door',
-  'Türdiagonale ca. {diag} – lange Teile schräg tragen, Flurecken vorher ausmessen.': 'Door diagonal approx. {diag} – carry long parts diagonally, measure hallway corners beforehand.',
   '{n} Maße sind nur geschätzt': '{n} dimensions are only estimated',
   'Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.': 'Fields highlighted in yellow are estimated. Measure and enter them – clicking an entry jumps to the field.',
   'Rauchmelder über der Schlafebene': 'Smoke detector above the sleeping level',
@@ -185,5 +181,9 @@ const en: Record<string, string> = {
   'Ohne Pfosten braucht das Bett Möbel darunter: Regal oder Schrank unter die Enden stellen (Reiter Möbel) und in den Eigenschaften „Auf Möbel setzen“ wählen.': 'Without posts the bed needs furniture underneath: put a shelf or cabinet under the ends (Furniture tab) and choose “Rest on furniture” in the properties.',
   '{name} trägt das Bett': '{name} carries the bed',
   'Nur stabile Korpusse (Spanplatte ab 16 mm, Rückwand eingenutet oder verschraubt); Fachböden und dünne Oberseiten nicht als Auflager nehmen. Rahmen mit dem Korpus verschrauben und das Möbel an der Wand gegen Kippen sichern. Möbel aus dem Möbelhaus sind meist nicht für Personenlast gedacht – Herstellerangaben prüfen.': 'Only sturdy carcasses (chipboard 16 mm or more, back panel grooved in or screwed); do not use shelves or thin tops as bearings. Screw the frame to the carcass and secure the furniture to the wall against tipping. Shop-bought furniture is usually not designed to carry people – check the manufacturer’s data.',
+  '{name} ({length}) lässt sich kaum ins Zimmer tragen': '{name} ({length}) will hardly go into the room',
+  'Hinter der Tür sind bis zur gegenüberliegenden Wand nur {depth} Platz, zur Decke hin angehoben etwa {tilt}. Teil teilen (Stoß über einem Auflager) oder durchs Fenster hereinreichen. Flur und Treppenhaus vorher ausmessen.': 'Behind the door there is only {depth} to the opposite wall, about {tilt} when lifted towards the ceiling. Split the part (joint over a support) or pass it in through the window. Measure the hallway and stairwell beforehand.',
+  '{name} ({length}) beim Hereintragen anheben': 'Lift {name} ({length}) when carrying it in',
+  'Lange Teile der Länge nach durch die Tür tragen. Hinter der Tür sind bis zur gegenüberliegenden Wand {depth} Platz – das vordere Ende zur Decke hin anheben. Flur und Treppenhaus vorher ausmessen.': 'Carry long parts lengthwise through the door. Behind the door there is {depth} to the opposite wall – lift the front end towards the ceiling. Measure the hallway and stairwell beforehand.',
 }
 export default en

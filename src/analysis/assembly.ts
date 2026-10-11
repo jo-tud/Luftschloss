@@ -135,7 +135,13 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
 }
 
 /** Längstes Teil gegen die Türdiagonale */
-export function transportCheck(p: Project, r: Resolved): { longest: number; name: string; door?: number } {
+/**
+ * Längstes Holz und wie es ins Zimmer kommt: Lange Teile werden der Länge nach waagrecht durch die Tür
+ * getragen – die Tür begrenzt dann nur den Querschnitt. Entscheidend ist, wie weit es hinter der Tür
+ * bis zur gegenüberliegenden Wand geht (depth) und wie lang ein Teil sein darf, das man beim
+ * Hereintragen zur Decke hin anhebt (tilt). Flur und Treppenhaus kennt die App nicht.
+ */
+export function transportCheck(p: Project, r: Resolved): { longest: number; name: string; depth?: number; tilt?: number } {
   let longest = 0
   let name = ''
   for (const m of r.members) {
@@ -148,5 +154,8 @@ export function transportCheck(p: Project, r: Resolved): { longest: number; name
     }
   }
   const door = p.wallObjects.find((o) => o.kind === 'tuer')
-  return { longest, name, door: door && door.kind === 'tuer' ? Math.hypot(door.width, door.height) : undefined }
+  if (!door) return { longest, name }
+  const depth = door.wall === 'A' || door.wall === 'C' ? p.room.width : p.room.length
+  // beim Anheben 10 cm Luft zur Decke
+  return { longest, name, depth, tilt: Math.hypot(depth, p.room.height - 100) }
 }
