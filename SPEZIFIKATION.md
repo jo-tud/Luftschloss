@@ -152,7 +152,7 @@ Parameter sind:
 |---|---|
 | Stahl | Winkel mit Sicke, Balkenschuh, Seilbefestigung, Gewindestange |
 | Schrauben | Schlossschrauben M10 durchgebolzt; als stumpfer Stoß Sechskantschraube M10 mit Mutter in einer Tasche (Forstner Ø 35), Tellerkopfschrauben 8 mm (Länge nach Holzdicke), Bettschraube mit Zylindermutter |
-| Holz | Stumpfe Auflage, Auflagerleiste, lose aufgelegt, Ausklinkung/Einlassung, Überblattung, Schwalbenschwanzblatt, Zapfen mit Holznagel, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Kopfband auf Gehrung (verschraubt), Kopfband eingelassen (Versatz) |
+| Holz | Stumpfe Auflage, Auflagerleiste, Knagge (stehender Klotz unter dem Träger), lose aufgelegt, Ausklinkung/Einlassung, Überblattung, Schwalbenschwanzblatt, Zapfen mit Holznagel, Holzdübel, Rundstab in Bohrung, Stufe in Gratnut, Stufe in gerader Nut, Kopfband auf Gehrung (verschraubt), Kopfband eingelassen (Versatz) |
 
 Jeder Typ trägt:
 - Schwierigkeit in drei Stufen wie in Heimwerker-Anleitungen (leicht, mittel, schwer), Zeit je Verbindung für Anfänger und Geübte, Anspruch beim Bohren (kaum Bohrungen, rechtwinklig bohren, Bohrungen müssen sich treffen) und was es schwer macht. Werkzeug als Mindestausstattung, dazu „komfortabler mit“ (z. B. Oberfräse). Quelle: `docs/recherche/verbindungen-anleitungen.md`.
@@ -188,7 +188,7 @@ Die Antwort auf „der Übergang zwischen Draufsicht, Seitenansicht und 3D ist i
    - Umsehen per Ziehen, Gehen mit WASD oder den Pfeiltasten, Q/E für hoch/runter, Mausrad für den Blickwinkel. ✅
 7. **Übersichtskarte** mit Kamerastandort und Blickkegel; ein Klick setzt das Blickziel. ✅
 8. **Zoom zum Mauszeiger, Doppelklick fliegt schrittweise näher heran, Fokus aus der Prüfliste;** „⌂ Zurück“ (Taste `0`) zeigt wieder das ganze Zimmer. ✅
-9. **Maus:** links ziehen dreht in 3D bzw. verschiebt in 2D, rechte Taste oder Alt + links dreht, mittlere Taste verschiebt immer. Mausprofil „CAD“ (Raum → Einstellungen): links und rechts verschieben, Shift + mittlere Taste dreht. ✅
+9. **Maus:** links ziehen dreht in 3D bzw. verschiebt in 2D, Alt + links dreht, rechte und mittlere Taste verschieben immer (nicht jede Maus hat eine nutzbare mittlere Taste). Mausprofil „CAD“ (Raum → Einstellungen): links verschiebt, Shift + mittlere Taste dreht. ✅
 10. Abwicklung (Taste `5`), Schnittbox ✂ in 3D, Mausprofil CAD. ✅ Statt Ansichtswürfel: Übersichtskarte und Ansichtsleiste.
 11. Geplant ◻:
    - verzerrungsarme Weitwinkelprojektion (Panini) für die Ich-Perspektive (zurückgestellt)

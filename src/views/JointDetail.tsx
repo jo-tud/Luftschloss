@@ -288,7 +288,7 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
         shadow-normalBias={0.002}
       />
       <directionalLight position={[center.x - 1.5, center.y + 0.5, center.z - 1]} intensity={0.35} />
-      {/* wie in der Hauptansicht: mittlere Taste verschiebt, Mausrad zoomt */}
+      {/* wie in der Hauptansicht: rechte und mittlere Taste verschieben, Mausrad zoomt */}
       <OrbitControls
         ref={controls}
         target={center}
@@ -457,7 +457,7 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
                 <span>{t('Schritt {i} von {n}', { i: step + 1, n: steps.length })}</span>
               </div>
             )}
-            <span className="hint">{t('Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen')}</span>
+            <span className="hint">{t('Ziehen = drehen · rechte oder mittlere Taste = verschieben · Mausrad = zoomen')}</span>
           </div>
         ) : (
           <div className="joint-drawings">

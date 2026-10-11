@@ -154,7 +154,7 @@ const SCREWED = new Set(['holzbauschraube', 'ausklinkung', 'auflage'])
  * Verbindungsarten, deren Befestigungsmittel hier aus der Geometrie entstehen. Liefern sie an einem
  * Stoß nichts (Hölzer berühren sich nur an einer Kante), braucht es dort auch nichts zu kaufen.
  */
-export const MODELED = new Set(['winkel', 'balkenschuh', 'schlossschraube', 'bettschraube', 'holzbauschraube', 'auflage', 'auflagerleiste', 'ausklinkung', 'ueberblattung', 'schwalbenschwanz', 'zapfen', 'holzduebel', 'gratnut', 'kopfband', 'versatz'])
+export const MODELED = new Set(['winkel', 'balkenschuh', 'schlossschraube', 'bettschraube', 'holzbauschraube', 'auflage', 'auflagerleiste', 'ausklinkung', 'ueberblattung', 'schwalbenschwanz', 'zapfen', 'holzduebel', 'gratnut', 'nut', 'knagge', 'kopfband', 'versatz'])
 
 /** Liegt p im Stab m (ohne Ausnehmungen)? */
 function inside(m: Member, p: Vec3): boolean {
@@ -565,7 +565,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       }
     return out
   }
-  if (type === 'holzbauschraube' || type === 'auflage' || type === 'kopfband' || type === 'ausklinkung' || type === 'gratnut') {
+  if (type === 'holzbauschraube' || type === 'auflage' || type === 'kopfband' || type === 'ausklinkung' || type === 'gratnut' || type === 'nut') {
     if (E.round || Tm.round) return out
     const oS = overlap(eS, range(Tm, side))
     const oA = overlap(eA, tA)
@@ -574,7 +574,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     /** Schraube durch first mm Holz in das tragende Holz (bearing mm dick in Schraubrichtung); vorbohren mit 0,7·d */
     const put8 = (head: Vec3, dir: Vec3, first: number, bearing: number) => {
       // Gratnut: 6 × 80 durch die Wange ins Hirnholz der Stufe sichern, Stufe vorbohren
-      if (type === 'gratnut') {
+      if (type === 'gratnut' || type === 'nut') {
         screw(head, dir, 80, 3, 'nachher', 'schraube-6x80', 4)
         out[out.length - 1].first = first
         return
@@ -674,6 +674,13 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const head = alongS ? pt(F.face - 19, mid(eA), mid(eS) + (eS[1] - eS[0]) * k) : pt(F.face - 19, mid(eA) + (eA[1] - eA[0]) * k, mid(eS))
       push({ kind: 'duebel', head, dir: o, length: 40, d: 10, when: 'mit', item: 'holzduebel-10', drill: 10 }) // i18n-ok
     }
+  } else if (type === 'knagge') {
+    // Die Knagge wird zuerst an den Pfosten geschraubt (2 × 2 Schrauben 6 × 100), dann der Träger aufgelegt
+    const c = jointCuts(j, byId)
+    const k = c?.extras[0]
+    if (!k) return out
+    const cols = k.half[1] * 2 >= 70 ? [-0.25, 0.25] : [0]
+    for (const zr of [-0.25, 0.25]) for (const cc of cols) screw(at(k.center, [k.axes[0], -k.half[0]], [k.axes[1], k.half[1] * 2 * cc], [k.axes[2], k.half[2] * 2 * zr]), k.axes[0], 100, 3, 'vorher', 'schraube-6x100', 4)
   } else if (type === 'auflagerleiste') {
     // Die Leiste wird zuerst an das durchlaufende Holz geschraubt, dann der Träger aufgelegt
     const c = jointCuts(j, byId)

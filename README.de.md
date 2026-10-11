@@ -86,7 +86,7 @@ Die Freigabe im WLAN hat keine Anmeldung – nur im eigenen Netz bzw. Tailnet nu
 | Aktion | Maus / Tastatur |
 |---|---|
 | Ansicht wechseln | Leiste oben im Bild oder `1` Draufsicht, `2` Seitenansicht (nochmal = nächste Wand), `3` 3D, `4` Ich-Perspektive, `5` Abwicklung, `6` Foto, `0` Ansicht zurücksetzen |
-| Drehen, verschieben, zoomen | Ziehen auf leerer Fläche (in 3D drehen, in 2D verschieben), rechte Maustaste oder `Alt`+Ziehen dreht, mittlere Maustaste verschiebt, Mausrad zoomt, Doppelklick fliegt näher heran. Lieber wie im CAD? Mausbelegung „CAD“ unter Raum → Einstellungen |
+| Drehen, verschieben, zoomen | Ziehen auf leerer Fläche (in 3D drehen, in 2D verschieben), `Alt`+Ziehen dreht, rechte oder mittlere Maustaste verschiebt, Mausrad zoomt, Doppelklick fliegt näher heran. Lieber wie im CAD? Mausbelegung „CAD“ unter Raum → Einstellungen |
 | Ich-Perspektive | Ziehen = umsehen, `W` `A` `S` `D` oder Pfeiltasten = gehen, `Q`/`E` runter/hoch, Mausrad = Blickwinkel |
 | Auswählen / Querschnitt drehen / Fokus | `V` / `R` / `F` |
 | Bett verschieben | anklicken, dann ziehen (hält an Wänden an) – oder genau unter „Lage im Raum“ |

@@ -35,7 +35,7 @@ export interface JointCuts {
 }
 
 /** Verbindungen, die das Holz selbst verändern */
-export const CARPENTRY = new Set(['ueberblattung', 'zapfen', 'schwalbenschwanz', 'gratnut', 'ausklinkung', 'stecken', 'auflagerleiste', 'versatz'])
+export const CARPENTRY = new Set(['ueberblattung', 'zapfen', 'schwalbenschwanz', 'gratnut', 'nut', 'ausklinkung', 'stecken', 'auflagerleiste', 'knagge', 'versatz'])
 
 const EPS = 0.5
 
@@ -174,7 +174,8 @@ export function assemblyDir(j: DetectedJoint, F: JointFrame): Vec3 {
     }
     case 'schwalbenschwanz':
       return low ? scale(across, -1) : across
-    case 'gratnut': {
+    case 'gratnut':
+    case 'nut': {
       // eingeschoben entlang der Brettbreite; bei einer schrägen Wange von hinten (zum Bett hin), so
       // bleibt die sichtbare Vorderkante der Wange geschlossen
       const g = gratAxes(F)
@@ -187,6 +188,7 @@ export function assemblyDir(j: DetectedJoint, F: JointFrame): Vec3 {
     }
     case 'balkenschuh':
     case 'auflagerleiste':
+    case 'knagge':
       return up
   }
   return F.into
@@ -306,16 +308,19 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(ar)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide) }
       return out
     }
-    case 'gratnut': {
+    case 'gratnut':
+    case 'nut': {
       if (!F.pE || F.depth < 10) return undefined
       const g = gratAxes(F)
       if (!g) return undefined
-      // Nut 1/3 der Wangendicke tief; Feder mit je 4 mm Schulter, Flanken wie ein Gratfräser 14°
-      const dd = Math.min(20, Math.max(8, F.depth / 3))
+      const straight = j.typeId === 'nut'
+      // Gratnut 1/3 der Wangendicke tief, Feder mit je 4 mm Schulter, Flanken wie ein Gratfräser 14°;
+      // gerade Nut 10 mm tief in voller Brettdicke (ohne Feder)
+      const dd = straight ? Math.min(10, F.depth / 3) : Math.min(20, Math.max(8, F.depth / 3))
       const tr = rangeAlong(E, g.thick)
-      const wide = width(tr) / 2 - GRAT_SHOULDER
+      const wide = straight ? width(tr) / 2 : width(tr) / 2 - GRAT_SHOULDER
       // Flanken wie der Fräser: oben um 2 · Tiefe · tan 14° schmaler als am Grund (Ø 16, 15 tief → oben 8,5)
-      const narrow = Math.max(1.5, wide - dd * GRAT_SLOPE)
+      const narrow = straight ? wide : Math.max(1.5, wide - dd * GRAT_SLOPE)
       const sr = rangeAlong(E, g.slide)
       // Die Nut läuft in Einschubrichtung bis zum Rand von T aus, sonst ließe sich das Brett nicht einschieben
       const dir = assemblyDir(j, F)
@@ -323,7 +328,7 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const run = dot(c, dir) + exitAlong(T, c, dir)
       const hr: Range = dot(dir, g.slide) > 0 ? [sr[0], Math.max(sr[1], run)] : [Math.min(sr[0], -run), sr[1]]
       dovetail(out, F, dd, g.thick, (tr[0] + tr[1]) / 2, narrow, wide, g.slide, sr, hr)
-      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(sr)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide), schulter: GRAT_SHOULDER }
+      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(sr)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide), schulter: straight ? 0 : GRAT_SHOULDER }
       return out
     }
     case 'ausklinkung': {
@@ -379,6 +384,20 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       else if (sOf(Q2) < sOf(Q) - 0.5) fill.push([Q, toUV(face + dd, sOf(Q)), Q2])
       out.members.set(T.id, { add: [], sub: [toLocal(T, box)], prisms: fill.map((poly) => ({ ...shape, poly })) })
       out.dims = { tiefe: Math.round(dd) }
+      return out
+    }
+    case 'knagge': {
+      if (!F.pE) return undefined
+      // stehender Klotz 40 mm dick, so breit wie der Träger, bis 200 mm hoch unter dem Trägerende
+      const down = v(0, 0, -1)
+      const along = norm(cross(F.out, down))
+      if (len(along) < 0.5) return undefined
+      const eDown = rangeAlong(E, down)
+      const eAlong = rangeAlong(E, along)
+      const hk = Math.min(200, rangeAlong(T, down)[1] - eDown[1])
+      if (hk < 100) return undefined
+      out.extras.push(frameBox([F.out, along, down], [[F.face - 40, F.face], eAlong, [eDown[1], eDown[1] + hk]]))
+      out.dims = { hoehe: Math.round(hk), breite: Math.round(width(eAlong)) }
       return out
     }
     case 'auflagerleiste': {

@@ -77,7 +77,6 @@ const en: Record<string, string> = {
   'Länge eingeben': 'Enter length',
   'Pfosten': 'Post',
   'Balken': 'Beam',
-  "Ziehen = drehen · mittlere Taste = verschieben · Mausrad = zoomen": "Drag = rotate · middle button = pan · wheel = zoom",
   'Anhalten': 'Pause',
   'Abspielen': 'Play',
   'Schritt {i} von {n}': 'Step {i} of {n}',

@@ -69,7 +69,7 @@ interface State {
   focusRequest: { id: string; nonce: number } | null
   /** Schnittbox in 3D (mm); null = aus */
   sectionBox: { x0: number; x1: number; y0: number; y1: number; z1: number } | null
-  /** Mausbelegung: standard = links ziehen dreht (3D); cad = links und rechts verschieben, Shift + mittlere Taste dreht. Mittlere Taste verschiebt immer. */
+  /** Mausbelegung: standard = links ziehen dreht (3D); cad = links verschiebt, Shift + mittlere Taste dreht. Rechte und mittlere Taste verschieben immer, Alt + links dreht. */
   mouseProfile: 'standard' | 'cad'
   /** Darstellungsqualität: hoch (volle Auflösung), normal, einfach (ohne Raumlicht und Beschläge, für ältere Tablets) */
   quality: 'hoch' | 'normal' | 'einfach'

@@ -288,6 +288,41 @@ export const JOINT_TYPES: JointType[] = [
     capacityKN: 2,
   },
   {
+    id: 'nut',
+    name: tk('Stufe in gerader Nut, verschraubt'),
+    group: 'holz',
+    kinds: ['t-stoss'],
+    difficulty: 2,
+    minutes: [60, 20],
+    drill: 0,
+    hard: tk('Nut sauber auf Breite und Tiefe; Schrauben ins Hirnholz gerade setzen.'),
+    removable: false,
+    stiffness: 'halbsteif',
+    residualSection: 0.85,
+    tools: [tk('Handkreissäge mit Anschlag oder Feinsäge'), tk('Stechbeitel'), tk('Akkuschrauber'), tk('Zwingen')],
+    toolsPlus: [tk('Oberfräse mit Nutfräser'), tk('Führungsleisten')],
+    hardware: [{ id: 'schraube-6x80', qty: 2 }],
+    note: tk('Einfacher als die Gratnut: Die Stufe liegt in einer 10 mm tiefen Nut der Wange und wird durch die Wange verschraubt.'),
+    capacityKN: 3.5,
+  },
+  {
+    id: 'knagge',
+    name: tk('Knagge (Klotz unter dem Träger)'),
+    group: 'holz',
+    kinds: ['t-stoss', 'ecke'],
+    difficulty: 1,
+    minutes: [25, 10],
+    drill: 0,
+    hard: tk('Knagge genau auf Höhe und lotrecht anschrauben.'),
+    removable: true,
+    stiffness: 'gelenkig',
+    residualSection: 1,
+    tools: [tk('Akkuschrauber'), tk('Handsäge'), tk('Zwingen'), tk('Wasserwaage')],
+    hardware: [{ id: 'schraube-6x100', qty: 4 }],
+    note: tk('Ein Klotz aus Kantholz, stehend unter das Trägerende an den Pfosten geschraubt; der Träger liegt darauf. Tragfähiger als eine kurze waagrechte Leiste.'),
+    capacityKN: 8,
+  },
+  {
     id: 'gratnut',
     name: tk('Stufe in Gratnut, geleimt'),
     group: 'holz',
@@ -429,7 +464,16 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
   if (along > 0.85 && !['schlossschraube', 'holzbauschraube', 'lose', 'auflage', 'seilbefestigung'].includes(typeId)) return tk('Die Hölzer liegen fast parallel – hier hilft nur, sie seitlich durch die Überdeckung zu verschrauben oder zu verbolzen.')
   switch (typeId) {
     case 'gratnut':
+    case 'nut':
       return board && E.role === 'stufe' ? undefined : tk('Nur für Stufen, die in eine Nut der Wange geschoben werden.')
+    case 'knagge': {
+      // stehender Klotz unter dem liegenden Träger am stehenden Holz (Pfosten), darunter Platz für 200 mm
+      const vertical = (m: Member) => Math.abs(m.end.z - m.start.z) > 0.7 * (Math.hypot(m.end.x - m.start.x, m.end.y - m.start.y, m.end.z - m.start.z) || 1)
+      if (!horizontal || !vertical(T)) return tk('Nur für liegende Träger an einem stehenden Pfosten.')
+      if (board) return tk('Für Bretter zu schmal – eher anschrauben.')
+      if (Math.min(E.start.z, E.end.z) - E.h / 2 - Math.min(T.start.z, T.end.z) < 120) return tk('Unter dem Träger ist am Pfosten kein Platz für eine Knagge.')
+      return undefined
+    }
     case 'zapfen':
     case 'schwalbenschwanz':
     case 'holzduebel':
