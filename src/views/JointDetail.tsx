@@ -26,6 +26,8 @@ import { woodKindFor } from './materials'
 import { Box, COLORS, HoleDisc, PrismMesh, headGeo, metal, nutGeo, pinMat, plateGeo, pocketMat, washerGeo } from './Scene'
 import { reducedMotion } from './motion'
 
+const toThree = (d: Vec3) => new THREE.Vector3(d.x, d.z, -d.y).multiplyScalar(0.001)
+
 /** Instanzen einer Liste, als fertige Meshes (werden beim Wechsel freigegeben) */
 function meshes(h: HardwareLists): THREE.InstancedMesh[] {
   const make = (geo: THREE.BufferGeometry, list: THREE.Matrix4[], mat: THREE.Material) => {
@@ -52,12 +54,43 @@ function meshes(h: HardwareLists): THREE.InstancedMesh[] {
 const win = (k: number, a: number, b: number) => Math.min(1, Math.max(0, (k - a) / (b - a)))
 
 interface Mover {
-  meshes: THREE.InstancedMesh[]
+  meshes: THREE.Object3D[]
   /** Anflug aus dieser Lage (mm, Modellkoordinaten), am Ziel 0 */
   from: Vec3
-  phase: 'vorher' | 'befestigen'
+  phase: 'vorher' | 'befestigen' | 'bohren'
   chunk: number
   win: [number, number]
+  /** Bohrer: fährt ein und wieder heraus, sichtbar nur während des Schritts */
+  inOut?: boolean
+  /** am anzusetzenden Teil (bewegt sich mit ihm) */
+  withE?: boolean
+}
+
+/** Bohrschritt für Taschen bzw. Querbohrungen (sonst wird entlang der Bolzen gebohrt) */
+const POCKET_STEP = /^Taschen mit Forstner|Querbohrung Ø/
+
+const drillMat = new THREE.MeshStandardMaterial({ color: '#8d949c', metalness: 0.7, roughness: 0.35 })
+const chuckMat = new THREE.MeshStandardMaterial({ color: '#2f3338', metalness: 0.4, roughness: 0.5 })
+const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 18)
+
+/** Bohrer als Zylinder von a nach b (mm, Modellkoordinaten), mit Bohrfutter am äußeren Ende */
+function drillBit(a: Vec3, b: Vec3, r: number): THREE.Object3D {
+  const g = new THREE.Group()
+  const A = toThree(a)
+  const B = toThree(b)
+  const dir = B.clone().sub(A)
+  const L = dir.length()
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize())
+  const bit = new THREE.Mesh(unitCyl, drillMat)
+  bit.scale.set(r / 1000, L, r / 1000)
+  bit.position.copy(A.clone().add(B).multiplyScalar(0.5))
+  bit.quaternion.copy(q)
+  const chuck = new THREE.Mesh(unitCyl, chuckMat)
+  chuck.scale.set(Math.max(0.008, (r * 1.8) / 1000), 0.04, Math.max(0.008, (r * 1.8) / 1000))
+  chuck.position.copy(A.clone().add(dir.clone().normalize().multiplyScalar(-0.02)))
+  chuck.quaternion.copy(q)
+  g.add(bit, chuck)
+  return g
 }
 
 export interface StepClock {
@@ -81,7 +114,6 @@ function Pieces({ m, boxes, prisms, color }: { m: Member; boxes: OBB[]; prisms: 
   )
 }
 
-const toThree = (d: Vec3) => new THREE.Vector3(d.x, d.z, -d.y).multiplyScalar(0.001)
 
 function DetailScene({ j, ending, through, steps, clock, onStep }: { j: DetectedJoint; ending?: Member; through?: Member; steps: GuideStep[]; clock: { current: StepClock }; onStep: (i: number) => void }) {
   const d = useDerived()
@@ -103,7 +135,7 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
   const fasteners = useMemo(() => jointFasteners(j, byId, d.resolved), [j, byId, d])
   const parts = useMemo(() => {
     // fest am anzusetzenden Teil: Dübel und die Querbohrungen für Muttern
-    const withE = [...meshes(fastenerInstances(fasteners.filter((f) => f.when === 'mit'), true)), ...meshes(fastenerInstances(fasteners, true, 'tasche'))]
+    const withE = meshes(fastenerInstances(fasteners.filter((f) => f.when === 'mit'), true))
     const movers: Mover[] = []
     const out = frame?.out ?? v(0, 0, -1)
     // vorher (Balkenschuh, Leiste): erst das Blech anhalten, dann die Schrauben nacheinander eindrehen
@@ -149,9 +181,35 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
         if (f.nut) movers.push({ meshes: meshes(fastenerInstances([f], true, 'mutter')), from: scale(f.dir, 50), phase: 'befestigen', chunk, win: [0.6, 1] })
       }
     })
-    return { withE, movers }
-  }, [fasteners, frame, cuts, tl.chunks, j.pos])
-  useEffect(() => () => [...parts.withE, ...parts.movers.flatMap((m) => m.meshes)].forEach((m) => m.dispose()), [parts])
+    // Bohrschritte: Taschen bzw. Querbohrungen (Text nennt sie) oder Bohrungen entlang der Bolzen
+    const drillSteps = steps.filter((s2) => s2.at.includes('bohren'))
+    drillSteps.forEach((s2, k) => {
+      const pocket = POCKET_STEP.test(s2.t)
+      for (const f of fasteners) {
+        if (pocket && f.crossNut) {
+          const c = f.crossNut
+          const open = add(c.at, scale(c.dir, c.outer + 1))
+          const bottom = add(c.at, scale(c.dir, c.outer - c.depth))
+          movers.push({ meshes: [drillBit(add(open, scale(c.dir, 60)), bottom, c.bore / 2)], from: scale(c.dir, c.depth + 60), phase: 'bohren', chunk: k, win: [0, 1], inOut: true, withE: true })
+        } else if (!pocket && f.drill && (f.kind === 'bolzen' || f.kind === 'bettschraube' || f.kind === 'holznagel')) {
+          const depth = f.crossNut ? Math.hypot(f.crossNut.at.x - f.head.x, f.crossNut.at.y - f.head.y, f.crossNut.at.z - f.head.z) : f.length
+          const tip = add(f.head, scale(f.dir, depth))
+          movers.push({ meshes: [drillBit(add(f.head, scale(f.dir, -120)), tip, f.drill / 2)], from: scale(f.dir, -(depth + 40)), phase: 'bohren', chunk: k, win: [0, 1], inOut: true })
+        }
+      }
+    })
+    // Taschen erst sichtbar, wenn sie gebohrt sind
+    const pocketStep = drillSteps.findIndex((s2) => POCKET_STEP.test(s2.t))
+    return { withE, movers, pocketStep, pockets: meshes(fastenerInstances(fasteners, true, 'tasche')) }
+  }, [fasteners, frame, cuts, tl.chunks, j.pos, steps])
+  useEffect(
+    () => () => {
+      ;[...parts.withE, ...parts.pockets].forEach((m) => m.dispose())
+      parts.movers.flatMap((m) => m.meshes).forEach((o) => (o instanceof THREE.InstancedMesh ? o.dispose() : undefined))
+    },
+    [parts],
+  )
+  const pocketsRef = useRef<THREE.Group>(null)
   useFrame(() => {
     const now = performance.now()
     const c = clock.current
@@ -179,11 +237,20 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
     parts.movers.forEach((m, i) => {
       const g = moverRefs.current[i]
       if (!g) return
+      if (m.inOut) {
+        // Bohrer: in 60 % der Zeit hinein, dann wieder heraus; nur während des Schritts sichtbar
+        const k = p.drill[m.chunk] ?? 0
+        const depth = k < 0.6 ? k / 0.6 : 1 - (k - 0.6) / 0.4
+        g.visible = k > 0 && k < 1
+        g.position.copy(toThree(scale(m.from, 1 - depth)))
+        return
+      }
       const base = m.phase === 'vorher' ? p.vorher : (p.chunk[m.chunk] ?? 0)
       const k = win(base, m.win[0], m.win[1])
       g.visible = k > 0
       g.position.copy(toThree(scale(m.from, 1 - k)))
     })
+    if (pocketsRef.current) pocketsRef.current.visible = parts.pocketStep < 0 || (p.drill[parts.pocketStep] ?? 0) >= 0.6
   })
   const center = useMemo(() => new THREE.Vector3(j.pos.x, j.pos.z, -j.pos.y).multiplyScalar(0.001), [j])
   // Licht auf den Knoten gerichtet, Schattenkamera eng darum: sonst grobe, flackernde Schatten
@@ -240,18 +307,35 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
       {cuts?.holes.map((h, i) => (
         <HoleDisc key={`h${i}`} at={h.at} normal={h.normal} r={h.r} />
       ))}
-      {parts.movers.map((m, i) => (
-        <group key={`m${i}`} ref={(g) => void (moverRefs.current[i] = g)} visible={false}>
-          {m.meshes.map((x, k) => (
-            <primitive key={k} object={x} />
-          ))}
-        </group>
-      ))}
+      {parts.movers.map((m, i) =>
+        m.withE ? null : (
+          <group key={`m${i}`} ref={(g) => void (moverRefs.current[i] = g)} visible={false}>
+            {m.meshes.map((x, k) => (
+              <primitive key={k} object={x} />
+            ))}
+          </group>
+        ),
+      )}
       <group ref={moving}>
         {piece(E, COLORS.woodLight)}
         {parts.withE.map((m, i) => (
           <primitive key={`e${i}`} object={m} />
         ))}
+        <group ref={pocketsRef}>
+          {parts.pockets.map((m, i) => (
+            <primitive key={`t${i}`} object={m} />
+          ))}
+        </group>
+        {/* Bohrer für Taschen am anzusetzenden Teil: bewegen sich mit ihm */}
+        {parts.movers.map((m, i) =>
+          m.withE ? (
+            <group key={`w${i}`} ref={(g) => void (moverRefs.current[i] = g)} visible={false}>
+              {m.meshes.map((x, k) => (
+                <primitive key={k} object={x} />
+              ))}
+            </group>
+          ) : null,
+        )}
       </group>
     </>
   )

@@ -5,7 +5,8 @@ import { tk } from '../i18n'
  * durchlaufende Holz, fuegen = das anzusetzende Teil kommt in seine Lage, befestigen = Schrauben,
  * Bolzen und Holznägel nach dem Fügen. Schritte ohne Bewegung zeigen die Teile auseinander.
  */
-export type GuideAnim = 'vorher' | 'fuegen' | 'befestigen'
+/** vorher: Leiste/Balkenschuh ansetzen; fuegen: Teil einsetzen; bohren: Bohrer fährt ein; befestigen: Schrauben, Bolzen */
+export type GuideAnim = 'vorher' | 'fuegen' | 'bohren' | 'befestigen'
 export interface GuideStep {
   t: string
   at: GuideAnim[]
@@ -31,11 +32,11 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Zwei Stahlwinkel in den Innenecken nehmen die Last über die Schrauben auf. Sie halten senkrecht gut, verdrehen sich aber leicht – das Gestell braucht deshalb Kopfbänder, Platten oder die Wand zur Aussteifung.'),
     steps: [
       S(tk('Lage von {E} an {T} mit dem Anschlagwinkel anreißen.')),
-      S(tk('{E} ansetzen, mit Zwingen spaltfrei festspannen und den rechten Winkel prüfen.'), 'fuegen'),
+      S(tk('{E} an {T} ansetzen und halten – eine Zwinge greift am stumpfen Stoß nicht: einen Leistenrest als Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen. Beim liegend vormontierten Rahmen zieht ein Spanngurt oder eine lange Zwinge von Pfosten zu Pfosten die Fuge zu, sonst drückt ein Helfer an. Winkel prüfen.'), 'fuegen'),
       S(tk('Ersten Winkel fest in die Innenecke drücken und alle {n} Löcher belegen – Schrauben 5 × 50 ins Kantholz, 4 × 16 in dünne Bretter: erst je eine Schraube pro Schenkel, Lage prüfen, dann den Rest.'), 'befestigen'),
       S(tk('Zweiten Winkel gegenüber genauso setzen.'), 'befestigen'),
     ],
-    mistakes: [tk('Nur ein paar Löcher belegt: Der Winkel trägt nur mit allen Schrauben.'), tk('Spalt zwischen den Hölzern: Ein Winkel zieht ihn nicht zu – erst spannen, dann schrauben.')],
+    mistakes: [tk('Nur ein paar Löcher belegt: Der Winkel trägt nur mit allen Schrauben.'), tk('Spalt zwischen den Hölzern: Ein Winkel zieht ihn nicht zu – erst andrücken (Anschlagklotz, Helfer oder Spanngurt), dann schrauben.')],
   },
   balkenschuh: {
     how: tk('Der Querträger liegt mit seinem Ende in einem Stahlschuh, der seitlich am Hauptträger verschraubt ist. Die Last geht über den Boden des Schuhs und viele kurze Schrauben in den Hauptträger.'),
@@ -52,7 +53,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     steps: [
       S(tk('Bolzenmitten anreißen: {abstand} mm auseinander, mindestens {rand} mm vom Rand. Die Kreuze mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
       S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.')),
+      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.'), 'bohren'),
       S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
     ],
@@ -64,7 +65,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     steps: [
       S(tk('Bolzenmitte anreißen: mittig in der Überdeckung, mindestens {rand} mm vom Rand. Das Kreuz mit dem Anschlagwinkel auf die Gegenseite übertragen.')),
       S(tk('Teile mit Zwingen spaltfrei zusammenspannen und den rechten Winkel prüfen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.')),
+      S(tk('Im Verbund Ø {bohr} mm durch beide Hölzer bohren ({tiefe} mm): von jeder Seite bis zur Mitte, dann treffen sich die Bohrungen auch bei leichter Schieflage.'), 'bohren'),
       S(tk('Schlossschraube M10 × {laenge} von außen einschlagen, bis der Vierkant im Holz sitzt. Innen Scheibe Ø 34 mm und Mutter aufsetzen und anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen – das Holz schwindet.')),
     ],
@@ -74,9 +75,9 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Zwei Sechskantschrauben M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter, die in einer Tasche auf der Innenseite sitzt – das Prinzip der Bettschraube, mit Teilen aus dem Baumarkt. Zerlegbar.'),
     steps: [
       S(tk('An {E} anreißen: Bolzenachsen {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke. Auf der Innenseite die Taschenmitten {nut} mm vom Ende auf denselben Höhen.')),
-      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 6 mm über die Mitte der Dicke hinaus. Die Wand zum Hirnholz hin mit dem Beitel 25 mm breit rund 3 mm tief plan und rechtwinklig abstechen, damit Scheibe und Mutter flach anliegen. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.')),
-      S(tk('{E} an {T} ansetzen, mit Montageklotz bzw. Zwinge auf Höhe halten, Winkel prüfen und spaltfrei festspannen. Die Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer).')),
+      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 6 mm über die Mitte der Dicke hinaus. Die Wand zum Hirnholz hin mit dem Beitel 25 mm breit rund 3 mm tief plan und rechtwinklig abstechen, damit Scheibe und Mutter flach anliegen. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.'), 'bohren'),
+      S(tk('{E} an {T} ansetzen und halten – eine Zwinge greift am stumpfen Stoß nicht: einen Leistenrest als Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen; beim liegend vormontierten Rahmen mit Spanngurt oder langer Zwinge von Pfosten zu Pfosten zuziehen. Winkel prüfen. Die Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
+      S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer).'), 'bohren'),
       S(tk('Scheibe Ø 20 (DIN 125) und Mutter mit zwei Fingern an die plane Wand der Tasche halten, Sechskantschraube M10 × {laenge} mit großer Scheibe (Ø 34 mm) von außen durchstecken und mit der Ratsche anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen.')),
     ],
@@ -100,7 +101,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Lange Tellerkopfschrauben gehen durch das durchlaufende Holz in das Hirnholz des anschließenden. Im Hirnholz halten Schrauben schlechter – deshalb drei Stück und nur für mittlere Lasten.'),
     steps: [
       S(tk('Schraubenpunkte auf der Außenseite von {T} anreißen ({n} Stück in der Mitte von {E}).')),
-      S(tk('{E} ansetzen, mit Zwingen festspannen, Winkel prüfen.'), 'fuegen'),
+      S(tk('{E} an {T} ansetzen und halten – eine Zwinge greift am stumpfen Stoß nicht: einen Leistenrest als Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen. Beim liegend vormontierten Rahmen zieht ein Spanngurt oder eine lange Zwinge von Pfosten zu Pfosten die Fuge zu, sonst drückt ein Helfer an. Winkel prüfen.'), 'fuegen'),
       S(tk('In {T} Ø 6 mm vorbohren – nicht ins Hirnholz.')),
       S(tk('{n} Tellerkopfschrauben {size} mit kräftigem Akkuschrauber eindrehen, bis der Kopf bündig sitzt ({grip} mm im Hirnholz).'), 'befestigen'),
     ],
@@ -110,9 +111,9 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Wie im Möbelbau: Eine Bettschraube geht durch das durchlaufende Holz ins Hirnholz und greift in eine Zylindermutter in einer Querbohrung. Von außen sieht man nur einen flachen Kopf, die Verbindung ist zerlegbar.'),
     steps: [
       S(tk('Bohrlage an {E} anreißen: {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke; nach dem Ansetzen auf die Außenseite von {T} übertragen.')),
-      S(tk('{E} ansetzen und festspannen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm durch {T} in das Hirnholz bohren, insgesamt {tiefe} mm tief (Klebeband am Schlangenbohrer) – am besten mit Bohrschablone für Bettbeschläge.')),
-      S(tk('Lösen. Auf der Innenseite {nut} mm vom Ende die Querbohrung Ø 10 mm bis über die Längsbohrung bohren. Tipp: einen Holzstab in die Längsbohrung stecken – er zeigt, wohin die Querbohrung muss.')),
+      S(tk('{E} an {T} ansetzen und halten – eine Zwinge greift am stumpfen Stoß nicht: einen Leistenrest als Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen. Beim liegend vormontierten Rahmen zieht ein Spanngurt oder eine lange Zwinge von Pfosten zu Pfosten die Fuge zu, sonst drückt ein Helfer an. Winkel prüfen.'), 'fuegen'),
+      S(tk('Im Verbund Ø {bohr} mm durch {T} in das Hirnholz bohren, insgesamt {tiefe} mm tief (Klebeband am Schlangenbohrer) – am besten mit Bohrschablone für Bettbeschläge.'), 'bohren'),
+      S(tk('Lösen. Auf der Innenseite {nut} mm vom Ende die Querbohrung Ø 10 mm bis über die Längsbohrung bohren. Tipp: einen Holzstab in die Längsbohrung stecken – er zeigt, wohin die Querbohrung muss.'), 'bohren'),
       S(tk('Zylindermutter einsetzen (Schlitz zur Längsbohrung), Teile ansetzen, Bettschraube M8 × {laenge} eindrehen und mit dem Inbusschlüssel anziehen.'), 'befestigen'),
     ],
     mistakes: [tk('Querbohrung trifft nicht: Längsbohrung zuerst bohren und mit einem Stab sichtbar machen.'), tk('Muttern nicht einkleben – sonst lässt sich das Bett nicht mehr zerlegen.')],
@@ -176,7 +177,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
       S(tk('Wangen und Brüstungen mit der Feinsäge auf der Abfallseite absägen.')),
       S(tk('Zapfenloch in {T} anreißen, mit dem Forstnerbohrer Ø {dicke} mm Loch an Loch {lochtiefe} mm tief vorbohren, dann mit dem Stechbeitel senkrecht ausstemmen.')),
       S(tk('Trocken zusammenstecken: stramm, ohne Hammer. Zu stramm? Zapfen mit dem Beitel nacharbeiten.'), 'fuegen'),
-      S(tk('Im Verbund {nagel} mm vor der Brust Ø 10 mm durch Zapfenloch und Zapfen bohren, von beiden Seiten.')),
+      S(tk('Im Verbund {nagel} mm vor der Brust Ø 10 mm durch Zapfenloch und Zapfen bohren, von beiden Seiten.'), 'bohren'),
       S(tk('Zerlegen, Leim an die Brust und auf zwei Drittel des Zapfens, zusammenstecken und die Holzdübel von beiden Seiten einschlagen.'), 'befestigen'),
     ],
     mistakes: [tk('Zapfenloch schief gestemmt: Den Beitel immer am Winkel ausrichten, erst vorbohren.'), tk('Zapfen zu stramm: Das Holz kann reißen – vor dem Leimen trocken probieren.'), tk('Zapfenloch nicht tiefer als der Zapfen: 5 mm Luft lassen, sonst sitzt die Brust nicht an.')],
