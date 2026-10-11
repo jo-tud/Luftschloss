@@ -1390,6 +1390,10 @@ table.compare td {
   color: var(--ok);
   font-weight: 600;
 }
+.compare-col dl > div.bad dd {
+  color: var(--err);
+  font-weight: 600;
+}
 .compare-col dt {
   color: var(--muted);
 }

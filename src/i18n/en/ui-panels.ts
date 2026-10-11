@@ -434,9 +434,11 @@ const en: Record<string, string> = {
   "Am stärksten beanspruchtes Holz bzw. Verbindung (Statik)": "Most heavily loaded timber or joint (statics)",
   "Bauweisen im Vergleich": "Construction styles compared",
   "Schließen": "Close",
-  "Dasselbe Bett in jeder Bauweise, die hier passt. Eine Ansicht drehen dreht alle mit. Grün: am besten in dieser Zeile.": "The same bed in every construction style that fits here. Turning one view turns them all. Green: best in this row.",
+  "Dasselbe Bett in jeder Bauweise, die hier passt. Eine Ansicht drehen dreht alle mit. Grün: am besten in dieser Zeile, rot: zu schwach bzw. wackelig.": "The same bed in every construction style that fits here. Turning one view turns them all. Green: best in this row, red: too weak or wobbly.",
   "Rechne …": "Calculating …",
   "Gewählt": "Selected",
   "Übernehmen": "Apply",
+  "Dasselbe Bett in jeder Bauweise nebeneinander: Preis, Wackeln, Bohrungen, Arbeitszeit": "The same bed in every construction style side by side: price, wobble, drill holes, working time",
+  "Bauweisen vergleichen": "Compare construction styles",
 }
 export default en

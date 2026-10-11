@@ -106,11 +106,11 @@ function MiniView({ v, id, bus, assemblyId }: { v: StyleVariant; id: number; bus
   )
 }
 
-type Metric = { label: string; get: (v: StyleVariant) => number; show: (v: StyleVariant) => string; better: 'low' | 'high'; tol: number; hint?: string }
+type Metric = { label: string; get: (v: StyleVariant) => number; show: (v: StyleVariant) => string; better: 'low' | 'high'; tol: number; hint?: string; bad?: (v: StyleVariant) => boolean }
 
 const METRICS: Metric[] = [
   { label: tk('Preis'), get: (v) => v.price, show: (v) => eur(v.price), better: 'low', tol: 5 },
-  { label: tk('Wackeln'), get: (v) => v.sway, show: (v) => `${tr(SWAY_NAME[v.swayClass])} (${v.sway.toFixed(1)} mm)`, better: 'low', tol: 0.3, hint: tk('Seitliche Verschiebung der Liegefläche, wenn jemand mit 50 kg seitlich dagegen drückt') },
+  { label: tk('Wackeln'), get: (v) => v.sway, show: (v) => `${tr(SWAY_NAME[v.swayClass])} (${v.sway.toFixed(1)} mm)`, better: 'low', tol: 0.3, bad: (v) => v.swayClass === 'wackelt', hint: tk('Seitliche Verschiebung der Liegefläche, wenn jemand mit 50 kg seitlich dagegen drückt') },
   { label: tk('Bohrungen'), get: (v) => v.holes, show: (v) => String(v.holes), better: 'low', tol: 0 },
   { label: tk('Teile'), get: (v) => v.parts, show: (v) => String(v.parts), better: 'low', tol: 0 },
   {
@@ -121,7 +121,7 @@ const METRICS: Metric[] = [
     tol: 30,
   },
   { label: tk('Durchgang unter dem Bett'), get: (v) => v.clearance, show: (v) => `${(v.clearance / 10).toFixed(0)} cm`, better: 'high', tol: 5, hint: tk('Unterkante der tiefsten Zarge über dem Boden') },
-  { label: tk('Höchste Ausnutzung'), get: (v) => v.maxUtil, show: (v) => `${Math.round(v.maxUtil * 100)} %`, better: 'low', tol: 0.02, hint: tk('Am stärksten beanspruchtes Holz bzw. Verbindung (Statik)') },
+  { label: tk('Höchste Ausnutzung'), get: (v) => v.maxUtil, show: (v) => `${Math.round(v.maxUtil * 100)} %`, better: 'low', tol: 0.02, bad: (v) => v.maxUtil > 1, hint: tk('Am stärksten beanspruchtes Holz bzw. Verbindung (Statik)') },
 ]
 
 export function StyleCompareDialog() {
@@ -167,7 +167,7 @@ export function StyleCompareDialog() {
           </button>
         </header>
         <div className="modal-body">
-          <p className="hint">{t('Dasselbe Bett in jeder Bauweise, die hier passt. Eine Ansicht drehen dreht alle mit. Grün: am besten in dieser Zeile.')}</p>
+          <p className="hint">{t('Dasselbe Bett in jeder Bauweise, die hier passt. Eine Ansicht drehen dreht alle mit. Grün: am besten in dieser Zeile, rot: zu schwach bzw. wackelig.')}</p>
           {!variants ? (
             <p>{t('Rechne …')}</p>
           ) : (
@@ -181,7 +181,7 @@ export function StyleCompareDialog() {
                   <p className="compare-note">{tr(STYLE_NOTE[v.style])}</p>
                   <dl>
                     {METRICS.map((m) => (
-                      <div key={m.label} className={best(m, v) ? 'best' : undefined} title={m.hint ? tr(m.hint) : undefined}>
+                      <div key={m.label} className={m.bad?.(v) ? 'bad' : best(m, v) ? 'best' : undefined} title={m.hint ? tr(m.hint) : undefined}>
                         <dt>{tr(m.label)}</dt>
                         <dd>{m.show(v)}</dd>
                       </div>
