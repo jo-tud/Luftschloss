@@ -7,6 +7,7 @@ import { WALL_IDS } from '../model/types'
 import { CLEARANCE, HEADROOM, defaultAnswers, proposals, roomProject, type BelowUse, type SleeperAge, type WallKind, type WizardAnswers, type WizardOpening } from '../model/wizard'
 import { useStore } from '../state/store'
 import { Check, Num, Sel, eur } from './fields'
+import { Sym, type SymKey } from './icons'
 
 /**
  * Planungsassistent für Einsteiger: in sechs Schritten vom leeren Raum zum ersten, geprüften
@@ -25,7 +26,9 @@ export function WizardDialog() {
     <div className="modal-bg" onClick={close}>
       <div className="modal wizard" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('Planungsassistent')}>
         <header>
-          <h2>🧭 {t('Planungsassistent')}</h2>
+          <h2>
+          <Sym k="assistent" size={20} /> {t('Planungsassistent')}
+        </h2>
           <ol className="wiz-steps">
             {steps.map((s, i) => (
               <li key={i} className={i === step ? 'on' : i < step ? 'done' : ''}>
@@ -131,7 +134,11 @@ function OpeningStep({ a, patch }: StepProps) {
             : { id: uid('heizung'), kind, wall: 'A', offset: 500, width: 1000, height: 600, bottom: 150 },
       ],
     })
-  const label = (k: WizardOpening['kind']) => (k === 'fenster' ? `🪟 ${t('Fenster')}` : k === 'tuer' ? `🚪 ${t('Tür')}` : `♨ ${t('Heizkörper')}`)
+  const label = (k: WizardOpening['kind']) => (
+    <>
+      <Sym k={k} /> {k === 'fenster' ? t('Fenster') : k === 'tuer' ? t('Tür') : t('Heizkörper')}
+    </>
+  )
   return (
     <>
       <h3>{t('Wo sind Fenster, Türen und Heizkörper?')}</h3>
@@ -141,7 +148,7 @@ function OpeningStep({ a, patch }: StepProps) {
           <legend>
             {label(o.kind)}
             <button className="link" onClick={() => patch({ openings: a.openings.filter((x) => x.id !== o.id) })} aria-label={t('Entfernen')}>
-              🗑
+              <Sym k="loeschen" />
             </button>
           </legend>
           <div className="pair">
@@ -202,12 +209,12 @@ function SleeperStep({ a, patch }: StepProps) {
 }
 
 function BelowStep({ a, patch }: StepProps) {
-  const uses: [BelowUse, string, string][] = [
-    ['stauraum', '📦', t('Stauraum, Kisten')],
-    ['spielen', '🧸', t('Spielecke')],
-    ['sitzen', '🛋', t('Sitzecke, Sofa')],
-    ['schreibtisch', '🪑', t('Schreibtisch')],
-    ['stehen', '🧍', t('Stehen, Kleiderschrank')],
+  const uses: [BelowUse, SymKey, string][] = [
+    ['stauraum', 'stauraum', t('Stauraum, Kisten')],
+    ['spielen', 'spielen', t('Spielecke')],
+    ['sitzen', 'sitzen', t('Sitzecke, Sofa')],
+    ['schreibtisch', 'schreibtisch', t('Schreibtisch')],
+    ['stehen', 'person', t('Stehen, Kleiderschrank')],
   ]
   return (
     <>
@@ -215,7 +222,9 @@ function BelowStep({ a, patch }: StepProps) {
       <div className="wiz-cards">
         {uses.map(([k, icon, label]) => (
           <button key={k} className={`wiz-card${a.below === k ? ' on' : ''}`} onClick={() => patch({ below: k })}>
-            <span className="icon">{icon}</span>
+            <span className="icon">
+              <Sym k={icon} size={26} />
+            </span>
             <b>{label}</b>
             <small>{t('{h} frei', { h: fmtM(CLEARANCE[k]) })}</small>
           </button>
@@ -288,9 +297,13 @@ function ProposalStep({ a, onDone }: { a: WizardAnswers; onDone: () => void }) {
                 {r}
               </p>
             ))}
-            {p.compromise && <p className="hint warn">⚠ {p.compromise}</p>}
+            {p.compromise && (
+              <p className="hint warn">
+                <Sym k="warnung" /> {p.compromise}
+              </p>
+            )}
             <p className={`wiz-status${p.errors ? ' err' : p.warnings ? ' warn' : ' ok'}`}>
-              {p.errors ? `⛔ ${tn(p.errors, tk('1 Fehler'), tk('{n} Fehler'))}` : p.warnings ? `⚠ ${tn(p.warnings, tk('1 Hinweis zum Prüfen'), tk('{n} Hinweise zum Prüfen'))}` : `✓ ${t('Keine Probleme gefunden')}`}
+              <Sym k={p.errors ? 'fehler' : p.warnings ? 'warnung' : 'ok'} /> {p.errors ? tn(p.errors, tk('1 Fehler'), tk('{n} Fehler')) : p.warnings ? tn(p.warnings, tk('1 Hinweis zum Prüfen'), tk('{n} Hinweise zum Prüfen')) : t('Keine Probleme gefunden')}
             </p>
             {p.issues.length > 0 && (
               <ul className="wiz-issues">

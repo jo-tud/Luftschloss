@@ -14,8 +14,8 @@ import { WALL_IDS } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
 import { deleteLabel, deleteSelection } from './actions'
-import { Copy, Crosshair, Ico, RotateCcw, RotateCw, Scissors, Trash2, Ungroup } from './icons'
-import { FindingsHint, ObjectHeader, WALL_OBJECT_ICON, type HeaderAction } from './ObjectHeader'
+import { Copy, Crosshair, Ico, RotateCcw, RotateCw, Scissors, Sym, Trash2, Ungroup, WALL_OBJECT_SYM } from './icons'
+import { FindingsHint, ObjectHeader, type HeaderAction } from './ObjectHeader'
 
 export function Properties() {
   return <PropertiesBody />
@@ -82,10 +82,10 @@ function PropertiesBody() {
         </p>
         <ul className="tips">
           <li>
-            <span aria-hidden>👆</span> {t('Bauteil, Fenster oder Möbel anklicken – Doppelklick holt es heran.')}
+            <Sym k="zeigen" /> {t('Bauteil, Fenster oder Möbel anklicken – Doppelklick holt es heran.')}
           </li>
           <li>
-            <span aria-hidden>🛏</span> {t('Ganzes Bett: links unter „Bett“ anklicken oder ein Teil wählen und Esc drücken.')}
+            <Sym k="bett" /> {t('Ganzes Bett: links unter „Bett“ anklicken oder ein Teil wählen und Esc drücken.')}
           </li>
           <li>
             <span aria-hidden>⇧</span> {t('Shift-Klick oder Shift + Ziehen wählt mehrere freie Teile.')}
@@ -116,11 +116,11 @@ function PropertiesBody() {
           <nav className="crumbs" aria-label={t('Auswahl')}>
             <span aria-hidden>↑</span>
             <button className="link" onClick={() => useStore.getState().select(parent.sel)} title={t('Ganzes Bett auswählen (Esc)')}>
-              {t('Teil von {name}', { name: `🛏 ${tr(parent.name)}` })}
+              <Sym k="bett" /> {t('Teil von {name}', { name: tr(parent.name) })}
             </button>
           </nav>
         )}
-        {pa && !m && <ObjectHeader icon="▭" title={pa.name ? tr(pa.name) : t('Fläche')} sub={parent ? tr(parent.name) : t('frei')} actions={[focusAction(pa.id), ...deleteAction()]} />}
+        {pa && !m && <ObjectHeader icon="flaeche" title={pa.name ? tr(pa.name) : t('Fläche')} sub={parent ? tr(parent.name) : t('frei')} actions={[focusAction(pa.id), ...deleteAction()]} />}
         {m && <MemberProps m={m} free={!m.assemblyId} />}
         {pa && !m && (
           <Section title={t('Fläche')} id="flaeche">
@@ -140,7 +140,7 @@ function PropertiesBody() {
   if (sel.kind === 'rosette') {
     return (
       <div className="props">
-        <ObjectHeader icon="💡" title={t('Deckenrosette & Lampe')} actions={[focusAction(sel.id)]} />
+        <ObjectHeader icon="lampe" title={t('Deckenrosette & Lampe')} actions={[focusAction(sel.id)]} />
         <Section title={t('Hinweis')} id="rosette">
           <p>{t('Maße unter „Raum → Deckenrosette & Lampe“. In der Draufsicht oder 3D lässt sich die Rosette verschieben.')}</p>
         </Section>
@@ -247,7 +247,7 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
       {!only && (
         <>
           <ObjectHeader
-            icon="🛏"
+            icon="bett"
             title={tr(a.name)}
             sub={tr(bedTypeLabel(P))}
             actions={[
@@ -571,7 +571,7 @@ function MemberProps({ m, free }: { m: Member; free: boolean }) {
   return (
     <>
       <ObjectHeader
-        icon="▬"
+        icon="teile"
         title={m.name ? tr(m.name) : t('Bauteil')}
         sub={`${item?.name ? tr(item.name) : m.catalogId} · ${fmtCm(L)}`}
         actions={[
@@ -730,7 +730,7 @@ function WallObjectProps({ id }: { id: string }) {
   const estimated = p.estimated.includes(`wallObjects.${id}`)
   return (
     <div className="props">
-      <ObjectHeader icon={WALL_OBJECT_ICON[o.kind] ?? '▢'} title={tr(o.name)} sub={t('Wand {w}', { w: o.wall })} actions={[focusAction(o.id), ...deleteAction()]} />
+      <ObjectHeader icon={WALL_OBJECT_SYM[o.kind] ?? 'wandobjekt'} title={tr(o.name)} sub={t('Wand {w}', { w: o.wall })} actions={[focusAction(o.id), ...deleteAction()]} />
       <FindingsHint ids={[o.id]} prefix={`${o.id}:`} />
       <Section title={t('Maße und Lage')} id="wandobjekt" right={estimated ? <em className="est-tag">{t('geschätzt')}</em> : undefined}>
         <label className="field">
@@ -835,7 +835,7 @@ function FurnitureProps({ id }: { id: string }) {
   const person = f.kind.startsWith('person')
   return (
     <div className="props">
-      <ObjectHeader icon={person ? '🧍' : '▣'} title={tr(f.name)} actions={[focusAction(f.id), ...deleteAction()]} />
+      <ObjectHeader icon={person ? 'person' : 'moebel'} title={tr(f.name)} actions={[focusAction(f.id), ...deleteAction()]} />
       <FindingsHint ids={[f.id]} />
       <Section title={t('Maße und Lage')} id="moebel">
         <label className="field">

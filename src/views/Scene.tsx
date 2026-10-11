@@ -20,6 +20,7 @@ import { hardwareInstances } from './hardware'
 import { prismGeometry } from './joineryGeo'
 import { reducedMotion } from './motion'
 import { floorMaterial, plasterMaterial, woodKindFor, woodMaterial, type WoodKind } from './materials'
+import { Sym } from '../ui/icons'
 
 export const COLORS = {
   wall: '#ece7df',
@@ -978,7 +979,7 @@ export function MemberHandles({ p }: { p: Project }) {
           />
         ) : (
           <button className="len-label" onClick={() => setEditing(true)} title={t('Länge eingeben')}>
-            {fmtCm(L)} ✎
+            {fmtCm(L)} <Sym k="bearbeiten" size={11} />
           </button>
         )}
       </Html>

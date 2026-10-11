@@ -5,7 +5,7 @@ import { fmtCm } from '../model/geometry'
 import { useStore } from '../state/store'
 import { Num, Section } from './fields'
 import { deleteSelection } from './actions'
-import { Crosshair, Ico, Trash2, Ungroup } from './icons'
+import { Crosshair, Ico, Sym, Trash2, Ungroup } from './icons'
 import { FindingsHint, ObjectHeader } from './ObjectHeader'
 
 /** Mehrere freie Teile ausgewählt (Shift-Klick) */
@@ -26,7 +26,7 @@ export function MultiProps() {
             }}
             title={t('Die Teile als ein Bett behandeln: gemeinsam auswählen, verschieben und prüfen')}
           >
-            🛏 {t('Als Bett zusammenfassen')}
+            <Sym k="bett" /> {t('Als Bett zusammenfassen')}
           </button>
         </div>
       </Section>
@@ -46,7 +46,7 @@ export function GroupProps({ id, nested }: { id: string; nested?: boolean }) {
       {!nested && (
         <>
           <ObjectHeader
-            icon="🛏"
+            icon="bett"
             title={tr(g.name)}
             sub={t('eigene Konstruktion · {n} Teile', { n: parts.length })}
             actions={[
@@ -68,7 +68,7 @@ export function GroupProps({ id, nested }: { id: string; nested?: boolean }) {
           <FindingsHint ids={[id, ...parts]} prefix={`${id}:`} />
         </>
       )}
-    <Section title={nested ? `🛏 ${tr(g.name)}` : t('Name')} id={nested ? 'teil-eigenbett' : 'eigenbett'} right={nested ? <small>{t('eigene Konstruktion')}</small> : undefined}>
+    <Section title={nested ? tr(g.name) : t('Name')} id={nested ? 'teil-eigenbett' : 'eigenbett'} right={nested ? <small>{t('eigene Konstruktion')}</small> : undefined}>
       <label className="field">
         <span>{t('Name')}</span>
         <input value={tr(g.name)} onChange={(e) => update((dd) => void (dd.groups.find((x) => x.id === id)!.name = e.target.value), `name-${id}`)} />

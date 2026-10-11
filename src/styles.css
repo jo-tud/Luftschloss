@@ -21,6 +21,21 @@
   box-sizing: border-box;
 }
 
+/* Symbole nach Bedeutung (icons.tsx, SYM) */
+.ico.sym {
+  vertical-align: -2px;
+  flex-shrink: 0;
+}
+.sev-fehler {
+  color: var(--err);
+}
+.sev-warnung {
+  color: #a86f00;
+}
+.sev-hinweis {
+  color: var(--blue);
+}
+
 /* Tastaturfokus deutlich sichtbar, einheitlich in allen Bedienelementen */
 :focus-visible {
   outline: 2px solid var(--blue);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { t, tr } from '../i18n'
 import { useDerived, useStore } from '../state/store'
 import { staticsFindings } from './Statics'
-import { Ellipsis, Ico } from './icons'
+import { Ellipsis, Ico, Sym, type SymKey } from './icons'
 
 export interface HeaderAction {
   icon?: ReactNode
@@ -17,7 +17,7 @@ export interface HeaderAction {
  * Kopfzeile der Eigenschaften: was ausgewählt ist und was man damit tun kann. Häufige Aktionen als
  * Symbolknöpfe, seltene und zerstörende im ⋯-Menü.
  */
-export function ObjectHeader({ icon, title, sub, actions }: { icon: string; title: string; sub?: ReactNode; actions: HeaderAction[] }) {
+export function ObjectHeader({ icon, title, sub, actions }: { icon: SymKey; title: string; sub?: ReactNode; actions: HeaderAction[] }) {
   const [menu, setMenu] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -31,7 +31,7 @@ export function ObjectHeader({ icon, title, sub, actions }: { icon: string; titl
   return (
     <div className="obj-head">
       <span className="obj-icon" aria-hidden>
-        {icon}
+        <Sym k={icon} size={18} />
       </span>
       <div className="obj-title">
         <b>{title}</b>
@@ -85,10 +85,8 @@ export function FindingsHint({ ids, prefix }: { ids: string[]; prefix?: string }
   const err = mine.some((f) => f.severity === 'fehler')
   return (
     <button className={`findings-hint${err ? ' err' : ''}`} onClick={() => useStore.setState({ rightTab: 'checks' })} title={mine.map((f) => tr(f.title)).join('\n')}>
-      {err ? '⛔' : '⚠'} {mine.length === 1 ? tr(mine[0].title) : t('{n} Befunde dazu', { n: mine.length })} <span aria-hidden>→</span>
+      <Sym k={err ? 'fehler' : 'warnung'} className={err ? 'sev-fehler' : 'sev-warnung'} /> {mine.length === 1 ? tr(mine[0].title) : t('{n} Befunde dazu', { n: mine.length })} <span aria-hidden>→</span>
     </button>
   )
 }
 
-/** Symbol je Wandobjekt (Liste und Kopf der Eigenschaften) */
-export const WALL_OBJECT_ICON: Record<string, string> = { fenster: '🪟', tuer: '🚪', heizkoerper: '♨', steckdose: '🔌', vorsprung: '▮' }

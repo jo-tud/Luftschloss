@@ -10,6 +10,7 @@ import type { Project } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { T } from './camera'
 import { MemberMeshes, PanelMeshes } from './Scene'
+import { Sym } from '../ui/icons'
 
 /** Foto und Klickpunkte bleiben lokal im Browser (IndexedDB), nichts wird hochgeladen. */
 interface StoredPhoto {
@@ -188,7 +189,9 @@ export function PhotoView() {
     return (
       <div className="photo-view empty">
         <div className="photo-intro">
-          <h2>📷 {t('Dein Hochbett im Foto deines Zimmers')}</h2>
+          <h2>
+          <Sym k="foto" size={20} /> {t('Dein Hochbett im Foto deines Zimmers')}
+        </h2>
           <p>{t('Fotografiere das Zimmer so, dass ein paar Raumecken und Fensterkanten gut zu sehen sind. Dann tippst du 4–6 dieser Punkte an – Luftschloss errechnet daraus den Kamerastandort und setzt das geplante Bett perspektivisch richtig ins Foto.')}</p>
           <label className="file-btn">
             {t('Foto wählen oder aufnehmen')}

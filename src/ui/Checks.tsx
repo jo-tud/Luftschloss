@@ -3,8 +3,8 @@ import { t, tk, tn, tr } from '../i18n'
 import type { Severity } from '../analysis/checks'
 import { selectionFor, useDerived, useStore } from '../state/store'
 import { staticsFindings } from './Statics'
+import { Sym } from './icons'
 
-const ICON: Record<Severity, string> = { fehler: '⛔', warnung: '⚠️', hinweis: 'ℹ️' }
 
 /** Offene (nicht quittierte) Befunde je Schwere – auch für die Werkzeugleiste auf dem Tablet */
 export function useCheckCounts(): Record<Severity, number> {
@@ -20,9 +20,15 @@ export function CountBadges({ c }: { c: Record<Severity, number> }) {
   const label = [tn(c.fehler, tk('1 Fehler'), tk('{n} Fehler')), tn(c.warnung, tk('1 Warnung'), tk('{n} Warnungen')), tn(c.hinweis, tk('1 Hinweis'), tk('{n} Hinweise'))].join(', ')
   return (
     <span className="badges" aria-label={label} title={label}>
-      <span className="b fehler">⛔ {c.fehler}</span>
-      <span className="b warnung">⚠ {c.warnung}</span>
-      <span className="b hinweis">ℹ {c.hinweis}</span>
+      <span className="b fehler">
+        <Sym k="fehler" size={11} /> {c.fehler}
+      </span>
+      <span className="b warnung">
+        <Sym k="warnung" size={11} /> {c.warnung}
+      </span>
+      <span className="b hinweis">
+        <Sym k="hinweis" size={11} /> {c.hinweis}
+      </span>
     </span>
   )
 }
@@ -79,7 +85,7 @@ export function Checks() {
                   }
                 }}
               >
-                <span aria-hidden>{ICON[f.severity]}</span>
+                <Sym k={f.severity} className={`sev-${f.severity}`} />
                 <span>{tr(f.title)}</span>
               </button>
               {open === f.id && (

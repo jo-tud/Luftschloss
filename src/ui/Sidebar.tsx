@@ -1,6 +1,6 @@
 import { locale, t, tk, tr } from '../i18n'
 import { bestCorner, deckOnFurniture, placeBed, shelvesUnderBed, type Corner } from '../model/placement'
-import { Ico, Plus } from './icons'
+import { Ico, Plus, Sym, WALL_OBJECT_SYM } from './icons'
 import { openWizard } from './Project'
 import { uid } from '../model/geometry'
 import { SLOPE_ANGLE } from '../model/ceiling'
@@ -10,7 +10,6 @@ import { WALL_IDS } from '../model/types'
 import { useStore } from '../state/store'
 import { Check, Num, Section, Sel } from './fields'
 import { ProjectActions } from './Project'
-import { WALL_OBJECT_ICON } from './ObjectHeader'
 
 const WALL_MAT: [WallMaterial, string][] = [
   ['beton', tk('Beton')],
@@ -338,7 +337,7 @@ function FixturesTab() {
         <ul className="list">
           {p.wallObjects.map((o) => (
             <li key={o.id} className={sel?.id === o.id ? 'on' : ''} {...activate(() => (select({ kind: 'wallObject', id: o.id }), useStore.getState().focus(o.id)))}>
-              <span>{WALL_OBJECT_ICON[o.kind]}</span>
+              <Sym k={WALL_OBJECT_SYM[o.kind] ?? 'wandobjekt'} />
               {tr(o.name)} <small>{t('Wand {w}', { w: o.wall })}</small>
               {p.estimated.includes(`wallObjects.${o.id}`) && <em className="est-tag">{t('geschätzt')}</em>}
             </li>
@@ -423,14 +422,14 @@ function BedTab() {
         <ul className="list">
           {p.assemblies.map((a) => (
             <li key={a.id} className={sel?.id === a.id ? 'on' : ''} {...activate(() => (select({ kind: 'assembly', id: a.id }), useStore.getState().focus(a.id)))}>
-              🛏 {tr(a.name)} <small>{tr(bedTypeLabel(a.params))}</small>
+              <Sym k="bett" /> {tr(a.name)} <small>{tr(bedTypeLabel(a.params))}</small>
             </li>
           ))}
           {p.groups.map((g) => {
             const first = p.members.find((m) => m.groupId === g.id)?.id ?? p.panels.find((x) => x.groupId === g.id)?.id
             return (
               <li key={g.id} className={sel?.id === g.id ? 'on' : ''} {...activate(() => (select({ kind: 'group', id: g.id }), first && useStore.getState().focus(first)))}>
-                🛏 {tr(g.name)} <small>{t('eigene Konstruktion')}</small>
+                <Sym k="bett" /> {tr(g.name)} <small>{t('eigene Konstruktion')}</small>
               </li>
             )
           })}
@@ -441,14 +440,14 @@ function BedTab() {
               )}
               title={t('Alle freien Teile auswählen, z. B. um sie als Bett zusammenzufassen')}
             >
-              ▬ {t('Freie Teile ({n})', { n: freeIds.length })}
+              <Sym k="teile" /> {t('Freie Teile ({n})', { n: freeIds.length })}
             </li>
           )}
           {!p.assemblies.length && !p.groups.length && <li className="empty">{t('Noch kein Bett – unten eine Vorlage einsetzen oder mit dem Balken-Werkzeug frei zeichnen.')}</li>}
         </ul>
         {!p.assemblies.length && !p.groups.length && (
           <button className="primary wide" onClick={openWizard}>
-            🧭 {t('Mit dem Planungsassistenten starten')}
+            <Sym k="assistent" /> {t('Mit dem Planungsassistenten starten')}
           </button>
         )}
       </Section>
@@ -562,7 +561,7 @@ function FurnitureTab() {
         <ul className="list">
           {p.furniture.map((f) => (
             <li key={f.id} className={sel?.id === f.id ? 'on' : ''} {...activate(() => (select({ kind: 'furniture', id: f.id }), useStore.getState().focus(f.id)))}>
-              {f.kind.startsWith('person') ? '🧍' : '▭'} {tr(f.name)}
+              <Sym k={f.kind.startsWith('person') ? 'person' : 'moebel'} /> {tr(f.name)}
             </li>
           ))}
         </ul>

@@ -13,6 +13,7 @@ import { CutPlan } from './Material'
 import { assemblyHint, JointGuide } from './JointGuide'
 import { JointIso, jointSketchNote } from './JointSketch'
 import { staticsFindings } from './Statics'
+import { Sym } from './icons'
 
 type View = 'front' | 'side' | 'top'
 
@@ -181,7 +182,9 @@ export function BauplanDialog() {
             {t('Bauplan')} · {tr(p.name)}
           </h2>
           <span className="muted">{new Date().toLocaleDateString(locale())}</span>
-          <button onClick={() => window.print()}>🖨 {t('Drucken / PDF')}</button>
+          <button onClick={() => window.print()}>
+            <Sym k="drucken" /> {t('Drucken / PDF')}
+          </button>
           <button className="close" onClick={() => set({ showPlan: false })} aria-label={t('Schließen')}>
             ✕
           </button>
@@ -351,7 +354,7 @@ export function BauplanDialog() {
               <ul>
                 {open.map((f) => (
                   <li key={f.id}>
-                    {f.severity === 'fehler' ? '⛔' : '⚠️'} {tr(f.title)}
+                    <Sym k={f.severity === 'fehler' ? 'fehler' : 'warnung'} className={`sev-${f.severity}`} /> {tr(f.title)}
                   </li>
                 ))}
               </ul>
