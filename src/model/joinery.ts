@@ -314,7 +314,8 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const dd = Math.min(20, Math.max(8, F.depth / 3))
       const tr = rangeAlong(E, g.thick)
       const wide = width(tr) / 2 - GRAT_SHOULDER
-      const narrow = Math.max(width(tr) / 5, wide - dd * GRAT_SLOPE)
+      // Flanken wie der Fräser: oben um 2 · Tiefe · tan 14° schmaler als am Grund (Ø 16, 15 tief → oben 8,5)
+      const narrow = Math.max(1.5, wide - dd * GRAT_SLOPE)
       const sr = rangeAlong(E, g.slide)
       // Die Nut läuft in Einschubrichtung bis zum Rand von T aus, sonst ließe sich das Brett nicht einschieben
       const dir = assemblyDir(j, F)

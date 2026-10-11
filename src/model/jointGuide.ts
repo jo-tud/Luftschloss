@@ -212,10 +212,10 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
   gratnut: {
     how: tk('Die Stufe hat am Ende eine schwalbenschwanzförmige Feder, die in eine passende Nut quer in der Wange geschoben wird. Durch die schrägen Flanken kann sie nicht herausfallen. Eingeschoben wird von der Seite entlang der Nut.'),
     steps: [
-      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen (Steigung der Leiter beachten).')),
-      S(tk('Nut {tiefe} mm tief herstellen, am Grund {breit} mm, oben {schmal} mm breit: mit Oberfräse und Gratfräser 14° an einer Führungsleiste in einem Zug – ohne Oberfräse mit Gratsäge an einer schrägen Führungsleiste einsägen und mit Beitel und Grundhobel ausräumen.')),
+      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen: Nuten unter {winkel}° zur Wangenkante (Schmiege einstellen), Mitte der ersten Nut {erste} mm ab Fuß, dann alle {teilung} mm, entlang der Wange gemessen. Die Wangen dabei spiegelbildlich nebeneinanderlegen.')),
+      S(tk('Nut {tiefe} mm tief herstellen, am Grund {breit} mm, oben {schmal} mm breit: mit Oberfräse und Gratfräser Ø {breit} mm, 14° an einer Führungsleiste unter {winkel}° in einem Zug – ohne Oberfräse mit Gratsäge an einer schrägen Führungsleiste einsägen und mit Beitel und Grundhobel ausräumen.')),
       S(tk('Erst die Nut fertig machen, dann die Feder an der Stufe anarbeiten: beidseitig {schulter} mm Schulter, an der Schulter {schmal} mm, vorn {breit} mm breit. An einem Reststück probieren.')),
-      S(tk('Stufe von der Seite einschieben (nur vorne leimen) und mit 2 Schrauben 5 × 50 sichern.'), 'fuegen', 'befestigen'),
+      S(tk('Stufe von der Seite einschieben (nur vorne leimen). Je Seite 2 Schrauben 6 × 80 durch die Wange ins Hirnholz der Stufe, 25–30 mm von vorn und hinten, mittig in der Dicke; die Stufe Ø 4 mm vorbohren.'), 'fuegen', 'befestigen'),
     ],
     mistakes: [tk('Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
   },

@@ -118,13 +118,23 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.lochtiefe = cuts.dims.durch ? cuts.dims.laenge : cuts.dims.laenge + 5
     vars.nagel = r0(cuts.dims.laenge / 2)
   }
+  if (j.typeId === 'gratnut' && T && E) {
+    // Nutlage an der Wange: Winkel zur Wangenkante, Teilung entlang der Wange, erste Nut ab Fuß
+    let aT = memberAxes(T)[0]
+    if (aT.z < 0) aT = scale(aT, -1)
+    vars.winkel = r0((Math.asin(Math.min(1, Math.abs(aT.z))) * 180) / Math.PI)
+    const foot = T.start.z <= T.end.z ? T.start : T.end
+    const at = r.joints.filter((x) => x.typeId === 'gratnut' && (x.a === T.id || x.b === T.id)).map((x) => dot(sub(x.pos, foot), aT)).sort((a, b) => a - b)
+    vars.erste = r0(at[0] ?? dot(sub(j.pos, foot), aT))
+    vars.teilung = at.length > 1 ? r0((at[at.length - 1] - at[0]) / (at.length - 1)) : 0
+  }
   if (j.typeId === 'auflagerleiste' && cuts?.extras[0]) vars.leiste = r0(cuts.extras[0].half[1] * 2)
   // Kopfband: Zuschnitt von Spitze zu Spitze (mit Gehrungen), nicht die Achslänge
   if (j.typeId === 'kopfband' && E) vars.laenge = r0(cutLengths(r.joints.filter((x) => x.a === E.id || x.b === E.id), r.members).get(E.id) ?? memberLength(E))
   if (j.typeId === 'versatz' && !vars.size) vars.size = '8 × 160'
 
   // ohne berechnete Geometrie (ungewöhnliche Lage): übliche Werte, damit die Anleitung lesbar bleibt
-  const DEFAULTS: Record<string, string | number> = { hoehe: 60, oben: 40, unten: 30, tasche: 36, tiefe: 15, n: 2, size: '8 × 160', grip: 72, abstand: 50, rand: 40, bohr: 11, laenge: 180, nut: CROSS_NUT_DEPTH }
+  const DEFAULTS: Record<string, string | number> = { winkel: 70, erste: 200, teilung: 225, hoehe: 60, oben: 40, unten: 30, tasche: 36, tiefe: 15, n: 2, size: '8 × 160', grip: 72, abstand: 50, rand: 40, bohr: 11, laenge: 180, nut: CROSS_NUT_DEPTH }
   for (const st of guide.steps)
     for (const m of st.t.matchAll(/\{(\w+)\}/g)) if (!(m[1] in vars)) vars[m[1]] = DEFAULTS[m[1]] ?? '–'
   const effort: JointEffort = { difficulty: type.difficulty, minutes: type.minutes, drill: type.drill, hard: type.hard }

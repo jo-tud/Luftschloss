@@ -573,7 +573,12 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const thin = Math.min(E.b, E.h, Tm.b, Tm.h)
     /** Schraube durch first mm Holz in das tragende Holz (bearing mm dick in Schraubrichtung); vorbohren mit 0,7·d */
     const put8 = (head: Vec3, dir: Vec3, first: number, bearing: number) => {
-      if (type === 'gratnut') return screw(head, dir, 50, 2.5, 'nachher', 'schraube-5x50', 3)
+      // Gratnut: 6 × 80 durch die Wange ins Hirnholz der Stufe sichern, Stufe vorbohren
+      if (type === 'gratnut') {
+        screw(head, dir, 80, 3, 'nachher', 'schraube-6x80', 4)
+        out[out.length - 1].first = first
+        return
+      }
       const sz = pickScrew(first, bearing, thin)
       screw(head, dir, sz.length, sz.d / 2, 'nachher', sz.item, Math.round(sz.d * 0.7))
       out[out.length - 1].first = first

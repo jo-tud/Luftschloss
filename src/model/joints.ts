@@ -429,7 +429,7 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
   if (along > 0.85 && !['schlossschraube', 'holzbauschraube', 'lose', 'auflage', 'seilbefestigung'].includes(typeId)) return tk('Die Hölzer liegen fast parallel – hier hilft nur, sie seitlich durch die Überdeckung zu verschrauben oder zu verbolzen.')
   switch (typeId) {
     case 'gratnut':
-      return board ? undefined : tk('Nur für Bretter und Stufen, die in eine Nut geschoben werden.')
+      return board && E.role === 'stufe' ? undefined : tk('Nur für Stufen, die in eine Nut der Wange geschoben werden.')
     case 'zapfen':
     case 'schwalbenschwanz':
     case 'holzduebel':
