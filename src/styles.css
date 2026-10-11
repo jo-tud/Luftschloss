@@ -3,7 +3,7 @@
   --panel: #ffffff;
   --line: #e1e4e8;
   --text: #1f2328;
-  --muted: #6b7280;
+  --muted: #5f6673;
   --accent: #c8752e;
   --accent-soft: #fbeee2;
   --blue: #2a6fdb;
@@ -19,6 +19,29 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Tastaturfokus deutlich sichtbar, einheitlich in allen Bedienelementen */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+/* Systemeinstellung „Bewegung reduzieren“ (Kamerafahrten und Aufbau: motion.ts) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 html,
@@ -282,6 +305,8 @@ kbd {
   gap: 6px;
   align-items: center;
   cursor: pointer;
+  /* Zielgröße mindestens 24 px (WCAG 2.2) */
+  min-height: 24px;
 }
 .check.small {
   font-size: 12px;
@@ -330,7 +355,7 @@ kbd {
 .est-tag,
 .tag {
   font-style: normal;
-  font-size: 10px;
+  font-size: 11px;
   background: #fff3d1;
   color: #8a6100;
   border-radius: 4px;
@@ -373,6 +398,7 @@ kbd {
 .list li small {
   color: var(--muted);
   margin-left: auto;
+  font-size: 11.5px;
 }
 .list li:hover {
   background: #f6f7f9;
@@ -1446,18 +1472,25 @@ table.compare td {
     display: none;
   }
 }
-/* Finger- und Stiftbedienung: größere Ziele (≥ 40 px) */
+/* Finger- und Stiftbedienung: Ziele mindestens 44 × 44 px (Apple HIG) */
 @media (pointer: coarse) {
   :root {
     font-size: 15px;
   }
   button,
   select,
+  summary,
   input:not([type='checkbox']):not([type='range']) {
-    min-height: 40px;
+    min-height: 44px;
   }
-  .view-switcher button {
-    min-width: 40px;
+  .view-switcher button,
+  .view-switcher summary,
+  .modal header .close {
+    min-width: 44px;
+  }
+  .view-switcher summary {
+    display: flex;
+    align-items: center;
   }
   input[type='checkbox'] {
     width: 22px;
@@ -1829,6 +1862,7 @@ table.compare td {
     min-height: 44px;
   }
   .toolbar button,
+  .toolbar summary,
   .view-switcher button {
     min-width: 44px;
   }

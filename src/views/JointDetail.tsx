@@ -15,6 +15,7 @@ import { t, tr } from '../i18n'
 import { hardwareInstances } from './hardware'
 import { woodKindFor } from './materials'
 import { Box, COLORS, HoleDisc, PrismMesh, headGeo, metal, nutGeo, pinMat, plateGeo, pocketMat, washerGeo } from './Scene'
+import { reducedMotion } from './motion'
 
 /** Beschläge einer Verbindung als Instanzen, wie in der 3D-Ansicht, dazu Schäfte und Dübel */
 function useHardware(key: string) {
@@ -79,7 +80,7 @@ function DetailScene({ j, ending, through }: { j: DetectedJoint; ending?: Member
   }, [j, frame])
   useFrame(() => {
     const t = (performance.now() - t0.current) / 1000
-    const k = (Math.sin(t * 1.1 - Math.PI / 2) + 1) / 2
+    const k = reducedMotion() ? 0.6 : (Math.sin(t * 1.1 - Math.PI / 2) + 1) / 2
     if (moving.current) moving.current.position.copy(dir).multiplyScalar(0.002 + 0.11 * k)
   })
   const center = useMemo(() => new THREE.Vector3(j.pos.x, j.pos.z, -j.pos.y).multiplyScalar(0.001), [j])
