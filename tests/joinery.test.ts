@@ -133,13 +133,16 @@ describe('Holzverbindungen als Geometrie', () => {
       const back = eBoxes.map((o) => ({ ...o, center: { x: o.center.x - d.x * 30, y: o.center.y - d.y * 30, z: o.center.z - d.z * 30 } }))
       expect(back.some((x) => tBoxes.some((y) => obbOverlap(x, y) > 0.6))).toBe(true)
     }
-    // Gratnut und Schwalbenschwanz: quer zur Stabachse, entlang der Nut bzw. zur offenen Seite
+    // Gratnut: entlang der breiten Seite des Bretts eingeschoben; Schwalbenschwanz: quer zu beiden Stäben,
+    // zur offenen Seite
     for (const t of ['gratnut', 'schwalbenschwanz']) {
       const { j, A, B } = cutsFor(t)
       const F = jointFrame(j, A, B)!
       const d = assemblyDir(j, F)
       expect(Math.abs(d.x * F.into.x + d.y * F.into.y + d.z * F.into.z)).toBeLessThan(0.01)
-      expect(Math.abs(d.x * F.across.x + d.y * F.across.y + d.z * F.across.z)).toBeCloseTo(1, 3)
+      const [, eb, eh] = memberAxes(F.E)
+      const along = t === 'gratnut' ? (F.E.b < F.E.h ? eh : eb) : F.across
+      expect(Math.abs(d.x * along.x + d.y * along.y + d.z * along.z)).toBeCloseTo(1, 3)
       // der Sitz in T ist zu dieser Seite hin offen
       const [Tm, cut] = [F.T, cutsFor(t).c.members.get(F.T.id)!]
       const ax = memberAxes(Tm)
