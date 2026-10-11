@@ -3,6 +3,7 @@ import { catalogItem, maxLength, timber } from '../model/catalog'
 import { fmtCm, fmtM, memberBoxes, memberLength, obbBounds, obbCorners, obbOverlap, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { LOADS, NET_SAG, netEdgePull } from './statics'
 import { cornice, corniceIntrusion, memberWall, roomObstacles } from '../model/room'
+import { ceilingIntrusion, ceilingPlanes, ceilingRange } from '../model/ceiling'
 import type { Resolved } from '../model/resolve'
 import type { Member, Project, Side, Vec3 } from '../model/types'
 import { WALL_IDS } from '../model/types'
@@ -147,6 +148,7 @@ export function analyze(p: Project, r: Resolved): Analysis {
     ...r.panels.filter((x) => x.kind !== 'matratze' && x.kind !== 'netz').map((x) => ({ id: x.id, label: x.name ? tr(x.name) : t('Fläche'), boxes: [panelOBB(x)] })),
   ]
   const reported = new Set<string>()
+  const planes = ceilingPlanes(room)
   for (const part of parts) {
     const bounds = part.boxes.map(obbBounds)
     const minX = Math.min(...bounds.map((b) => b.min.x))
@@ -156,7 +158,10 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const maxZ = Math.max(...bounds.map((b) => b.max.z))
     const out = Math.max(-minX, -minY, maxX - room.length, maxY - room.width)
     if (out > 0.5) add({ id: `wand:${part.id}`, severity: 'fehler', category: CAT.kollision, title: t('{part} ragt {depth} in die Wand', { part: part.label, depth: fmtCm(out) }), targets: [part.id] }, { depth: out })
-    if (maxZ - room.height > 0.5) add({ id: `decke:${part.id}`, severity: 'fehler', category: CAT.kollision, title: t('{part} ragt {depth} in die Decke', { part: part.label, depth: fmtCm(maxZ - room.height) }), targets: [part.id] }, { depth: maxZ - room.height })
+    // Decke: an der höchsten Ecke gegen die Decke an dieser Stelle (Dachschräge)
+    let ceil = maxZ - room.height
+    if (planes.length > 1) for (const b of part.boxes) for (const c of obbCorners(b)) ceil = Math.max(ceil, ceilingIntrusion(room, c, planes))
+    if (ceil > 0.5) add({ id: `decke:${part.id}`, severity: 'fehler', category: CAT.kollision, title: planes.length > 1 && ceil > maxZ - room.height + 0.5 ? t('{part} ragt {depth} in die Dachschräge', { part: part.label, depth: fmtCm(ceil) }) : t('{part} ragt {depth} in die Decke', { part: part.label, depth: fmtCm(ceil) }), targets: [part.id] }, { depth: ceil })
     // Stuck
     let stuck = 0
     for (const b of part.boxes) for (const c of obbCorners(b)) stuck = Math.max(stuck, corniceIntrusion(room, c)?.depth ?? 0)
@@ -212,7 +217,9 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const xs = info.footprint.map((q) => q.x)
     const ys = info.footprint.map((q) => q.y)
     const fp = { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
-    let ceilingAbove = room.height
+    // unter einer Dachschräge zählt die höchste Stelle über der Liegefläche (dort setzt man sich auf)
+    const slope = ceilingRange(room, fp)
+    let ceilingAbove = slope.max
     for (const ro of room.rosettes) {
       const rr = Math.max(ro.diameter, ro.lampDiameter) / 2
       if (ro.x + rr > fp.minX && ro.x - rr < fp.maxX && ro.y + rr > fp.minY && ro.y - rr < fp.maxY) ceilingAbove = Math.min(ceilingAbove, room.height - Math.max(ro.depth, ro.lampDrop))
@@ -237,6 +244,9 @@ export function analyze(p: Project, r: Resolved): Analysis {
       targets: [a.id],
     })
     if (headroom < 750) add({ id: `kopf:${a.id}`, severity: 'warnung', category: CAT.frei, title: t('Nur {h} über der Matratze', { h: fmtM(headroom) }), detail: t('Zum Aufsetzen im Bett sind 0,80–1,00 m angenehm.'), targets: [a.id] })
+    const low = slope.min - info.mattressTop
+    if (low < 600 && slope.max - slope.min > 50)
+      add({ id: `kopf-schraege:${a.id}`, severity: low < 300 ? 'warnung' : 'hinweis', category: CAT.frei, title: t('Unter der Dachschräge nur {h} über der Matratze', { h: fmtM(Math.max(0, low)) }), detail: t('Beim Aufsetzen stößt man sich leicht den Kopf. Das Kopfende auf die hohe Seite legen und die niedrige Seite als Ablage nutzen.'), targets: [a.id] })
     const wallC = Math.max(...(['A', 'B', 'C', 'D'] as const).map((w) => (cornice(room, w).enabled ? cornice(room, w).height : 0)))
     if (info.mattressTop + 0.45 * ph > room.height - wallC && wallC > 0) add({ id: `kopf-stuck:${a.id}`, severity: 'hinweis', category: CAT.frei, title: t('An der Wand ragt der Stuck in den Kopfraum'), targets: [a.id] })
 
@@ -383,7 +393,9 @@ export function analyze(p: Project, r: Resolved): Analysis {
     const fp = { minX: D.x, maxX: D.x + D.length, minY: D.y, maxY: D.y + D.width }
     const parts = r.members.filter((m) => m.groupId === g.id)
     const mattressTop = D.z + D.thickness
-    let ceilingAbove = room.height
+    // unter einer Dachschräge zählt die höchste Stelle über der Liegefläche (dort setzt man sich auf)
+    const slope = ceilingRange(room, fp)
+    let ceilingAbove = slope.max
     for (const ro of room.rosettes) {
       const rr = Math.max(ro.diameter, ro.lampDiameter) / 2
       if (ro.x + rr > fp.minX && ro.x - rr < fp.maxX && ro.y + rr > fp.minY && ro.y - rr < fp.maxY) ceilingAbove = Math.min(ceilingAbove, room.height - Math.max(ro.depth, ro.lampDrop))
@@ -406,6 +418,9 @@ export function analyze(p: Project, r: Resolved): Analysis {
       targets: [g.id],
     })
     if (headroom < 750) add({ id: `kopf:${g.id}`, severity: 'warnung', category: CAT.frei, title: t('Nur {h} über der Matratze', { h: fmtM(headroom) }), detail: t('Zum Aufsetzen im Bett sind 0,80–1,00 m angenehm.'), targets: [g.id] })
+    const low = slope.min - mattressTop
+    if (low < 600 && slope.max - slope.min > 50)
+      add({ id: `kopf-schraege:${g.id}`, severity: low < 300 ? 'warnung' : 'hinweis', category: CAT.frei, title: t('Unter der Dachschräge nur {h} über der Matratze', { h: fmtM(Math.max(0, low)) }), detail: t('Beim Aufsetzen stößt man sich leicht den Kopf. Das Kopfende auf die hohe Seite legen und die niedrige Seite als Ablage nutzen.'), targets: [g.id] })
     // Absturzsicherung je Seite: Hölzer mind. 16 cm über der Matratze, nah an der Kante, auf mind. 60 % der Länge
     if (D.z > 600) {
       const guards = parts.flatMap((m) => memberBoxes(m).map(obbBounds)).filter((b) => b.max.z >= mattressTop + 160)

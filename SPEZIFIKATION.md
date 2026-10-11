@@ -47,7 +47,7 @@ Luftschloss ist ein Planungswerkzeug im Desktop-Browser. Heimwerker passen damit
 | # | Thema | Entscheidung |
 |---|---|---|
 | F1 | Ort | Repository **Luftschloss** |
-| F2 | Raumform | **Rechteck**, dazu **Stuckleisten** (an allen Wänden gleich, je Wand abweichend möglich), **Deckenrosette mit Lampe**, **Sockel- bzw. Parkettleisten**, **tiefe Fensternischen**. L-Form, Unterzug und Dachschräge kommen später. |
+| F2 | Raumform | **Rechteck**, dazu **Stuckleisten** (an allen Wänden gleich, je Wand abweichend möglich), **Deckenrosette mit Lampe**, **Sockel- bzw. Parkettleisten**, **tiefe Fensternischen**, **Dachschrägen** (je Wand Kniestock und Neigung; Decke ist die tiefste der Ebenen, auch Grate in der Ecke). L-Form und Unterzug kommen später. |
 | F3 | Zielgruppe | Kinder, Jugendliche, Erwachsene; das Testbett ist für Jugendliche. Das Sicherheitsprofil ist umschaltbar, und alles ist quittierbar. |
 | F4 | Sprache | Englisch als Standard, Deutsch umschaltbar, automatisch nach Browsersprache (🌐 in der Werkzeugleiste); Anzeige in cm, intern ganzzahlige mm |
 | F5 | Technik | React, TypeScript, Vite, three.js über react-three-fiber |
@@ -99,7 +99,8 @@ Beim ersten Start lädt das **Beispielzimmer** (`testProject()` in `src/model/de
 - **Heizkörper:** Maße, Wandabstand (auch negativ für Nischen), **Konvektionsraum** darüber.
 - **Steckdosen.** ✅
 - **Möbel und Personen:** Schreibtisch, Stuhl, Sofa, Schrank, Regal, Kommode, freier Körper; Person stehend oder sitzend mit Körpergröße. ✅
-- Später: L-Form, Unterzug, Dachschräge, Rollladenkasten, Thermostatkopf. ◻
+- ✅ Dachschräge: Bauteile, die in die Schräge ragen, sind eine Kollision; der Kopfraum zählt an der höchsten Stelle über der Liegefläche, dazu ein Hinweis, wenn es an der niedrigen Seite eng wird (`kopf-schraege`). Stuck nur unter der flachen Decke.
+- Später: L-Form, Unterzug, Rollladenkasten, Thermostatkopf. ◻
 
 ---
 
@@ -299,7 +300,7 @@ Grundlagen und Werte stehen in [`docs/recherche/statik-grundlagen.md`](docs/rech
 | M5 Statik des Gestells | 3D-Stabwerk (Skyline-Löser) mit Verbindungsfedern je Verbindungsart, Lastfälle Eigengewicht/Nutzlast (Lastprofil Bett 1,0 bzw. Hochebene 2,0 kN/m²), Toben 2 kN auf 50 × 50 cm, Seitenlast längs/quer, Geländer; EC5-Nachweise (Biegung + Normalkraft mit Knicken, Schub mit k_cr, Durchbiegung L/300 bzw. L/200 mit Kriechen, Restquerschnitt an Verbindungen), Verbindungskräfte, Wackeln; Einfärbung, Verformungsfigur, Wackel-Animation, Querschnittsvergleich, Befunde in der Prüfliste | ✅ |
 | M6 Bauplan | Druckbarer Bauplan (PDF über Drucken): Kopfdaten, 3D-Bild, Ansichten vorne/seitlich/oben aus dem Modell mit Maßketten und Teilenummern, Teileliste mit Ausklinkungen, Skizzen je Verbindungsart als Explosions-Isometrie, aus der Modellgeometrie erzeugt, Montageschritte mit Teilen und Werkzeug, Zuschnitt, offene Punkte. **Aufbau-Animation** (Teile fliegen Schritt für Schritt ein). Prüfung „passt durch die Tür“. Plattenzuschnitt 2D noch offen. | ✅ |
 | M6b Tablet | Finger/Stift (antippen = auswählen, ausgewählt ziehen = verschieben, Pinch-Zoom, zwei Finger verschieben/drehen, Doppeltipp = Fokus), Seitenleisten als Schubladen unter 1280 px, große Bedienflächen bei Fingerbedienung, `npm run lan` mit Projekt-Abgleich über /api/projekt und QR-Code, Tailscale-Anleitung, PWA (installierbar, offline über HTTPS/localhost) | ✅ |
-| M7 Erweiterungen | Vorlagen Halbhoch, **mehrere Matratzen** (Anzahl, nebeneinander oder hintereinander, Abstand; „Zwei Kinder oben“), **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). Offen: auf Regal, Raum als Polygon, Dachschräge, Plattenzuschnitt 2D. | ◐ |
+| M7 Erweiterungen | Vorlagen Halbhoch, **mehrere Matratzen** (Anzahl, nebeneinander oder hintereinander, Abstand; „Zwei Kinder oben“), **Etagenbett** (zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft), **Galerie mit Mittelstützen**, **begehbares Netz** (Randzug n = q·w²/8f und Sprung als Seilkraft in der Rahmenstatik), Geländerstützen für lange Felder (an der Wand innen), **Preis-Agent** mit eigenem API-Schlüssel (Websuche, Antwort wird direkt übernommen). **Dachschräge** (Raum → Dachschräge, `src/model/ceiling.ts`). Offen: auf Regal, Raum als Polygon, Plattenzuschnitt 2D. | ◐ |
 | M8 Visuelle Qualität | Erster Durchgang: prozedurale Holzmaserung (Faser, Jahresringe, Hirnholz, OSB-Späne), Dielenboden, Putz, weiches Fensterlicht ohne Download, Außenansicht durch die Fenster (Stencil-Maske), Schlossschrauben als Modelle, Doppelklick-Heranfliegen, Qualitätsstufen. Zweiter Durchgang: Winkel und Balkenschuhe, Stuckprofil und Rosette, Sonnenlicht nach Uhrzeit. Dritter Durchgang: Holzverbindungen als Geometrie (Zapfen, Blätter, Nuten, Einlassungen), Kopfbänder auf Gehrung und eingelassen, Holzbauschrauben, Holznägel, Holzdübel, Bettschrauben mit Quermutter, Skizzen als Isometrie, Verschieben mit der mittleren Maustaste, Seitenleisten in der Größe veränderbar. Offen siehe Kapitel 13 | ✅ |
 | M9 Sprachen & Einstieg | Englisch als Standard, Deutsch umschaltbar (automatisch nach Browsersprache), alle Texte über `t()` mit Test auf fehlende Übersetzungen; **Planungsassistent** für Einsteiger (Raum, Wände, Öffnungen, Schläfer, Nutzung darunter, Befestigung → geprüfte, gewichtete Vorschläge) | ✅ |
 
@@ -323,6 +324,7 @@ Gesammelt und laufend ergänzt:
 3. **Wackel-Vorschau.** Die Statik zeigt nicht nur Zahlen: Ein Gestell ohne Aussteifung wackelt sichtbar, mit Kopfbändern steht es still. ✅ umgesetzt (M5)
 4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.
 5. **Vom leeren Zimmer zum geprüften Entwurf.** Der Planungsassistent fragt in wenigen Schritten Raum und Decke, Wände, Öffnungen, Schläfer, Nutzung darunter und Befestigung ab und schlägt bis zu drei geprüfte, gewichtete Entwürfe vor, die direkt weiter anpassbar sind. ✅ umgesetzt (M9)
+6. **Kopfraum-Karte unter der Schräge.** Die Matratze färbt sich nach der Höhe bis zur Decke, die beste Stelle zum Aufsetzen ist markiert; so sieht man sofort, wo das Kopfende hingehört. ◻ Idee
 
 ---
 

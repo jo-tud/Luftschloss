@@ -3,6 +3,7 @@ import { bestCorner, placeBed, type Corner } from '../model/placement'
 import { Ico, Plus } from './icons'
 import { openWizard } from './Project'
 import { uid } from '../model/geometry'
+import { SLOPE_ANGLE } from '../model/ceiling'
 import { BED_TYPE_LABEL } from '../model/loftbed'
 import type { BedType, CeilingMaterial, LoftBedParams, CorniceProfile, FloorMaterial, Furniture, FurnitureKind, Project, WallId, WallMaterial, WallObject } from '../model/types'
 import { WALL_IDS } from '../model/types'
@@ -83,6 +84,32 @@ function RoomTab() {
         <Num label={t('Breite (Wand B/D)')} value={r.width} onChange={(v) => setRoom((d) => void (d.room.width = v))} min={1000} max={20000} />
         <Num label={t('Raumhöhe')} value={r.height} onChange={(v) => setRoom((d) => void (d.room.height = v), 'room.height')} min={1800} max={6000} estimated={est(p, 'room.height')} />
         <Num label={t('Wanddicke (Fensterwand)')} value={r.wallThickness} onChange={(v) => setRoom((d) => void (d.room.wallThickness = v))} min={80} />
+      </Section>
+      <Section title={t('Dachschräge')} open={WALL_IDS.some((w) => r.slopes?.[w])}>
+        {WALL_IDS.map((w) => {
+          const sl = r.slopes?.[w]
+          return (
+            <div key={w} className="sub-row">
+              <Check
+                label={t('Schräge über Wand {w}', { w })}
+                value={!!sl}
+                onChange={(v) =>
+                  setRoom((d) => {
+                    d.room.slopes = { ...d.room.slopes }
+                    if (v) d.room.slopes[w] = { kneeHeight: Math.min(1000, d.room.height - 200), angle: 45 }
+                    else delete d.room.slopes[w]
+                  })
+                }
+              />
+              {sl && (
+                <>
+                  <Num label={t('Kniestock')} value={sl.kneeHeight} onChange={(v) => setRoom((d) => void (d.room.slopes![w]!.kneeHeight = v))} min={0} max={r.height - 50} title={t('Höhe der senkrechten Wand bis zum Beginn der Schräge')} />
+                  <Num label={t('Neigung')} value={sl.angle} unit="°" onChange={(v) => setRoom((d) => void (d.room.slopes![w]!.angle = v))} min={SLOPE_ANGLE.min} max={SLOPE_ANGLE.max} title={t('Dachneigung gegen die Waagrechte')} />
+                </>
+              )}
+            </div>
+          )
+        })}
       </Section>
       <Section title={t('Stuckleiste')}>
         <Check label={t('Stuck an der Decke')} value={r.cornice.enabled} onChange={(v) => setCornice({ enabled: v })} />

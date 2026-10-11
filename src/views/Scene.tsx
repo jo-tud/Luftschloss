@@ -7,9 +7,11 @@ import { catalogItem } from '../model/catalog'
 import { fmtCm, fmtM, memberOBB, panelOBB, wallFrame, type OBB } from '../model/geometry'
 import { allCuts, memberSolids, type Prism } from '../model/joinery'
 import type { DetectedJoint } from '../model/resolve'
+import { ceilingFaces, flatSpans, wallTop } from '../model/ceiling'
 import { cornice, doorGeom, furnitureBox, lampShadeHeight, sashBoxes, windowSashes } from '../model/room'
 import type { Furniture, Member, Panel, Project, Vec3, WallId, WindowObj } from '../model/types'
 import { WALL_IDS } from '../model/types'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { buildSteps } from '../analysis/assembly'
 import { derive, useStore, type Derived } from '../state/store'
 import { T } from './camera'
@@ -420,8 +422,14 @@ function Mattress({ pa }: { pa: Panel }) {
   )
 }
 
-/** Wand als Quader-Stücke um Fenster- und Türöffnungen herum */
-function wallPieces(p: Project, wall: WallId): OBB[] {
+/** Wandstück: Quader, unter einer Dachschräge mit schräger Oberkante (top0 links, top1 rechts) */
+interface WallPiece {
+  box: OBB
+  slanted?: { f: ReturnType<typeof wallFrame>; s0: number; s1: number; d0: number; d1: number; z0: number; top0: number; top1: number }
+}
+
+/** Wand als Stücke um Fenster- und Türöffnungen herum, oben bis zur Decke bzw. Dachschräge */
+function wallPieces(p: Project, wall: WallId): WallPiece[] {
   const r = p.room
   const f = wallFrame(r, wall)
   const T0 = r.wallThickness
@@ -434,36 +442,70 @@ function wallPieces(p: Project, wall: WallId): OBB[] {
       z1: o.kind === 'fenster' ? o.sillHeight + o.height : o.height,
       nicheBelow: o.kind === 'fenster' && o.niche.below ? o.niche.belowDepth : 0,
     }))
-  const stations = new Set<number>([0, f.length])
+  const top = wallTop(r, wall)
+  const topAt = (s: number) => {
+    for (let i = 0; i < top.length - 1; i++) if (s <= top[i + 1].s) return top[i].z + ((top[i + 1].z - top[i].z) * (s - top[i].s)) / Math.max(1e-9, top[i + 1].s - top[i].s)
+    return top[top.length - 1].z
+  }
+  const stations = new Set<number>(top.map((q) => q.s))
   for (const o of openings) {
     stations.add(Math.max(0, o.s0))
     stations.add(Math.min(f.length, o.s1))
   }
   const st = [...stations].sort((a, b) => a - b)
-  const out: OBB[] = []
-  const piece = (s0: number, s1: number, z0: number, z1: number, d0 = -T0, d1 = 0) => {
-    if (s1 - s0 < 1 || z1 - z0 < 1) return
+  const out: WallPiece[] = []
+  const piece = (s0: number, s1: number, z0: number, top0: number, top1: number, d0 = -T0, d1 = 0) => {
+    if (s1 - s0 < 1 || Math.max(top0, top1) - z0 < 1) return
+    top0 = Math.max(top0, z0)
+    top1 = Math.max(top1, z0)
+    const z1 = Math.max(top0, top1)
     const sm = (s0 + s1) / 2
     const dm = (d0 + d1) / 2
-    out.push({
+    const box: OBB = {
       center: { x: f.start.x + f.u.x * sm + f.n.x * dm, y: f.start.y + f.u.y * sm + f.n.y * dm, z: (z0 + z1) / 2 },
       axes: [f.u, f.n, { x: 0, y: 0, z: 1 }],
       half: [(s1 - s0) / 2, (d1 - d0) / 2, (z1 - z0) / 2],
-    })
+    }
+    out.push(Math.abs(top0 - top1) < 0.5 ? { box } : { box, slanted: { f, s0, s1, d0, d1, z0, top0, top1 } })
   }
   for (let i = 0; i < st.length - 1; i++) {
     const a = st[i]
     const b = st[i + 1]
     const mid = (a + b) / 2
     const o = openings.find((x) => mid > x.s0 && mid < x.s1)
-    if (!o) piece(a, b, 0, r.height)
+    const ta = topAt(a)
+    const tb = topAt(b)
+    if (!o) piece(a, b, 0, ta, tb)
     else {
-      if (o.nicheBelow > 0) piece(a, b, 0, o.z0, -T0, -o.nicheBelow)
-      else piece(a, b, 0, o.z0)
-      piece(a, b, o.z1, r.height)
+      if (o.nicheBelow > 0) piece(a, b, 0, Math.min(o.z0, ta), Math.min(o.z0, tb), -T0, -o.nicheBelow)
+      else piece(a, b, 0, Math.min(o.z0, ta), Math.min(o.z0, tb))
+      piece(a, b, o.z1, ta, tb)
     }
   }
   return out
+}
+
+/** Quader mit schräger Oberkante als Geometrie in Szenenkoordinaten */
+function slantedGeometry(g: NonNullable<WallPiece['slanted']>): THREE.BufferGeometry {
+  const geo = new THREE.BoxGeometry(1, 1, 1)
+  const pos = geo.attributes.position
+  for (let i = 0; i < pos.count; i++) {
+    const s = g.s0 + (pos.getX(i) + 0.5) * (g.s1 - g.s0)
+    const d = g.d0 + (pos.getY(i) + 0.5) * (g.d1 - g.d0)
+    const z = pos.getZ(i) > 0 ? g.top0 + ((g.top1 - g.top0) * (s - g.s0)) / (g.s1 - g.s0) : g.z0
+    const q = T(g.f.start.x + g.f.u.x * s + g.f.n.x * d, g.f.start.y + g.f.u.y * s + g.f.n.y * d, z)
+    pos.setXYZ(i, q.x, q.y, q.z)
+  }
+  geo.computeVertexNormals()
+  geo.computeBoundingBox()
+  geo.computeBoundingSphere()
+  return geo
+}
+
+function SlantedWall({ g, cast }: { g: NonNullable<WallPiece['slanted']>; cast: boolean }) {
+  const geo = useMemo(() => slantedGeometry(g), [g])
+  useEffect(() => () => geo.dispose(), [geo])
+  return <mesh geometry={geo} material={plasterMaterial(COLORS.wall)} castShadow={cast} receiveShadow />
 }
 
 function corniceGeometry(p: Project, wall: WallId): THREE.BufferGeometry | null {
@@ -506,19 +548,54 @@ function corniceGeometry(p: Project, wall: WallId): THREE.BufferGeometry | null 
     shape.lineTo(0, -h)
   }
   shape.lineTo(0, 0)
-  const g = new THREE.ExtrudeGeometry(shape, { depth: f.length / 1000, bevelEnabled: false })
+  // nur dort, wo die flache Decke an die Wand stößt (nicht unter Dachschrägen)
   const n = vec(f.n)
   const u = vec(f.u)
-  const m = new THREE.Matrix4().makeBasis(n, new THREE.Vector3(0, 1, 0), u)
-  m.setPosition(T(f.start.x, f.start.y, p.room.height))
-  g.applyMatrix4(m)
+  const parts = flatSpans(p.room, wall).map(([s0, s1]) => {
+    const g = new THREE.ExtrudeGeometry(shape, { depth: (s1 - s0) / 1000, bevelEnabled: false })
+    const m = new THREE.Matrix4().makeBasis(n, new THREE.Vector3(0, 1, 0), u)
+    m.setPosition(T(f.start.x + f.u.x * s0, f.start.y + f.u.y * s0, p.room.height))
+    g.applyMatrix4(m)
+    return g
+  })
+  if (parts.length <= 1) return parts[0] ?? null
+  const merged = mergeGeometries(parts)
+  parts.forEach((g) => g.dispose())
+  return merged
+}
+
+/** Dachschrägen (und in der Ich-Perspektive die flache Decke) als Flächen */
+function ceilingGeometry(poly: Vec3[]): THREE.BufferGeometry {
+  const pts = poly.map((q) => T(q.x, q.y, q.z))
+  const pos: number[] = []
+  for (let i = 1; i < pts.length - 1; i++) for (const q of [pts[0], pts[i], pts[i + 1]]) pos.push(q.x, q.y, q.z)
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.computeVertexNormals()
   return g
 }
 
 export function RoomMeshes({ p, mini, showCeiling, wallShadows = false, hideCeilingItems }: { p: Project; mini?: boolean; showCeiling: boolean; wallShadows?: boolean; hideCeilingItems?: boolean }) {
   const r = p.room
   const wallRefs = useRef<Partial<Record<WallId, THREE.Group>>>({})
-  const walls = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, wallPieces(p, w)])) as Record<WallId, OBB[]>, [p.room, p.wallObjects])
+  const walls = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, wallPieces(p, w)])) as Record<WallId, WallPiece[]>, [p.room, p.wallObjects])
+  const ceiling = useMemo(
+    () =>
+      ceilingFaces(r).map((c) => {
+        const g = ceilingGeometry(c.poly)
+        // Normale zur Raumseite hin; die flache Decke nur in der Ich-Perspektive
+        const a = c.poly[0]
+        const b = c.poly[1]
+        const d = c.poly[2]
+        const nz = (b.x - a.x) * (d.y - a.y) - (b.y - a.y) * (d.x - a.x)
+        const n = vec({ x: (b.y - a.y) * (d.z - a.z) - (b.z - a.z) * (d.y - a.y), y: (b.z - a.z) * (d.x - a.x) - (b.x - a.x) * (d.z - a.z), z: nz }).normalize()
+        if (n.y > 0) n.negate()
+        return { wall: c.wall, g, n }
+      }),
+    [r],
+  )
+  useEffect(() => () => ceiling.forEach((c) => c.g.dispose()), [ceiling])
+  const ceilingRefs = useRef<(THREE.Mesh | null)[]>([])
   const cornices = useMemo(() => Object.fromEntries(WALL_IDS.map((w) => [w, corniceGeometry(p, w)])) as Record<WallId, THREE.BufferGeometry | null>, [p.room])
   useEffect(() => () => Object.values(cornices).forEach((g) => g?.dispose()), [cornices])
   const labelRefs = useRef<Partial<Record<WallId, HTMLDivElement>>>({})
@@ -534,6 +611,10 @@ export function RoomMeshes({ p, mini, showCeiling, wallShadows = false, hideCeil
       const label = labelRefs.current[id]
       if (label) label.style.display = g.visible ? '' : 'none'
     }
+    ceiling.forEach((c, i) => {
+      const m = ceilingRefs.current[i]
+      if (m) m.visible = showCeiling || (!!c.wall && c.n.dot(tmp) < 0.3)
+    })
   })
   return (
     <group>
@@ -541,17 +622,14 @@ export function RoomMeshes({ p, mini, showCeiling, wallShadows = false, hideCeil
         <planeGeometry args={[r.length / 1000, r.width / 1000]} />
         {p.room.floor === 'holzdielen' ? <primitive object={floorMaterial(COLORS.floor)} attach="material" /> : <meshStandardMaterial color="#d8d2c6" roughness={0.9} />}
       </mesh>
-      {showCeiling && (
-        <mesh position={T(r.length / 2, r.width / 2, r.height)} rotation={[Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[r.length / 1000, r.width / 1000]} />
-          <meshStandardMaterial color={COLORS.ceiling} side={THREE.DoubleSide} emissive="#cfc9bf" emissiveIntensity={0.45} roughness={0.95} />
+      {ceiling.map((c, i) => (
+        <mesh key={i} ref={(m) => void (ceilingRefs.current[i] = m)} geometry={c.g} visible={showCeiling}>
+          <meshStandardMaterial color={COLORS.ceiling} side={THREE.DoubleSide} emissive="#cfc9bf" emissiveIntensity={c.wall ? 0.3 : 0.45} roughness={0.95} />
         </mesh>
-      )}
+      ))}
       {WALL_IDS.map((id) => (
         <group key={id} ref={(g) => void (wallRefs.current[id] = g ?? undefined)}>
-          {walls[id].map((o, i) => (
-            <Box key={i} o={o} color={COLORS.wall} cast={wallShadows} plaster />
-          ))}
+          {walls[id].map((o, i) => (o.slanted ? <SlantedWall key={i} g={o.slanted} cast={wallShadows} /> : <Box key={i} o={o.box} color={COLORS.wall} cast={wallShadows} plaster />))}
           {cornices[id] && (
             <mesh geometry={cornices[id]!}>
               <meshStandardMaterial color={COLORS.stuck} side={THREE.DoubleSide} roughness={0.7} emissive="#b8b2a8" emissiveIntensity={0.25} />

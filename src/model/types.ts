@@ -60,6 +60,15 @@ export interface Room {
   corniceOverrides: Partial<Record<WallId, CorniceProfile>>
   skirting: { enabled: boolean; height: Mm; depth: Mm }
   rosettes: Rosette[]
+  /** Dachschrägen je Wand (fehlt = senkrechte Wand bis zur Decke) */
+  slopes?: Partial<Record<WallId, Slope>>
+}
+
+/** Dachschräge über einer Wand: senkrecht bis zum Kniestock, dann geneigt bis zur Raumhöhe */
+export interface Slope {
+  kneeHeight: Mm
+  /** Neigung gegen die Waagrechte in Grad */
+  angle: number
 }
 
 export type SashOpening = 'fest' | 'dreh' | 'kipp' | 'drehkipp'

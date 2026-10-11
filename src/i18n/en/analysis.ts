@@ -44,6 +44,9 @@ const en: Record<string, string> = {
   // --- Kollisionen ---
   '{part} ragt {depth} in die Wand': '{part} protrudes {depth} into the wall',
   '{part} ragt {depth} in die Decke': '{part} protrudes {depth} into the ceiling',
+  '{part} ragt {depth} in die Dachschräge': '{part} protrudes {depth} into the sloped ceiling',
+  'Unter der Dachschräge nur {h} über der Matratze': 'Only {h} above the mattress under the sloped ceiling',
+  'Beim Aufsetzen stößt man sich leicht den Kopf. Das Kopfende auf die hohe Seite legen und die niedrige Seite als Ablage nutzen.': 'Easy to bump your head when sitting up. Put the head end on the high side and use the low side for storage.',
   '{part} stößt an den Stuck': '{part} hits the cornice',
   'Rund {depth} zu nah. Bauteil absenken, von der Wand abrücken oder (bei Pfosten) ausklinken. Stuck möglichst nie berühren.': 'About {depth} too close. Lower the part, move it away from the wall or (for posts) notch it. Avoid touching the cornice if at all possible.',
   '{what} wird verdeckt': '{what} is covered',
