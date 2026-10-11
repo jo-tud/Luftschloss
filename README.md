@@ -1,5 +1,7 @@
 [Deutsch](README.de.md) · **English**
 
+<img src="public/icon.svg" width="72" height="72" alt="Luftschloss logo">
+
 # Luftschloss 🏰 – plan your loft bed in your real room
 
 **Want to build a loft bed yourself?** Luftschloss shows you in 3D whether it fits before you buy a single board: will the windows still open, can you stand underneath, is the ceiling moulding in the way? When you are done, you get a shopping list in real DIY-store timber lengths and a build plan to print out.

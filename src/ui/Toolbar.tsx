@@ -28,11 +28,16 @@ export function Toolbar() {
         <Ico i={Menu} />
       </button>
       <div className="brand" title={t('Luftschloss – Hochbettplaner')}>
-        <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden>
-          <rect x="4" y="6" width="4" height="22" fill="#b07a3b" />
-          <rect x="24" y="6" width="4" height="22" fill="#b07a3b" />
-          <rect x="4" y="12" width="24" height="5" fill="#d9a566" />
-          <path d="M6 6 L16 1 L26 6" stroke="#8a5a2b" strokeWidth="2" fill="none" />
+        <svg viewBox="0 0 64 64" width="24" height="24" aria-hidden>
+          <rect width="64" height="64" rx="14" fill="#c8752e" />
+          <g fill="#fff">
+            <rect x="13" y="14" width="6.5" height="38" rx="1" />
+            <rect x="44.5" y="14" width="6.5" height="38" rx="1" />
+            <rect x="23.5" y="14" width="6.5" height="8" />
+            <rect x="34" y="14" width="6.5" height="8" />
+            <rect x="13" y="21" width="38" height="5" />
+            <rect x="13" y="31" width="38" height="6" rx="1" />
+          </g>
         </svg>
         <b>{'Luftschloss'}</b>
       </div>
