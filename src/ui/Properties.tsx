@@ -6,7 +6,7 @@ import { fmtCm, fmtM, memberLength, uid } from '../model/geometry'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
 import { JointTypeSelect } from './JointTypeSelect'
 import { GroupProps, MultiProps } from './GroupProps'
-import { BED_TYPE_LABEL, bedOuterSize, bedTypeLabel } from '../model/loftbed'
+import { BED_TYPE_LABEL, bedOuterSize, bedTypeLabel, outsideRails } from '../model/loftbed'
 import { jointKey } from '../model/resolve'
 import { deckOnFurniture, keepWallContact } from '../model/placement'
 import type { Assembly, BedType, DeckType, Furniture, GuardType, LadderType, LoftBedParams, Member, PartOverride, Project, Side, WallId, WallObject } from '../model/types'
@@ -224,6 +224,9 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
   const wallToWall = a.params.type === 'nische'
   const styleMatters = a.params.deck === 'platte' || a.params.deck === 'dielen' || a.params.deck === 'lattenrost' || (a.params.deck === 'latten' && wallToWall)
   const P = a.params
+  // Zargen außen gibt es nur bei vier Pfosten bis zum Boden
+  const canOutside = outsideRails({ ...P, frameStyle: 'aussen' })
+  const aussen = outsideRails(P)
   const p = useStore((s) => s.project)
   // breite Leimholzbretter: Aufteilung wie im Gestell (loftbed.ts)
   const deckBoardList = (() => {
@@ -390,7 +393,7 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
       </Section>
       )}
       {show('hoelzer') && (
-      <Section title={t('Hölzer')} id={sid('hoelzer')} open={sopen('hoelzer')} summary={`${timberShort(P.postCatalogId)} · ${timberShort(P.railCatalogId)}${P.braces ? ` · ${t('Kopfbänder')}` : ''}`}>
+      <Section title={t('Hölzer')} id={sid('hoelzer')} open={sopen('hoelzer')} summary={`${timberShort(P.postCatalogId)} · ${timberShort(P.railCatalogId)}${P.braces && !aussen ? ` · ${t('Kopfbänder')}` : ''}`}>
         <Sel label={t('Pfosten')} value={P.postCatalogId} options={catalogOptions((t) => !t.round && t.b === t.h && t.b >= 54)} onChange={(v) => setP({ postCatalogId: v })} />
         <Sel label={t('Zargen / Riegel')} value={P.railCatalogId} options={catalogOptions((t) => !t.round && t.h >= 94)} onChange={(v) => setP({ railCatalogId: v })} />
         {hasJoists ? (
@@ -398,13 +401,14 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
         ) : (
           <p className="hint">{t('Querträger: bei dieser Liegefläche nicht nötig – die Latten liegen direkt auf den Längszargen.')}</p>
         )}
-        {styleMatters ? (
-          <Sel
+        {styleMatters || canOutside ? (
+          <Sel<LoftBedParams['frameStyle']>
             label={t('Bauweise')}
-            value={P.frameStyle}
+            value={P.frameStyle === 'aussen' && !canOutside ? 'zargen' : P.frameStyle}
             options={[
-              ['zargen', t('Querträger zwischen Zargen')],
-              ['aufgelegt', t('Aufgelegt (Träger + Latten drauf)')],
+              ['zargen', styleMatters ? t('Querträger zwischen Zargen') : t('Zargen zwischen den Pfosten')],
+              ...(styleMatters ? [['aufgelegt', t('Aufgelegt (Träger + Latten drauf)')] as [LoftBedParams['frameStyle'], string]] : []),
+              ...(canOutside ? [['aussen', t('Zargen außen am Pfosten, durchgebolzt')] as [LoftBedParams['frameStyle'], string]] : []),
             ]}
             onChange={(v) => setP({ frameStyle: v })}
             title={t('Aufgelegt: Querträger bzw. Latten liegen oben auf Wand- und Frontbalken')}
@@ -412,6 +416,8 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
         ) : (
           <p className="hint">{t('Bauweise: bei Latten bzw. Netz ohne Wahl – erst mit Platte, Dielen oder Lattenrost gibt es Querträger, die zwischen den Zargen hängen oder oben aufliegen.')}</p>
         )}
+        {aussen && <p className="hint">{t('Zargen außen: Die Pfosten stehen eine Zargendicke eingerückt, die Zargen laufen außen durch und werden mit Schlossschrauben durch die Pfosten gebolzt. Die Querzargen sitzen eine Zargenhöhe tiefer, damit sich die Bolzen nicht kreuzen; das Geländer hält eigene Pfosten außen an den Zargen.')}</p>}
+        {P.frameStyle === 'aussen' && !canOutside && <p className="hint">{t('Zargen außen gibt es nur bei freistehenden oder deckenhohen Betten mit vier Pfosten und ohne Netz – hier bleiben die Zargen zwischen den Pfosten.')}</p>}
         {P.type !== 'deckenhoch' && P.type !== 'abgehaengt' && (
           <Sel
             label={t('Freie Ecken getragen von')}
@@ -444,8 +450,12 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
             {t('Auf Möbel setzen')}
           </button>
         )}
-        <Check label={t('Kopfbänder (Aussteifung)')} value={P.braces} onChange={(v) => setP({ braces: v })} />
-        {P.braces && (
+        {aussen ? (
+          <p className="hint">{t('Kopfbänder: bei Zargen außen nicht vorgesehen – das Bett an der Wand befestigen (Kippsicherung).')}</p>
+        ) : (
+          <Check label={t('Kopfbänder (Aussteifung)')} value={P.braces} onChange={(v) => setP({ braces: v })} />
+        )}
+        {P.braces && !aussen && (
           <Sel
             label={t('Kopfbänder aus')}
             value={P.braceCatalogId ?? 'auto'}

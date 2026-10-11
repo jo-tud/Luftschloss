@@ -155,6 +155,7 @@ const en: Record<string, string> = {
   'Drucken / PDF': 'Print / PDF',
   'Bauart': 'Type',
   'aufgelegt': 'beams on top',
+  'Zargen außen': 'rails outside the posts',
   '{len} dick': '{len} thick',
   'nebeneinander': 'side by side',
   'hintereinander': 'end to end',

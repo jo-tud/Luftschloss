@@ -126,6 +126,7 @@ Beim ersten Start lädt das **Beispielzimmer** (`testProject()` in `src/model/de
 | Hochebene Wand zu Wand | ✅ | Wandriegel an beiden Enden |
 | Abgehängt | ✅ mit Warnung | Wandriegel und Gewindestangen |
 | **Wandbalken, Latten drauf** | ✅ | Bei massiven Wänden (Ziegel, Beton) sehr effizient: Balken direkt an die Wand, vorne ein Balken auf Pfosten, Querträger bzw. Latten oben **aufgelegt** (Bauweise „aufgelegt“). Warnung, wenn die Wand nicht tragfähig ist. |
+| **Zargen außen, durchgebolzt** | ✅ | Häufig gebaut (freistehend oder deckenhoch, vier Pfosten): Pfosten um eine Zargendicke eingerückt, Längszargen laufen außen durch und sind mit Schlossschrauben durch die Pfosten gebolzt, Querzargen eine Zargenhöhe tiefer (die Bolzen kreuzen sich nicht, an den Ecken liegen die Längszargen auf). Das Geländer hält eigene Pfosten außen an den Zargen; keine Kopfbänder, deshalb Kippsicherung an der Wand. |
 | **Eckbett, Ecke abgehängt** | ✅ | Zwei Wandbalken, die freie Ecke an einer Gewindestange von der Decke. Fehler bei nicht tragfähiger Decke, Warnung bei Holzbalkendecke (nur in einen Balken). |
 | Halbhoch, 1,20 m | ✅ | Für jüngere Kinder |
 | Etagenbett | ✅ | Zweite Liegefläche zwischen den Pfosten, Sitzhöhe unten geprüft |
@@ -135,7 +136,7 @@ Beim ersten Start lädt das **Beispielzimmer** (`testProject()` in `src/model/de
 | Bett auf Regal, Podest | ◻ | |
 
 Parameter sind:
-- **Bauweise:** Querträger zwischen Zargen oder **aufgelegt**; freie Ecke auf Pfosten oder **von der Decke abgehängt**
+- **Bauweise:** Querträger zwischen Zargen, **aufgelegt** oder **Zargen außen am Pfosten, durchgebolzt** (nur mit vier Pfosten, `outsideRails()` in `src/model/loftbed.ts`); freie Ecke auf Pfosten oder **von der Decke abgehängt**
 - Matratzenmaß und -dicke, Spiel, Liegehöhe, Lage und Drehung, Spiegeln, Wandanschluss
 - Mehrere Matratzen: Anzahl, nebeneinander oder hintereinander, Abstand
 - Etagenbett (untere Liegefläche mit Höhe), Mittelstützen
@@ -338,6 +339,7 @@ Gesammelt und laufend ergänzt:
 4. **Fenster-Durchschwenk.** Schon umgesetzt: Der Flügel schwenkt in 3D auf, und der Schwenkbogen zeigt grün/rot, wo er anstößt.
 5. **Vom leeren Zimmer zum geprüften Entwurf.** Der Planungsassistent fragt in wenigen Schritten Raum und Decke, Wände, Öffnungen, Schläfer, Nutzung darunter und Befestigung ab und schlägt bis zu drei geprüfte, gewichtete Entwürfe vor, die direkt weiter anpassbar sind. ✅ umgesetzt (M9)
 6. **Kopfraum-Karte unter der Schräge.** Die Matratze färbt sich nach der Höhe bis zur Decke, die beste Stelle zum Aufsetzen ist markiert; so sieht man sofort, wo das Kopfende hingehört. ◻ Idee
+7. **Bauweisen im Vergleich.** Zargen zwischen den Pfosten, aufgelegt oder außen durchgebolzt: dasselbe Bett in allen Bauweisen nebeneinander in 3D, mit Preis, Wackeln, Bohrlöchern und Aufbauzeit; ein Klick übernimmt die gewählte. ◻ Idee
 
 ---
 

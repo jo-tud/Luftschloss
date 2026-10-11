@@ -70,6 +70,7 @@ const en: Record<string, string> = {
   'Seil {s}': 'Rope {s}',
 
   // --- Auflösung, Raum (resolve.ts, room.ts) ---
+  'Kippsicherung: Zarge am Pfosten mit Rahmendübeln an der Wand befestigen': 'Anti-tip: fix the rail at the post to the wall with frame plugs',
   'Kippsicherung: Pfosten mit Winkel an der Wand befestigen': 'Anti-tip: fix the post to the wall with an angle bracket',
   'Sockelleiste Wand {id}': 'Skirting board on wall {id}',
   'Stuck Wand {id}': 'Cornice on wall {id}',
