@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { testProject } from '../src/model/defaults'
+import { memberAxes, memberBoxes } from '../src/model/geometry'
 import { resolveProject } from '../src/model/resolve'
 import { JOINT_GUIDE } from '../src/model/jointGuide'
 import { JOINT_TYPES, jointOptions } from '../src/model/joints'
-import { jointFasteners } from '../src/model/fasteners'
+import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, jointFasteners } from '../src/model/fasteners'
 import { progressAt, timeline } from '../src/model/jointTimeline'
 import { fill, jointDrawings, jointPlan } from '../src/model/jointPlan'
 import { computeBom } from '../src/analysis/bom'
@@ -82,6 +83,30 @@ describe('Arbeitsplan einer Verbindung', () => {
     return out
   }
 
+  it('Geometrie: Befestigungsmittel sitzen an der Verbindung, Schraubenspitzen im Holz', () => {
+    const inside = (boxes: ReturnType<typeof memberBoxes>, q: V, tol: number) =>
+      boxes.some((o) => {
+        const d = { x: q.x - o.center.x, y: q.y - o.center.y, z: q.z - o.center.z }
+        return o.axes.every((a, i) => Math.abs(a.x * d.x + a.y * d.y + a.z * d.z) <= o.half[i] + tol)
+      })
+    const bad: string[] = []
+    for (const { r, jt } of allTypes()) {
+      const byId = new Map(r.members.map((m) => [m.id, m]))
+      for (const j of r.joints.filter((x) => x.typeId === jt)) {
+        const boxes = [byId.get(j.a)!, byId.get(j.b)!].flatMap((m) => memberBoxes(m))
+        // fast parallele Hölzer (Haltegriff an der Wange) überlappen im Beispiel räumlich – dort nur die Lage prüfen
+        const [p, q] = [byId.get(j.a)!, byId.get(j.b)!].map((m) => memberAxes(m)[0])
+        const parallel = Math.abs(p.x * q.x + p.y * q.y + p.z * q.z) > 0.85
+        for (const f of jointFasteners(j, byId, r)) {
+          const dist = Math.hypot(f.head.x - j.pos.x, f.head.y - j.pos.y, f.head.z - j.pos.z)
+          if (dist > 400) bad.push(`${jt} ${j.key}: ${f.kind} ${Math.round(dist)} mm vom Knoten`)
+          if (f.kind === 'schraube' && !parallel && !inside(boxes, end(f), 1)) bad.push(`${jt} ${j.key}: Schraubenspitze ${f.d}×${f.length} außerhalb`)
+        }
+      }
+    }
+    expect(bad).toEqual([])
+  })
+
   it('alle Platzhalter der Anleitung sind gefüllt', () => {
     for (const { r, jt } of allTypes()) {
       const byId = new Map(r.members.map((m) => [m.id, m]))
@@ -127,10 +152,10 @@ describe('Werkstattzeichnung', () => {
     return { plan, d: jointDrawings(plan, j, byId, r, (m) => m.name ?? m.id) }
   }
 
-  it('Stoß mit Quermutter: Querbohrung 80 mm vom Ende, Bolzenbohrungen im Verbund durch den Pfosten', () => {
+  it('Stoß mit Mutter in Tasche: Tasche Ø 35 80 mm vom Ende, Bolzenbohrungen im Verbund durch den Pfosten', () => {
     const { d } = setup('schlossschraube')
     const [E, T] = d
-    expect(E.holes.some((h) => h.d === 25 && h.x === 80)).toBe(true)
+    expect(E.holes.some((h) => h.d === POCKET_D && h.x === CROSS_NUT_DEPTH)).toBe(true)
     const through = T.holes.filter((h) => h.d === 11)
     expect(through.length).toBe(2)
     expect(through.every((h) => h.through && h.with)).toBe(true)
@@ -144,3 +169,44 @@ describe('Werkstattzeichnung', () => {
     expect(T.refName.key).toBe('oberes Ende')
   })
 })
+
+describe('Bolzenlage nach DIN EN 1995', () => {
+  it('Zarge 120: 40 mm unter der Oberkante, 30 mm über der Unterkante', () => {
+    expect(boltHeights(120, 10, 0)).toEqual([20, -30])
+    // zweite Richtung am Eckpfosten 16 mm tiefer, Abstand untereinander mindestens 4·d
+    const lo = boltHeights(120, 10, -1)
+    expect(lo[0]).toBe(4)
+    expect(lo[0] - lo[1]).toBeGreaterThanOrEqual(40)
+  })
+
+  it('Bolzen verschiedener Stöße kreuzen sich nirgends im Holz', () => {
+    const p = testProject()
+    p.joints = []
+    const r = resolveProject(p)
+    const bolts = allFasteners(r).filter((f) => f.kind === 'bolzen' || f.kind === 'bettschraube')
+    expect(bolts.length).toBeGreaterThan(0)
+    // kleinster Abstand zweier Strecken (Achsen der Bolzen)
+    const segDist = (a0: V, a1: V, b0: V, b1: V) => {
+      let best = Infinity
+      for (let i = 0; i <= 40; i++)
+        for (let k = 0; k <= 40; k++) {
+          const p1 = lerp(a0, a1, i / 40)
+          const p2 = lerp(b0, b1, k / 40)
+          best = Math.min(best, Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z))
+        }
+      return best
+    }
+    for (let i = 0; i < bolts.length; i++)
+      for (let k = i + 1; k < bolts.length; k++) {
+        const a = bolts[i]
+        const b = bolts[k]
+        if (a.joint === b.joint) continue
+        const d = segDist(a.head, end(a), b.head, end(b))
+        expect(d, `${a.joint} ↔ ${b.joint}`).toBeGreaterThanOrEqual((a.d + b.d) / 2 + 2)
+      }
+  })
+})
+
+type V = { x: number; y: number; z: number }
+const lerp = (a: V, b: V, t: number): V => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t })
+const end = (f: { head: V; dir: V; length: number }): V => ({ x: f.head.x + f.dir.x * f.length, y: f.head.y + f.dir.y * f.length, z: f.head.z + f.dir.z * f.length })

@@ -6,7 +6,7 @@ import { catalogItem } from '../model/catalog'
 import { fmtCm, memberLength, type OBB } from '../model/geometry'
 import { assemblyDir, clipBoxesNear, jointCuts, jointFrame, jointViewDir, memberSolids, type Prism } from '../model/joinery'
 import { JOINT_KIND_LABEL, jointType } from '../model/joints'
-import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from '../ui/JointGuide'
+import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial, JointSafety } from '../ui/JointGuide'
 import { jointDrawings, jointPlan } from '../model/jointPlan'
 import { printTemplate, WorkDrawing } from '../ui/WorkDrawing'
 import type { GuideStep } from '../model/jointGuide'
@@ -376,17 +376,18 @@ function JointDetailBody({ j, ending, through, cam, children }: { j: DetectedJoi
             </p>
             <JointGuide plan={plan} hint={assemblyHint(j, byId)} current={step} onPick={pick} />
             <p>
-              <b>{t('Werkzeug:')}</b> {plan.type.tools.map((x) => tr(x)).join(', ')}
-              {plan.type.toolsPlus && (
+              <b>{t('Werkzeug:')}</b> {plan.tools.map((x) => tr(x)).join(', ')}
+              {plan.toolsPlus && (
                 <>
                   <br />
                   <span className="muted">
-                    {t('Komfortabler mit:')} {plan.type.toolsPlus.map((x) => tr(x)).join(', ')}
+                    {t('Komfortabler mit:')} {plan.toolsPlus.map((x) => tr(x)).join(', ')}
                   </span>
                 </>
               )}
             </p>
             <JointMaterial plan={plan} />
+            <JointSafety plan={plan} />
             {plan.effort.drill > 0 && <DrillHelp />}
             {plan.type.residualSection < 1 && <p className="hint">{t('Restquerschnitt an der Verbindung ca. {p} %.', { p: Math.round(plan.type.residualSection * 100) })}</p>}
             <p className="hint">

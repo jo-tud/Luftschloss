@@ -10,7 +10,7 @@ import type { Member, Vec3 } from '../model/types'
 import { useDerived, useStore } from '../state/store'
 import { eur } from './fields'
 import { CutPlan } from './Material'
-import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial } from './JointGuide'
+import { assemblyHint, DrillHelp, JointEffortInfo, JointGuide, JointMaterial, JointSafety } from './JointGuide'
 import { jointDrawings, jointPlan, partWorkDrawing, type JointPlan } from '../model/jointPlan'
 import { StepJoints } from './BuildPlayer'
 import { printTemplate, WorkDrawing } from './WorkDrawing'
@@ -341,14 +341,15 @@ export function BauplanDialog() {
                   <JointIso j={sample} resolved={d.resolved} />
                   <div>
                     <b>
-                      {list.length}× {tr(plan.type.name)}: {plan.labels?.E} ↔ {plan.labels?.T}
+                      {list.length}× {tr(plan.name)}: {plan.labels?.E} ↔ {plan.labels?.T}
                     </b>
                     <JointEffortInfo plan={plan} />
                     <JointGuide plan={plan} hint={assemblyHint(sample, data.byId)} />
                     <JointMaterial plan={plan} />
                     <p className="hint">
-                      {t('Werkzeug:')} {plan.type.tools.map(tr).join(', ')}
+                      {t('Werkzeug:')} {plan.tools.map(tr).join(', ')}
                     </p>
+                    <JointSafety plan={plan} />
                   </div>
                   <div className="pl-drawings">
                     {jointDrawings(plan, sample, data.byId, d.resolved, label).map((dr) => (

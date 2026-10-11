@@ -152,17 +152,21 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   }
   if (frames.length >= 2 && !r.members.some((m) => m.role === 'wandriegel')) {
     frames.forEach((f, i) => {
+      const diag = frameDiagonal(f, byId)
       const ids = take((m) => f.posts.has(m.id) || f.zargen.includes(m.id))
       push(
         t('Seitenrahmen {i} am Boden vormontieren', { i: i + 1 }),
         t('Pfosten und Zarge flach auf Unterlagen legen, Lage anreißen und festspannen. Rechtwinklig ausrichten: Diagonalen messen, sie müssen auf 3 mm gleich sein. Dann die Verbindungen herstellen – Bolzenlöcher jetzt im Verbund bohren.') +
+          (diag ? ' ' + t('Sollmaß der Diagonalen (Pfostenfuß außen bis Oberkante Zarge am anderen Pfosten außen): {d} mm.', { d: diag }) : '') +
           (i === 0 ? ' ' + t('Ausklinkungen für Sockelleiste und Stuck vorher sägen.') : ''),
         ids,
       )
     })
+    const planDiag = footprintDiagonal([...new Set(frames.flatMap((f) => [...f.posts]))].map((id) => byId.get(id)!))
     push(
       t('Aufrichten und verbinden'),
       t('Mit einem Helfer beide Rahmen aufrichten und mit Hilfslatten abstützen. Querzargen ansetzen, festspannen, die Verbindungen herstellen (Bolzen höhenversetzt zu den ersten). Pfosten mit der Wasserwaage ins Lot stellen und die Diagonalen in der Draufsicht prüfen.') +
+        (planDiag ? ' ' + t('Sollmaß in der Draufsicht (Pfostenecke außen zu Pfostenecke außen): {d} mm.', { d: planDiag }) : '') +
         (ceilingWarn ? ' ' + t('Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.') : ''),
       take((m) => m.role === 'zarge' || floorPost(m)),
     )
@@ -202,6 +206,31 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     steps[Math.max(a, b)].joints.push(j.key)
   }
   return steps
+}
+
+/**
+ * Diagonale eines liegend vormontierten Seitenrahmens: vom Fuß des einen Pfostens (außen) bis zur
+ * Oberkante der Zarge am anderen Pfosten (außen), in mm gerundet.
+ */
+function frameDiagonal(f: { zargen: string[]; posts: Set<string> }, byId: Map<string, Member>): number | undefined {
+  const ps = [...f.posts].map((id) => byId.get(id)).filter((m): m is Member => !!m)
+  const z = byId.get(f.zargen[0])
+  if (ps.length < 2 || !z) return undefined
+  const [a, b] = ps
+  const foot = Math.min(a.start.z, a.end.z, b.start.z, b.end.z)
+  const top = Math.max(z.start.z, z.end.z) + z.h / 2
+  const w = Math.hypot(a.start.x - b.start.x, a.start.y - b.start.y) + Math.max(a.b, a.h)
+  return Math.round(Math.hypot(w, top - foot))
+}
+
+/** Diagonale der Pfostenstellung in der Draufsicht (Außenecken), in mm gerundet */
+function footprintDiagonal(posts: Member[]): number | undefined {
+  if (posts.length < 3) return undefined
+  // quadratische Pfosten angenommen (bei rechteckigen die größere Seite)
+  const half = (m: Member) => Math.max(m.b, m.h) / 2
+  const xs = posts.flatMap((m) => [m.start.x - half(m), m.start.x + half(m)])
+  const ys = posts.flatMap((m) => [m.start.y - half(m), m.start.y + half(m)])
+  return Math.round(Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)))
 }
 
 /** Längstes Teil gegen die Türdiagonale */

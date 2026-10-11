@@ -85,11 +85,20 @@ export function fastenerInstances(list: Fastener[], withRods: boolean, part?: Fa
         }
         if (f.crossNut) {
           const c = f.crossNut
-          if (want('quermutter')) rod(addv(c.at, [c.dir, c.outer]), addv(c.at, [c.dir, -c.inner]), 6.5)
-          // sichtbare Tasche mit Mutter auf der Innenseite
           const pocket = addv(c.at, [c.dir, c.outer + 0.3])
-          if (want('tasche')) put(h.pockets, pocket, toThree(c.dir), [0.011, 0.001, 0.011])
-          if (want('quermutter')) put(h.washers, addv(pocket, [c.dir, 0.4]), toThree(c.dir), [0.0065, 0.0008, 0.0065])
+          if (c.bore > 20) {
+            // Tasche: Scheibe und Sechskantmutter auf dem Bolzen, an der Taschenwand zum Hirnholz hin
+            if (want('quermutter')) {
+              put(h.washers, addv(c.at, [f.dir, -c.bore / 2 + 1]), inDir, [0.0105, 0.002, 0.0105])
+              put(h.nuts, addv(c.at, [f.dir, -c.bore / 2 + 6]), inDir, [0.0095, 0.008, 0.0095])
+            }
+          } else {
+            // Zylindermutter quer zur Schraube, Schlitz außen sichtbar
+            if (want('quermutter')) rod(addv(c.at, [c.dir, c.outer]), addv(c.at, [c.dir, -c.inner]), 6.5)
+            if (want('quermutter')) put(h.washers, addv(pocket, [c.dir, 0.4]), toThree(c.dir), [0.0065, 0.0008, 0.0065])
+          }
+          // sichtbare Öffnung auf der Innenseite
+          if (want('tasche')) put(h.pockets, pocket, toThree(c.dir), [c.bore / 2000, 0.001, c.bore / 2000])
         }
         break
       }

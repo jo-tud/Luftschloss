@@ -233,5 +233,14 @@ const en: Record<string, string> = {
   'Tellerkopfschrauben 8 mm (2–3 Stück, Länge nach Holzdicke)': 'Washer-head screws 8 mm (2–3, length to suit the timber)',
   'Brett zu dünn für Schrauben ins Hirnholz – besser mit Winkeln, einer Einlassung oder seitlich überlappend befestigen.': 'Board too thin for screws into its end grain – better fix it with brackets, a housing or overlapping at the side.',
   'Spanplattenschraube 4×16 für Winkel an Brettern, Packung 200': 'Chipboard screw 4×16 for brackets on boards, pack of 200',
+  "Sechskantschraube M10 × 160 mit Mutter und 2 Scheiben": "Hex bolt M10 × 160 with nut and 2 washers",
+  "Sechskantschraube M10 × 180 mit Mutter und 2 Scheiben": "Hex bolt M10 × 180 with nut and 2 washers",
+  "Sechskantschraube M10 × 200 mit Mutter und 2 Scheiben": "Hex bolt M10 × 200 with nut and 2 washers",
+  "Sechskantschraube M10 × 240 mit Mutter und 2 Scheiben": "Hex bolt M10 × 240 with nut and 2 washers",
+  "Dübel tragen die Last von Zarge bzw. Querträger nicht dauerhaft – Bolzen, Balkenschuh oder Zapfen nehmen.": "Dowels do not carry the load of a rail or cross beam in the long run – use bolts, a joist hanger or a tenon.",
+  "Unter dem Träger ist am tragenden Holz kein Platz für eine Leiste – Balkenschuh oder Knagge nehmen.": "There is no room for a ledger on the supporting timber below the beam – use a joist hanger or a cleat.",
+  "Der Pfosten ist zu schmal für die Laschen des Balkenschuhs – Winkel oder Bolzen nehmen.": "The post is too narrow for the flanges of the joist hanger – use brackets or bolts.",
+  "Seitlich anliegende Hölzer bilden keine Ecke für einen Winkel – durchschrauben oder verbolzen.": "Timbers lying side by side form no corner for a bracket – screw or bolt through them.",
+  "Die Latte ist niedriger als der Winkel – Latten von oben aufschrauben.": "The slat is lower than the bracket – screw slats on from above.",
 }
 export default en

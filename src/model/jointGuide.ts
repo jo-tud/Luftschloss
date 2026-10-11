@@ -59,16 +59,21 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     mistakes: [tk('Zu nah am Holzende: Mindestens 80 mm zum belasteten Ende, sonst kann das Holz aufreißen.'), tk('Zu fest angezogen: Die Scheibe drückt sich ins Holz – große Scheiben verwenden, mit Gefühl anziehen.'), tk('Kein Leim in die Bohrungen: Die Verbindung soll zerlegbar bleiben.')],
   },
   'schlossschraube-stoss': {
-    how: tk('Zwei Bolzen M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter in einer Querbohrung – das Prinzip der Bettschraube. Zerlegbar und unsichtbar von innen.'),
+    how: tk('Zwei Sechskantschrauben M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter, die in einer Tasche auf der Innenseite sitzt – das Prinzip der Bettschraube, mit Teilen aus dem Baumarkt. Zerlegbar.'),
     steps: [
-      S(tk('Bohrlage anreißen: zwei Bohrungen in der Mitte von {E}, {abstand} mm auseinander; auf die Außenseite von {T} übertragen.')),
-      S(tk('Zuerst die Querbohrungen: auf der Innenseite von {E} {nut} mm vom Ende mit Forstnerbohrer Ø 25 mm bis knapp über die Mitte bohren ({tasche} mm tief).')),
-      S(tk('{E} an {T} ansetzen und spaltfrei festspannen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm durch {T} in das Hirnholz von {E} bohren, bis der Bohrer in der Querbohrung erscheint ({tiefe} mm). Die große Querbohrung verzeiht schiefes Bohren.')),
-      S(tk('Mutter mit Scheibe in die Querbohrung legen, Schlossschraube M10 × {laenge} von außen durchstecken, eindrehen und anziehen.'), 'befestigen'),
-      S(tk('Nach einigen Wochen nachziehen.')),
+      S(tk('An {E} anreißen: Bolzenachsen {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke. Auf der Innenseite die Taschenmitten {nut} mm vom Ende auf denselben Höhen.')),
+      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 6 mm über die Mitte der Dicke hinaus. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.')),
+      S(tk('{E} an {T} ansetzen, mit Montageklotz bzw. Zwinge auf Höhe halten, Winkel prüfen und spaltfrei festspannen. Die Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
+      S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer).')),
+      S(tk('Scheibe und Mutter mit zwei Fingern in die Tasche halten, Sechskantschraube M10 × {laenge} mit großer Scheibe (Ø 34 mm) von außen durchstecken und mit der Ratsche anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
+      S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen.')),
     ],
-    mistakes: [tk('Querbohrung zu nah am Ende: Unter 80 mm kann das Hirnholz ausreißen.'), tk('Längsbohrung verfehlt die Querbohrung: Querbohrung zuerst und groß (Ø 25) bohren – dann muss die Längsbohrung nur dieses Loch treffen.'), tk('Bolzen zweier Stöße am selben Pfosten kreuzen sich: in der Höhe gegeneinander versetzen.')],
+    mistakes: [
+      tk('Schlossschraube statt Sechskantschraube: Ihr Vierkant dreht im Hirnholz mit – sie lässt sich so nicht anziehen.'),
+      tk('Tasche zu nah am Ende: Unter 80 mm kann das Hirnholz vor der Mutter ausreißen.'),
+      tk('Bolzen zu nah am Rand: mindestens 40 mm zur belasteten Oberkante, 30 mm zur Unterkante.'),
+      tk('Bolzen zweier Stöße am selben Eckpfosten kreuzen sich: in der Höhe versetzen – hier sitzen die der einen Richtung 16 mm tiefer. Mehr Luft gibt es, wenn die Querzargen 60 mm tiefer sitzen.'),
+    ],
   },
   holzbauschraube: {
     how: tk('Lange Tellerkopfschrauben ziehen die Hölzer zusammen. Das Gewinde muss tief genug im tragenden Holz sitzen. Schnell und ohne Spezialwerkzeug, aber nicht zerlegbar.'),
@@ -92,7 +97,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
   bettschraube: {
     how: tk('Wie im Möbelbau: Eine Bettschraube geht durch das durchlaufende Holz ins Hirnholz und greift in eine Zylindermutter in einer Querbohrung. Von außen sieht man nur einen flachen Kopf, die Verbindung ist zerlegbar.'),
     steps: [
-      S(tk('Bohrlage anreißen: zwei Bohrungen in der Mitte von {E}, {abstand} mm auseinander; auf die Außenseite von {T} übertragen.')),
+      S(tk('Bohrlage an {E} anreißen: {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke; nach dem Ansetzen auf die Außenseite von {T} übertragen.')),
       S(tk('{E} ansetzen und festspannen.'), 'fuegen'),
       S(tk('Im Verbund Ø {bohr} mm durch {T} rund {tiefe} mm in das Hirnholz bohren – am besten mit Bohrschablone für Bettbeschläge.')),
       S(tk('Lösen. Auf der Innenseite {nut} mm vom Ende die Querbohrung Ø 10 mm bis über die Längsbohrung bohren. Tipp: einen Holzstab in die Längsbohrung stecken – er zeigt, wohin die Querbohrung muss.')),
@@ -112,7 +117,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
   auflagerleiste: {
     how: tk('Eine Leiste wird unter dem späteren Trägerende an das durchlaufende Holz geschraubt; der Träger liegt darauf. Die Schrauben der Leiste tragen auf Abscheren – einfach, aber nur für leichtere Lasten.'),
     steps: [
-      S(tk('Unterkante von {E} an {T} anreißen; Leiste 40 × 60 auf {leiste} mm Länge sägen.')),
+      S(tk('Unterkante von {E} an {T} anreißen; Leiste 40 × {hoehe} auf {leiste} mm Länge sägen.')),
       S(tk('Leiste bündig unter den Riss halten, Ø 4 mm vorbohren und mit 3 Schrauben 6 × 100 festschrauben (60 mm im tragenden Holz).'), 'vorher'),
       S(tk('{E} auflegen und mit einer Schraube gegen Verrutschen sichern.'), 'fuegen'),
     ],
@@ -196,8 +201,8 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Die Stufe hat am Ende eine schwalbenschwanzförmige Feder, die in eine passende Nut quer in der Wange geschoben wird. Durch die schrägen Flanken kann sie nicht herausfallen. Eingeschoben wird von der Seite entlang der Nut.'),
     steps: [
       S(tk('Nutlage auf beiden Wangen gemeinsam anreißen (Steigung der Leiter beachten).')),
-      S(tk('Nut {tiefe} mm tief herstellen: mit Oberfräse und Gratfräser an einer Führungsleiste in einem Zug – ohne Oberfräse mit Gratsäge an einer schrägen Führungsleiste einsägen und mit Beitel und Grundhobel ausräumen.')),
-      S(tk('Erst die Nut fertig machen, dann die Feder an der Stufe passend anarbeiten; an einem Reststück probieren.')),
+      S(tk('Nut {tiefe} mm tief herstellen, am Grund {breit} mm, oben {schmal} mm breit: mit Oberfräse und Gratfräser 14° an einer Führungsleiste in einem Zug – ohne Oberfräse mit Gratsäge an einer schrägen Führungsleiste einsägen und mit Beitel und Grundhobel ausräumen.')),
+      S(tk('Erst die Nut fertig machen, dann die Feder an der Stufe anarbeiten: beidseitig {schulter} mm Schulter, an der Schulter {schmal} mm, vorn {breit} mm breit. An einem Reststück probieren.')),
       S(tk('Stufe von der Seite einschieben (nur vorne leimen) und mit 2 Schrauben 5 × 50 sichern.'), 'fuegen', 'befestigen'),
     ],
     mistakes: [tk('Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
@@ -244,6 +249,20 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
 /** Schlüssel der Anleitung: bei stumpfen Stößen die eigene Variante, sofern es eine gibt */
 export function guideKey(typeId: string, stoss: boolean): string {
   return stoss && JOINT_GUIDE[`${typeId}-stoss`] ? `${typeId}-stoss` : typeId
+}
+
+/** Sicherheitshinweise je Werkzeug; when prüft Werkzeugliste und Anleitungstexte (deutsche Schlüssel) */
+const SAFETY: { when: RegExp; tip: string }[] = [
+  { when: /Oberfräse/, tip: tk('Oberfräse: Gehörschutz, Schutzbrille und Staubmaske tragen, mit beiden Händen führen, das Werkstück fest spannen.') },
+  { when: /beitel|stemm/i, tip: tk('Beitel immer vom Körper und von der haltenden Hand weg führen; das Werkstück spannen, nicht festhalten.') },
+  { when: /bohr|Forstner/i, tip: tk('Bohren: Schutzbrille. Lange Schlangen- und Forstnerbohrer können die Maschine verreißen – Zusatzgriff, kleine Drehzahl bzw. kleiner Gang, Werkstück spannen.') },
+  { when: /säge/i, tip: tk('Sägen: Werkstück auf einem festen Bock spannen, die zweite Hand weit weg vom Blatt.') },
+]
+
+/** Sicherheitshinweise für die Werkzeuge und Arbeitsschritte einer Verbindung */
+export function safetyTips(texts: string[]): string[] {
+  const all = texts.join(' ')
+  return SAFETY.filter((x) => x.when.test(all)).map((x) => x.tip)
 }
 
 /**

@@ -2,7 +2,7 @@ import { tk } from '../i18n'
 import { CROSS_NUT_DEPTH, jointFasteners, type Fastener } from './fasteners'
 import { partDrawing, type PartDrawing, type Text } from './drawing'
 import { dot, len, memberAxes, memberLength, scale, sub } from './geometry'
-import { allCuts, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
+import { allCuts, cutLengths, jointCuts, jointFrame, type JointCuts, type JointFrame, type Range } from './joinery'
 import { guideKey, JOINT_GUIDE, type GuideEntry } from './jointGuide'
 import { jointType, type JointType } from './joints'
 import type { DetectedJoint, Resolved } from './resolve'
@@ -24,6 +24,11 @@ export interface JointEffort {
 
 export interface JointPlan {
   type: JointType
+  /** Anzeigename (beim stumpfen Bolzenstoß ein anderer als der des Typs) */
+  name: string
+  /** Werkzeug für genau diese Ausführung */
+  tools: string[]
+  toolsPlus?: string[]
   frame?: JointFrame
   E?: Member
   T?: Member
@@ -73,7 +78,7 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.laenge = buyLength(f.item) ?? r0(f.length)
     vars.abstand = bolts.length > 1 ? r0(len(sub(bolts[0].head, bolts[1].head))) : 0
     vars.nut = CROSS_NUT_DEPTH
-    vars.tasche = r0(E.b / 2 + 12)
+    vars.tasche = r0(f.crossNut?.depth ?? E.b / 2 + 12)
     vars.tiefe = f.crossNut ? r0(f.length - 10) : r0(f.length)
     // kleinster Abstand der Bolzenachse zum Rand des anschließenden Holzes
     const ax = memberAxes(E)
@@ -84,6 +89,13 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
       }),
     )
     vars.rand = Math.max(0, r0(edge))
+    // Abstand der Bolzen zur Ober- und Unterkante des anschließenden Holzes (nur beim stumpfen Stoß)
+    if (f.crossNut) {
+      const up = ax[2].z < -0.1 ? -1 : 1
+      const hs = bolts.map((b) => up * dot(sub(b.head, E.start), ax[2]))
+      vars.oben = r0(E.h / 2 - Math.max(...hs))
+      vars.unten = r0(E.h / 2 + Math.min(...hs))
+    }
   }
   if (!bolts.length && E && T && (j.typeId === 'schlossschraube' || j.typeId === 'bettschraube')) {
     // ohne berechnete Lage (ungewöhnliche Geometrie): übliche Werte
@@ -109,20 +121,32 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.nagel = r0(cuts.dims.laenge / 2)
   }
   if (j.typeId === 'auflagerleiste' && cuts?.extras[0]) vars.leiste = r0(cuts.extras[0].half[1] * 2)
-  if (j.typeId === 'kopfband' && E) vars.laenge = r0(memberLength(E))
+  // Kopfband: Zuschnitt von Spitze zu Spitze (mit Gehrungen), nicht die Achslänge
+  if (j.typeId === 'kopfband' && E) vars.laenge = r0(cutLengths(r.joints.filter((x) => x.a === E.id || x.b === E.id), r.members).get(E.id) ?? memberLength(E))
   if (j.typeId === 'versatz' && !vars.size) vars.size = '8 × 160'
 
   // ohne berechnete Geometrie (ungewöhnliche Lage): übliche Werte, damit die Anleitung lesbar bleibt
-  const DEFAULTS: Record<string, string | number> = { tiefe: 15, n: 2, size: '8 × 160', grip: 72, abstand: 50, rand: 40, bohr: 11, laenge: 180, nut: CROSS_NUT_DEPTH }
+  const DEFAULTS: Record<string, string | number> = { hoehe: 60, oben: 40, unten: 30, tasche: 36, tiefe: 15, n: 2, size: '8 × 160', grip: 72, abstand: 50, rand: 40, bohr: 11, laenge: 180, nut: CROSS_NUT_DEPTH }
   for (const st of guide.steps)
     for (const m of st.t.matchAll(/\{(\w+)\}/g)) if (!(m[1] in vars)) vars[m[1]] = DEFAULTS[m[1]] ?? '–'
   const effort: JointEffort = { difficulty: type.difficulty, minutes: type.minutes, drill: type.drill, hard: type.hard }
   // Stoß mit Quermutter: Querbohrung und Längsbohrung müssen sich treffen
-  if (j.typeId === 'schlossschraube' && stoss) Object.assign(effort, { difficulty: 2, minutes: [45, 20], drill: 1, hard: STOSS_HARD })
-  return { type, frame, E, T, stoss, guide, vars, effort, fasteners, cuts }
+  let name = type.name
+  let tools = type.tools
+  let toolsPlus = type.toolsPlus
+  if (j.typeId === 'schlossschraube' && stoss) {
+    Object.assign(effort, { difficulty: 2, minutes: [50, 20], drill: 1, hard: STOSS_HARD })
+    name = STOSS_NAME
+    tools = STOSS_TOOLS
+    toolsPlus = STOSS_TOOLS_PLUS
+  }
+  return { type, name, tools, toolsPlus, frame, E, T, stoss, guide, vars, effort, fasteners, cuts }
 }
 
-const STOSS_HARD = tk('Längsbohrung muss die Querbohrung der Mutter treffen.')
+const STOSS_HARD = tk('Durch den Pfosten lang und gerade ins Hirnholz bohren, bis die Bohrung in der Tasche ankommt.')
+const STOSS_NAME = tk('Bolzenstoß M10: Sechskantschraube, Mutter in einer Tasche (2 Stück)')
+const STOSS_TOOLS = [tk('Bohrmaschine'), tk('Schlangenbohrer Ø 11 × 250 mm'), tk('Forstnerbohrer Ø 35 mm'), tk('Zwingen'), tk('Ratsche mit Nuss 17'), tk('Anschlagwinkel')]
+const STOSS_TOOLS_PLUS = [tk('Bohrführung bzw. Bohrklotz')]
 
 /** Text mit Platzhaltern füllen (für Tests und Druck; Anzeige über t() mit denselben Werten) */
 export function fill(text: string, vars: Record<string, string | number>): string {
