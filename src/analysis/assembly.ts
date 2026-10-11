@@ -10,6 +10,8 @@ const JOINERY_LABEL: Record<string, string> = {
   zapfen: tk('Zapfen bzw. Zapfenloch'),
   schwalbenschwanz: tk('Schwalbenschwanz'),
   gratnut: tk('Gratnut bzw. Grat'),
+  nut: tk('Nut'),
+  knagge: tk('Knagge'),
   ausklinkung: tk('Einlassung'),
   stecken: tk('Bohrung bzw. Stab'),
   auflagerleiste: tk('Auflagerleiste'),

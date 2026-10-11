@@ -273,7 +273,7 @@ function MouseProfile() {
       value={profile}
       options={[
         ['standard', t('Standard (links ziehen dreht)')],
-        ['cad', t('CAD (links verschiebt, Shift + mittlere Taste dreht)')],
+        ['cad', t('CAD (links verschiebt, Shift + mittlere Taste oder Alt + links dreht)')],
       ]}
       onChange={(v) => {
         useStore.setState({ mouseProfile: v })

@@ -118,13 +118,13 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.lochtiefe = cuts.dims.durch ? cuts.dims.laenge : cuts.dims.laenge + 5
     vars.nagel = r0(cuts.dims.laenge / 2)
   }
-  if (j.typeId === 'gratnut' && T && E) {
+  if ((j.typeId === 'gratnut' || j.typeId === 'nut') && T && E) {
     // Nutlage an der Wange: Winkel zur Wangenkante, Teilung entlang der Wange, erste Nut ab Fuß
     let aT = memberAxes(T)[0]
     if (aT.z < 0) aT = scale(aT, -1)
     vars.winkel = r0((Math.asin(Math.min(1, Math.abs(aT.z))) * 180) / Math.PI)
     const foot = T.start.z <= T.end.z ? T.start : T.end
-    const at = r.joints.filter((x) => x.typeId === 'gratnut' && (x.a === T.id || x.b === T.id)).map((x) => dot(sub(x.pos, foot), aT)).sort((a, b) => a - b)
+    const at = r.joints.filter((x) => (x.typeId === 'gratnut' || x.typeId === 'nut') && (x.a === T.id || x.b === T.id)).map((x) => dot(sub(x.pos, foot), aT)).sort((a, b) => a - b)
     vars.erste = r0(at[0] ?? dot(sub(j.pos, foot), aT))
     vars.teilung = at.length > 1 ? r0((at[at.length - 1] - at[0]) / (at.length - 1)) : 0
   }
@@ -220,7 +220,7 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
 function housingLines(m: Member, joints: DetectedJoint[], byId: Map<string, Member>): { p: Vec3; d: Vec3; n: Vec3 }[] {
   const out: { p: Vec3; d: Vec3; n: Vec3 }[] = []
   for (const j of joints) {
-    if (j.typeId !== 'gratnut') continue
+    if (j.typeId !== 'gratnut' && j.typeId !== 'nut') continue
     const A = byId.get(j.a)
     const B = byId.get(j.b)
     const F = A && B ? jointFrame(j, A, B) : undefined

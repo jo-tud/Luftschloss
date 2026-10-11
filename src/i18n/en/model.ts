@@ -252,5 +252,17 @@ const en: Record<string, string> = {
   "Holzbohrer Ø 10 mm": "Wood drill bit Ø 10 mm",
   "Nur für Stufen, die in eine Nut der Wange geschoben werden.": "Only for steps that slide into a housing in the string.",
   "Spaltfrei andrücken und halten; alle Löcher belegen.": "Press on without a gap and hold; fill all holes.",
+  "Stufe in gerader Nut, verschraubt": "Step in a straight housing, screwed",
+  "Nut sauber auf Breite und Tiefe; Schrauben ins Hirnholz gerade setzen.": "Cut the housing cleanly to width and depth; drive the screws straight into the end grain.",
+  "Handkreissäge mit Anschlag oder Feinsäge": "Circular saw with fence or fine saw",
+  "Oberfräse mit Nutfräser": "Router with straight bit",
+  "Einfacher als die Gratnut: Die Stufe liegt in einer 10 mm tiefen Nut der Wange und wird durch die Wange verschraubt.": "Simpler than the sliding dovetail: the step sits in a 10 mm deep housing in the string and is screwed through the string.",
+  "Knagge (Klotz unter dem Träger)": "Cleat (block under the beam)",
+  "Knagge genau auf Höhe und lotrecht anschrauben.": "Screw the cleat on exactly at height and plumb.",
+  "Handsäge": "Hand saw",
+  "Wasserwaage": "Spirit level",
+  "Ein Klotz aus Kantholz, stehend unter das Trägerende an den Pfosten geschraubt; der Träger liegt darauf. Tragfähiger als eine kurze waagrechte Leiste.": "A block of squared timber screwed upright to the post under the end of the beam; the beam rests on it. Stronger than a short horizontal ledger.",
+  "Nur für liegende Träger an einem stehenden Pfosten.": "Only for horizontal beams on an upright post.",
+  "Unter dem Träger ist am Pfosten kein Platz für eine Knagge.": "There is no room for a cleat on the post below the beam.",
 }
 export default en

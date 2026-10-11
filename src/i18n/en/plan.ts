@@ -211,5 +211,7 @@ const en: Record<string, string> = {
   "Verbindungen in diesem Schritt:": "Joints in this step:",
   "Sollmaß der Diagonalen (Pfostenfuß außen bis Oberkante Zarge am anderen Pfosten außen): {d} mm.": "Target diagonal (outside of one post foot to the top edge of the rail at the outside of the other post): {d} mm.",
   "Sollmaß in der Draufsicht (Pfostenecke außen zu Pfostenecke außen): {d} mm.": "Target in plan view (outer post corner to outer post corner): {d} mm.",
+  "Nut": "Housing",
+  "Knagge": "Cleat",
 }
 export default en

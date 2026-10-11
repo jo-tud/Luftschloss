@@ -24,23 +24,17 @@ const en: Record<string, string> = {
   Ansichten: 'Views',
   'Draufsicht, Seitenansicht (auf Wand A–D), 3D und Ich-Perspektive sind': 'Top view, elevation (of Wall A–D), 3D and first-person view are',
   eine: 'one',
-  'Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit der rechten Maustaste ziehen kippt direkt in 3D.':
-    'camera: when you switch, it glides smoothly to the new view. Click one of the small views at the bottom right to swap it with the large one. Dragging with the right mouse button in top view tilts straight into 3D.',
   Draufsicht: 'Top view',
   'Seitenansicht (nochmal drücken: nächste Wand)': 'Elevation (press again: next wall)',
   'Ich-Perspektive (nochmal: nächster Standpunkt)': 'First-person view (again: next viewpoint)',
   Abwicklung: 'Unfolded walls',
   'Ansicht zurücksetzen': 'Reset view',
-  'Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen':
-    'Drag on empty space: orbit in 3D, pan in 2D · right mouse button: orbit · middle mouse button: pan · mouse wheel: zoom towards the pointer',
   'Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort':
     'Double-click (double-tap): glide smoothly towards that spot, each further double-click goes closer – e.g. to a joint · “⌂ Back” shows the whole room again · Overview map at the top right: click sets the view target or position',
   '„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen':
     '“✂ Section” in 3D: trim the room with sliders, e.g. to look under the bed from above',
   'Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen':
     'Unfolded walls: the room opened out like a box – drag windows, radiators and sockets directly on the wall',
-  'Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen und mittlere Taste verschieben, Shift + mittlere Taste dreht':
-    'Mouse layout “CAD” (under Room → Settings): left drag and middle button pan, Shift + middle button orbits',
   'In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).':
     'In the 3D view, walls in front of the bed are hidden automatically (doll’s house). The top view cuts off above the section height (slider at the bottom).',
   'Ich-Perspektive: Ziehen = umsehen,': 'First-person view: drag = look around,',
@@ -245,5 +239,10 @@ const en: Record<string, string> = {
   Entfernen: 'Remove',
   "abbrechen bzw. vom Bauteil zum ganzen Bett": "cancel, or go from a part to the whole bed",
   "Eigenes Bett: freie Teile mit Shift-Klick oder Shift + Ziehen (Rahmen) auswählen, dann „Als Bett zusammenfassen“ – das Bett bekommt eine Liegefläche und wird geprüft wie eine Vorlage": "Custom bed: select free parts with shift-click or shift-drag (box), then “Combine into a bed” – the bed gets a sleeping surface and is checked like a template",
+  "Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit Alt + linker Maustaste ziehen kippt direkt in 3D.": "camera: switching flies smoothly to the new view. Click a small view at the bottom right to swap it with the large one. In plan view, dragging with Alt + left mouse button tilts straight into 3D.",
+  "Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte oder mittlere Maustaste: verschieben · Alt + linke Maustaste: drehen · Mausrad: zum Zeiger zoomen": "Drag on empty space: rotate in 3D, pan in 2D · right or middle mouse button: pan · Alt + left mouse button: rotate · mouse wheel: zoom to pointer",
+  "Ziehen = drehen · rechte oder mittlere Taste = verschieben · Mausrad = zoomen": "Drag = rotate · right or middle button = pan · wheel = zoom",
+  "Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen verschiebt, Shift + mittlere Taste oder Alt + links dreht": "Mouse profile “CAD” (under Room → Settings): left drag pans, Shift + middle button or Alt + left rotates",
+  "CAD (links verschiebt, Shift + mittlere Taste oder Alt + links dreht)": "CAD (left pans, Shift + middle button or Alt + left rotates)",
 }
 export default en

@@ -220,6 +220,25 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     ],
     mistakes: [tk('Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
   },
+  nut: {
+    how: tk('Die Stufe liegt in voller Dicke in einer geraden Nut quer in der Wange. Die Nut trägt die Last, Schrauben durch die Wange halten die Stufe in der Nut. Einfacher herzustellen als eine Gratnut.'),
+    steps: [
+      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen: Nuten unter {winkel}° zur Wangenkante (Schmiege einstellen), Mitte der ersten Nut {erste} mm ab Fuß, dann alle {teilung} mm, entlang der Wange gemessen. Die Wangen dabei spiegelbildlich nebeneinanderlegen.')),
+      S(tk('Nut {tiefe} mm tief und {breit} mm breit herstellen (so breit wie die Stufe dick ist): Ränder mit der Handkreissäge an einer Führungsleiste unter {winkel}° einschneiden, dazwischen mehrere Schnitte, ausstemmen und den Grund eben machen – mit der Oberfräse in einem Zug.')),
+      S(tk('Stufe probehalber einsetzen: Sie soll sich mit leichtem Klopfen einsetzen lassen.')),
+      S(tk('Stufe in die Nut setzen (nur in die Nut leimen). Je Seite 2 Schrauben 6 × 80 durch die Wange ins Hirnholz der Stufe, 25–30 mm von vorn und hinten, mittig in der Dicke; die Stufe Ø 4 mm vorbohren.'), 'fuegen', 'befestigen'),
+    ],
+    mistakes: [tk('Nut zu breit: Die Stufe wackelt – lieber knapp schneiden und mit dem Beitel nacharbeiten.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
+  },
+  knagge: {
+    how: tk('Ein Klotz aus Kantholz wird stehend unter das spätere Trägerende an den Pfosten geschraubt. Der Träger liegt darauf; die Last geht über Druck in den Klotz und über vier Schrauben in den Pfosten. Tragfähiger als eine kurze waagrechte Leiste.'),
+    steps: [
+      S(tk('Unterkante von {E} an {T} anreißen. Aus einem Reststück Kantholz einen Klotz {breite} × {hoehe} mm sägen, 40 mm dick, die Oberseite genau rechtwinklig.')),
+      S(tk('Knagge bündig unter den Riss an {T} halten, mit der Wasserwaage lotrecht ausrichten, Ø 4 mm vorbohren und mit 4 Schrauben 6 × 100 festschrauben (60 mm im Pfosten).'), 'vorher'),
+      S(tk('{E} auflegen und mit einer Schraube bzw. einem Winkel gegen Verrutschen sichern.'), 'fuegen'),
+    ],
+    mistakes: [tk('Knagge schief: Der Träger liegt dann nur auf einer Kante – Oberseite rechtwinklig sägen und lotrecht anschrauben.'), tk('Zu kurze Schrauben: Sie müssen mindestens 54 mm (9 · d) im Pfosten sitzen.')],
+  },
   seilbefestigung: {
     how: tk('Das Seil wird durch eine Bohrung oder eine Augschraube geführt und verknotet. Kräfte gehen als Zug in das Holz bzw. die Schraube.'),
     steps: [

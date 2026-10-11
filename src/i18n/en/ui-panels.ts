@@ -256,7 +256,6 @@ const en: Record<string, string> = {
   'Einfach (schnell, ältere Geräte)': 'Simple (fast, older devices)',
   'Mausbelegung': 'Mouse controls',
   'Standard (links ziehen dreht)': 'Standard (left drag rotates)',
-  'CAD (links verschiebt, Shift + mittlere Taste dreht)': 'CAD (left pans, Shift + middle button rotates)',
   'Fenster, Türen, Heizkörper': 'Windows, doors, radiators',
   'Fenster': 'Window',
   'Tür': 'Door',

@@ -86,7 +86,7 @@ Sharing on the network has no login – only use it on your own network or tailn
 | Action | Mouse / keyboard |
 |---|---|
 | Switch view | Bar at the top of the view, or `1` top view, `2` elevation (press again for the next wall), `3` 3D, `4` first person, `5` unfolded walls, `6` photo, `0` reset view |
-| Rotate, pan, zoom | Drag on an empty area (rotates in 3D, pans in 2D), right button or `Alt`+drag rotates, middle button pans, mouse wheel zooms, double-click flies closer. Prefer CAD-style? Choose the "CAD" mouse profile under Room → Settings |
+| Rotate, pan, zoom | Drag on an empty area (rotates in 3D, pans in 2D), `Alt`+drag rotates, right or middle button pans, mouse wheel zooms, double-click flies closer. Prefer CAD-style? Choose the "CAD" mouse profile under Room → Settings |
 | First person | Drag to look around, `W` `A` `S` `D` or arrow keys to walk, `Q`/`E` down/up, mouse wheel = field of view |
 | Select / rotate cross-section / focus | `V` / `R` / `F` |
 | Move the bed | Click it, then drag (stops at walls) – or enter exact distances to each wall in the properties panel |

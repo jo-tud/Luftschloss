@@ -267,17 +267,17 @@ function Help() {
         <div className="modal-body">
           <h3>{t('Ansichten')}</h3>
           <p>
-            {t('Draufsicht, Seitenansicht (auf Wand A–D), 3D und Ich-Perspektive sind')} <b>{t('eine')}</b> {t('Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit der rechten Maustaste ziehen kippt direkt in 3D.')}
+            {t('Draufsicht, Seitenansicht (auf Wand A–D), 3D und Ich-Perspektive sind')} <b>{t('eine')}</b> {t('Kamera: Beim Wechsel fliegt sie weich zur neuen Ansicht. Die kleinen Ansichten unten rechts tauschen per Klick mit der großen. Aus der Draufsicht heraus mit Alt + linker Maustaste ziehen kippt direkt in 3D.')}
           </p>
           <ul>
             <li>
               <kbd>1</kbd> {t('Draufsicht')} · <kbd>2</kbd> {t('Seitenansicht (nochmal drücken: nächste Wand)')} · <kbd>3</kbd> 3D · <kbd>4</kbd> {t('Ich-Perspektive (nochmal: nächster Standpunkt)')} · <kbd>5</kbd> {t('Abwicklung')} · <kbd>6</kbd> {t('Foto')} · <kbd>0</kbd> {t('Ansicht zurücksetzen')}
             </li>
-            <li>{t('Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte Maustaste: drehen · mittlere Maustaste: verschieben · Mausrad: zum Zeiger zoomen')}</li>
+            <li>{t('Ziehen auf leerer Fläche: in 3D drehen, in 2D verschieben · rechte oder mittlere Maustaste: verschieben · Alt + linke Maustaste: drehen · Mausrad: zum Zeiger zoomen')}</li>
             <li>{t('Doppelklick (Doppeltipp): weich zu dieser Stelle heranfliegen, jeder weitere Doppelklick geht näher heran – z. B. an eine Verbindung · „⌂ Zurück“ zeigt wieder das ganze Zimmer · Übersichtskarte oben rechts: Klick setzt Blickziel bzw. Standort')}</li>
             <li>{t('„✂ Schnitt“ in 3D: Raum mit Reglern zuschneiden, um z. B. von oben unter das Bett zu schauen')}</li>
             <li>{t('Abwicklung: der Raum aufgeklappt wie eine Schachtel – Fenster, Heizkörper und Steckdosen direkt auf der Wand ziehen')}</li>
-            <li>{t('Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen und mittlere Taste verschieben, Shift + mittlere Taste dreht')}</li>
+            <li>{t('Mausbelegung „CAD“ (unter Raum → Einstellungen): links ziehen verschiebt, Shift + mittlere Taste oder Alt + links dreht')}</li>
             <li>{t('In der 3D-Ansicht werden Wände, die vor dem Bett stehen, automatisch ausgeblendet (Puppenhaus). Die Draufsicht schneidet oberhalb der Schnitthöhe ab (Regler unten).')}</li>
             <li>
               {t('Ich-Perspektive: Ziehen = umsehen,')} <kbd>W</kbd>

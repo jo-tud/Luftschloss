@@ -250,8 +250,13 @@ export function Controller() {
       const base: DragState = { kind: 'nav-pan', startX: e.clientX, startY: e.clientY, moved: false, cam0: cloneCam(c) }
       const person = st.view.kind === 'person'
       const cad = st.mouseProfile === 'cad'
-      if (e.button === 2 || (e.button === 0 && e.altKey)) {
-        drag.current = { ...base, kind: person ? 'nav-look' : cad ? 'nav-pan' : 'nav-orbit' }
+      // rechte Taste verschiebt (nicht jede Maus hat eine nutzbare mittlere Taste); Alt + links dreht
+      if (e.button === 2) {
+        drag.current = { ...base, kind: person ? 'nav-look' : 'nav-pan' }
+        return
+      }
+      if (e.button === 0 && e.altKey) {
+        drag.current = { ...base, kind: person ? 'nav-look' : 'nav-orbit' }
         return
       }
       if (e.button === 1) {
