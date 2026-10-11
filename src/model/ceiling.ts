@@ -1,4 +1,4 @@
-import { wallFrame } from './geometry'
+import { clipHalf, wallFrame } from './geometry'
 import type { Room, Vec3, WallId } from './types'
 import { WALL_IDS } from './types'
 
@@ -75,24 +75,6 @@ export function ceilingRange(room: Room, r: { minX: number; maxX: number; minY: 
 }
 
 type P2 = { x: number; y: number }
-
-/** Polygon auf die Halbebene c + dx·x + dy·y ≤ 0 beschneiden (Sutherland–Hodgman) */
-function clipHalf(poly: P2[], c: number, dx: number, dy: number): P2[] {
-  const out: P2[] = []
-  const f = (q: P2) => c + dx * q.x + dy * q.y
-  for (let i = 0; i < poly.length; i++) {
-    const p = poly[i]
-    const q = poly[(i + 1) % poly.length]
-    const fp = f(p)
-    const fq = f(q)
-    if (fp <= 0) out.push(p)
-    if ((fp < 0 && fq > 0) || (fp > 0 && fq < 0)) {
-      const t = fp / (fp - fq)
-      out.push({ x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t })
-    }
-  }
-  return out
-}
 
 function area(poly: P2[]): number {
   let a = 0

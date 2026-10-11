@@ -1,4 +1,4 @@
-import { add, cross, dot, len, memberAxes, memberBoxes, memberLength, norm, scale, sub, v, type OBB } from './geometry'
+import { add, clipHalf, cross, dot, len, memberAxes, memberBoxes, memberLength, memberOBB, norm, scale, sub, v, type OBB } from './geometry'
 import type { DetectedJoint } from './resolve'
 import type { Member, MemberShape, Vec3 } from './types'
 
@@ -172,9 +172,17 @@ export function assemblyDir(j: DetectedJoint, F: JointFrame): Vec3 {
     }
     case 'schwalbenschwanz':
       return low ? scale(across, -1) : across
-    case 'gratnut':
-      // Die Nut läuft quer durch T: lieber nach oben herausziehen
-      return dot(across, up) < -1e-6 ? scale(across, -1) : across
+    case 'gratnut': {
+      // eingeschoben entlang der Brettbreite; bei einer schrägen Wange von hinten (zum Bett hin), so
+      // bleibt die sichtbare Vorderkante der Wange geschlossen
+      const g = gratAxes(F)
+      if (!g) return dot(across, up) < -1e-6 ? scale(across, -1) : across
+      let aT = memberAxes(T)[0]
+      if (aT.z < 0) aT = scale(aT, -1)
+      const flat = v(aT.x, aT.y, 0)
+      if (len(flat) > 0.1) return dot(g.slide, flat) < 0 ? scale(g.slide, -1) : g.slide
+      return dot(g.slide, up) < -1e-6 ? scale(g.slide, -1) : g.slide
+    }
     case 'balkenschuh':
     case 'auflagerleiste':
       return up
@@ -267,24 +275,39 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const L = F.depth < 50 ? F.depth : F.depth * 0.75
       const box = frameBox(frame, [[F.face, F.face + L], [cA - t / 2, cA + t / 2], sr])
       out.dims = { dicke: Math.round(t), hoehe: Math.round(width(sr)), laenge: Math.round(L), durch: L >= F.depth ? 1 : 0 }
-      const e = toLocal(E, box)
-      cutOf(out.members, E).add.push(e)
-      cutOf(out.members, T).sub.push(toLocal(T, box))
+      cutOf(out.members, E).add.push(toLocal(E, box))
+      carve(out, T, F.out, [F.face, F.face + L], across, [cA - t / 2, cA + t / 2], side, () => sr)
       return out
     }
-    case 'schwalbenschwanz':
+    case 'schwalbenschwanz': {
+      if (!F.pE || F.depth < 10) return undefined
+      // Schwalbenschwanzblatt: halbe Dicke, 0,6 × Holzdicke tief, Flanken 1:6
+      const dd = F.depth * 0.6
+      const ar = lapRange(eAcross, tAcross)
+      const sMid = (eSide[0] + eSide[1]) / 2
+      const narrow = (width(eSide) / 2) * 0.55
+      const wide = narrow + dd / 6
+      dovetail(out, F, dd, side, sMid, narrow, wide, across, ar)
+      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(ar)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide) }
+      return out
+    }
     case 'gratnut': {
       if (!F.pE || F.depth < 10) return undefined
-      const grat = j.typeId === 'gratnut'
-      // Schwalbenschwanzblatt: halbe Dicke, 0,6 × Holzdicke tief. Gratnut: volle Breite, 1/3 tief.
-      const dd = grat ? Math.min(20, Math.max(8, F.depth / 3)) : F.depth * 0.6
-      const ar: Range = grat ? inter(eAcross, [tAcross[0] - 1, tAcross[1] + 1]) : lapRange(eAcross, tAcross)
-      const sMid = (eSide[0] + eSide[1]) / 2
-      const halfE = width(eSide) / 2
-      const narrow = grat ? halfE - 3 : halfE * 0.55
-      const wide = narrow + dd / 6
-      dovetail(out, F, dd, ar, sMid, narrow, wide)
-      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(ar)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide) }
+      const g = gratAxes(F)
+      if (!g) return undefined
+      // Nut 1/3 der Wangendicke tief; Feder so breit, wie das Brett hergibt, Flanken 1:6
+      const dd = Math.min(20, Math.max(8, F.depth / 3))
+      const tr = rangeAlong(E, g.thick)
+      const wide = width(tr) / 2 - 1.5
+      const narrow = Math.max(width(tr) / 4, wide - dd / 6)
+      const sr = rangeAlong(E, g.slide)
+      // Die Nut läuft in Einschubrichtung bis zum Rand von T aus, sonst ließe sich das Brett nicht einschieben
+      const dir = assemblyDir(j, F)
+      const c = add(F.pE, scale(F.out, dd / 2))
+      const run = dot(c, dir) + exitAlong(T, c, dir)
+      const hr: Range = dot(dir, g.slide) > 0 ? [sr[0], Math.max(sr[1], run)] : [Math.min(sr[0], -run), sr[1]]
+      dovetail(out, F, dd, g.thick, (tr[0] + tr[1]) / 2, narrow, wide, g.slide, sr, hr)
+      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(sr)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide) }
       return out
     }
     case 'ausklinkung': {
@@ -296,7 +319,7 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const box = frameBox(frame, [[F.face, F.face + dd], ar, sr])
       out.dims.tiefe = Math.round(dd)
       cutOf(out.members, E).add.push(toLocal(E, box))
-      cutOf(out.members, T).sub.push(toLocal(T, box))
+      carve(out, T, F.out, [F.face, F.face + dd], across, ar, side, () => sr)
       return out
     }
     case 'stecken': {
@@ -306,7 +329,7 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const { pt } = endAt(E, j.pos)
       cutOf(out.members, E).add.push(extension(E, pt === E.start, dd))
       out.holes.push({ at: add(F.pE, scale(F.out, -0.2)), normal: F.into, r: Math.min(E.b, E.h) / 2 + 0.5 })
-      if (!E.round) cutOf(out.members, T).sub.push(toLocal(T, frameBox(frame, [[F.face, F.face + dd], eAcross, eSide])))
+      if (!E.round) carve(out, T, F.out, [F.face, F.face + dd], across, eAcross, side, () => eSide)
       return out
     }
     case 'versatz': {
@@ -366,40 +389,150 @@ export function lapRange(eAcross: Range, tAcross: Range): Range {
   return Math.abs(eAcross[0] - tAcross[0]) <= Math.abs(eAcross[1] - tAcross[1]) ? [Math.min(eAcross[0], tAcross[0]), m] : [m, Math.max(eAcross[1], tAcross[1])]
 }
 
-/** Schwalbenschwanz-Prisma an E, Sitz in T (Quader heraus, Keile wieder hinein) */
-function dovetail(out: JointCuts, F: JointFrame, dd: number, ar: Range, sMid: number, narrow: number, wide: number) {
-  const { E, T, across, side } = F
-  // Punkt = out·(face + a) + side·(sMid + b) + across·n (orthonormal), n absolut wie ar
-  const o = add(scale(F.out, F.face), scale(side, sMid))
+/** Wie weit ein Strahl ab c in Richtung d noch in T verläuft (bis zur Oberfläche) */
+function exitAlong(T: Member, c: Vec3, d: Vec3): number {
+  // ganzer Querschnitt, ohne Ausklinkungen (die zerlegen den Stab in mehrere Quader)
+  const o = memberOBB(T)
+  const rel = sub(c, o.center)
+  let t = Infinity
+  o.axes.forEach((a, i) => {
+    const di = dot(d, a)
+    if (Math.abs(di) < 1e-9) return
+    t = Math.min(t, (Math.sign(di) * o.half[i] - dot(rel, a)) / di)
+  })
+  return Number.isFinite(t) ? Math.max(0, t) : 0
+}
+
+/** Liegen die Richtungen parallel zu Achsen von T? Dann sind Quader in T exakt darstellbar. */
+function alignedWith(T: Member, dirs: Vec3[]): boolean {
+  const ax = memberAxes(T)
+  return dirs.every((d) => ax.some((a) => Math.abs(dot(a, d)) > 0.999))
+}
+
+/**
+ * Ausnehmung in T zwischen den Tiefen d (entlang dir, absolut), im Querschnitt das Band p ∈ pr,
+ * q ∈ qAt(a) (a = Tiefe ab d[0]; schräge Flanken beim Schwalbenschwanz). Liegt das Band schräg zu
+ * den Achsen von T – Stufe in der schrägen Treppenwange –, wäre der umhüllende Quader viel zu groß.
+ * Dann wird eine Schicht parallel zu T ausgenommen und alles außerhalb des Bands mit Prismen
+ * wieder aufgefüllt, in Lagen entlang der Tiefe, damit auch schräge Flanken stimmen.
+ */
+function carve(out: JointCuts, T: Member, dir: Vec3, d: Range, p: Vec3, pr: Range, q: Vec3, qAt: (a: number) => Range, layers = 1) {
+  const qMax: Range = [Math.min(qAt(0)[0], qAt(width(d))[0]), Math.max(qAt(0)[1], qAt(width(d))[1])]
+  if (alignedWith(T, [dir, p, q])) {
+    cutOf(out.members, T).sub.push(toLocal(T, frameBox([dir, p, q], [d, pr, qMax])))
+    return
+  }
+  const ax = memberAxes(T)
+  const k = ax.findIndex((a) => Math.abs(dot(a, dir)) > 0.999)
+  if (k < 0) {
+    // schräg auch zur Tiefe: nur der umhüllende Quader
+    cutOf(out.members, T).sub.push(toLocal(T, frameBox([dir, p, q], [d, pr, qMax])))
+    return
+  }
+  const [eu, ev] = ax.filter((_, i) => i !== k)
+  // Band im Querschnitt von T (Koordinaten u, v absolut)
+  const P = (pp: number, qq: number) => add(scale(p, pp), scale(q, qq))
+  const corners = [pr[0], pr[1]].flatMap((pp) => [qMax[0], qMax[1]].map((qq) => P(pp, qq)))
+  const tu = rangeAlong(T, eu)
+  const tv = rangeAlong(T, ev)
+  const U = inter([Math.min(...corners.map((c) => dot(c, eu))) - 0.5, Math.max(...corners.map((c) => dot(c, eu))) + 0.5], tu)
+  const V = inter([Math.min(...corners.map((c) => dot(c, ev))) - 0.5, Math.max(...corners.map((c) => dot(c, ev))) + 0.5], tv)
+  if (width(U) < 1 || width(V) < 1) return
+  const tc = cutOf(out.members, T)
+  tc.sub.push(toLocal(T, frameBox([dir, eu, ev], [d, U, V])))
+  // p und q im Querschnitt: Wert = x·(·, eu) + y·(·, ev)
+  const pu = dot(p, eu)
+  const pv = dot(p, ev)
+  const qu = dot(q, eu)
+  const qv = dot(q, ev)
+  const rect = [
+    { x: U[0], y: V[0] },
+    { x: U[1], y: V[0] },
+    { x: U[1], y: V[1] },
+    { x: U[0], y: V[1] },
+  ]
+  const n = Math.max(1, layers)
+  const dl = width(d) / n
+  for (let i = 0; i < n; i++) {
+    const [qlo, qhi] = qAt((i + 0.5) * dl)
+    // außerhalb des Bands: darüber, darunter und neben seinen Enden
+    const pieces = [
+      clipHalf(rect, qhi, -qu, -qv),
+      clipHalf(rect, -qlo, qu, qv),
+      clipHalf(clipHalf(clipHalf(rect, -qhi, qu, qv), qlo, -qu, -qv), -pr[0], pu, pv),
+      clipHalf(clipHalf(clipHalf(rect, -qhi, qu, qv), qlo, -qu, -qv), pr[1], -pu, -pv),
+    ]
+    for (const poly of pieces) {
+      if (poly.length < 3 || polyArea(poly) < 1) continue
+      tc.prisms.push({ origin: v(0, 0, 0), eu, ev, en: dir, poly: poly.map((c) => [c.x, c.y] as [number, number]), range: [d[0] + i * dl, d[0] + (i + 1) * dl] })
+    }
+  }
+}
+
+function polyArea(poly: { x: number; y: number }[]): number {
+  let a = 0
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i]
+    const q = poly[(i + 1) % poly.length]
+    a += p.x * q.y - q.x * p.y
+  }
+  return Math.abs(a) / 2
+}
+
+/**
+ * Schwalbenschwanz an E (schmal an der Fläche von T, breiter zur Spitze, Flanken in Richtung flare),
+ * Sitz in T. Extrudiert entlang ext über er (absolut); fMid ist die Mitte entlang flare (absolut).
+ */
+function dovetail(out: JointCuts, F: JointFrame, dd: number, flare: Vec3, fMid: number, narrow: number, wide: number, ext: Vec3, er: Range, tr: Range = er) {
+  const { E, T } = F
+  const o = add(scale(F.out, F.face), scale(flare, fMid))
   const poly: [number, number][] = [
     [0, -narrow],
     [dd, -wide],
     [dd, wide],
     [0, narrow],
   ]
-  cutOf(out.members, E).prisms.push({ origin: o, eu: F.out, ev: side, en: across, poly, range: ar })
-  const box = frameBox([F.out, across, side], [[F.face, F.face + dd], ar, [sMid - wide, sMid + wide]])
-  cutOf(out.members, T).sub.push(toLocal(T, box))
-  for (const k of [-1, 1])
-    cutOf(out.members, T).prisms.push({
-      origin: o,
-      eu: F.out,
-      ev: side,
-      en: across,
-      poly:
-        k < 0
-          ? [
-              [0, -wide],
-              [dd, -wide],
-              [0, -narrow],
-            ]
-          : [
-              [0, narrow],
-              [dd, wide],
-              [0, wide],
-            ],
-      range: ar,
-    })
+  cutOf(out.members, E).prisms.push({ origin: o, eu: F.out, ev: flare, en: ext, poly, range: er })
+  const d: Range = [F.face, F.face + dd]
+  if (alignedWith(T, [F.out, flare, ext])) {
+    // Quader heraus, Keile an den Flanken wieder hinein
+    cutOf(out.members, T).sub.push(toLocal(T, frameBox([F.out, ext, flare], [d, tr, [fMid - wide, fMid + wide]])))
+    for (const k of [-1, 1])
+      cutOf(out.members, T).prisms.push({
+        origin: o,
+        eu: F.out,
+        ev: flare,
+        en: ext,
+        poly:
+          k < 0
+            ? [
+                [0, -wide],
+                [dd, -wide],
+                [0, -narrow],
+              ]
+            : [
+                [0, narrow],
+                [dd, wide],
+                [0, wide],
+              ],
+        range: tr,
+      })
+    return
+  }
+  const half = (a: number) => narrow + ((wide - narrow) * a) / dd
+  carve(out, T, F.out, d, ext, tr, flare, (a) => [fMid - half(a), fMid + half(a)], 4)
+}
+
+/**
+ * Gratnut einer Stufe bzw. eines Bretts: Flanken quer zur Brettstärke, eingeschoben entlang der
+ * Brettbreite. Ausgerichtet am Brett selbst – die Wange darf schräg stehen (Treppe).
+ */
+export function gratAxes(F: JointFrame): { thick: Vec3; slide: Vec3 } | undefined {
+  const [ax, bDir, hDir] = memberAxes(F.E)
+  if (Math.abs(dot(ax, F.out)) < 0.99) return undefined
+  // quadratisches Holz: eingeschoben quer zu beiden Stäben
+  const flat = Math.abs(F.E.b - F.E.h) > 1 ? F.E.b < F.E.h : Math.abs(dot(hDir, F.across)) >= Math.abs(dot(bDir, F.across))
+  return flat ? { thick: bDir, slide: hDir } : { thick: hDir, slide: bDir }
 }
 
 /** Alle Verbindungsgeometrien des Projekts, je Stab zusammengefasst */
