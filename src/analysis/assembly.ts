@@ -252,7 +252,16 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   }
   push(t('Querträger'), t('Querträger einsetzen bzw. auflegen und befestigen.'), take((m) => m.role === 'quertraeger'))
   const decks = r.panels.filter((x) => !x.vertical && x.kind !== 'matratze').map((x) => x.id)
-  push(t('Liegefläche'), t('Latten bzw. Platte auflegen, ausrichten und gegen Verrutschen sichern. Filzstreifen gegen Quietschen.'), take((m) => m.role === 'leiste'), decks)
+  // aufgelegt mit Latten: die verschraubten Latten halten die beiden Seitenrahmen zusammen
+  const screwedSlats = r.joints.some((j) => j.typeId === 'auflage' && [j.a, j.b].some((id) => r.members.find((m) => m.id === id)?.role === 'leiste'))
+  push(
+    t('Liegefläche'),
+    screwedSlats
+      ? t('Erste und letzte Latte sofort an beiden Enden auf die Zargen schrauben (je 2 Schrauben, vorbohren), dann alle übrigen. Erst danach hält das Gestell quer zusammen.')
+      : t('Latten bzw. Platte auflegen, ausrichten und gegen Verrutschen sichern. Filzstreifen gegen Quietschen.'),
+    take((m) => m.role === 'leiste'),
+    decks,
+  )
   const guardPanels = r.panels.filter((x) => x.vertical).map((x) => x.id)
   push(t('Geländer'), t('Geländerpfosten, Handläufe und Füllung montieren. Lücken höchstens 7,5 cm.'), take(isGuard), guardPanels)
   push(t('Leiter bzw. Treppe'), t('Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen und verschrauben, Diagonalen prüfen). Anstellen: Fuß flach auf den Boden, Kopfschnitt an die Zarge, seitlich an die Haltegriffe – dann mit den Griffen verbolzen.'), take(isLadder))

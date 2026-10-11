@@ -370,7 +370,12 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const free = (q: Vec3) => {
         const h = at(q, [dOut, tHead])
         const t = at(h, [dOut, -(tHead - tNut)])
-        return avoid.every((f) => segDist(h, t, f.head, add(f.head, scale(f.dir, f.length))) >= (d + f.d) / 2 + 2)
+        return avoid.every(
+          (f) =>
+            segDist(h, t, f.head, add(f.head, scale(f.dir, f.length))) >= (d + f.d) / 2 + 2 &&
+            // Mutterntasche (Ø 35) des stumpfen Stoßes: ganz um den Bolzen herum frei halten
+            (!f.crossNut || segDist(h, t, at(f.crossNut.at, [f.crossNut.dir, -f.crossNut.bore / 2]), at(f.crossNut.at, [f.crossNut.dir, f.crossNut.depth])) >= (d + f.crossNut.bore) / 2 + 2),
+        )
       }
       const sets = [offs, ...[0, -5, 5, -10, 10, -15, 15, -30, 30].map((k) => [k])]
       const bases = sets.map((ks) => ks.map((k) => at(mid, [e, k])).filter(hits)).find((qs) => qs.length && qs.every(free)) ?? offs.map((k) => at(mid, [e, k])).filter(hits)
@@ -620,7 +625,8 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         out[out.length - 1].drillFirst = 6.5
         return
       }
-      const sz = pickScrew(first, bearing, thin)
+      // Latten (44er) auf dem Träger: Ø 6, dann reicht der Randabstand zweier Schrauben in der 74er Latte
+      const sz = pickScrew(first, bearing, E.role === 'leiste' ? Math.min(thin, 18) : thin)
       screw(head, dir, sz.length, sz.d / 2, 'nachher', sz.item, Math.round(sz.d * 0.7))
       out[out.length - 1].first = first
     }
@@ -655,15 +661,26 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         .filter((x) => x.key !== j.key && BOLTS.has(x.typeId) && [x.a, x.b].some((id) => id === E.id || id === Tm.id))
         .flatMap((x) => jointFasteners(x, byId, r))
         .filter((f) => f.nut || f.crossNut)
-      const at2 = (k: number) => pt(er[0], longS ? mid(oA) : mid(oA) + (oA[1] - oA[0]) * k, longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS))
-      const clear = (k: number) => {
-        const h = at2(k)
+      // k entlang der längeren Überdeckung, q quer dazu (beides in Teilen der Überdeckung)
+      const at2 = (k: number, q = 0) =>
+        pt(er[0], longS ? mid(oA) + (oA[1] - oA[0]) * q : mid(oA) + (oA[1] - oA[0]) * k, longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS) + (oS[1] - oS[0]) * q)
+      const clear = (k: number, q: number) => {
+        const h = at2(k, q)
         const tip = at(h, [o, er[1] - er[0] + 40])
-        return bolts.every((f) => segDist(h, tip, f.head, add(f.head, scale(f.dir, f.length))) >= (8 + f.d) / 2 + 2)
+        return bolts.every(
+          (f) =>
+            segDist(h, tip, f.head, add(f.head, scale(f.dir, f.length))) >= (8 + f.d) / 2 + 2 &&
+            (!f.crossNut || segDist(h, tip, at(f.crossNut.at, [f.crossNut.dir, -f.crossNut.bore / 2]), at(f.crossNut.at, [f.crossNut.dir, f.crossNut.depth])) >= (8 + f.crossNut.bore) / 2 + 2),
+        )
       }
       const pairs = [[-0.25, 0.25], [-0.35, 0.35], [-0.15, 0.15], [-0.35, 0.05], [-0.05, 0.35], [-0.4, 0.4]]
-      const ks = pairs.find((ps) => ps.every(clear)) ?? pairs[0]
-      for (const k of ks) put8(at2(k), o, er[1] - er[0], width2(range(Tm, o)))
+      // liegt ein Bolzen längs im tragenden Holz (Zargenende am Pfosten), weichen die Schrauben quer aus
+      const shifts = [0, -0.25, 0.25]
+      // zur Not eine Schraube (erste Latte über dem Bolzen am Zargenende)
+      const singles = [[0.3], [-0.3], [0.4], [-0.4], [0]]
+      const pick =
+        [pairs, singles].map((set) => shifts.flatMap((q) => set.map((ps) => ({ ps, q }))).find(({ ps, q }) => ps.every((k) => clear(k, q)))).find((x) => !!x) ?? { ps: pairs[0], q: 0 }
+      for (const k of pick.ps) put8(at2(k, pick.q), o, er[1] - er[0], width2(range(Tm, o)))
     } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(Tm, o)) <= 1.5 * Math.max(Tm.b, Tm.h)) {
       // umgekehrt aufliegend (Handlauf auf dem Pfostenkopf): durch T von oben in das Ende von E
       const tr = range(Tm, o)

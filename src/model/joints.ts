@@ -491,6 +491,9 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
   const guardUpright = both.some((m) => m.role === 'holm' && Math.abs(m.end.z - m.start.z) > 0.7 * (Math.hypot(m.end.x - m.start.x, m.end.y - m.start.y, m.end.z - m.start.z) || 1))
   if (typeId === 'lose' && jm.kind === 'beischlag' && guardUpright) return tk('Geländerstützen und Haltegriffe müssen fest verbunden sein – sie halten Menschen.')
   if ((typeId === 'balkenschuh' || typeId === 'bettschraube') && both.every((m) => m.role === 'holm')) return tk('Am Geländer keine Stahlkanten und keine Taschen im schmalen Holz – verschrauben oder verbolzen.')
+  // Wandbalken ist schon angedübelt: von der Wandseite kommt niemand mehr an Kopf oder Mutter
+  if (jm.kind === 't-stoss' && jm.ending && T.role === 'wandriegel' && ['schlossschraube', 'bettschraube', 'holzbauschraube'].includes(typeId))
+    return tk('Der Kopf säße zwischen Wandbalken und Wand – am Wandbalken nur von der Raumseite befestigen (Balkenschuh, Winkel, Leiste).')
   switch (typeId) {
     case 'gratnut':
     case 'nut':
