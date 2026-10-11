@@ -129,7 +129,7 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     vars.lochtiefe = cuts.dims.durch ? cuts.dims.laenge : cuts.dims.laenge + 5
     vars.nagel = r0(cuts.dims.laenge / 2)
   }
-  if ((j.typeId === 'gratnut' || j.typeId === 'nut') && T && E) {
+  if ((j.typeId === 'gratnut' || j.typeId === 'nut' || j.typeId === 'stecken') && T && E) {
     // Nutlage an der Wange: Winkel zur Wangenkante, Teilung entlang der Wange, erste Nut ab Fußschnitt.
     // Je Stufe eine Nut: mehrere Bretter einer Stufe (gleiche Höhe) teilen sich die Nut, gezählt wird ihre Mitte
     let aT = memberAxes(T)[0]
@@ -138,7 +138,8 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     const foot = T.start.z <= T.end.z ? T.start : T.end
     const byStep = new Map<number, number[]>()
     for (const x of r.joints) {
-      if ((x.typeId !== 'gratnut' && x.typeId !== 'nut') || (x.a !== T.id && x.b !== T.id)) continue
+      const same = j.typeId === 'stecken' ? x.typeId === 'stecken' : x.typeId === 'gratnut' || x.typeId === 'nut'
+      if (!same || (x.a !== T.id && x.b !== T.id)) continue
       const step = byId.get(x.a === T.id ? x.b : x.a)
       if (!step) continue
       const z = Math.round((step.start.z + step.end.z) / 2)
@@ -174,6 +175,11 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     name = STOSS_NAME
     tools = STOSS_TOOLS
     toolsPlus = STOSS_TOOLS_PLUS
+  } else if (j.typeId === 'schlossschraube' && A && B) {
+    // durchgebolzt: Name und Werkzeug nach den Bolzen, die hier wirklich sitzen (M8 bzw. M10, Anzahl)
+    const bolts = fasteners.filter((f) => f.kind === 'bolzen')
+    if (bolts.length) name = t('Schlossschraube M{d}, durchgebolzt ({n} Stück)', { d: Math.round(bolts[0].d), n: bolts.length })
+    tools = jointVariant(j.typeId, j, byId)?.tools ?? tools
   }
   return { type, name, tools, toolsPlus, frame, E, T, stoss, guide, vars, effort, fasteners, cuts }
 }
@@ -208,7 +214,7 @@ export function jointVariant(typeId: string, j: DetectedJoint, byId: Map<string,
 
 const BOLT_BIT = tk('Schlangenbohrer Ø 11 mm, lang genug')
 const BOLT_KEY = tk('Gabelschlüssel 17')
-const STOSS_HARD = tk('Durch den Pfosten lang und gerade ins Hirnholz bohren, bis die Bohrung in der Tasche ankommt.')
+const STOSS_HARD = tk('Lang und gerade durch das durchgehende Holz ins Hirnholz bohren, bis die Bohrung in der Tasche ankommt.')
 const STOSS_NAME = tk('Bolzenstoß M10: Sechskantschraube, Mutter in einer Tasche (2 Stück)')
 const STOSS_TOOLS = [tk('Bohrmaschine'), tk('Schlangenbohrer Ø 11 × 250 mm'), tk('Forstnerbohrer Ø 35 mm'), tk('Zwingen'), tk('Ratsche mit Nuss 17'), tk('Anschlagwinkel')]
 const STOSS_TOOLS_PLUS = [tk('Bohrführung bzw. Bohrklotz')]
@@ -251,8 +257,9 @@ export function jointDrawings(plan: JointPlan, j: DetectedJoint, byId: Map<strin
         toward,
         towardName: other ? label(other) : undefined,
         endName: (atStart) => endName(m, atStart, r, label),
-        center: ladderCentre(r, m) ?? bedCentre(r, m),
-        ladder: m.partKey?.startsWith('leiter-'),
+        // Haltegriffe sitzen an der Zarge: innen heißt dort zum Bett hin, nicht zur Leitermitte
+        center: (m.partKey?.startsWith('leiter-griff') ? undefined : ladderCentre(r, m)) ?? bedCentre(r, m),
+        ladder: m.partKey?.startsWith('leiter-') && !m.partKey.startsWith('leiter-griff'),
         bedAxes: bedAxes(r, m),
         // stehende Hölzer überall vom Fuß aus bemaßen (wie im Teile-Arbeitsplan)
         refAtStart: Math.abs(memberAxes(m)[0].z) > 0.7 ? m.start.z <= m.end.z : undefined,
@@ -329,8 +336,8 @@ export function partWorkDrawing(m: Member, r: Resolved, label: (m: Member) => st
     full: true,
     refAtStart: vertical ? m.start.z <= m.end.z : true,
     endName: (atStart) => endName(m, atStart, r, label),
-    center: ladderCentre(r, m) ?? bedCentre(r, m),
-    ladder: m.partKey?.startsWith('leiter-'),
+    center: (m.partKey?.startsWith('leiter-griff') ? undefined : ladderCentre(r, m)) ?? bedCentre(r, m),
+    ladder: m.partKey?.startsWith('leiter-') && !m.partKey.startsWith('leiter-griff'),
     bedAxes: bedAxes(r, m),
     lines: housingLines(m, mine, byId),
   })

@@ -206,17 +206,31 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
     if (frames.some((f) => [...ps].some((x) => f.posts.has(x)))) continue
     frames.push({ zargen: [z], posts: new Set(ps) })
   }
+  // Kopfbänder mit Einlassung (Versatz) passen nicht mehr zwischen Pfosten und Zarge, wenn beide schon
+  // verbunden sind: sie kommen mit in den Schritt, in dem ihre Zarge angesetzt wird
+  const lapped = new Set(r.joints.filter((j) => j.typeId === 'versatz').flatMap((j) => [j.a, j.b]).filter((id) => byId.get(id)?.role === 'strebe'))
+  const braceOf = (ids: Set<string>) => (m: Member) =>
+    lapped.has(m.id) &&
+    r.joints
+      .filter((j) => j.a === m.id || j.b === m.id)
+      .map((j) => (j.a === m.id ? j.b : j.a))
+      .filter((id) => byId.get(id)?.role !== 'strebe')
+      .every((id) => ids.has(id))
+  const LAPPED_NOTE = t('Kopfbänder mit Einlassung jetzt in die Einlassung am Pfosten legen, dann erst die Zarge ansetzen – später passen sie nicht mehr dazwischen.')
   if (frames.length >= 2 && !r.members.some((m) => m.role === 'wandriegel')) {
     frames.forEach((f, i) => {
       const diag = frameDiagonal(f, byId)
       const inset = postInset(f, byId)
-      const ids = take((m) => f.posts.has(m.id) || f.zargen.includes(m.id))
+      const inFrame = new Set([...f.posts, ...f.zargen])
+      const braces = r.members.filter(braceOf(inFrame)).map((m) => m.id)
+      const ids = take((m) => f.posts.has(m.id) || f.zargen.includes(m.id) || braces.includes(m.id))
       push(
         t('Seitenrahmen {i} am Boden vormontieren', { i: i + 1 }),
         t('Pfosten und Zarge flach auf Unterlagen legen, Lage anreißen und festspannen. Rechtwinklig ausrichten: Diagonalen messen, sie müssen auf 3 mm gleich sein. Dann die Verbindungen herstellen – Bolzenlöcher jetzt im Verbund bohren.') +
           (inset > 5 ? ' ' + t('Die Pfosten sitzen {d} mm vom Zargenende eingerückt – dort liegt später die Querzarge.', { d: inset }) : '') +
           (diag ? ' ' + t('Sollmaß der Diagonalen (Pfostenfuß außen bis Oberkante Zarge am anderen Pfosten außen): {d} mm.', { d: diag }) : '') +
-          (i === 0 ? ' ' + t('Ausklinkungen für Sockelleiste und Stuck vorher sägen.') : ''),
+          (i === 0 ? ' ' + t('Ausklinkungen für Sockelleiste und Stuck vorher sägen.') : '') +
+          (braces.length ? ' ' + LAPPED_NOTE : ''),
         ids,
       )
     })
@@ -227,8 +241,9 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
       (atWall ? t('Das Bett steht später an der Wand: etwa 60 cm davor aufbauen, alle Bolzen bohren und anziehen und erst dann anschieben – an der Wand kommt man an Köpfe und Muttern nicht heran (zum Nachziehen kurz abrücken).') + ' ' : '') +
         t('Mit einem Helfer beide Rahmen aufrichten und mit Hilfslatten abstützen. Querzargen bzw. die ersten Querträger ansetzen, festspannen, die Verbindungen herstellen (Bolzen höhenversetzt zu den ersten). Pfosten mit der Wasserwaage ins Lot stellen und die Diagonalen in der Draufsicht prüfen.') +
         (planDiag ? ' ' + t('Sollmaß in der Draufsicht (Pfostenecke außen zu Pfostenecke außen): {d} mm.', { d: planDiag }) : '') +
-        (ceilingWarn ? ' ' + t('Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.') : ''),
-      take((m) => m.role === 'zarge' || floorPost(m)),
+        (ceilingWarn ? ' ' + t('Deckenhohe Pfosten erst stellen und dann mit dem Stellfuß gegen die Decke verspannen – nicht verkanten, Stuck nicht berühren.') : '') +
+        (lapped.size && r.members.some((m) => lapped.has(m.id) && !used.has(m.id)) ? ' ' + LAPPED_NOTE : ''),
+      take((m) => m.role === 'zarge' || floorPost(m) || lapped.has(m.id)),
       [],
       true,
     )
@@ -264,7 +279,7 @@ export function buildSteps(p: Project, r: Resolved): BuildStep[] {
   )
   const guardPanels = r.panels.filter((x) => x.vertical).map((x) => x.id)
   push(t('Geländer'), t('Geländerpfosten, Handläufe und Füllung montieren. Lücken höchstens 7,5 cm.'), take(isGuard), guardPanels)
-  push(t('Leiter bzw. Treppe'), t('Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen und verschrauben, Diagonalen prüfen). Anstellen: Fuß flach auf den Boden, Kopfschnitt an die Zarge, seitlich an die Haltegriffe – dann mit den Griffen verbolzen.'), take(isLadder))
+  push(t('Leiter bzw. Treppe'), t('Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen und verschrauben, Diagonalen prüfen). Anstellen: Fuß flach auf den Boden, Kopfschnitt an die Zarge, seitlich an die Haltegriffe – dann von innen mit den Griffen verschrauben.'), take(isLadder))
   push(t('Restliche Teile'), t('Übrige Teile nach Plan montieren.'), take(() => true))
   const mattress = r.panels.filter((x) => x.kind === 'matratze').map((x) => x.id)
   push(t('Matratze'), t('Matratze einlegen. Probeliegen: Wackelt etwas, Schrauben und Bolzen nachziehen.'), [], mattress)

@@ -112,7 +112,7 @@ export function fastenerInstances(list: Fastener[], withRods: boolean, part?: Fa
         rod(f.head, end, f.d / 2, h.pins)
         break
       case 'duebel':
-        rod(f.head, end, f.d / 2, h.dowels)
+        if (!f.bore) rod(f.head, end, f.d / 2, h.dowels)
         break
       case 'stangenmutter':
         put(h.washers, addv(f.head, [f.dir, -1]), outDir, [0.015, 0.002, 0.015])
