@@ -443,6 +443,9 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
       return board ? tk('Für Bretter zu schmal – eher anschrauben.') : undefined
     case 'bettschraube':
       return thin(E) < 44 ? tk('Holz zu dünn für die Quermutter der Bettschraube (mindestens 44 mm).') : undefined
+    case 'holzbauschraube':
+      // ins Hirnholz eines Bretts: Schraube höchstens 1/3 der Dicke und kaum Randabstand – das spaltet
+      return jm.ending && thin(E) < 30 && !rope ? tk('Brett zu dünn für Schrauben ins Hirnholz – besser mit Winkeln, einer Einlassung oder seitlich überlappend befestigen.') : undefined
     case 'schlossschraube':
       return board && thin(E) < 25 ? tk('Brett zu dünn für einen Bolzen – eher anschrauben.') : undefined
   }

@@ -354,6 +354,7 @@ export const SHEETS: SheetItem[] = [
 export const HARDWARE: HardwareItem[] = [
   { id: 'winkel-90', kind: 'beschlag', group: 'winkel', name: tk('Winkelverbinder 90×90×65 mit Sicke, verzinkt'), pack: 1, packPrice: 1.8, priceEstimated: true },
   { id: 'balkenschuh-60', kind: 'beschlag', group: 'balkenschuh', name: tk('Balkenschuh innen, passend zum Querschnitt'), pack: 1, packPrice: 3.5, priceEstimated: true },
+  { id: 'schraube-4x16', kind: 'beschlag', group: 'schraube', name: tk('Spanplattenschraube 4×16 für Winkel an Brettern, Packung 200'), pack: 200, packPrice: 4, priceEstimated: true },
   { id: 'schraube-5x50', kind: 'beschlag', group: 'schraube', name: tk('Holzbauschraube / Winkelschraube 5×50, Packung 250'), pack: 250, packPrice: 14, priceEstimated: true },
   { id: 'schraube-6x80', kind: 'beschlag', group: 'schraube', name: tk('Holzbauschraube 6×80, Packung 100'), pack: 100, packPrice: 8, priceEstimated: true },
   { id: 'schraube-6x100', kind: 'beschlag', group: 'schraube', name: tk('Holzbauschraube 6×100, Packung 100'), pack: 100, packPrice: 9, priceEstimated: true },

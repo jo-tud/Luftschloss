@@ -76,7 +76,6 @@ const en: Record<string, string> = {
   "Einlassung zu tief: höchstens ein Viertel der Holzstärke.": "Housing too deep: at most a quarter of the timber thickness.",
   "Einlassungen {tiefe} mm tief mit der Japansäge einsägen und mit dem Stechbeitel ausstemmen.": "Saw the housings {tiefe} mm deep with a Japanese saw and chop them out with a chisel.",
   "Erst die Nut fertig machen, dann die Feder an der Stufe passend anarbeiten; an einem Reststück probieren.": "Finish the groove first, then fit the tongue on the tread; try it on an offcut.",
-  "Ersten Winkel fest in die Innenecke drücken und alle {n} Löcher mit Schrauben 5 × 50 belegen: erst je eine Schraube pro Schenkel, Lage prüfen, dann den Rest.": "Press the first bracket firmly into the inside corner and fill all {n} holes with 5 × 50 screws: first one screw per leg, check the position, then the rest.",
   "Feder klemmt: Erst die Nut, dann die Feder anpassen – nie umgekehrt.": "Tongue jams: fit the groove first, then the tongue – never the other way round.",
   "Flanken zu locker: Ein Schwalbenschwanz hält nur, wenn die Flanken satt anliegen.": "Loose flanks: a dovetail only holds if the flanks fit snugly.",
   "Führungsleisten": "Guide battens",
@@ -234,5 +233,6 @@ const en: Record<string, string> = {
   "{E} auflegen und mit einer Schraube gegen Verrutschen sichern.": "Lay {E} on and secure it against slipping with one screw.",
   "{E} von oben in den Schuh einlegen.": "Lower {E} into the hanger from above.",
   "{n} Tellerkopfschrauben {size} mit kräftigem Akkuschrauber eindrehen, bis der Kopf bündig sitzt ({grip} mm im Hirnholz).": "Drive {n} washer-head screws {size} with a strong cordless drill until the head sits flush ({grip} mm into the end grain).",
+  "Ersten Winkel fest in die Innenecke drücken und alle {n} Löcher belegen – Schrauben 5 × 50 ins Kantholz, 4 × 16 in dünne Bretter: erst je eine Schraube pro Schenkel, Lage prüfen, dann den Rest.": "Press the first bracket firmly into the inside corner and fill all {n} holes – 5 × 50 screws into squared timber, 4 × 16 into thin boards: first one screw per leg, check the position, then the rest.",
 }
 export default en

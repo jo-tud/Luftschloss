@@ -4,6 +4,7 @@ import { testProject } from '../src/model/defaults'
 import { resolveProject } from '../src/model/resolve'
 import { hardwareInstances } from '../src/views/hardware'
 import { memberBoxes } from '../src/model/geometry'
+import { jointFasteners } from '../src/model/fasteners'
 
 const pos = (m: THREE.Matrix4) => new THREE.Vector3().setFromMatrixPosition(m)
 
@@ -47,7 +48,11 @@ describe('Beschläge', () => {
     const winkel = r.joints.filter((j) => j.typeId === 'winkel' && j.ending)
     const schuhe = r.joints.filter((j) => j.typeId === 'balkenschuh' && j.ending)
     expect(winkel.length + schuhe.length).toBeGreaterThan(0)
-    expect(h.plates.length).toBe(4 * winkel.length + 5 * schuhe.length)
+    // je Winkel zwei Bleche; ist neben einem Brett kein Platz, fällt einer der beiden Winkel weg
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    for (const j of winkel) expect([2, 4]).toContain(jointFasteners(j, byId, r).filter((f) => f.kind === 'blech').length)
+    expect(h.plates.length).toBeLessThanOrEqual(4 * winkel.length + 5 * schuhe.length)
+    expect(h.plates.length).toBeGreaterThanOrEqual(2 * winkel.length + 5 * schuhe.length)
     // jedes Blech höchstens 25 cm von einer Verbindung entfernt
     const js = [...winkel, ...schuhe].map((j) => new THREE.Vector3(j.pos.x / 1000, j.pos.z / 1000, -j.pos.y / 1000))
     for (const m of h.plates) expect(Math.min(...js.map((j) => j.distanceTo(pos(m))))).toBeLessThan(0.25)

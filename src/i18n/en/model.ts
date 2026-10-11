@@ -231,5 +231,7 @@ const en: Record<string, string> = {
   'Liegefläche, Brett {n}': 'Deck, board {n}',
   'Die Hölzer liegen fast parallel – hier hilft nur, sie seitlich durch die Überdeckung zu verschrauben oder zu verbolzen.': 'The timbers are almost parallel – the only option is to screw or bolt them sideways through the overlap.',
   'Tellerkopfschrauben 8 mm (2–3 Stück, Länge nach Holzdicke)': 'Washer-head screws 8 mm (2–3, length to suit the timber)',
+  'Brett zu dünn für Schrauben ins Hirnholz – besser mit Winkeln, einer Einlassung oder seitlich überlappend befestigen.': 'Board too thin for screws into its end grain – better fix it with brackets, a housing or overlapping at the side.',
+  'Spanplattenschraube 4×16 für Winkel an Brettern, Packung 200': 'Chipboard screw 4×16 for brackets on boards, pack of 200',
 }
 export default en
