@@ -4,7 +4,9 @@ import { memberAxes, memberBoxes } from '../src/model/geometry'
 import { resolveProject } from '../src/model/resolve'
 import { JOINT_GUIDE } from '../src/model/jointGuide'
 import { JOINT_TYPES, jointOptions } from '../src/model/joints'
-import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, jointFasteners } from '../src/model/fasteners'
+import { CROSS_NUT_DEPTH, POCKET_D, allFasteners, boltHeights, fastenerClashes, jointFasteners } from '../src/model/fasteners'
+import { cutOverlaps } from '../src/model/joinery'
+import { analyze } from '../src/analysis/checks'
 import { progressAt, timeline } from '../src/model/jointTimeline'
 import { fill, jointDrawings, jointPlan } from '../src/model/jointPlan'
 import { computeBom } from '../src/analysis/bom'
@@ -228,5 +230,20 @@ describe('Bauplan und Zeichnung eindeutig', () => {
     const [E, T] = jointDrawings(plan, j, byId, r, (m) => m.name ?? m.role)
     expect(T.holes.every((h) => h.face.key.startsWith('Außenseite'))).toBe(true)
     expect(E.holes.filter((h) => h.d === POCKET_D).every((h) => h.face.key.startsWith('Innenseite'))).toBe(true)
+  })
+})
+
+describe('Eckpfosten', () => {
+  it('im Beispielzimmer kreuzen sich keine Schrauben oder Bolzen', () => {
+    expect(fastenerClashes(resolveProject(testProject()))).toEqual([])
+  })
+
+  it('Zapfen aus zwei Richtungen im Eckpfosten werden gemeldet', () => {
+    const p = testProject()
+    const r0 = resolveProject(p)
+    p.joints = r0.joints.filter((j) => j.key.includes('pfosten') && j.key.includes('zarge') && j.ending).map((j) => ({ key: j.key, typeId: 'zapfen' }))
+    const r = resolveProject(p)
+    expect(cutOverlaps(r.joints, r.members).length).toBeGreaterThan(0)
+    expect(analyze(p, r).findings.some((f) => f.id.startsWith('ueberschneidung:'))).toBe(true)
   })
 })

@@ -137,6 +137,8 @@ export function bedCentre(r: Resolved, m: Member): Vec3 | undefined {
 }
 
 const BOLTS = new Set(['schlossschraube', 'bettschraube'])
+/** Stöße mit Schrauben ins Hirnholz bzw. durch das durchlaufende Holz */
+const SCREWED = new Set(['holzbauschraube', 'ausklinkung', 'auflage', 'winkel'])
 
 /**
  * Verbindungsarten, deren Befestigungsmittel hier aus der Geometrie entstehen. Liefern sie an einem
@@ -224,13 +226,16 @@ export function boltHeights(h: number, d: number, crossing: number): number[] {
   return [t0, t0 - s]
 }
 
-/** Gibt es am selben durchlaufenden Holz einen zweiten, quer dazu stehenden Bolzenstoß auf gleicher Höhe? 0 nein, sonst ±1 (Lage) */
-function crossingBolts(j: DetectedJoint, E: Member, T: Member, byId: Map<string, Member>, r: Resolved): number {
+/**
+ * Gibt es am selben durchlaufenden Holz einen zweiten, quer dazu stehenden Stoß (Typ aus types) auf
+ * gleicher Höhe, dessen Bolzen bzw. Schrauben die eigenen kreuzen würden? 0 nein, sonst ±1 (Lage)
+ */
+function crossing(j: DetectedJoint, E: Member, T: Member, byId: Map<string, Member>, r: Resolved, types: Set<string>): number {
   const aE = memberAxes(E)[0]
   const zr = (m: Member): [number, number] => range(m, v(0, 0, 1))
   const [z0, z1] = zr(E)
   for (const o of r.joints) {
-    if (o.key === j.key || !BOLTS.has(o.typeId) || !o.ending || o.ending === T.id) continue
+    if (o.key === j.key || !types.has(o.typeId) || !o.ending || o.ending === T.id) continue
     if (o.a !== T.id && o.b !== T.id) continue
     const E2 = byId.get(o.ending)
     if (!E2 || E2.round) continue
@@ -255,7 +260,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
    * Schrauben in den Löchern eines Blechs (Mitte c, Schenkelrichtung l, Breite w, Normale nach außen n).
    * 5 × 50 ins Kantholz; auf einem dünnen Brett (wood mm) kurze 4 × 16, sonst kämen sie hinten heraus.
    */
-  const plateScrews = (c: Vec3, l: Vec3, w: Vec3, n: Vec3, W: number, when: FastenerWhen, g?: number, wood = 80, leg = 90) => {
+  const plateScrews = (c: Vec3, l: Vec3, w: Vec3, n: Vec3, W: number, when: FastenerWhen, g?: number, wood = 80, leg = 90, shiftW = 0) => {
     const short = wood < 45
     // Lochbild über die Schenkellänge verteilt (bei 90 mm: −18, 8, 30 mm um die Mitte)
     for (const [a, b] of [
@@ -265,7 +270,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       [0.33 * leg, -0.25],
       [0.33 * leg, 0.25],
     ] as const)
-      out.push({ joint: j.key, kind: 'schraube', head: at(c, [l, a], [w, b * W], [n, 1.3]), dir: neg(n), length: short ? 16 : 50, d: short ? 4 : 5, when, item: short ? 'schraube-4x16' : 'schraube-5x50', group: g })
+      out.push({ joint: j.key, kind: 'schraube', head: at(c, [l, a], [w, b * W + shiftW], [n, 1.3]), dir: neg(n), length: short ? 16 : 50, d: short ? 4 : 5, when, item: short ? 'schraube-4x16' : 'schraube-5x50', group: g })
   }
   let group = 0
   const plate = (center: Vec3, lenAx: Vec3, thickAx: Vec3, wideAx: Vec3, L: number, W: number, when: FastenerWhen) =>
@@ -339,7 +344,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const bett = j.typeId === 'bettschraube'
     // Höhen von unten nach oben gemessen (Oberkante ist der beanspruchte Rand)
     const hDir = axesE[2].z < -0.1 ? neg(axesE[2]) : axesE[2]
-    const heights = boltHeights(E.h, 2 * rad, crossingBolts(j, E, Tm, byId, r))
+    const heights = boltHeights(E.h, 2 * rad, crossing(j, E, Tm, byId, r, BOLTS))
     const bc = bedCentre(r, E)
     const sd = bc && dot(v(bc.x - pE.x, bc.y - pE.y, 0), axesE[1]) < 0 ? -1 : 1
     const sideDir = scale(axesE[1], sd)
@@ -455,7 +460,9 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         out[out.length - 1].item = 'winkel-90'
         plate(at(corner, [tDir, legT / 2], [into, 1.25]), tDir, into, wDir, legT, wd, 'nachher')
         plateScrews(at(corner, [into, 45], [tDir, 1.25]), into, wDir, tDir, wd, 'nachher', group, chord(E, nDir))
-        plateScrews(at(corner, [tDir, legT / 2], [into, 1.25]), tDir, wDir, into, wd, 'nachher', group, Math.min(chord(Tm, into), width2(range(Tm, into))), legT)
+        // am Eckpfosten mit Winkeln aus zwei Richtungen: Schrauben der einen Richtung 8 mm versetzt (das
+        // Lochbild hat dafür Spiel), damit sie sich im Pfosten nicht treffen
+        plateScrews(at(corner, [tDir, legT / 2], [into, 1.25]), tDir, wDir, into, wd, 'nachher', group, Math.min(chord(Tm, into), width2(range(Tm, into))), legT, crossing(j, E, Tm, byId, r, SCREWED) < 0 ? 8 * (wDir.z < 0 ? -1 : 1) : 0)
         group++
       }
     } else {
@@ -558,8 +565,10 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       // Platz für drei Schrauben (2 × 4·d Rand + 2 × 5·d Abstand bei d = 8), sonst zwei
       const span = wide[1] - wide[0] - 64
       const m = type === 'holzbauschraube' && span >= 80 ? 3 : 2
+      // zweiter Stoß quer dazu am selben Holz (Handläufe am Eckpfosten): um 6 mm gegeneinander versetzen
+      const cr = crossing(j, E, Tm, byId, r, SCREWED) * ((alongS ? side : across).z < 0 ? -1 : 1)
       for (let i = 0; i < m; i++) {
-        const q = span >= 40 ? wide[0] + 32 + (span * i) / (m - 1) : wide[0] + (wide[1] - wide[0]) * (0.3 + (0.4 * i) / (m - 1))
+        const q = (span >= 40 ? wide[0] + 32 + (span * i) / (m - 1) : wide[0] + (wide[1] - wide[0]) * (0.3 + (0.4 * i) / (m - 1))) + cr * 6
         put8(alongS ? pt(far, mid(eA), q) : pt(far, q, mid(eS)), into, F.depth, memberLength(E))
       }
     } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(E, o)) <= 1.5 * Math.max(E.b, E.h)) {
@@ -657,4 +666,58 @@ export function allFasteners(r: Resolved, only?: string): Fastener[] {
   const byId = new Map(r.members.map((m) => [m.id, m]))
   const joints = only ? r.joints.filter((j) => j.key === only) : r.joints
   return joints.flatMap((j) => jointFasteners(j, byId, r))
+}
+
+/** Kleinster Abstand zweier Strecken p0–p1 und q0–q1 */
+function segDist(p0: Vec3, p1: Vec3, q0: Vec3, q1: Vec3): number {
+  const d1 = sub(p1, p0)
+  const d2 = sub(q1, q0)
+  const r = sub(p0, q0)
+  const a = dot(d1, d1)
+  const e = dot(d2, d2)
+  const f = dot(d2, r)
+  const clamp = (x: number) => Math.max(0, Math.min(1, x))
+  let s0 = 0
+  let t0 = 0
+  if (a > 1e-9 && e > 1e-9) {
+    const b = dot(d1, d2)
+    const c = dot(d1, r)
+    const den = a * e - b * b
+    s0 = den > 1e-9 ? clamp((b * f - c * e) / den) : 0
+    t0 = (b * s0 + f) / e
+    if (t0 < 0) {
+      t0 = 0
+      s0 = clamp(-c / a)
+    } else if (t0 > 1) {
+      t0 = 1
+      s0 = clamp((b - c) / a)
+    }
+  }
+  return len(sub(add(p0, scale(d1, s0)), add(q0, scale(d2, t0))))
+}
+
+const DRILLED = new Set(['bolzen', 'bettschraube', 'schraube', 'holznagel', 'duebel'])
+
+/** Bohrungen bzw. Schrauben zweier Verbindungen, die sich im Holz treffen (zweite Richtung am Eckpfosten) */
+export function fastenerClashes(r: Resolved): { joints: [string, string]; members: string[] }[] {
+  const fs = allFasteners(r).filter((f) => DRILLED.has(f.kind))
+  const jointOf = new Map(r.joints.map((j) => [j.key, j]))
+  const out: { joints: [string, string]; members: string[] }[] = []
+  const seen = new Set<string>()
+  const tip = (f: Fastener) => add(f.head, scale(f.dir, f.length))
+  for (let i = 0; i < fs.length; i++)
+    for (let k = i + 1; k < fs.length; k++) {
+      const a = fs[i]
+      const b = fs[k]
+      if (a.joint === b.joint) continue
+      const pair = [a.joint, b.joint].sort().join('#')
+      if (seen.has(pair)) continue
+      if (segDist(a.head, tip(a), b.head, tip(b)) >= (a.d + b.d) / 2 + 1) continue
+      seen.add(pair)
+      const ja = jointOf.get(a.joint)
+      const jb = jointOf.get(b.joint)
+      const common = ja && jb ? [ja.a, ja.b].filter((id) => id === jb.a || id === jb.b) : []
+      out.push({ joints: [a.joint, b.joint], members: common })
+    }
+  return out
 }
