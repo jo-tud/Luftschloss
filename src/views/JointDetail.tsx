@@ -106,8 +106,21 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
     const withE = [...meshes(fastenerInstances(fasteners.filter((f) => f.when === 'mit'), true)), ...meshes(fastenerInstances(fasteners, true, 'tasche'))]
     const movers: Mover[] = []
     const out = frame?.out ?? v(0, 0, -1)
-    for (const f of fasteners.filter((x) => x.when === 'vorher'))
-      movers.push({ meshes: meshes(fastenerInstances([f], true, 'kern')), from: f.kind === 'blech' ? scale(out, -80) : scale(f.dir, -(f.length + 30)), phase: 'vorher', chunk: 0, win: cuts?.extras.length ? [0.5, 1] : [0, 1] })
+    // vorher (Balkenschuh, Leiste): erst das Blech anhalten, dann die Schrauben nacheinander eindrehen
+    const pre = fasteners.filter((x) => x.when === 'vorher')
+    const [p0, p1] = cuts?.extras.length ? [0.5, 1] : [0, 1]
+    const preScrews = pre.filter((f) => f.kind !== 'blech')
+    const hasPlate = pre.some((f) => f.kind === 'blech')
+    for (const f of pre) {
+      if (f.kind === 'blech') {
+        movers.push({ meshes: meshes(fastenerInstances([f], true, 'kern')), from: scale(out, -80), phase: 'vorher', chunk: 0, win: [p0, p0 + (p1 - p0) * 0.4] })
+        continue
+      }
+      const i = preScrews.indexOf(f)
+      const s0 = hasPlate ? p0 + (p1 - p0) * 0.45 : p0
+      const w = (p1 - s0) / preScrews.length
+      movers.push({ meshes: meshes(fastenerInstances([f], true, 'kern')), from: scale(f.dir, -(f.length + 30)), phase: 'vorher', chunk: 0, win: [s0 + w * i, s0 + w * (i + 1)] })
+    }
     // nach dem Fügen: in Einheiten (Schraube, Bolzen, Winkel aus zwei Schenkeln) auf die Schritte verteilt
     const later = fasteners.filter((x) => x.when === 'nachher')
     const units: Fastener[][] = []
@@ -120,8 +133,13 @@ function DetailScene({ j, ending, through, steps, clock, onStep }: { j: Detected
     units.forEach((u, ui) => {
       const chunk = Math.min(n - 1, Math.floor((ui * n) / units.length))
       if (u[0].kind === 'blech') {
-        const c = scale(u.reduce((s2, f) => add(s2, f.head), v(0, 0, 0)), 1 / u.length)
-        movers.push({ meshes: meshes(fastenerInstances(u, true, 'kern')), from: scale(norm(sub(c, j.pos)), 70), phase: 'befestigen', chunk, win: [0, 1] })
+        // Winkel: erst die Bleche an die Ecke halten, dann jede Schraube einzeln durch ihr Loch eindrehen
+        const plates = u.filter((f) => f.kind === 'blech')
+        const screws = u.filter((f) => f.kind !== 'blech')
+        const c = scale(plates.reduce((s2, f) => add(s2, f.head), v(0, 0, 0)), 1 / plates.length)
+        movers.push({ meshes: meshes(fastenerInstances(plates, true, 'kern')), from: scale(norm(sub(c, j.pos)), 70), phase: 'befestigen', chunk, win: [0, 0.35] })
+        const w = 0.6 / Math.max(1, screws.length)
+        screws.forEach((f, i) => movers.push({ meshes: meshes(fastenerInstances([f], true, 'kern')), from: scale(f.dir, -(f.length + 25)), phase: 'befestigen', chunk, win: [0.4 + w * i, 0.4 + w * (i + 1)] }))
         return
       }
       for (const f of u) {
