@@ -201,7 +201,7 @@ const en: Record<string, string> = {
   "Aufrichten und verbinden": "Stand up and connect",
   "Ausklinkungen für Sockelleiste und Stuck vorher sägen.": "Cut the notches for skirting board and cornice beforehand.",
   "Je Teil alle Bearbeitungen und Bohrungen, über die ganze Länge. Gleiche Teile nebeneinanderspannen und gemeinsam anreißen.": "All work and holes for each part, over its full length. Clamp identical parts side by side and mark them out together.",
-  "Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen und verschrauben, Diagonalen prüfen). Anstellen: Fuß flach auf den Boden, Kopfschnitt an die Zarge, seitlich an die Haltegriffe – dann mit den Griffen verbolzen.": "Pre-assemble the ladder on the floor (glue and screw rungs or treads, check the diagonals). Stand it up: foot flat on the floor, head cut against the rail, sides against the grab handles – then bolt it to the handles.",
+  "Leiter am Boden vormontieren (Sprossen bzw. Stufen einleimen und verschrauben, Diagonalen prüfen). Anstellen: Fuß flach auf den Boden, Kopfschnitt an die Zarge, seitlich an die Haltegriffe – dann von innen mit den Griffen verschrauben.": "Pre-assemble the ladder on the floor (glue and screw rungs or treads, check the diagonals). Stand it up: foot flat on the floor, head cut against the rail, sides against the grab handles – then screw it to the handles from the inside.",
   "Matratze einlegen. Probeliegen: Wackelt etwas, Schrauben und Bolzen nachziehen.": "Put in the mattress. Try lying on it: if anything wobbles, retighten screws and bolts.",
   "Mit einem Helfer beide Rahmen aufrichten und mit Hilfslatten abstützen. Querzargen bzw. die ersten Querträger ansetzen, festspannen, die Verbindungen herstellen (Bolzen höhenversetzt zu den ersten). Pfosten mit der Wasserwaage ins Lot stellen und die Diagonalen in der Draufsicht prüfen.": "With a helper, stand both frames up and brace them with temporary battens. Fit the end rails or the first cross beams, clamp them, make the connections (bolts offset in height from the first ones). Plumb the posts with the spirit level and check the diagonals in plan.",
   "Die Pfosten sitzen {d} mm vom Zargenende eingerückt – dort liegt später die Querzarge.": "The posts sit {d} mm in from the end of the rail – that is where the end rail goes later.",
@@ -216,5 +216,7 @@ const en: Record<string, string> = {
   "Sollmaß in der Draufsicht (Pfostenecke außen zu Pfostenecke außen): {d} mm.": "Target in plan view (outer post corner to outer post corner): {d} mm.",
   "Nut": "Housing",
   "Knagge": "Cleat",
+  "Schlossschraube M{d}, durchgebolzt ({n} Stück)": "Carriage bolt M{d}, through-bolted ({n} pcs)",
+  "Kopfbänder mit Einlassung jetzt in die Einlassung am Pfosten legen, dann erst die Zarge ansetzen – später passen sie nicht mehr dazwischen.": "Lay knee braces with a housing into the housing on the post now, then fit the rail – later they no longer fit in between.",
 }
 export default en

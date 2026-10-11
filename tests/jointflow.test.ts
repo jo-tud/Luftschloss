@@ -259,10 +259,20 @@ describe('Eckpfosten', () => {
     expect(fastenerClashes(resolveProject(testProject()))).toEqual([])
   })
 
-  it('Zapfen aus zwei Richtungen im Eckpfosten werden gemeldet', () => {
+  it('Zapfen aus zwei Richtungen im Eckpfosten werden gekürzt und treffen sich nicht', () => {
     const p = testProject()
     const r0 = resolveProject(p)
     p.joints = r0.joints.filter((j) => j.key.includes('pfosten') && j.key.includes('zarge') && j.ending).map((j) => ({ key: j.key, typeId: 'zapfen' }))
+    const r = resolveProject(p)
+    expect(cutOverlaps(r.joints, r.members)).toEqual([])
+    expect(fastenerClashes(r)).toEqual([])
+    expect(analyze(p, r).findings.some((f) => f.id.startsWith('ueberschneidung:'))).toBe(false)
+  })
+
+  it('Überblattungen aus zwei Richtungen im Eckpfosten werden gemeldet', () => {
+    const p = testProject()
+    const r0 = resolveProject(p)
+    p.joints = r0.joints.filter((j) => j.key.includes('pfosten') && j.key.includes('zarge') && j.ending).map((j) => ({ key: j.key, typeId: 'ueberblattung' }))
     const r = resolveProject(p)
     expect(cutOverlaps(r.joints, r.members).length).toBeGreaterThan(0)
     expect(analyze(p, r).findings.some((f) => f.id.startsWith('ueberschneidung:'))).toBe(true)
@@ -356,10 +366,10 @@ describe('Gratnut-Treppe', () => {
     expect(Math.abs(Number(plan.vars.teilung) - rise / Math.sin((Number(plan.vars.winkel) * Math.PI) / 180))).toBeLessThan(2)
   })
 
-  it('gerade Nut: Schraubenlänge nach der Wange (44 → 6 × 80, 60 → 6 × 100), Wange durchbohrt', () => {
+  it('gerade Nut: Schraubenlänge nach der Wange (44 → 5 × 80, 60 → 5 × 100), Wange durchbohrt', () => {
     for (const [wange, item] of [
-      ['geh-44x94', 'schraube-6x80'],
-      ['kvh-60x160', 'schraube-6x100'],
+      ['geh-44x94', 'schraube-5x80'],
+      ['kvh-60x160', 'schraube-5x100'],
     ]) {
       const p = testProject()
       p.assemblies[0].params.ladderCatalogId = wange
@@ -368,7 +378,7 @@ describe('Gratnut-Treppe', () => {
       const j = r.joints.find((x) => x.typeId === 'nut')!
       const plan = jointPlan(j, byId, r)!
       expect(plan.fasteners.length).toBeGreaterThan(0)
-      expect(plan.fasteners.every((f) => f.item === item && f.drillFirst === 6.5), wange).toBe(true)
+      expect(plan.fasteners.every((f) => f.item === item && f.drillFirst === 5.5), wange).toBe(true)
     }
   })
 })

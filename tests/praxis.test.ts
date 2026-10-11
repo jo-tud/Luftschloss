@@ -3,6 +3,7 @@ import { testProject } from '../src/model/defaults'
 import { allFasteners, fastenerClashes, type Fastener } from '../src/model/fasteners'
 import { add, dot, len, memberBoxes, scale, sub, type OBB } from '../src/model/geometry'
 import { keepWallContact, placeBed } from '../src/model/placement'
+import { jointPlan } from '../src/model/jointPlan'
 import { resolveProject } from '../src/model/resolve'
 import type { LoftBedParams, Project, Vec3 } from '../src/model/types'
 
@@ -127,5 +128,18 @@ describe('Praxistauglich bauen', () => {
       ['deckenhoch außen', placed('deckenhoch', { frameStyle: 'aussen', ladder: 'senkrecht' })],
     ]
     for (const [name, p] of variants) expect(fastenerClashes(resolveProject(p)).map((c) => c.joints.join(' ~ ')), name).toEqual([])
+  })
+
+  it('Sprossenleiter: Bohrungen für die Sprossen stehen in Bohrtabelle und Anleitung', () => {
+    const r = resolveProject(placed('wandseitig', { ladder: 'senkrecht' }))
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const rungs = r.joints.filter((j) => j.typeId === 'stecken')
+    expect(rungs.length).toBeGreaterThan(4)
+    const bores = allFasteners(r).filter((f) => f.bore)
+    expect(bores.length).toBe(rungs.length)
+    for (const f of bores) expect(f.drill).toBe(f.d)
+    const plan = jointPlan(rungs[0], byId, r)!
+    expect(Number(plan.vars.erste)).toBeGreaterThan(150)
+    expect(Number(plan.vars.teilung)).toBeGreaterThan(200)
   })
 })

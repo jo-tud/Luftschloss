@@ -35,6 +35,14 @@ export interface JointCuts {
 }
 
 /** Verbindungen, die das Holz selbst verändern */
+/**
+ * Tiefe der Bohrung für einen gesteckten Rundstab: Leitersprossen tragen und sitzen zwei Drittel der
+ * Holmdicke tief, Geländerstäbe 20 mm (sonst liefen ihre Bohrungen in die Schrauben am Handlaufende)
+ */
+export function stickDepth(E: Member, depth: number): number {
+  return E.role === 'stab' ? Math.min(20, (depth * 2) / 3) : (depth * 2) / 3
+}
+
 export const CARPENTRY = new Set(['ueberblattung', 'zapfen', 'schwalbenschwanz', 'gratnut', 'nut', 'ausklinkung', 'stecken', 'auflagerleiste', 'knagge', 'versatz'])
 
 const EPS = 0.5
@@ -215,6 +223,26 @@ function extension(m: Member, atStart: boolean, d: number, vr?: Range, wr?: Rang
 const GRAT_SHOULDER = 4
 const GRAT_SLOPE = Math.tan((14 * Math.PI) / 180)
 
+/** Endet auf gleicher Höhe ein weiteres liegendes Holz quer zu E in T (zweite Zarge am Eckpfosten)? */
+function crossEnding(E: Member, T: Member, byId: Map<string, Member>): boolean {
+  const aE = memberAxes(E)[0]
+  const zr = (m: Member): [number, number] => {
+    const zs = memberBoxes(m).flatMap((o) => [o.center.z - o.half.reduce((s, h, i) => s + Math.abs(o.axes[i].z) * h, 0), o.center.z + o.half.reduce((s, h, i) => s + Math.abs(o.axes[i].z) * h, 0)])
+    return [Math.min(...zs), Math.max(...zs)]
+  }
+  const [e0, e1] = zr(E)
+  const inT = (q: Vec3) => memberBoxes(T).some((o) => o.axes.every((a, i) => Math.abs(dot(sub(q, o.center), a)) <= o.half[i] + 5))
+  for (const M of byId.values()) {
+    if (M.id === E.id || M.id === T.id || M.round) continue
+    const aM = memberAxes(M)[0]
+    if (Math.abs(aM.z) > 0.3 || Math.abs(dot(aM, aE)) > 0.3) continue
+    const [m0, m1] = zr(M)
+    if (Math.min(e1, m1) - Math.max(e0, m0) < 20) continue
+    if (inT(M.start) || inT(M.end)) return true
+  }
+  return false
+}
+
 export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCuts | undefined {
   if (!CARPENTRY.has(j.typeId)) return undefined
   const A = byId.get(j.a)
@@ -291,7 +319,10 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const tr: Range = [cT - t / 2, cT + t / 2]
       const shoulder = Math.max(10, width(eH) * 0.15)
       const sr: Range = [eH[0] + shoulder, eH[1] - shoulder]
-      const L = F.depth < 50 ? F.depth : F.depth * 0.75
+      // stößt auf gleicher Höhe ein zweites Holz quer dazu in denselben Pfosten (Eckpfosten), träfen sich
+      // die Zapfen: dann nur bis kurz vor dessen Zapfenloch in der Pfostenmitte
+      const L0 = F.depth < 50 ? F.depth : F.depth * 0.75
+      const L = crossEnding(E, T, byId) ? Math.min(L0, F.depth / 2 - t / 2 - 2) : L0
       const box = frameBox(frame, [[F.face, F.face + L], flip ? sr : tr, flip ? tr : sr])
       out.dims = { dicke: Math.round(t), hoehe: Math.round(width(sr)), laenge: Math.round(L), durch: L >= F.depth ? 1 : 0 }
       cutOf(out.members, E).add.push(toLocal(E, box))
@@ -347,7 +378,7 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
     }
     case 'stecken': {
       if (!F.pE) return undefined
-      const dd = (F.depth * 2) / 3
+      const dd = stickDepth(E, F.depth)
       out.dims = { tiefe: Math.round(dd), durchmesser: Math.round(Math.min(E.b, E.h)) }
       const { pt } = endAt(E, j.pos)
       cutOf(out.members, E).add.push(extension(E, pt === E.start, dd))
@@ -390,17 +421,18 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
     }
     case 'knagge': {
       if (!F.pE) return undefined
-      // stehender Klotz aus einem Rest Geländerholz 44 × 74, bis 200 mm hoch unter dem Trägerende, mittig
-      // unter dem Träger (74 breit: Platz für zwei Schraubenreihen)
+      // stehender Klotz aus einem Rest Geländerholz 44 × 74, bis 200 mm hoch unter dem Trägerende
+      // (74 breit: Platz für zwei Schraubenreihen)
       const down = v(0, 0, -1)
       const along = norm(cross(F.out, down))
       if (len(along) < 0.5) return undefined
       const eDown = rangeAlong(E, down)
-      const eAlong = rangeAlong(E, along)
       const hk = Math.min(200, rangeAlong(T, down)[1] - eDown[1])
       if (hk < 100) return undefined
-      const mA = (eAlong[0] + eAlong[1]) / 2
-      const wk = Math.max(width(eAlong), 74)
+      // mittig auf dem Pfosten und höchstens so breit wie er: dann haben die Schrauben in beiden Hölzern Rand
+      const tAlong = rangeAlong(T, along)
+      const mA = (tAlong[0] + tAlong[1]) / 2
+      const wk = Math.min(74, width(tAlong))
       out.extras.push(frameBox([F.out, along, down], [[F.face - 44, F.face], [mA - wk / 2, mA + wk / 2], [eDown[1], eDown[1] + hk]]))
       out.dims = { hoehe: Math.round(hk), breite: Math.round(wk) }
       return out

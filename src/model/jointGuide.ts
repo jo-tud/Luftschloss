@@ -75,9 +75,9 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     how: tk('Zwei Sechskantschrauben M10 gehen durch das durchlaufende Holz in das Hirnholz des anschließenden und greifen dort in eine Mutter, die in einer Tasche auf der Innenseite sitzt – das Prinzip der Bettschraube, mit Teilen aus dem Baumarkt. Zerlegbar.'),
     steps: [
       S(tk('An {E} anreißen: Bolzenachsen {oben} mm unter der Oberkante und {unten} mm über der Unterkante, mittig in der Dicke. Auf der Innenseite die Taschenmitten {nut} mm vom Ende auf denselben Höhen.')),
-      S(tk('Taschen mit Forstnerbohrer Ø 35 mm bohren, {tasche} mm tief – 12 mm über die Mitte der Dicke hinaus, damit Scheibe und Mutter ganz unter die Bolzenachse passen. Liegen zwei Taschen übereinander, den Steg dazwischen ausstemmen: eine Langtasche. Die Wand zum Hirnholz hin mit dem Beitel 25 mm breit rund 3 mm tief plan und rechtwinklig abstechen, damit Scheibe und Mutter flach anliegen. Die große Tasche verzeiht der Längsbohrung später ±12 mm in der Höhe.'), 'bohren'),
-      S(tk('{E} an {T} ansetzen und halten – eine Zwinge greift am stumpfen Stoß nicht: einen Leistenrest als Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen; beim liegend vormontierten Rahmen mit Spanngurt oder langer Zwinge von Pfosten zu Pfosten zuziehen. Winkel prüfen. Die Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
-      S(tk('Im Verbund Ø {bohr} mm von außen durch {T} gerade in das Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer). Gerader wird es, wenn {T} vorher allein am Boden mit einem Führungsklotz senkrecht durchgebohrt wird.'), 'bohren'),
+      S(tk('Taschen Ø 35 mm, {tasche} mm tief bohren (Forstner). Zwei Taschen übereinander: den Steg ausstemmen (Langtasche). Die Wand zum Hirnholz 25 mm breit, 3 mm tief plan abstechen – dort liegen Scheibe und Mutter an.'), 'bohren'),
+      S(tk('{E} an {T} ansetzen: einen Anschlagklotz unter {E} an {T} zwingen und {E} daraufsetzen (eine Zwinge greift am stumpfen Stoß nicht). Winkel prüfen. Bolzenhöhen auf die Außenseite von {T} übertragen.'), 'fuegen'),
+      S(tk('Ø {bohr} mm von außen durch {T} gerade ins Hirnholz von {E} bohren, bis der Bohrer in der Tasche erscheint ({tiefe} mm, Klebeband am Bohrer).'), 'bohren'),
       S(tk('Scheibe Ø 20 (DIN 125) und Mutter mit zwei Fingern an die plane Wand der Tasche halten, Sechskantschraube M10 × {laenge} mit großer Scheibe (Ø 34 mm) von außen durchstecken und mit der Ratsche anziehen, bis die Scheibe gerade nicht einsinkt.'), 'befestigen'),
       S(tk('Nach 4–6 Wochen und zu Beginn der Heizperiode nachziehen.')),
     ],
@@ -214,14 +214,14 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
   stecken: {
     how: tk('Ein Rundstab steckt in einer passenden Bohrung im Holm und wird eingeleimt – die übliche Lösung für Leitersprossen und Geländerstäbe.'),
     steps: [
-      S(tk('Beide Holme nebeneinanderspannen und die Bohrungen gemeinsam anreißen.')),
+      S(tk('Beide Holme nebeneinanderspannen und die Bohrungen gemeinsam anreißen: Mitte der ersten {erste} mm ab Fuß, dann alle {teilung} mm, mittig auf der Innenseite.')),
       S(tk('Mit Forstnerbohrer Ø {durchmesser} mm {tiefe} mm tief bohren (zwei Drittel der Holzdicke, Tiefenstopp); senkrecht mit Bohrführung.')),
       S(tk('Leim in die Bohrungen, Stäbe einsetzen, zweiten Holm aufsetzen und zusammenspannen; Diagonalen prüfen.'), 'fuegen'),
     ],
     mistakes: [tk('Bohrungen schief: Die Stäbe stehen dann nicht parallel – mit Bohrführung oder Führungsklotz bohren.')],
   },
   anlage: {
-    how: tk('Die Wange ist oben lotrecht und unten waagrecht abgeschnitten. Oben liegt sie mit der ganzen Schnittfläche an der Zarge an und drückt beim Steigen gegen das Bett; seitlich ist sie mit dem Haltegriff verbolzt, der an der Zarge sitzt. Unten steht sie flach auf dem Boden.'),
+    how: tk('Die Wange ist oben lotrecht und unten waagrecht abgeschnitten. Oben liegt sie mit der ganzen Schnittfläche an der Zarge an und drückt beim Steigen gegen das Bett; seitlich ist sie von innen mit dem Haltegriff verschraubt (2 × 6 × 80), der an der Zarge verbolzt ist. Unten steht sie flach auf dem Boden.'),
     steps: [
       S(tk('Schnitte an beiden Wangen gemeinsam anreißen: Kopfschnitt {kopf}° zur Wangenkante (steht später lotrecht), Fußschnitt {fuss}° zur Wangenkante (liegt später waagrecht), Länge über die Spitzen {laenge} mm. Schmiege einstellen und an einem Reststück prüfen.')),
       S(tk('Schnitte sägen: mit der Handkreissäge an einer aufgespannten Führungsleiste, beide Wangen nacheinander mit derselben Einstellung.')),
@@ -233,7 +233,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
   gratnut: {
     how: tk('Die Stufe hat am Ende eine schwalbenschwanzförmige Feder, die in eine passende Nut quer in der Wange geschoben wird. Durch die schrägen Flanken kann sie nicht herausfallen. Eingeschoben wird von der Seite entlang der Nut.'),
     steps: [
-      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen: Nuten unter {winkel}° zur Wangenkante (Schmiege einstellen), Mitte der ersten Nut {erste} mm ab Fuß, dann alle {teilung} mm, entlang der Wange gemessen. Die Wangen dabei spiegelbildlich nebeneinanderlegen.')),
+      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen: Nuten unter {winkel}° zur Wangenkante (Schmiege einstellen), Mitte der ersten Nut {erste} mm ab Mitte des Fußschnitts, dann alle {teilung} mm, auf der Mittellinie der Wange gemessen. Die Wangen dabei spiegelbildlich nebeneinanderlegen.')),
       S(tk('Nut {tiefe} mm tief herstellen, am Grund {breit} mm, oben {schmal} mm breit: an einer Führungsleiste unter {winkel}° erst mit geradem Nutfräser Ø 8 mm 2 mm weniger tief vorfräsen, dann mit dem Gratfräser Ø {breit} mm, 14° auf volle Tiefe – ohne Oberfräse mit Gratsäge einsägen und mit Beitel und Grundhobel ausräumen.')),
       S(tk('Erst die Nut fertig machen, dann die Feder an der Stufe anarbeiten: beidseitig {schulter} mm Schulter, an der Schulter {schmal} mm, vorn {breit} mm breit. An einem Reststück probieren.')),
       S(tk('Stufe von hinten einschieben, vorne auf 30 mm Leim in die Nut. Nicht schrauben: Die schrägen Flanken halten die Wangen zusammen, eine Schraube würde die schmale Feder spalten.'), 'fuegen'),
@@ -247,10 +247,10 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
   nut: {
     how: tk('Die Stufe liegt in voller Dicke in einer geraden Nut quer in der Wange. Die Nut trägt die Last, Schrauben durch die Wange halten die Stufe in der Nut. Einfacher herzustellen als eine Gratnut.'),
     steps: [
-      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen: Nuten unter {winkel}° zur Wangenkante (Schmiege einstellen), Mitte der ersten Nut {erste} mm ab Fuß, dann alle {teilung} mm, entlang der Wange gemessen. Die Wangen dabei spiegelbildlich nebeneinanderlegen.')),
+      S(tk('Nutlage auf beiden Wangen gemeinsam anreißen: Nuten unter {winkel}° zur Wangenkante (Schmiege einstellen), Mitte der ersten Nut {erste} mm ab Mitte des Fußschnitts, dann alle {teilung} mm, auf der Mittellinie der Wange gemessen. Die Wangen dabei spiegelbildlich nebeneinanderlegen.')),
       S(tk('Nut {tiefe} mm tief und {breit} mm breit herstellen (so breit wie die Stufe dick ist): Ränder mit der Handkreissäge an einer Führungsleiste unter {winkel}° einschneiden, dazwischen mehrere Schnitte, ausstemmen und den Grund eben machen – mit der Oberfräse in einem Zug.')),
       S(tk('Stufe probehalber einsetzen: Sie soll sich mit leichtem Klopfen einsetzen lassen.')),
-      S(tk('Stufe in die Nut setzen (nur in die Nut leimen). Je Seite 2 Schrauben {size} durch die Wange ins Hirnholz der Stufe, 25–30 mm von vorn und hinten, mittig in der Dicke: Wange Ø 6,5 mm durchbohren, dann im Verbund Ø 4 mm in die eingesetzte Stufe vorbohren.'), 'fuegen', 'befestigen'),
+      S(tk('Stufe in die Nut setzen (nur in die Nut leimen). Je Seite 2 Schrauben {size} durch die Wange ins Hirnholz der Stufe, 25–30 mm von vorn und hinten, mittig in der Dicke: Wange Ø 5,5 mm durchbohren, dann im Verbund Ø 3 mm in die eingesetzte Stufe vorbohren.'), 'fuegen', 'befestigen'),
     ],
     mistakes: [tk('Nut zu breit: Die Stufe wackelt – lieber knapp schneiden und mit dem Beitel nacharbeiten.'), tk('Nut zu tief: höchstens ein Drittel der Wangendicke.')],
   },

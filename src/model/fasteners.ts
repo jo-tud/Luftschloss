@@ -1,5 +1,5 @@
 import { add, cross, dot, len, memberAxes, memberBoxes, memberLength, norm, scale, sub, v } from './geometry'
-import { braceEnd, jointCuts, jointFrame, lapRange } from './joinery'
+import { braceEnd, jointCuts, jointFrame, lapRange, stickDepth } from './joinery'
 import type { DetectedJoint, Resolved } from './resolve'
 import type { Member, Vec3 } from './types'
 
@@ -64,6 +64,8 @@ export interface Fastener {
   drillFirst?: number
   /** Schraube: so viel Holz durchdringt sie, bevor sie ins tragende Holz greift */
   first?: number
+  /** nur eine Bohrung (Sackloch für einen Rundstab), kein eigenes Teil: nicht zeichnen, nicht kaufen */
+  bore?: boolean
 }
 
 /** Mindestens so tief muss das Gewinde einer 8er-Schraube im tragenden Holz sitzen (9·d, volle Tragfähigkeit) */
@@ -689,6 +691,15 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       }
     return out
   }
+  // Rundstab im Holm: nur die Sackbohrung (zwei Drittel der Holmdicke), damit sie in Bohrtabelle und
+  // Werkstattzeichnung steht; die Sprosse selbst ist das Bauteil
+  if (type === 'stecken') {
+    if (!F.pE || !E.round) return out
+    const dd = Math.round(stickDepth(E, F.depth))
+    const dia = Math.round(Math.min(E.b, E.h))
+    push({ kind: 'duebel', head: at(F.pE, [o, F.face - dot(F.pE, o)]), dir: o, length: dd, d: dia, when: 'vorher', drill: dia, bore: true })
+    return out
+  }
   if (type === 'holzbauschraube' || type === 'auflage' || type === 'kopfband' || type === 'ausklinkung' || type === 'gratnut' || type === 'nut') {
     if (E.round || Tm.round) return out
     const oS = overlap(eS, range(Tm, side))
@@ -699,15 +710,15 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const put8 = (head: Vec3, dir: Vec3, first: number, bearing: number) => {
       // Gratnut: nur geleimt, die Flanken halten – eine Schraube würde die schmale Feder spalten
       if (type === 'gratnut') return
-      // gerade Nut: 6er-Schraube durch die Wange ins Hirnholz der Stufe, mindestens 45 mm (7,5·d) im Hirnholz;
-      // Wange Ø 6,5 durchbohren, Stufe im Verbund Ø 4 vorbohren
+      // gerade Nut: Schraube durch die Wange ins Hirnholz der Stufe; Wange Ø 5,5 durchbohren, Stufe im Verbund Ø 3 vorbohren
       if (type === 'nut') {
-        // die Stufe steckt so tief in der Nut, wie die Nut tief ist (wie in joinery.ts)
+        // die Stufe steckt so tief in der Nut, wie die Nut tief ist (wie in joinery.ts). Ø 5: im 24 mm
+        // dicken Trittbrett bleibt so genug Rand, damit das Hirnholz nicht spaltet; 7,5·d = 38 mm im Hirnholz
         const wood = first - Math.min(10, first / 3)
-        const L = [70, 80, 100].find((x) => x - wood >= 45) ?? 100
-        screw(head, dir, L, 3, 'nachher', `schraube-6x${L}`, 4)
+        const L = [70, 80, 100].find((x) => x - wood >= 38) ?? 100
+        screw(head, dir, L, 2.5, 'nachher', `schraube-5x${L}`, 3)
         out[out.length - 1].first = wood
-        out[out.length - 1].drillFirst = 6.5
+        out[out.length - 1].drillFirst = 5.5
         return
       }
       // Latten (44er) auf dem Träger: Ø 6, dann reicht der Randabstand zweier Schrauben in der 74er Latte
@@ -743,10 +754,29 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
         const q = away * (W / 2 - 32) - (cr < 0 ? away * 12 : 0)
         put8(at(centre, [wideAx, q]), into, F.depth, memberLength(E))
       } else {
-        const m = W < 64 ? 1 : type === 'holzbauschraube' && span >= 80 ? 3 : 2
-        for (let i = 0; i < m; i++) {
-          const q = m === 1 ? cr * 6 : (span >= 40 ? 32 + (span * i) / (m - 1) : W * (0.3 + (0.4 * i) / (m - 1))) - W / 2 + cr * 6
-          put8(at(centre, [wideAx, q]), into, F.depth, memberLength(E))
+        // Sackbohrungen gesteckter Stäbe in E (Unterholm: Stäbe von oben): dort nicht schrauben
+        const bores = r.joints
+          .filter((x) => x.key !== j.key && x.typeId === 'stecken' && (x.a === E.id || x.b === E.id))
+          .flatMap((x) => jointFasteners(x, byId, r))
+          .filter((f) => f.bore && Math.abs(dot(f.dir, wideAx)) > 0.9)
+        if (bores.length) {
+          let lo = Math.min(0, 32 - W / 2)
+          let hi = Math.max(0, W / 2 - 32)
+          for (const b of bores) {
+            const a0 = dot(sub(b.head, centre), wideAx)
+            const a1 = dot(sub(at(b.head, [b.dir, b.length]), centre), wideAx)
+            const [b0, b1] = [Math.min(a0, a1) - 8, Math.max(a0, a1) + 8]
+            if (b1 >= hi && b0 <= hi) hi = Math.min(hi, b0)
+            if (b0 <= lo && b1 >= lo) lo = Math.max(lo, b1)
+          }
+          // eine Schraube: die der Querrichtung (zweiter Unterholm am Eckpfosten) 6 mm darüber bzw. darunter
+          for (const q of hi - lo >= 40 ? [lo, hi] : [(lo + hi) / 2 + cr * 6]) put8(at(centre, [wideAx, q]), into, F.depth, memberLength(E))
+        } else {
+          const m = W < 64 ? 1 : type === 'holzbauschraube' && span >= 80 ? 3 : 2
+          for (let i = 0; i < m; i++) {
+            const q = m === 1 ? cr * 6 : (span >= 40 ? 32 + (span * i) / (m - 1) : W * (0.3 + (0.4 * i) / (m - 1))) - W / 2 + cr * 6
+            put8(at(centre, [wideAx, q]), into, F.depth, memberLength(E))
+          }
         }
       }
     } else if (oS[1] - oS[0] > 10 && oA[1] - oA[0] > 10 && width2(range(E, o)) <= 1.5 * Math.max(E.b, E.h)) {
@@ -763,9 +793,14 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       // k entlang der längeren Überdeckung, q quer dazu (beides in Teilen der Überdeckung)
       const at2 = (k: number, q = 0) =>
         pt(er[0], longS ? mid(oA) + (oA[1] - oA[0]) * q : mid(oA) + (oA[1] - oA[0]) * k, longS ? mid(oS) + (oS[1] - oS[0]) * k : mid(oS) + (oS[1] - oS[0]) * q)
+      // an der Leiter (Haltegriff an der Wange): der Schaft darf durch kein drittes Teil laufen (oberste Stufe)
+      const third = [E, Tm].some((m) => m.partKey?.startsWith('leiter-'))
+        ? r.members.filter((m) => m.id !== E.id && m.id !== Tm.id && memberBoxes(m).some((b) => b.axes.every((a, i) => Math.abs(dot(sub(j.pos, b.center), a)) <= b.half[i] + 250)))
+        : []
       const clear = (k: number, q: number) => {
         const h = at2(k, q)
         const tip = at(h, [o, er[1] - er[0] + 40])
+        if (third.some((m) => [0, 0.2, 0.4, 0.6, 0.8, 1].some((f) => inside(m, at(h, [o, (er[1] - er[0] + 30) * f]))))) return false
         return bolts.every(
           (f) =>
             segDist(h, tip, f.head, add(f.head, scale(f.dir, f.length))) >= (8 + f.d) / 2 + 2 &&
@@ -816,12 +851,15 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       out[out.length - 1].first = blatt
     }
   } else if (type === 'zapfen' && F.pE) {
-    // Holznagel quer durch Zapfenloch und Zapfen, Stirnseiten sichtbar
-    const L = F.depth < 50 ? F.depth : F.depth * 0.75
+    // Holznagel quer durch Zapfenloch und Zapfen, Stirnseiten sichtbar; Zapfenlänge wie in joinery.ts
+    // (am Eckpfosten gekürzt)
+    const L = jointCuts(j, byId)?.dims.laenge ?? (F.depth < 50 ? F.depth : F.depth * 0.75)
     const oo = F.face + L * 0.5
+    // zweiter Zapfen quer dazu im selben Pfosten: Nägel 12 mm höher bzw. tiefer, sonst treffen sie sich
+    const zs = mid(eS) + crossing(j, E, Tm, byId, r, new Set(['zapfen'])) * (side.z < 0 ? -1 : 1) * Math.min(12, (eS[1] - eS[0]) * 0.15)
     // zwei Buchendübel Ø 10 × 40, von beiden Seiten durch Zapfenloch und Zapfen geschlagen
-    const a = pt(oo, tA[0] - 1.5, mid(eS))
-    const b = pt(oo, tA[1] + 1.5, mid(eS))
+    const a = pt(oo, tA[0] - 1.5, zs)
+    const b = pt(oo, tA[1] + 1.5, zs)
     const dab = norm(sub(b, a))
     const pinL = Math.min(40, len(sub(b, a)) / 2)
     push({ kind: 'holznagel', head: a, dir: dab, length: pinL, d: 10, when: 'nachher', item: 'holzduebel-10', drill: 10 })
@@ -969,7 +1007,9 @@ export function fastenerClashes(r: Resolved): { joints: [string, string]; member
   // eigene Zylinder (Ø 35), durch die nichts anderes laufen darf
   const all = allFasteners(r)
   const fs: Fastener[] = [
-    ...all.filter((f) => DRILLED.has(f.kind) && ((f.drill ?? 0) > 0 || f.kind === 'schraube')),
+    // Sackbohrungen (Forstner) haben einen flachen Grund: als Zylinder bis Tiefe − Radius, dessen Kugelende
+    // dann genau den Grund erreicht
+    ...all.filter((f) => DRILLED.has(f.kind) && ((f.drill ?? 0) > 0 || f.kind === 'schraube')).map((f) => (f.bore ? { ...f, length: Math.max(1, f.length - f.d / 2) } : f)),
     ...all
       .filter((f) => f.crossNut)
       .map((f) => ({ ...f, crossNut: undefined, head: at(f.crossNut!.at, [f.crossNut!.dir, -f.crossNut!.bore / 2]), dir: f.crossNut!.dir, length: f.crossNut!.depth + f.crossNut!.bore / 2, d: f.crossNut!.bore })),

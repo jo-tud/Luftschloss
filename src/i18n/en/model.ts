@@ -289,5 +289,8 @@ const en: Record<string, string> = {
   "Tellerkopf-Holzbauschraube 8×120, Packung 50": "Washer-head structural screw 8×120, pack of 50",
   "Tellerkopf-Holzbauschraube 8×140, Packung 50": "Washer-head structural screw 8×140, pack of 50",
   "Holzbauschraube / Winkelschraube 5×40, Packung 250": "Structural screw / angle bracket screw 5×40, pack of 250",
+  "Holzbauschraube 5×70, Packung 100": "Structural screw 5×70, pack of 100",
+  "Holzbauschraube 5×80, Packung 100": "Structural screw 5×80, pack of 100",
+  "Holzbauschraube 5×100, Packung 100": "Structural screw 5×100, pack of 100",
 }
 export default en
