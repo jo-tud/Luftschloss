@@ -185,5 +185,10 @@ const en: Record<string, string> = {
   'Hinter der Tür sind bis zur gegenüberliegenden Wand nur {depth} Platz, zur Decke hin angehoben etwa {tilt}. Teil teilen (Stoß über einem Auflager) oder durchs Fenster hereinreichen. Flur und Treppenhaus vorher ausmessen.': 'Behind the door there is only {depth} to the opposite wall, about {tilt} when lifted towards the ceiling. Split the part (joint over a support) or pass it in through the window. Measure the hallway and stairwell beforehand.',
   '{name} ({length}) beim Hereintragen anheben': 'Lift {name} ({length}) when carrying it in',
   'Lange Teile der Länge nach durch die Tür tragen. Hinter der Tür sind bis zur gegenüberliegenden Wand {depth} Platz – das vordere Ende zur Decke hin anheben. Flur und Treppenhaus vorher ausmessen.': 'Carry long parts lengthwise through the door. Behind the door there is {depth} to the opposite wall – lift the front end towards the ceiling. Measure the hallway and stairwell beforehand.',
+  "{part}: Ausnehmungen zweier Verbindungen überschneiden sich": "{part}: recesses of two joints overlap",
+  "Im Holz treffen die Verbindungen zu {a} und {b} aufeinander, dort bleibt kaum Holz stehen. Zapfen kürzen bzw. auf Gehrung schneiden, Blätter in der Höhe versetzen oder eine der Verbindungen verbolzen bzw. mit Winkeln ausführen.": "Inside the timber the joints to {a} and {b} run into each other and hardly any wood is left there. Shorten the tenons or mitre them, offset the laps in height, or bolt one of the joints or use brackets.",
+  "Schrauben bzw. Bolzen zweier Verbindungen treffen sich in {part}": "Screws or bolts of two joints meet in {part}",
+  "Schrauben bzw. Bolzen zweier Verbindungen treffen sich": "Screws or bolts of two joints meet",
+  "Die Befestigungsmittel der Verbindungen zu {a} und {b} kreuzen sich. Eine Verbindung in der Höhe versetzen oder eine andere Verbindungsart wählen.": "The fasteners of the joints to {a} and {b} cross. Offset one joint in height or choose another joint type.",
 }
 export default en

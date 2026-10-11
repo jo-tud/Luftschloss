@@ -568,6 +568,41 @@ export function allCuts(joints: DetectedJoint[], members: Member[]): { members: 
 }
 
 /**
+ * Ausnehmungen zweier Verbindungen, die sich im selben Stab überschneiden – etwa Zapfenlöcher oder
+ * Blätter aus zwei Richtungen in einem Eckpfosten. Dann bleibt dort kaum Holz stehen.
+ */
+export function cutOverlaps(joints: DetectedJoint[], members: Member[]): { memberId: string; joints: [string, string]; volume: number }[] {
+  const byId = new Map(members.map((m) => [m.id, m]))
+  const per = new Map<string, { key: string; box: LocalBox }[]>()
+  for (const j of joints) {
+    const c = jointCuts(j, byId)
+    if (!c) continue
+    for (const [id, mc] of c.members) for (const box of mc.sub) per.set(id, [...(per.get(id) ?? []), { key: j.key, box }])
+  }
+  const out: { memberId: string; joints: [string, string]; volume: number }[] = []
+  for (const [id, list] of per) {
+    const m = byId.get(id)
+    if (!m) continue
+    // nur innerhalb des Holzes zählen
+    const own: LocalBox = [[0, memberLength(m)], [-m.b / 2, m.b / 2], [-m.h / 2, m.h / 2]]
+    const seen = new Set<string>()
+    for (let i = 0; i < list.length; i++)
+      for (let k = i + 1; k < list.length; k++) {
+        const a = list[i]
+        const b = list[k]
+        if (a.key === b.key) continue
+        const pair = [a.key, b.key].sort().join('#')
+        if (seen.has(pair)) continue
+        const vol = [0, 1, 2].reduce((acc, d) => acc * Math.max(0, Math.min(a.box[d][1], b.box[d][1], own[d][1]) - Math.max(a.box[d][0], b.box[d][0], own[d][0])), 1)
+        if (vol < 1000) continue
+        seen.add(pair)
+        out.push({ memberId: id, joints: [a.key, b.key], volume: vol })
+      }
+  }
+  return out
+}
+
+/**
  * Stab mit Verbindungen als Quader (Weltachsen = Stabachsen): Grundkörper samt Ausklinkungen und
  * Ansätzen, minus Ausnehmungen. Zerlegung über ein Raster der Schnittebenen, dann zusammenfassen.
  */

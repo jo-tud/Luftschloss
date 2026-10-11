@@ -9,6 +9,8 @@ import type { Member, Project, Side, Vec3 } from '../model/types'
 import { WALL_IDS } from '../model/types'
 import { analyzeDoors, analyzeWindows, type DoorResult, type SwingResult } from './openings'
 import { transportCheck } from './assembly'
+import { cutOverlaps } from '../model/joinery'
+import { fastenerClashes } from '../model/fasteners'
 
 export type Severity = 'fehler' | 'warnung' | 'hinweis'
 
@@ -198,6 +200,21 @@ export function analyze(p: Project, r: Resolved): Analysis {
         { obstacle: what },
       )
     }
+  }
+  // Verbindungen, die sich im selben Holz in die Quere kommen (Eckpfosten mit Stößen aus zwei Richtungen)
+  const jointByKey = new Map(r.joints.map((j) => [j.key, j]))
+  const partner = (key: string, at: string) => {
+    const j = jointByKey.get(key)
+    return memberName(memberById.get(j ? (j.a === at ? j.b : j.a) : ''))
+  }
+  for (const o of cutOverlaps(r.joints, r.members)) {
+    const pair = [...o.joints].sort().join('#')
+    add({ id: `ueberschneidung:${pair}`, severity: 'warnung', category: CAT.stabil, title: t('{part}: Ausnehmungen zweier Verbindungen überschneiden sich', { part: memberName(memberById.get(o.memberId)) }), detail: t('Im Holz treffen die Verbindungen zu {a} und {b} aufeinander, dort bleibt kaum Holz stehen. Zapfen kürzen bzw. auf Gehrung schneiden, Blätter in der Höhe versetzen oder eine der Verbindungen verbolzen bzw. mit Winkeln ausführen.', { a: partner(o.joints[0], o.memberId), b: partner(o.joints[1], o.memberId) }), targets: [o.memberId] })
+  }
+  for (const c of fastenerClashes(r)) {
+    const pair = [...c.joints].sort().join('#')
+    const at = c.members[0]
+    add({ id: `befestiger-kreuzung:${pair}`, severity: 'warnung', category: CAT.stabil, title: at ? t('Schrauben bzw. Bolzen zweier Verbindungen treffen sich in {part}', { part: memberName(memberById.get(at)) }) : t('Schrauben bzw. Bolzen zweier Verbindungen treffen sich'), detail: at ? t('Die Befestigungsmittel der Verbindungen zu {a} und {b} kreuzen sich. Eine Verbindung in der Höhe versetzen oder eine andere Verbindungsart wählen.', { a: partner(c.joints[0], at), b: partner(c.joints[1], at) }) : undefined, targets: c.members })
   }
   for (const d of r.deepNotches) {
     add({ id: `kerbe:${d.memberId}:${notchKey(d.reason)}`, severity: 'fehler', category: CAT.stabil, title: t('{part}: Ausklinkung für {reason} zu tief', { part: memberName(memberById.get(d.memberId)), reason: tr(d.reason) }), detail: t('Nötig wären {depth}, sinnvoll höchstens {max} (halber Querschnitt). Bauteil von der Wand abrücken oder kürzen.', { depth: fmtCm(d.depth), max: fmtCm(d.max) }), targets: [d.memberId] })
