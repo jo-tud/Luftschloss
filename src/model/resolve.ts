@@ -1,6 +1,6 @@
 import { t, tk } from '../i18n'
 import { add, dot, memberAxes, memberBoxes, memberLength, obbBounds, obbOverlap, scale, sub, v, wallFrame, type OBB } from './geometry'
-import { defaultJointType } from './joints'
+import { defaultJointType, typesForKind, unsuitable } from './joints'
 import { generateLoftBed, type BedFixing, type BedInfo } from './loftbed'
 import { cornice, corniceIntrusion } from './room'
 import type { Assembly, JointKind, Member, Notch, Panel, Project, Room, Vec3, WallId } from './types'
@@ -221,6 +221,13 @@ export function detectJoints(members: Member[], p: Project): DetectedJoint[] {
         if (kindInfo.kind === 'beischlag' && (A.role === 'leiste' || B.role === 'leiste' || (A.role === 'stufe' && B.role === 'stufe'))) typeId = 'lose' // Trittbretter einer Stufe liegen nebeneinander auf den Wangen
         if ((A.catalogId === 'seil-12' || B.catalogId === 'seil-12') && kindInfo.kind !== 'auflage') typeId = 'seilbefestigung'
         if (A.catalogId === 'gewindestange-m10' || B.catalogId === 'gewindestange-m10') typeId = 'gewindestange'
+        // Vorschlag taugt für diese Bauteile nicht (z. B. Schrauben ins Hirnholz eines dünnen Bretts): nächstbeste Art
+        const jm = { kind: kindInfo.kind, a: A, b: B, ending: endingMember }
+        if (unsuitable(typeId, jm)) {
+          const order = ['winkel', 'holzbauschraube', 'schlossschraube', 'auflage', 'ausklinkung', 'lose']
+          const alt = [...order.map((id) => typesForKind(kindInfo.kind).find((x) => x.id === id)).filter((x) => !!x), ...typesForKind(kindInfo.kind)].find((x) => !unsuitable(x!.id, jm))
+          if (alt) typeId = alt.id
+        }
       }
       out.push({ key, a: A.id, b: B.id, kind: kindInfo.kind, pos: kindInfo.pos, typeId, ending: endingMember?.id })
     }

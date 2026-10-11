@@ -32,7 +32,7 @@ export const JOINT_GUIDE: Record<string, GuideEntry> = {
     steps: [
       S(tk('Lage von {E} an {T} mit dem Anschlagwinkel anreißen.')),
       S(tk('{E} ansetzen, mit Zwingen spaltfrei festspannen und den rechten Winkel prüfen.'), 'fuegen'),
-      S(tk('Ersten Winkel fest in die Innenecke drücken und alle {n} Löcher mit Schrauben 5 × 50 belegen: erst je eine Schraube pro Schenkel, Lage prüfen, dann den Rest.'), 'befestigen'),
+      S(tk('Ersten Winkel fest in die Innenecke drücken und alle {n} Löcher belegen – Schrauben 5 × 50 ins Kantholz, 4 × 16 in dünne Bretter: erst je eine Schraube pro Schenkel, Lage prüfen, dann den Rest.'), 'befestigen'),
       S(tk('Zweiten Winkel gegenüber genauso setzen.'), 'befestigen'),
     ],
     mistakes: [tk('Nur ein paar Löcher belegt: Der Winkel trägt nur mit allen Schrauben.'), tk('Spalt zwischen den Hölzern: Ein Winkel zieht ihn nicht zu – erst spannen, dann schrauben.')],
