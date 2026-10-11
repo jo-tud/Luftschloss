@@ -498,8 +498,10 @@ export function analyze(p: Project, r: Resolved): Analysis {
   }
 
   const tc = transportCheck(p, r)
-  if (tc.door && tc.longest > tc.door) add({ id: 'transport', severity: 'warnung', category: CAT.material, title: t('{name} ({length}) passt nicht durch die Tür', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Türdiagonale ca. {diag}. Holz erst im Zimmer zuschneiden oder das Teil teilen (Stoß über einem Auflager). Auch Flur und Treppenhaus bedenken.', { diag: fmtM(tc.door) }), targets: [] })
-  else if (tc.door && tc.longest > tc.door - 300) add({ id: 'transport', severity: 'hinweis', category: CAT.material, title: t('{name} ({length}) nur schräg durch die Tür', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Türdiagonale ca. {diag} – lange Teile schräg tragen, Flurecken vorher ausmessen.', { diag: fmtM(tc.door) }), targets: [] })
+  if (tc.depth && tc.tilt && tc.longest > tc.tilt)
+    add({ id: 'transport', severity: 'warnung', category: CAT.material, title: t('{name} ({length}) lässt sich kaum ins Zimmer tragen', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Hinter der Tür sind bis zur gegenüberliegenden Wand nur {depth} Platz, zur Decke hin angehoben etwa {tilt}. Teil teilen (Stoß über einem Auflager) oder durchs Fenster hereinreichen. Flur und Treppenhaus vorher ausmessen.', { depth: fmtM(tc.depth), tilt: fmtM(tc.tilt) }), targets: [] })
+  else if (tc.depth && tc.longest > tc.depth)
+    add({ id: 'transport', severity: 'hinweis', category: CAT.material, title: t('{name} ({length}) beim Hereintragen anheben', { name: tr(tc.name), length: fmtM(tc.longest) }), detail: t('Lange Teile der Länge nach durch die Tür tragen. Hinter der Tür sind bis zur gegenüberliegenden Wand {depth} Platz – das vordere Ende zur Decke hin anheben. Flur und Treppenhaus vorher ausmessen.', { depth: fmtM(tc.depth) }), targets: [] })
 
   // --- Projekt ------------------------------------------------------------------------
   if (p.estimated.length) add({ id: 'geschaetzt', severity: 'hinweis', category: CAT.raum, title: tn(p.estimated.length, tk('1 Maß ist nur geschätzt'), tk('{n} Maße sind nur geschätzt')), detail: t('Gelb hinterlegte Felder sind geschätzt. Nachmessen und eintragen – ein Klick auf einen Eintrag springt zum Feld.'), targets: [] })
