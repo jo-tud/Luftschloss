@@ -250,5 +250,6 @@ const en: Record<string, string> = {
   "Bettschraube M8 × 160 mit Zylindermutter": "Bed bolt M8 × 160 with barrel nut",
   "Schlangenbohrer Ø 9 × 250 mm": "Auger bit Ø 9 × 250 mm",
   "Holzbohrer Ø 10 mm": "Wood drill bit Ø 10 mm",
+  "Nur für Stufen, die in eine Nut der Wange geschoben werden.": "Only for steps that slide into a housing in the string.",
 }
 export default en

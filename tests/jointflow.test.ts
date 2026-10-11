@@ -260,3 +260,17 @@ describe('Haltegriff', () => {
     expect(r.joints.some((x) => x.key.includes('leiter-griff-0') && x.key.includes('leiter-holm'))).toBe(false)
   })
 })
+
+describe('Gratnut-Treppe', () => {
+  it('nennt Winkel, Teilung und erste Nut; Flanken wie ein 14°-Fräser; Sicherung 6 × 80', () => {
+    const r = resolveProject(testProject())
+    const byId = new Map(r.members.map((m) => [m.id, m]))
+    const j = r.joints.find((x) => x.typeId === 'gratnut')!
+    const plan = jointPlan(j, byId, r)!
+    expect(plan.vars.winkel).toBeGreaterThan(45)
+    expect(Number(plan.vars.teilung)).toBeGreaterThan(150)
+    const { breit, schmal, tiefe } = plan.cuts!.dims
+    expect(Math.abs((breit - schmal) / 2 - tiefe * Math.tan((14 * Math.PI) / 180))).toBeLessThan(1)
+    expect(plan.fasteners.every((f) => f.item === 'schraube-6x80')).toBe(true)
+  })
+})
