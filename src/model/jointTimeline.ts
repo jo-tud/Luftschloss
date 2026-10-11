@@ -8,35 +8,36 @@ import type { GuideAnim, GuideStep } from './jointGuide'
 export interface Seg {
   step: number
   anim?: GuideAnim
-  /** befestigen: welcher Teil der Befestigungsmittel */
+  /** befestigen: welcher Teil der Befestigungsmittel; bohren: der wievielte Bohrschritt */
   chunk: number
   start: number
   dur: number
 }
 
-const DUR: Record<GuideAnim | 'lesen', number> = { lesen: 1.4, vorher: 1.8, fuegen: 2.2, befestigen: 2 }
+const DUR: Record<GuideAnim | 'lesen', number> = { lesen: 1.4, vorher: 1.8, fuegen: 2.2, bohren: 2.4, befestigen: 2 }
 export const HOLD = 2.5
 
-export function timeline(steps: GuideStep[]): { segs: Seg[]; total: number; chunks: number } {
+export function timeline(steps: GuideStep[]): { segs: Seg[]; total: number; chunks: number; drills: number } {
   const segs: Seg[] = []
   let t = 0
   let chunks = 0
+  let drills = 0
   steps.forEach((s, i) => {
     if (!s.at.length) {
       segs.push({ step: i, chunk: -1, start: t, dur: DUR.lesen })
       t += DUR.lesen
     }
     for (const a of s.at) {
-      segs.push({ step: i, anim: a, chunk: a === 'befestigen' ? chunks++ : -1, start: t, dur: DUR[a] })
+      segs.push({ step: i, anim: a, chunk: a === 'befestigen' ? chunks++ : a === 'bohren' ? drills++ : -1, start: t, dur: DUR[a] })
       t += DUR[a]
     }
   })
-  return { segs, total: t + HOLD, chunks }
+  return { segs, total: t + HOLD, chunks, drills }
 }
 
 /** Fortschritt der Bewegungen zur Zeit t (0 = noch nicht, 1 = fertig) */
-export function progressAt(segs: Seg[], t: number): { step: number; vorher: number; fuegen: number; chunk: number[] } {
-  const p = { step: 0, vorher: 0, fuegen: 0, chunk: [] as number[] }
+export function progressAt(segs: Seg[], t: number): { step: number; vorher: number; fuegen: number; chunk: number[]; drill: number[] } {
+  const p = { step: 0, vorher: 0, fuegen: 0, chunk: [] as number[], drill: [] as number[] }
   // ohne eigenen Schritt gelten Leiste und Fügen als von Anfang an erledigt
   if (!segs.some((s) => s.anim === 'vorher')) p.vorher = 1
   if (!segs.some((s) => s.anim === 'fuegen')) p.fuegen = 1
@@ -47,6 +48,8 @@ export function progressAt(segs: Seg[], t: number): { step: number; vorher: numb
     if (s.anim === 'vorher') p.vorher = Math.max(p.vorher, e)
     if (s.anim === 'fuegen') p.fuegen = Math.max(p.fuegen, e)
     if (s.anim === 'befestigen') p.chunk[s.chunk] = e
+    // Bohren linear: der Bohrer fährt ein und wieder heraus
+    if (s.anim === 'bohren') p.drill[s.chunk] = k
   }
   return p
 }

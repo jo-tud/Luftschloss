@@ -42,7 +42,7 @@ export const JOINT_TYPES: JointType[] = [
     difficulty: 1,
     minutes: [15, 8],
     drill: 0,
-    hard: tk('Spaltfrei spannen; alle Löcher belegen.'),
+    hard: tk('Spaltfrei andrücken und halten; alle Löcher belegen.'),
     removable: true,
     stiffness: 'gelenkig',
     residualSection: 1,

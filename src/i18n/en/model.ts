@@ -251,5 +251,6 @@ const en: Record<string, string> = {
   "Schlangenbohrer Ø 9 × 250 mm": "Auger bit Ø 9 × 250 mm",
   "Holzbohrer Ø 10 mm": "Wood drill bit Ø 10 mm",
   "Nur für Stufen, die in eine Nut der Wange geschoben werden.": "Only for steps that slide into a housing in the string.",
+  "Spaltfrei andrücken und halten; alle Löcher belegen.": "Press on without a gap and hold; fill all holes.",
 }
 export default en
