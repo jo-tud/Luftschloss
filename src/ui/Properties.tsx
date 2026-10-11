@@ -535,6 +535,14 @@ function BedProps({ a, only }: { a: Assembly; only?: BedSection }) {
             <Sel label={t('Handlauf/Holme')} value={P.guardCatalogId} options={catalogOptions((t) => !t.round && t.h >= 44 && t.h <= 100)} onChange={(v) => setP({ guardCatalogId: v })} />
           </>
         )}
+        {P.type !== 'deckenhoch' && (
+          <Check
+            label={t('Eckpfosten ohne Geländer an der Liegefläche enden lassen')}
+            value={P.trimPosts !== false}
+            onChange={(v) => setP({ trimPosts: v })}
+            title={t('Schließt an einer Ecke auf keiner Seite ein Geländer an, muss der Pfosten nicht höher sein als die Liegefläche')}
+          />
+        )}
       </Section>
       )}
       {show('leiter') && (

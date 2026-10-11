@@ -401,5 +401,7 @@ const en: Record<string, string> = {
   '1 Teil · {pct} % genutzt': '1 part · {pct} % used',
   'Bretter quer von Zarge zu Zarge: {list}. Unter jedem Stoß ein Querträger, so liegt jedes Brett ringsum auf.': 'Boards across from rail to rail: {list}. A joist under every joint, so each board is supported all round.',
   '1 × {w} (aus {f} gesägt)': '1 × {w} (ripped from {f})',
+  'Eckpfosten ohne Geländer an der Liegefläche enden lassen': 'End corner posts without a guard rail at the deck',
+  'Schließt an einer Ecke auf keiner Seite ein Geländer an, muss der Pfosten nicht höher sein als die Liegefläche': 'If no guard rail joins a corner on either side, the post need not rise above the deck',
 }
 export default en

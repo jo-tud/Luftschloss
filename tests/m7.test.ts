@@ -118,3 +118,20 @@ describe('Liegefläche auf Querträgern', () => {
     }
   })
 })
+
+describe('Eckpfosten ohne Geländer', () => {
+  it('enden an der Liegefläche, wenn an keiner der beiden Seiten ein Geländer anschließt', () => {
+    const p = testProject()
+    const P = p.assemblies[0].params
+    P.guardSides = { ...P.guardSides, hinten: false, links: false }
+    const top = (q: typeof p, k: string) => {
+      const m = resolveProject(q).members.find((x) => x.partKey === k)!
+      return Math.max(m.start.z, m.end.z)
+    }
+    expect(top(p, 'pfosten-BL')).toBe(P.deckHeight)
+    expect(top(p, 'pfosten-FL')).toBe(P.deckHeight + P.guardHeight)
+    expect(top(p, 'pfosten-BR')).toBe(P.deckHeight + P.guardHeight)
+    P.trimPosts = false
+    expect(top(p, 'pfosten-BL')).toBe(P.deckHeight + P.guardHeight)
+  })
+})
