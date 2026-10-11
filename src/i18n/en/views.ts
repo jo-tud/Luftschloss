@@ -112,5 +112,7 @@ const en: Record<string, string> = {
   "Maße in mm, steigend vom Bezug (Ende) und von der Bezugskante (unten). Schraffiert: Abfall. Gestrichelt: verdeckte Kanten und Bohrungen.": "Dimensions in mm, measured from the reference (end) and the reference edge (bottom). Hatched: waste. Dashed: hidden edges and holes.",
   "{x} mm: hier am Anriss anlegen": "{x} mm: align with the marked line here",
   'Ausschnitt {a}–{b} mm': 'section {a}–{b} mm',
+  "Tasche für Mutter und Scheibe": "Pocket for nut and washer",
+  "Sicherheit:": "Safety:",
 }
 export default en

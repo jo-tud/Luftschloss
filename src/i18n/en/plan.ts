@@ -93,24 +93,6 @@ const en: Record<string, string> = {
   'Keine Antwort erhalten.': 'No response received.',
   'Die Anfrage wurde abgelehnt. Bitte den Prompt kopieren und in einem Chat verwenden.': 'The request was declined. Please copy the prompt and use it in a chat.',
 
-  // Verbindungsskizzen (JointSketch.tsx)
-  '2 × M10 durch das durchlaufende Holz ins Hirnholz, Mutter in einer Querbohrung Ø 25 mm, 70 mm vom Ende. Bolzen zweier Stöße am selben Pfosten in der Höhe versetzen.':
-    '2 × M10 through the continuous timber into the end grain, nut in a Ø 25 mm cross hole, 70 mm from the end. Stagger the bolts of two joints on the same post in height.',
-  'Bettschraube M8 durch das durchlaufende Holz, Zylindermutter in Querbohrung Ø 10 mm, 70 mm vom Ende. Bohrschablone verwenden.':
-    'M8 bed bolt through the continuous timber, barrel nut in a Ø 10 mm cross hole, 70 mm from the end. Use a drilling jig.',
-  'Beide Hölzer auf halbe Dicke ausnehmen: Blatttiefe {blatt} mm. Leimen und 2 Schrauben 6 × 80 diagonal.':
-    'Cut both timbers to half thickness: lap depth {blatt} mm. Glue and 2 screws 6 × 80 placed diagonally.',
-  'Schwalbenschwanzblatt {dicke} mm dick, {tiefe} mm lang, Hals {schmal} mm, Ende {breit} mm (Neigung 1:6). 2 Holznägel Ø 10.':
-    'Dovetail half-lap {dicke} mm thick, {tiefe} mm long, neck {schmal} mm, end {breit} mm (slope 1:6). 2 wooden pegs Ø 10.',
-  'Zapfen {dicke} × {hoehe} mm, {laenge} mm lang (durchgehend). Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.':
-    'Tenon {dicke} × {hoehe} mm, {laenge} mm long (through). Chisel a mortise of the same size, wooden peg Ø 16 mm.',
-  'Zapfen {dicke} × {hoehe} mm, {laenge} mm lang. Zapfenloch gleich groß stemmen, Holznagel Ø 16 mm.':
-    'Tenon {dicke} × {hoehe} mm, {laenge} mm long. Chisel a mortise of the same size, wooden peg Ø 16 mm.',
-  'Gratnut {tiefe} mm tief, Flanken 1:6, Stufe von der Seite einschieben, leimen + 2 Schrauben 5 × 50.':
-    'Sliding dovetail housing {tiefe} mm deep, flanks 1:6; slide the step in from the side, glue + 2 screws 5 × 50.',
-  'Leiste 40 × 60 mm unter das Ende an das durchlaufende Holz, 3 Schrauben 5 × 50, darauf auflegen.':
-    'Batten 40 × 60 mm on the continuous timber below the end, 3 screws 5 × 50; rest the part on it.',
-
   // Material & Kosten (Material.tsx)
   'Keine Zeilen im Format id;preis;… gefunden.': 'No lines in the format id;price;… found.',
   '{n} Preise übernommen (Stand {date}).': '{n} prices applied (as of {date}).',
@@ -227,5 +209,7 @@ const en: Record<string, string> = {
   "Seitenrahmen {i} am Boden vormontieren": "Pre-assemble side frame {i} on the floor",
   "Teile-Arbeitsplan": "Parts work plan",
   "Verbindungen in diesem Schritt:": "Joints in this step:",
+  "Sollmaß der Diagonalen (Pfostenfuß außen bis Oberkante Zarge am anderen Pfosten außen): {d} mm.": "Target diagonal (outside of one post foot to the top edge of the rail at the outside of the other post): {d} mm.",
+  "Sollmaß in der Draufsicht (Pfostenecke außen zu Pfostenecke außen): {d} mm.": "Target in plan view (outer post corner to outer post corner): {d} mm.",
 }
 export default en

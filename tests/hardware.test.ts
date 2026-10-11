@@ -16,8 +16,9 @@ describe('Beschläge', () => {
     const bolts = r.joints.filter((j) => j.typeId === 'schlossschraube').length
     expect(h.heads.length).toBeGreaterThan(0)
     expect(h.heads.length).toBeLessThanOrEqual(2 * bolts)
-    // durchgebolzt: Mutter außen; stumpfer Stoß: Mutter in einer Tasche
-    expect(h.nuts.length + h.pockets.length).toBe(h.heads.length)
+    // durchgebolzt: Mutter außen; stumpfer Stoß: Mutter in einer Tasche – jeder Bolzen hat eine Mutter
+    expect(h.nuts.length).toBe(h.heads.length)
+    expect(h.pockets.length).toBeLessThanOrEqual(h.heads.length)
   })
 
   it('Schraubenköpfe sitzen mitten auf einer Holzfläche, nicht auf der Fuge zwischen zwei Hölzern', () => {

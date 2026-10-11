@@ -431,7 +431,7 @@ function holeList(m: Member, fasteners: Fastener[], others: Member[], boxes: Loc
       // Querbohrung für die Mutter
       const c = f.crossNut
       const p0 = { x: c.at.x + c.dir.x * c.outer, y: c.at.y + c.dir.y * c.outer, z: c.at.z + c.dir.z * c.outer }
-      add(p0, { x: -c.dir.x, y: -c.dir.y, z: -c.dir.z }, c.outer + 12, f.kind === 'bettschraube' ? 10 : 25, tk('Querbohrung für die Mutter'))
+      add(p0, { x: -c.dir.x, y: -c.dir.y, z: -c.dir.z }, c.depth, c.bore, c.bore > 20 ? tk('Tasche für Mutter und Scheibe') : tk('Querbohrung für die Mutter'))
     }
   }
   return out

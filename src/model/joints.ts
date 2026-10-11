@@ -434,18 +434,32 @@ export function unsuitable(typeId: string, jm: JointMembers): string | undefined
     case 'schwalbenschwanz':
     case 'holzduebel':
       if (thin(E) < 40 || thin(T) < 40) return tk('Holz zu dünn – Zapfen, Schwalbenschwanz und Dübel brauchen mindestens 40 mm Stärke.')
+      // zwei Dübel Ø 10 tragen die Last einer Zarge nicht dauerhaft (Leim im Hirnholz hält kaum)
+      if (typeId === 'holzduebel' && jm.ending && horizontal && (E.role === 'zarge' || E.role === 'quertraeger')) return tk('Dübel tragen die Last von Zarge bzw. Querträger nicht dauerhaft – Bolzen, Balkenschuh oder Zapfen nehmen.')
       return undefined
     case 'ueberblattung':
       return thin(a) < 40 || thin(b) < 40 ? tk('Holz zu dünn zum Überblatten – jedes Teil verliert die halbe Stärke.') : undefined
     case 'balkenschuh':
-    case 'auflagerleiste':
+    case 'auflagerleiste': {
       if (!horizontal) return tk('Nur für liegende Träger, die von oben eingelegt werden.')
-      return board ? tk('Für Bretter zu schmal – eher anschrauben.') : undefined
+      if (board) return tk('Für Bretter zu schmal – eher anschrauben.')
+      // Unterkanten (bei liegenden Hölzern Mitte − h/2, bei Pfosten das untere Ende)
+      const bottom = (m: Member) => Math.min(m.start.z, m.end.z) - (Math.abs(m.end.z - m.start.z) / (Math.hypot(m.end.x - m.start.x, m.end.y - m.start.y, m.end.z - m.start.z) || 1) < 0.3 ? m.h / 2 : 0)
+      if (typeId === 'auflagerleiste' && bottom(E) - bottom(T) < 30) return tk('Unter dem Träger ist am tragenden Holz kein Platz für eine Leiste – Balkenschuh oder Knagge nehmen.')
+      // Laschen des Balkenschuhs (je 40 mm) müssen neben dem Träger auf das tragende Holz passen
+      if (typeId === 'balkenschuh' && !T.round && Math.max(T.b, T.h) < E.b + 2 * 40 && Math.abs(T.end.z - T.start.z) > Math.hypot(T.end.x - T.start.x, T.end.y - T.start.y)) return tk('Der Pfosten ist zu schmal für die Laschen des Balkenschuhs – Winkel oder Bolzen nehmen.')
+      return undefined
+    }
     case 'bettschraube':
       return thin(E) < 44 ? tk('Holz zu dünn für die Quermutter der Bettschraube (mindestens 44 mm).') : undefined
     case 'holzbauschraube':
       // ins Hirnholz eines Bretts: Schraube höchstens 1/3 der Dicke und kaum Randabstand – das spaltet
       return jm.ending && thin(E) < 30 && !rope ? tk('Brett zu dünn für Schrauben ins Hirnholz – besser mit Winkeln, einer Einlassung oder seitlich überlappend befestigen.') : undefined
+    case 'winkel':
+      if (jm.kind === 'beischlag') return tk('Seitlich anliegende Hölzer bilden keine Ecke für einen Winkel – durchschrauben oder verbolzen.')
+      // Winkel 90 mm überragen eine liegende Latte (Lattenrost): Latten werden aufgeschraubt
+      if (jm.kind === 'auflage' && Math.min(...[a, b].filter((m) => Math.abs(m.end.z - m.start.z) < 1).map((m) => m.h), 999) < 60) return tk('Die Latte ist niedriger als der Winkel – Latten von oben aufschrauben.')
+      return undefined
     case 'schlossschraube':
       return board && thin(E) < 25 ? tk('Brett zu dünn für einen Bolzen – eher anschrauben.') : undefined
   }

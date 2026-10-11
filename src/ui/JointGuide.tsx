@@ -1,5 +1,5 @@
 import { t, tk, tr, trv } from '../i18n'
-import { DRILL_HELP } from '../model/jointGuide'
+import { DRILL_HELP, safetyTips } from '../model/jointGuide'
 import type { JointPlan } from '../model/jointPlan'
 import { catalogItem } from '../model/catalog'
 import { assemblyDir, CARPENTRY, jointFrame } from '../model/joinery'
@@ -39,6 +39,22 @@ export function JointEffortInfo({ plan }: { plan: JointPlan }) {
       <br />
       <span className="muted">{tr(e.hard)}</span>
     </p>
+  )
+}
+
+/** Sicherheitshinweise passend zu Werkzeug und Arbeitsschritten dieser Verbindung */
+export function JointSafety({ plan }: { plan: JointPlan }) {
+  const tips = safetyTips([...plan.tools, ...(plan.toolsPlus ?? []), ...plan.guide.steps.map((s) => s.t)])
+  if (!tips.length) return null
+  return (
+    <div className="joint-safety">
+      <b>{t('Sicherheit:')}</b>
+      <ul>
+        {tips.map((x, i) => (
+          <li key={i}>{tr(x)}</li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

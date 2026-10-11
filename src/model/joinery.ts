@@ -205,6 +205,10 @@ function extension(m: Member, atStart: boolean, d: number, vr?: Range, wr?: Rang
   return [atStart ? [-d, 0] : [L, L + d], vr ?? [-m.b / 2, m.b / 2], wr ?? [-m.h / 2, m.h / 2]]
 }
 
+/** Gratnut: Schulter der Feder je Seite (mm) und Flankenneigung (tan 14°, wie ein üblicher Gratfräser) */
+const GRAT_SHOULDER = 4
+const GRAT_SLOPE = Math.tan((14 * Math.PI) / 180)
+
 export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCuts | undefined {
   if (!CARPENTRY.has(j.typeId)) return undefined
   const A = byId.get(j.a)
@@ -267,16 +271,21 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
     }
     case 'zapfen': {
       if (!F.pE || F.depth < 10) return undefined
-      // Zapfen: 1/3 der Dicke quer zur Ebene, oben und unten Brüstung, 3/4 der Pfostendicke lang
-      const t = Math.max(16, width(eAcross) / 3)
-      const cA = (eAcross[0] + eAcross[1]) / 2
-      const shoulder = Math.max(10, width(eSide) * 0.15)
-      const sr: Range = [eSide[0] + shoulder, eSide[1] - shoulder]
+      // Zapfen hochkant: 1/3 der schmalen Seite von E dick, über die breite Seite hoch (mit Brüstung),
+      // 3/4 der Pfostendicke lang. Bei liegenden Hölzern steht der Zapfen damit senkrecht.
+      const flip = width(eSide) < width(eAcross) - 1
+      const eT = flip ? eSide : eAcross
+      const eH = flip ? eAcross : eSide
+      const t = Math.max(16, width(eT) / 3)
+      const cT = (eT[0] + eT[1]) / 2
+      const tr: Range = [cT - t / 2, cT + t / 2]
+      const shoulder = Math.max(10, width(eH) * 0.15)
+      const sr: Range = [eH[0] + shoulder, eH[1] - shoulder]
       const L = F.depth < 50 ? F.depth : F.depth * 0.75
-      const box = frameBox(frame, [[F.face, F.face + L], [cA - t / 2, cA + t / 2], sr])
+      const box = frameBox(frame, [[F.face, F.face + L], flip ? sr : tr, flip ? tr : sr])
       out.dims = { dicke: Math.round(t), hoehe: Math.round(width(sr)), laenge: Math.round(L), durch: L >= F.depth ? 1 : 0 }
       cutOf(out.members, E).add.push(toLocal(E, box))
-      carve(out, T, F.out, [F.face, F.face + L], across, [cA - t / 2, cA + t / 2], side, () => sr)
+      carve(out, T, F.out, [F.face, F.face + L], across, flip ? sr : tr, side, () => (flip ? tr : sr))
       return out
     }
     case 'schwalbenschwanz': {
@@ -295,11 +304,11 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       if (!F.pE || F.depth < 10) return undefined
       const g = gratAxes(F)
       if (!g) return undefined
-      // Nut 1/3 der Wangendicke tief; Feder so breit, wie das Brett hergibt, Flanken 1:6
+      // Nut 1/3 der Wangendicke tief; Feder mit je 4 mm Schulter, Flanken wie ein Gratfräser 14°
       const dd = Math.min(20, Math.max(8, F.depth / 3))
       const tr = rangeAlong(E, g.thick)
-      const wide = width(tr) / 2 - 1.5
-      const narrow = Math.max(width(tr) / 4, wide - dd / 6)
+      const wide = width(tr) / 2 - GRAT_SHOULDER
+      const narrow = Math.max(width(tr) / 5, wide - dd * GRAT_SLOPE)
       const sr = rangeAlong(E, g.slide)
       // Die Nut läuft in Einschubrichtung bis zum Rand von T aus, sonst ließe sich das Brett nicht einschieben
       const dir = assemblyDir(j, F)
@@ -307,7 +316,7 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const run = dot(c, dir) + exitAlong(T, c, dir)
       const hr: Range = dot(dir, g.slide) > 0 ? [sr[0], Math.max(sr[1], run)] : [Math.min(sr[0], -run), sr[1]]
       dovetail(out, F, dd, g.thick, (tr[0] + tr[1]) / 2, narrow, wide, g.slide, sr, hr)
-      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(sr)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide) }
+      out.dims = { tiefe: Math.round(dd), dicke: Math.round(width(sr)), schmal: Math.round(2 * narrow), breit: Math.round(2 * wide), schulter: GRAT_SHOULDER }
       return out
     }
     case 'ausklinkung': {
@@ -376,7 +385,11 @@ export function jointCuts(j: DetectedJoint, byId: Map<string, Member>): JointCut
       const tAlong = rangeAlong(T, along)
       // nicht über das tragende Holz hinaus
       const lr = inter([eAlong[0] - 40, eAlong[1] + 40], tAlong)
-      out.extras.push(frameBox([F.out, along, down], [[F.face - 40, F.face], lr, [eDown[1], eDown[1] + 60]]))
+      // nicht unter dem tragenden Holz heraus (Querträger zwischen gleich hohen Zargen: nur, was übrig bleibt)
+      const hgt = Math.min(60, rangeAlong(T, down)[1] - eDown[1])
+      if (hgt < 20) return undefined
+      out.extras.push(frameBox([F.out, along, down], [[F.face - 40, F.face], lr, [eDown[1], eDown[1] + hgt]]))
+      out.dims = { hoehe: Math.round(hgt) }
       return out
     }
   }
