@@ -218,5 +218,7 @@ const en: Record<string, string> = {
   "Knagge": "Cleat",
   "Schlossschraube M{d}, durchgebolzt ({n} Stück)": "Carriage bolt M{d}, through-bolted ({n} pcs)",
   "Kopfbänder mit Einlassung jetzt in die Einlassung am Pfosten legen, dann erst die Zarge ansetzen – später passen sie nicht mehr dazwischen.": "Lay knee braces with a housing into the housing on the post now, then fit the rail – later they no longer fit in between.",
+  "Senkung für den Kopf (Wandseite)": "Counterbore for the head (wall side)",
+  "Forstnerbohrer Ø {d} mm für die Senkung an der Wandseite ({t} mm tief)": "Forstner bit Ø {d} mm for the counterbore on the wall side ({t} mm deep)",
 }
 export default en

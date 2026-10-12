@@ -181,6 +181,9 @@ export function jointPlan(j: DetectedJoint, byId: Map<string, Member>, r: Resolv
     if (bolts.length) name = t('Schlossschraube M{d}, durchgebolzt ({n} Stück)', { d: Math.round(bolts[0].d), n: bolts.length })
     tools = jointVariant(j.typeId, j, byId)?.tools ?? tools
   }
+  // Kopf an der Wandseite versenkt: Forstnerbohrer für die Senkung dazu
+  const sink = fasteners.find((f) => f.counterbore)?.counterbore
+  if (sink) tools = [...tools, t('Forstnerbohrer Ø {d} mm für die Senkung an der Wandseite ({t} mm tief)', { d: sink.d, t: sink.depth })]
   return { type, name, tools, toolsPlus, frame, E, T, stoss, guide, vars, effort, fasteners, cuts }
 }
 

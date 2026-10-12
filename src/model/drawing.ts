@@ -544,6 +544,11 @@ function holeList(m: Member, fasteners: Fastener[], others: Member[], boxes: Loc
     // Schraube mit Durchgangsloch: im Teil mit dem Kopf das größere Loch
     const lh = local(m, f.head)
     const headHere = boxes.some((b) => [0, 1, 2].every((k) => lh[k] >= b[k][0] - 1 && lh[k] <= b[k][1] + 1))
+    if (f.counterbore && headHere) {
+      // Senkung für Kopf und Scheibe an der Wandseite – zuerst bohren (Forstner), dann die Bohrung
+      const cb = f.counterbore
+      add({ x: f.head.x - f.dir.x * cb.depth, y: f.head.y - f.dir.y * cb.depth, z: f.head.z - f.dir.z * cb.depth }, f.dir, cb.depth, cb.d, tk('Senkung für den Kopf (Wandseite)'))
+    }
     const h = add(f.head, f.dir, f.length, f.drillFirst && headHere ? f.drillFirst : d)
     // Bolzen und Holznägel gehen durch mehrere Teile: zusammengespannt in einem Zug bohren
     if (h && (f.kind === 'bolzen' || f.kind === 'bettschraube' || f.kind === 'holznagel')) h.with = drilledWith(f, others, ranges).filter((id) => id !== m.id)
