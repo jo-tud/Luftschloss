@@ -83,6 +83,8 @@ export function fastenerInstances(list: Fastener[], withRods: boolean, part?: Fa
           put(h.washers, addv(f.head, [f.dir, f.length + 1]), inDir, [0.0105, 0.002, 0.0105])
           put(h.nuts, addv(f.head, [f.dir, f.length + 6]), inDir, [0.0095, 0.008, 0.0095])
         }
+        // Senkung an der Wandseite: dunkle Öffnung an der Holzfläche, der Kopf sitzt darin
+        if (f.counterbore && want('tasche')) put(h.pockets, addv(f.head, [f.dir, -f.counterbore.depth - 0.3]), outDir, [f.counterbore.d / 2000, 0.001, f.counterbore.d / 2000])
         if (f.crossNut) {
           const c = f.crossNut
           const pocket = addv(c.at, [c.dir, c.outer + 0.3])

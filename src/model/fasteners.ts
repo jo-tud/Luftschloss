@@ -66,6 +66,8 @@ export interface Fastener {
   first?: number
   /** nur eine Bohrung (Sackloch für einen Rundstab), kein eigenes Teil: nicht zeichnen, nicht kaufen */
   bore?: boolean
+  /** Kopf liegt an einer Raumwand: in einer Senkung (Forstner) versenkt, head liegt am Grund der Senkung */
+  counterbore?: { d: number; depth: number }
 }
 
 /** Mindestens so tief muss das Gewinde einer 8er-Schraube im tragenden Holz sitzen (9·d, volle Tragfähigkeit) */
@@ -157,6 +159,19 @@ export function bedCentre(r: Resolved, m: Member): Vec3 | undefined {
   const bed = m.assemblyId ? r.beds.get(m.assemblyId) : undefined
   if (!bed) return undefined
   return v(bed.footprint.reduce((s, q) => s + q.x, 0) / bed.footprint.length, bed.footprint.reduce((s, q) => s + q.y, 0) / bed.footprint.length, 0)
+}
+
+/**
+ * Kopf eines Bolzens an der Wandseite (Außenfläche des Betts liegt an einer Raumwand, Bolzen zeigt von ihr
+ * weg ins Holz): Kopf samt Scheibe in einer Senkung versenken, sonst steht das Bett 10 mm von der Wand ab
+ */
+export function wallSink(r: Resolved, m: Member, head: Vec3, dirIn: Vec3, d: number): { d: number; depth: number } | undefined {
+  const bed = m.assemblyId ? r.beds.get(m.assemblyId) : undefined
+  for (const w of bed?.wallFaces ?? []) {
+    if (dot(dirIn, w.n) > -0.7) continue
+    if (dot(sub(w.p, head), w.n) < 15) return { d: d >= 10 ? 40 : 35, depth: 12 }
+  }
+  return undefined
 }
 
 /** Mitte der Leiter zwischen den Wangen bzw. Holmen (Grundriss); nur für Teile der Leiter */
@@ -357,7 +372,10 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const d = j.typeId === 'schlossschraube' && Math.min(A.b, A.h, B.b, B.h) < 50 ? 8 : 2 * rad
       const sp = Math.min(80, span - 8 * d)
       const offs = sp >= 4 * d ? [-sp / 2, sp / 2] : [0]
-      const b = d === 8 ? boltM8(tHead - tNut) : boltM10(tHead - tNut)
+      // an der Wand: Kopf versenken, der Bolzen wird um die Senkung kürzer
+      const sink = wallSink(r, sign > 0 ? B : A, at(mid, [dOut, tHead]), neg(dOut), d)
+      const tHd = tHead - (sink?.depth ?? 0)
+      const b = d === 8 ? boltM8(tHd - tNut) : boltM10(tHd - tNut)
       // nur Bolzen, die wirklich durch beide Hölzer gehen (schräge Hölzer überdecken sich nicht rechteckig)
       const hits = (q: Vec3) => [A, B].every((m) => { const [m0, m1] = range(m, ax); return inside(m, at(q, [ax, (m0 + m1) / 2 - dot(q, ax)])) })
       // Bolzen stumpfer Stöße an denselben Hölzern (Zargenende am Pfosten) nicht kreuzen
@@ -384,7 +402,7 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
       const sets = [offs, ...[0, -5, 5, -10, 10, -15, 15, -30, 30].map((k) => [k])]
       const bases = sets.map((ks) => ks.map((k) => at(mid, [e, k])).filter(hits)).find((qs) => qs.length && qs.every(free)) ?? offs.map((k) => at(mid, [e, k])).filter(hits)
       for (const base of bases.length ? bases : [mid])
-        push({ kind, head: at(base, [dOut, tHead]), dir: neg(dOut), length: tHead - tNut, d, when: 'nachher', nut: true, item: b.item, drill: d + 1 })
+        push({ kind, head: at(base, [dOut, tHd]), dir: neg(dOut), length: tHd - tNut, d, when: 'nachher', nut: true, item: b.item, drill: d + 1, counterbore: sink })
       return out
     }
     if (!j.ending) return out
@@ -414,14 +432,18 @@ export function jointFasteners(j: DetectedJoint, byId: Map<string, Member>, r: R
     const sideDir = scale(axesE[1], sd)
     // Schlossschraube lässt sich im stumpfen Stoß nicht anziehen (der Vierkant dreht im Holz):
     // Sechskantschraube mit Scheibe, Mutter in einer Tasche (Forstner Ø 35) auf der Innenseite
-    const hex = hexM10(tHead, nutDepth)
-    const bed = bedBoltM8(tHead + nutDepth)
+    // an der Wand: Kopf versenken, der Bolzen wird um die Senkung kürzer
+    const sink = wallSink(r, Tm, at(pE, [o, tHead]), into, 2 * rad)
+    const tH = tHead - (sink?.depth ?? 0)
+    const hex = hexM10(tH, nutDepth)
+    const bed = bedBoltM8(tH + nutDepth)
     const item = bett ? bed.item : hex.item
     for (const hgt of heights) {
       const base = at(pE, [hDir, hgt])
       push({
         kind,
-        head: at(base, [o, tHead]),
+        counterbore: sink,
+        head: at(base, [o, tH]),
         dir: into,
         length: bett ? bed.length : hex.length - 3,
         d: 2 * rad,

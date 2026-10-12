@@ -4,7 +4,7 @@ import { testProject } from '../src/model/defaults'
 import { resolveProject } from '../src/model/resolve'
 import { hardwareInstances } from '../src/views/hardware'
 import { memberBoxes } from '../src/model/geometry'
-import { jointFasteners } from '../src/model/fasteners'
+import { allFasteners, jointFasteners } from '../src/model/fasteners'
 
 const pos = (m: THREE.Matrix4) => new THREE.Vector3().setFromMatrixPosition(m)
 
@@ -25,9 +25,13 @@ describe('Beschläge', () => {
     const r = resolveProject(testProject())
     const h = hardwareInstances(r)
     const boxes = r.members.flatMap((m) => memberBoxes(m))
+    // an der Wand versenkte Köpfe sitzen am Grund ihrer Senkung
+    const sunk = allFasteners(r).filter((f) => f.counterbore).map((f) => f.head)
+    expect(sunk.length).toBeGreaterThan(0)
     for (const m of h.heads) {
       const v = pos(m)
       const q = { x: v.x * 1000, y: -v.z * 1000, z: v.y * 1000 }
+      if (sunk.some((s) => Math.hypot(s.x - q.x, s.y - q.y, s.z - q.z) < 2)) continue
       let ok = false
       for (const o of boxes) {
         const d = { x: q.x - o.center.x, y: q.y - o.center.y, z: q.z - o.center.z }

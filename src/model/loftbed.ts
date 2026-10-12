@@ -38,6 +38,8 @@ export interface BedInfo {
   ladderFootprint?: { x: Mm; y: Mm }[]
   accessWidth?: Mm
   walls: Side[]
+  /** Außenflächen des Betts, die an einer Raumwand liegen (Punkt auf der Wand, Normale vom Bett zur Wand) */
+  wallFaces: { p: Vec3; n: Vec3 }[]
   ceilingHigh: boolean
   rungPitch?: Mm
   rodGap?: Mm
@@ -921,6 +923,16 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
     .map((m) => Math.min(m.start.z, m.end.z) - m.h / 2)
   const underside = undersides.length ? Math.min(...undersides) : railBottom
 
+  // Seiten, die an einer Raumwand liegen: dort lassen sich Köpfe nicht überstehen (sie werden versenkt)
+  const wallFaces = (['vorne', 'hinten', 'links', 'rechts'] as Side[]).flatMap((s) => {
+    const gap = wallGap(s)
+    if (!(gap < 15)) return []
+    const f = sideFrame(s, Lo, Wo)
+    const q0 = toWorld(v(f.at(f.length / 2, 0).x, f.at(f.length / 2, 0).y, 0))
+    const q1 = toWorld(v(f.at(f.length / 2, 100).x, f.at(f.length / 2, 100).y, 0))
+    const n = v((q1.x - q0.x) / 100, (q1.y - q0.y) / 100, 0)
+    return [{ p: v(q0.x + n.x * Math.max(0, gap), q0.y + n.y * Math.max(0, gap), 0), n }]
+  })
   return {
     members,
     panels,
@@ -937,6 +949,7 @@ export function generateLoftBed(a: Assembly, ceilingHeight: Mm, room?: { length:
       ladderFootprint,
       accessWidth,
       walls,
+      wallFaces,
       ceilingHigh,
       rungPitch,
       rodGap,

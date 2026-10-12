@@ -142,4 +142,26 @@ describe('Praxistauglich bauen', () => {
     expect(Number(plan.vars.erste)).toBeGreaterThan(150)
     expect(Number(plan.vars.teilung)).toBeGreaterThan(200)
   })
+
+  it('Bolzenköpfe an der Wandseite sind versenkt, nichts steht über die Wand hinaus', () => {
+    for (const p of [testProject(), sampleWith({ frameStyle: 'aussen' }), placed('wandseitig', { ladder: 'stufen' })]) {
+      const r = resolveProject(p)
+      const walls = [...r.beds.values()].flatMap((b) => b.wallFaces)
+      expect(walls.length).toBeGreaterThan(0)
+      let sunk = 0
+      for (const f of allFasteners(r)) {
+        if (f.kind !== 'bolzen' && f.kind !== 'bettschraube') continue
+        for (const w of walls) {
+          if (dot(f.dir, w.n) > -0.7) continue
+          const gap = dot(sub(w.p, f.head), w.n)
+          if (gap > 30) continue
+          // Kopf und Scheibe (rund 10 mm) bleiben hinter der Holzfläche
+          expect(f.counterbore, f.joint).toBeDefined()
+          expect(gap, f.joint).toBeGreaterThanOrEqual(10)
+          sunk++
+        }
+      }
+      expect(sunk).toBeGreaterThan(0)
+    }
+  })
 })
